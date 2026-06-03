@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(request: Request) {
   try {
@@ -29,14 +31,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store file as base64 data URL
+    // Upload file to Supabase Storage (or fall back to base64)
     let fileUrl = "";
+    let isLocalStorage = false;
+
     if (file) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const base64 = buffer.toString("base64");
-      const mimeType = file.type || "application/octet-stream";
-      fileUrl = `data:${mimeType};base64,${base64}`;
+      const uploadResult = await uploadFile(
+        STORAGE_BUCKETS.CREDENTIALS,
+        `user-${userId}`,
+        file,
+        file.name,
+        file.type || "application/octet-stream"
+      );
+      fileUrl = uploadResult.url;
+      isLocalStorage = uploadResult.isLocalStorage;
     }
 
     // Determine status based on expiration
@@ -77,7 +85,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: "Credential uploaded successfully", credential },
+      {
+        message: "Credential uploaded successfully",
+        credential,
+        storageType: isLocalStorage ? "local_base64" : "supabase_storage",
+      },
       { status: 201 }
     );
   } catch (error) {

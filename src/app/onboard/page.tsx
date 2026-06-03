@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Heart, Check, X, Mail, ArrowLeft } from "lucide-react";
@@ -39,7 +39,7 @@ function getPasswordChecks(password: string) {
   };
 }
 
-export default function OnboardPage() {
+function OnboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -359,5 +359,36 @@ function PasswordCheck({ label, met }: { label: string; met: boolean }) {
         {label}
       </span>
     </div>
+  );
+}
+
+export default function OnboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-md">
+                  <Heart className="size-5" />
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight">Welcome Aboard</h1>
+            </div>
+            <Card className="shadow-lg border-border/50">
+              <CardContent className="p-6 space-y-4">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      }
+    >
+      <OnboardPageInner />
+    </Suspense>
   );
 }
