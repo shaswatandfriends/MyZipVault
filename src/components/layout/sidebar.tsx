@@ -1,0 +1,374 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Shield,
+  LayoutDashboard,
+  ClipboardCheck,
+  FileText,
+  FileUser,
+  Users,
+  Share2,
+  Settings,
+  Send,
+  CreditCard,
+  FileSignature,
+  FileCheck,
+  Pencil,
+  Bell,
+  Building2,
+  Key,
+  ToggleLeft,
+  Mail,
+  BarChart3,
+  Megaphone,
+  ShieldCheck,
+  AlertTriangle,
+  LogOut,
+  CheckCheck,
+  Info,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Sidebar } from "@/components/ui/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type { UserRole } from "@/lib/types";
+
+// ─── Nav Item Type ────────────────────────────────────────────────────
+interface NavItem {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+}
+
+// ─── Role Background Colors ──────────────────────────────────────────
+const roleBgColors: Record<UserRole, string> = {
+  candidate: "bg-emerald-800",
+  client_recruiter: "bg-teal-800",
+  client_admin: "bg-teal-800",
+  platform_admin: "bg-slate-800",
+  super_admin: "bg-rose-900",
+};
+
+// ─── Role Badge Styles ───────────────────────────────────────────────
+const roleBadgeStyles: Record<UserRole, string> = {
+  candidate: "bg-emerald-400/20 text-emerald-200 border-emerald-400/30",
+  client_recruiter: "bg-teal-400/20 text-teal-200 border-teal-400/30",
+  client_admin: "bg-teal-400/20 text-teal-200 border-teal-400/30",
+  platform_admin: "bg-slate-400/20 text-slate-200 border-slate-400/30",
+  super_admin: "bg-rose-400/20 text-rose-200 border-rose-400/30",
+};
+
+// ─── Role Display Labels ─────────────────────────────────────────────
+const roleLabels: Record<UserRole, string> = {
+  candidate: "Candidate",
+  client_recruiter: "Recruiter",
+  client_admin: "Client Admin",
+  platform_admin: "Admin",
+  super_admin: "Super Admin",
+};
+
+// ─── Candidate Nav Items ─────────────────────────────────────────────
+const candidateNav: NavItem[] = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
+  { title: "Credentials", href: "/vault/credentials", icon: FileText },
+  { title: "Resume", href: "/vault/resume", icon: FileUser },
+  { title: "References", href: "/references", icon: Users },
+  { title: "Sharing", href: "/sharing", icon: Share2 },
+  { title: "Settings", href: "/settings", icon: Settings },
+];
+
+// ─── Recruiter Nav Items ─────────────────────────────────────────────
+const recruiterNav: NavItem[] = [
+  { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
+  { title: "Send Request", href: "/recruiter/send", icon: Send },
+  { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
+  { title: "BAA", href: "/recruiter/baa", icon: FileSignature },
+  { title: "Team", href: "/recruiter/team", icon: Users, adminOnly: true },
+];
+
+// ─── Platform Admin Nav Items ────────────────────────────────────────
+const platformAdminNav: NavItem[] = [
+  { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Users", href: "/admin/users", icon: Users },
+  { title: "Documents", href: "/admin/documents", icon: FileCheck },
+  { title: "Content", href: "/admin/content", icon: Pencil },
+  { title: "Reminders", href: "/admin/reminders", icon: Bell },
+];
+
+// ─── Super Admin Nav Items ───────────────────────────────────────────
+const superAdminNav: NavItem[] = [
+  { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
+  { title: "Users", href: "/superadmin/users", icon: Users },
+  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
+  { title: "Admins", href: "/superadmin/admins", icon: Shield },
+  { title: "Settings", href: "/superadmin/settings", icon: Settings },
+  { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
+  { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
+  { title: "Templates", href: "/superadmin/templates", icon: Mail },
+  { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+  { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
+  { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
+  { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
+  { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
+];
+
+// ─── Get Nav Items for a Role ────────────────────────────────────────
+function getNavItems(role: UserRole): NavItem[] {
+  switch (role) {
+    case "candidate":
+      return candidateNav;
+    case "client_recruiter":
+      return recruiterNav.filter((item) => !item.adminOnly);
+    case "client_admin":
+      return recruiterNav;
+    case "platform_admin":
+      return platformAdminNav;
+    case "super_admin":
+      return superAdminNav;
+    default:
+      return [];
+  }
+}
+
+// ─── Notification Type Icons ─────────────────────────────────────────
+const notificationTypeIcons: Record<string, LucideIcon> = {
+  credential: FileText,
+  checklist: ClipboardCheck,
+  reference: Users,
+  sharing: Share2,
+  system: Info,
+};
+
+// ─── Notification Shape ──────────────────────────────────────────────
+interface SidebarNotification {
+  id: number;
+  type: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+}
+
+// ─── Notification Bell Sub-component ─────────────────────────────────
+function NotificationBell() {
+  const [notifications, setNotifications] = useState<SidebarNotification[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const doFetch = () => {
+      fetch("/api/candidate/notifications")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!mounted || !data) return;
+          setNotifications(
+            Array.isArray(data) ? data : data.notifications ?? []
+          );
+        })
+        .catch(() => {});
+    };
+
+    // Schedule initial fetch via setTimeout to avoid synchronous setState in effect
+    const initialTimer = setTimeout(doFetch, 0);
+    const interval = setInterval(doFetch, 30000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const markAllRead = async () => {
+    try {
+      await fetch("/api/candidate/notifications/mark-read", {
+        method: "PUT",
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {
+      // silently fail
+    }
+  };
+
+  const formatDate = (date: string | Date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString();
+  };
+
+  return (
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+      <PopoverTrigger asChild>
+        <button className="relative flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+          <Bell className="size-4 shrink-0" />
+          <span>Notifications</span>
+          {unreadCount > 0 && (
+            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="right" align="start" className="w-80 p-0">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h4 className="text-sm font-semibold">Notifications</h4>
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <CheckCheck className="size-3" />
+              Mark all read
+            </button>
+          )}
+        </div>
+        <ScrollArea className="max-h-80">
+          {notifications.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              No notifications
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {notifications.map((n) => {
+                const IconComp = notificationTypeIcons[n.type] ?? Bell;
+                return (
+                  <div
+                    key={n.id}
+                    className="flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/50"
+                  >
+                    <IconComp className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{n.message}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {formatDate(n.createdAt)}
+                      </p>
+                    </div>
+                    {!n.isRead && (
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Main AppSidebar Component ───────────────────────────────────────
+export function AppSidebar() {
+  const { user, role } = useAuth();
+  const pathname = usePathname();
+
+  if (!role) return null;
+
+  const bgColor = roleBgColors[role];
+  const navItems = getNavItems(role);
+  const badgeStyle = roleBadgeStyles[role];
+  const label = roleLabels[role];
+
+  return (
+    <Sidebar collapsible="offcanvas">
+      <div
+        className={cn(
+          bgColor,
+          "flex h-full w-full flex-col overflow-hidden text-white"
+        )}
+      >
+        {/* ── Top Section ── */}
+        <div className="flex items-center gap-2 px-4 py-3">
+          <Shield className="size-5 shrink-0 text-white" />
+          <span className="text-lg font-bold text-white">MyZipVault</span>
+        </div>
+        <div className="mx-2 h-px bg-white/20" />
+
+        {/* ── Navigation Section ── */}
+        <ScrollArea className="flex-1 px-2 py-2">
+          <nav className="flex flex-col gap-1">
+            {navItems.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "bg-white/20 font-medium text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  <item.icon className="size-4 shrink-0" />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </ScrollArea>
+
+        {/* ── Bottom Section ── */}
+        <div className="space-y-2 border-t border-white/20 p-3">
+          {/* Notification Bell (candidates only) */}
+          {role === "candidate" && <NotificationBell />}
+
+          {/* User Email */}
+          <p
+            className="truncate px-1 text-xs text-white/60"
+            title={user?.email ?? ""}
+          >
+            {user?.email}
+          </p>
+
+          {/* Role Badge */}
+          <div className="px-1">
+            <Badge
+              variant="outline"
+              className={cn("border px-1.5 py-0 text-[10px]", badgeStyle)}
+            >
+              {label}
+            </Badge>
+          </div>
+
+          {/* Logout Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
+            <LogOut className="mr-2 size-4" />
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    </Sidebar>
+  );
+}

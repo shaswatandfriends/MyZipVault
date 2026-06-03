@@ -1,0 +1,439 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Users,
+  UserPlus,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface ReferenceItem {
+  id: number;
+  manager_email: string;
+  manager_phone: string;
+  facility_name: string;
+  employment_status: string;
+  status: string;
+  requested_at: string;
+  manager_user: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  reference_responses: {
+    id: number;
+    answer_text: string;
+    question_id: number;
+    overall_comment: string | null;
+    question: {
+      question_text: string;
+    };
+  }[];
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "completed":
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 gap-1">
+          <CheckCircle2 className="size-3" /> Completed
+        </Badge>
+      );
+    case "pending_request":
+      return (
+        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 gap-1">
+          <Clock className="size-3" /> Pending
+        </Badge>
+      );
+    case "expired":
+      return (
+        <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 gap-1">
+          <AlertCircle className="size-3" /> Expired
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">{status}</Badge>;
+  }
+}
+
+function getEmploymentLabel(status: string) {
+  switch (status) {
+    case "current":
+      return "Current Employment";
+    case "ending_contract":
+      return "Ending Contract";
+    case "past":
+      return "Past Employment";
+    default:
+      return status;
+  }
+}
+
+export default function CandidateReferencesPage() {
+  const [references, setReferences] = useState<ReferenceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedRef, setExpandedRef] = useState<number | null>(null);
+
+  // Form state
+  const [managerFirstName, setManagerFirstName] = useState("");
+  const [managerLastName, setManagerLastName] = useState("");
+  const [managerEmail, setManagerEmail] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
+  const [facilityName, setFacilityName] = useState("");
+  const [employmentStatus, setEmploymentStatus] = useState("current");
+
+  const fetchReferences = useCallback(async () => {
+    try {
+      const res = await fetch("/api/references");
+      if (!res.ok) throw new Error("Failed to fetch references");
+      const data = await res.json();
+      setReferences(data.references || []);
+    } catch {
+      toast.error("Failed to load references");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReferences();
+  }, [fetchReferences]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!managerFirstName.trim() || !managerLastName.trim()) {
+      toast.error("Please enter the manager's name");
+      return;
+    }
+    if (!managerEmail.trim()) {
+      toast.error("Please enter the manager's email");
+      return;
+    }
+    if (!facilityName.trim()) {
+      toast.error("Please enter the facility name");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/references/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          managerFirstName: managerFirstName.trim(),
+          managerLastName: managerLastName.trim(),
+          managerEmail: managerEmail.trim(),
+          managerPhone: managerPhone.trim(),
+          facilityName: facilityName.trim(),
+          employmentStatus,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("Failed to send request", { description: data.error });
+        return;
+      }
+
+      toast.success("Reference request sent!", {
+        description: `Email sent to ${managerFirstName} ${managerLastName}`,
+      });
+
+      setIsDialogOpen(false);
+      setManagerFirstName("");
+      setManagerLastName("");
+      setManagerEmail("");
+      setManagerPhone("");
+      setFacilityName("");
+      setEmploymentStatus("current");
+      fetchReferences();
+    } catch {
+      toast.error("Failed to send reference request");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleExpand = (refId: number) => {
+    setExpandedRef(expandedRef === refId ? null : refId);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="References"
+          actions={<Skeleton className="h-10 w-36" />}
+        />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="References"
+        description="Request and manage professional references from your supervisors and managers."
+        actions={
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <UserPlus className="size-4" />
+                Request Reference
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Request a Reference</DialogTitle>
+                  <DialogDescription>
+                    Ask a supervisor or manager to provide a professional reference
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="mgrFirstName">First Name</Label>
+                      <Input
+                        id="mgrFirstName"
+                        placeholder="Jane"
+                        value={managerFirstName}
+                        onChange={(e) => setManagerFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mgrLastName">Last Name</Label>
+                      <Input
+                        id="mgrLastName"
+                        placeholder="Smith"
+                        value={managerLastName}
+                        onChange={(e) => setManagerLastName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mgrEmail">Email</Label>
+                    <Input
+                      id="mgrEmail"
+                      type="email"
+                      placeholder="jane.smith@facility.com"
+                      value={managerEmail}
+                      onChange={(e) => setManagerEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mgrPhone">Phone (Optional)</Label>
+                    <Input
+                      id="mgrPhone"
+                      type="tel"
+                      placeholder="(555) 123-4567"
+                      value={managerPhone}
+                      onChange={(e) => setManagerPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="facility">Facility Name</Label>
+                    <Input
+                      id="facility"
+                      placeholder="General Hospital"
+                      value={facilityName}
+                      onChange={(e) => setFacilityName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label>Employment Status</Label>
+                    <RadioGroup value={employmentStatus} onValueChange={setEmploymentStatus}>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="current" id="emp-current" />
+                        <Label htmlFor="emp-current" className="font-normal text-sm">
+                          Current Employment
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="ending_contract" id="emp-ending" />
+                        <Label htmlFor="emp-ending" className="font-normal text-sm">
+                          Ending Contract
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="past" id="emp-past" />
+                        <Label htmlFor="emp-past" className="font-normal text-sm">
+                          Past Employment
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={isSubmitting} className="gap-2">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="size-4" />
+                        Send Request
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      {references.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Users className="size-7 text-primary" />
+            </div>
+            <h3 className="text-lg font-medium">No references yet</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+              Request professional references from your supervisors and facility
+              managers. They&apos;ll receive an email to complete the reference form.
+            </p>
+            <Button className="mt-4 gap-2" onClick={() => setIsDialogOpen(true)}>
+              <UserPlus className="size-4" />
+              Request Your First Reference
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {references.map((ref) => {
+            const isCompleted = ref.status === "completed";
+            const isExpanded = expandedRef === ref.id;
+            const managerName = ref.manager_user
+              ? `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email
+              : ref.manager_email;
+
+            return (
+              <Card key={ref.id} className="group hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${
+                        isCompleted
+                          ? "bg-emerald-100 dark:bg-emerald-900/30"
+                          : "bg-primary/10"
+                      }`}
+                    >
+                      <Users
+                        className={`size-5 ${
+                          isCompleted
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-primary"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-sm">{managerName}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+                            <Building2 className="size-3" />
+                            {ref.facility_name}
+                          </div>
+                        </div>
+                        {getStatusBadge(ref.status)}
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span className="capitalize">
+                          {getEmploymentLabel(ref.employment_status)}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          Requested {new Date(ref.requested_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {/* View details button for completed references */}
+                      {isCompleted && ref.reference_responses?.length > 0 && (
+                        <div className="mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1 text-xs h-7"
+                            onClick={() => toggleExpand(ref.id)}
+                          >
+                            View Details
+                            {isExpanded ? (
+                              <ChevronUp className="size-3" />
+                            ) : (
+                              <ChevronDown className="size-3" />
+                            )}
+                          </Button>
+                          {isExpanded && (
+                            <div className="mt-2 space-y-2 p-3 bg-muted/50 rounded-lg">
+                              {ref.reference_responses.map((response) => (
+                                <div key={response.id}>
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    {response.question?.question_text || `Question ${response.question_id}`}
+                                  </p>
+                                  <p className="text-sm mt-0.5">{response.answer_text}</p>
+                                </div>
+                              ))}
+                              {ref.reference_responses[0]?.overall_comment && (
+                                <div className="mt-2 pt-2 border-t">
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    Overall Comment
+                                  </p>
+                                  <p className="text-sm mt-0.5">
+                                    {ref.reference_responses[0].overall_comment}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,489 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── 1. Organizations ────────────────────────────────────────────────
+model Organization {
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  credits_balance     Int                  @default(0)
+  baa_status          String               @default("pending")
+  baa_document_url    String?
+  baa_signed_by_name  String?
+  baa_signed_by_title String?
+  baa_signed_at       DateTime?
+  seat_limit          Int                  @default(5)
+  custom_pricing_notes String?
+  created_at          DateTime             @default(now())
+
+  users               User[]
+  credit_transactions CreditTransaction[]
+  invoices            Invoice[]
+  invite_tokens       InviteToken[]
+}
+
+// ─── 2. Users ────────────────────────────────────────────────────────
+model User {
+  id                   Int                   @id @default(autoincrement())
+  email                String                @unique
+  password_hash        String
+  role                 String
+  organization_id      Int?
+  must_change_pass     Boolean               @default(false)
+  tos_accepted_at      DateTime?
+  account_status       String                @default("active")
+  deletion_requested_at DateTime?
+  is_approved          Boolean               @default(true)
+  first_name           String?
+  last_name            String?
+  phone                String?
+  last_activity_at     DateTime?
+  created_at           DateTime              @default(now())
+
+  organization         Organization?         @relation(fields: [organization_id], references: [id])
+
+  admin_permissions    AdminPermission[]
+  candidate_profile    CandidateProfile?
+  checklist_requests_as_client   ChecklistRequest[]   @relation("ClientChecklistRequests")
+  checklist_requests_as_candidate ChecklistRequest[]   @relation("CandidateChecklistRequests")
+  credentials          Credential[]
+  credentials_reviewed Credential[]          @relation("CredentialReviewer")
+  resumes              Resume[]
+  candidate_references CandidateReference[]
+  candidate_references_manager CandidateReference[]  @relation("ReferenceManager")
+  consent_shares_as_candidate ConsentShare[]  @relation("CandidateConsentShares")
+  consent_shares_as_client   ConsentShare[]  @relation("ClientConsentShares")
+  unlocked_documents   UnlockedDocument[]
+  notifications        Notification[]
+  audit_logs           AuditLog[]
+  pending_reminders_target  PendingReminder[] @relation("ReminderTarget")
+  pending_reminders_actioned PendingReminder[] @relation("ReminderActioner")
+  platform_settings_updated PlatformSetting[]
+  feature_flags_updated FeatureFlag[]
+  email_templates_updated EmailTemplate[]
+  candidate_checklist_responses CandidateChecklistResponse[]
+  document_flags_reviewed  DocumentFlag[]     @relation("DocumentFlagReviewer")
+  invite_tokens           InviteToken[]
+  api_keys_updated       ApiKey[]
+  share_requests_as_candidate ShareRequest[]  @relation("CandidateShareRequests")
+  share_requests_as_client   ShareRequest[]  @relation("ClientShareRequests")
+}
+
+// ─── 3. Admin Permissions ────────────────────────────────────────────
+model AdminPermission {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  permission_name String
+  is_allowed      Boolean  @default(false)
+
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, permission_name])
+}
+
+// ─── 4. Candidate Profiles ──────────────────────────────────────────
+model CandidateProfile {
+  id                   Int       @id @default(autoincrement())
+  user_id              Int       @unique
+  first_name           String
+  last_name            String
+  phone                String
+  resume_id            Int?      @unique
+  profile_completion_pct Int     @default(0)
+
+  user                 User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  resume               Resume?   @relation("CandidateProfileResume", fields: [resume_id], references: [id])
+}
+
+// ─── 5. Checklist Templates ─────────────────────────────────────────
+model ChecklistTemplate {
+  id            Int                        @id @default(autoincrement())
+  profession    String
+  specialty     String
+  name          String
+  is_active     Boolean                    @default(true)
+  created_at    DateTime                   @default(now())
+
+  skills        Skill[]
+  checklist_requests ChecklistRequest[]
+  candidate_checklist_responses CandidateChecklistResponse[]
+}
+
+// ─── 6. Skills ───────────────────────────────────────────────────────
+model Skill {
+  id                    Int               @id @default(autoincrement())
+  checklist_template_id Int
+  skill_name            String
+  category              String
+  question_type         String
+  sort_order            Int
+  has_na_option         Boolean           @default(true)
+
+  checklist_template    ChecklistTemplate @relation(fields: [checklist_template_id], references: [id], onDelete: Cascade)
+  skill_ratings         SkillRating[]
+}
+
+// ─── 7. Checklist Requests ──────────────────────────────────────────
+model ChecklistRequest {
+  id                     Int                    @id @default(autoincrement())
+  client_user_id         Int
+  candidate_user_id      Int
+  checklist_template_id  Int
+  status                 String                 @default("sent")
+  completion_pct         Int                    @default(0)
+  candidate_response_id  Int?
+  opened_at              DateTime?
+  created_at             DateTime               @default(now())
+
+  client_user            User                   @relation("ClientChecklistRequests", fields: [client_user_id], references: [id])
+  candidate_user         User                   @relation("CandidateChecklistRequests", fields: [candidate_user_id], references: [id])
+  checklist_template     ChecklistTemplate      @relation(fields: [checklist_template_id], references: [id])
+  candidate_response     CandidateChecklistResponse? @relation(fields: [candidate_response_id], references: [id])
+}
+
+// ─── 8. Candidate Checklist Responses ───────────────────────────────
+model CandidateChecklistResponse {
+  id                     Int                @id @default(autoincrement())
+  candidate_user_id      Int
+  checklist_template_id  Int
+  status                 String             @default("active")
+  valid_until            DateTime
+  submitted_at           DateTime?
+  digital_signature      String?
+  candidate_name_signed  String?
+  signature_date         DateTime?
+
+  candidate_user         User               @relation(fields: [candidate_user_id], references: [id])
+  checklist_template     ChecklistTemplate  @relation(fields: [checklist_template_id], references: [id])
+  skill_ratings          SkillRating[]
+  checklist_requests     ChecklistRequest[]
+  consent_shares         ConsentShare[]
+}
+
+// ─── 9. Skill Ratings ───────────────────────────────────────────────
+model SkillRating {
+  id                    Int                     @id @default(autoincrement())
+  checklist_response_id Int
+  skill_id              Int
+  rating_value          String?
+  is_na                 Boolean                 @default(false)
+  updated_at            DateTime                @default(now())
+
+  checklist_response    CandidateChecklistResponse @relation(fields: [checklist_response_id], references: [id], onDelete: Cascade)
+  skill                 Skill                   @relation(fields: [skill_id], references: [id])
+
+  @@unique([checklist_response_id, skill_id])
+}
+
+// ─── 10. Credentials ────────────────────────────────────────────────
+model Credential {
+  id                   Int           @id @default(autoincrement())
+  candidate_user_id    Int
+  document_name        String
+  file_url             String
+  expiration_date      DateTime?
+  reminder_enabled     Boolean       @default(false)
+  status               String        @default("active")
+  verification_status  String        @default("pending_review")
+  reviewed_by          Int?
+  review_notes         String?
+  uploaded_at          DateTime      @default(now())
+
+  candidate_user       User          @relation(fields: [candidate_user_id], references: [id])
+  reviewer             User?         @relation("CredentialReviewer", fields: [reviewed_by], references: [id])
+  document_flags       DocumentFlag[]
+  consent_shares       ConsentShare[]
+}
+
+// ─── 11. Resumes ────────────────────────────────────────────────────
+model Resume {
+  id                  Int               @id @default(autoincrement())
+  candidate_user_id   Int
+  file_url            String?
+  parsed_data         String?
+  is_builder_resume   Boolean           @default(false)
+  created_at          DateTime          @default(now())
+
+  candidate_user      User              @relation(fields: [candidate_user_id], references: [id])
+  candidate_profile   CandidateProfile? @relation("CandidateProfileResume")
+  consent_shares      ConsentShare[]
+}
+
+// ─── 12. Candidate References ───────────────────────────────────────
+model CandidateReference {
+  id                  Int                @id @default(autoincrement())
+  candidate_user_id   Int
+  manager_user_id     Int?
+  manager_email       String
+  manager_phone       String
+  facility_name       String
+  employment_status   String
+  status              String             @default("pending_request")
+  requested_at        DateTime           @default(now())
+
+  candidate_user      User               @relation(fields: [candidate_user_id], references: [id])
+  manager_user        User?              @relation("ReferenceManager", fields: [manager_user_id], references: [id])
+  reference_responses ReferenceResponse[]
+  consent_shares      ConsentShare[]
+}
+
+// ─── 13. Reference Questions ────────────────────────────────────────
+model ReferenceQuestion {
+  id                Int       @id @default(autoincrement())
+  employment_status String
+  question_text     String
+  response_type     String
+  sort_order        Int
+
+  reference_responses ReferenceResponse[]
+}
+
+// ─── 14. Reference Responses ────────────────────────────────────────
+model ReferenceResponse {
+  id                    Int               @id @default(autoincrement())
+  candidate_reference_id Int
+  question_id           Int
+  answer_text           String
+  overall_comment       String?
+  digital_signature     String?
+  signature_date        DateTime?
+  submitted_at          DateTime?
+
+  candidate_reference   CandidateReference @relation(fields: [candidate_reference_id], references: [id])
+  question              ReferenceQuestion  @relation(fields: [question_id], references: [id])
+}
+
+// ─── 15. Consent Shares ─────────────────────────────────────────────
+model ConsentShare {
+  id                    Int                   @id @default(autoincrement())
+  candidate_user_id     Int
+  client_user_id        Int
+  checklist_response_id Int?
+  credential_id         Int?
+  resume_id             Int?
+  reference_id          Int?
+  is_deleted            Boolean               @default(false)
+  shared_at             DateTime              @default(now())
+  expires_at            DateTime
+
+  candidate_user        User                  @relation("CandidateConsentShares", fields: [candidate_user_id], references: [id])
+  client_user           User                  @relation("ClientConsentShares", fields: [client_user_id], references: [id])
+  checklist_response    CandidateChecklistResponse? @relation(fields: [checklist_response_id], references: [id])
+  credential            Credential?           @relation(fields: [credential_id], references: [id])
+  resume                Resume?               @relation(fields: [resume_id], references: [id])
+  reference             CandidateReference?   @relation(fields: [reference_id], references: [id])
+  unlocked_documents    UnlockedDocument[]
+}
+
+// ─── 16. Unlocked Documents ─────────────────────────────────────────
+model UnlockedDocument {
+  id                Int          @id @default(autoincrement())
+  client_user_id    Int
+  consent_share_id  Int
+  entity_type       String
+  entity_id         Int
+  credits_charged   Int          @default(1)
+  unlocked_at       DateTime     @default(now())
+
+  client_user       User         @relation(fields: [client_user_id], references: [id])
+  consent_share     ConsentShare @relation(fields: [consent_share_id], references: [id])
+}
+
+// ─── 17. Credit Transactions ────────────────────────────────────────
+model CreditTransaction {
+  id               Int           @id @default(autoincrement())
+  organization_id  Int
+  transaction_type String
+  credit_amount    Int
+  description      String
+  created_at       DateTime      @default(now())
+
+  organization     Organization  @relation(fields: [organization_id], references: [id])
+}
+
+// ─── 18. Invoices ───────────────────────────────────────────────────
+model Invoice {
+  id               Int           @id @default(autoincrement())
+  organization_id  Int
+  credit_amount    Int
+  total_price      Float
+  pdf_url          String?
+  created_at       DateTime      @default(now())
+
+  organization     Organization  @relation(fields: [organization_id], references: [id])
+}
+
+// ─── 19. Notifications ──────────────────────────────────────────────
+model Notification {
+  id                Int       @id @default(autoincrement())
+  user_id           Int
+  message           String
+  type              String
+  is_read           Boolean   @default(false)
+  related_entity_id Int?
+  created_at        DateTime  @default(now())
+
+  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+// ─── 20. Pending Reminders ──────────────────────────────────────────
+model PendingReminder {
+  id             Int            @id @default(autoincrement())
+  rule_id        Int
+  target_user_id Int
+  message_preview String
+  status         String         @default("awaiting_approval")
+  created_at     DateTime       @default(now())
+  actioned_by    Int?
+  actioned_at    DateTime?
+
+  rule           AutomatedRule  @relation(fields: [rule_id], references: [id])
+  target_user    User           @relation("ReminderTarget", fields: [target_user_id], references: [id])
+  actioner       User?          @relation("ReminderActioner", fields: [actioned_by], references: [id])
+}
+
+// ─── 21. Platform Settings ──────────────────────────────────────────
+model PlatformSetting {
+  id            Int       @id @default(autoincrement())
+  setting_key   String    @unique
+  setting_value String
+  updated_by    Int?
+  updated_at    DateTime  @default(now())
+
+  updater       User?     @relation(fields: [updated_by], references: [id])
+}
+
+// ─── 22. Feature Flags ──────────────────────────────────────────────
+model FeatureFlag {
+  id          Int       @id @default(autoincrement())
+  flag_name   String    @unique
+  is_enabled  Boolean   @default(false)
+  updated_by  Int?
+  updated_at  DateTime  @default(now())
+
+  updater     User?     @relation(fields: [updated_by], references: [id])
+}
+
+// ─── 23. Email Templates ────────────────────────────────────────────
+model EmailTemplate {
+  id           Int       @id @default(autoincrement())
+  template_key String    @unique
+  subject      String
+  body         String
+  updated_by   Int?
+  updated_at   DateTime  @default(now())
+
+  updater      User?     @relation(fields: [updated_by], references: [id])
+  automated_rules AutomatedRule[]
+}
+
+// ─── 24. Announcements ──────────────────────────────────────────────
+model Announcement {
+  id          Int       @id @default(autoincrement())
+  message     String
+  target_role String
+  is_active   Boolean   @default(false)
+  created_at  DateTime  @default(now())
+}
+
+// ─── 25. Document Flags ─────────────────────────────────────────────
+model DocumentFlag {
+  id            Int        @id @default(autoincrement())
+  credential_id Int
+  flag_reason   String
+  status        String     @default("pending_review")
+  reviewed_by   Int?
+  created_at    DateTime   @default(now())
+
+  credential    Credential @relation(fields: [credential_id], references: [id])
+  reviewer      User?      @relation("DocumentFlagReviewer", fields: [reviewed_by], references: [id])
+}
+
+// ─── 26. System Error Logs ──────────────────────────────────────────
+model SystemErrorLog {
+  id            Int       @id @default(autoincrement())
+  severity      String
+  service       String
+  error_message String
+  created_at    DateTime  @default(now())
+}
+
+// ─── 27. Audit Logs ─────────────────────────────────────────────────
+model AuditLog {
+  id           Int       @id @default(autoincrement())
+  user_id      Int?
+  role         String?
+  action       String
+  entity_type  String?
+  entity_id    Int?
+  ip_address   String?
+  created_at   DateTime  @default(now())
+
+  user         User?     @relation(fields: [user_id], references: [id])
+}
+
+// ─── 28. Automated Rules ────────────────────────────────────────────
+model AutomatedRule {
+  id                Int               @id @default(autoincrement())
+  rule_name         String
+  trigger_condition String
+  action_type       String
+  template_id       Int?
+  is_active         Boolean           @default(true)
+
+  email_template    EmailTemplate?    @relation(fields: [template_id], references: [id])
+  pending_reminders PendingReminder[]
+}
+
+// ─── 29. Invite Tokens ─────────────────────────────────────────────
+model InviteToken {
+  id              Int       @id @default(autoincrement())
+  token           String    @unique
+  email           String
+  role            String    @default("candidate")
+  token_type      String    @default("candidate_invite")
+  invited_by      Int?
+  organization_id Int?
+  agency_name     String?
+  facility_name   String?
+  nurse_name      String?
+  is_used         Boolean   @default(false)
+  expires_at      DateTime
+  created_at      DateTime  @default(now())
+
+  inviter         User?     @relation(fields: [invited_by], references: [id])
+  organization    Organization? @relation(fields: [organization_id], references: [id])
+}
+
+// ─── 30. API Keys ────────────────────────────────────────────────────
+model ApiKey {
+  id            Int       @id @default(autoincrement())
+  service_name  String    @unique
+  encrypted_key String
+  updated_by    Int?
+  updated_at    DateTime  @default(now())
+
+  updater       User?     @relation(fields: [updated_by], references: [id])
+}
+
+// ─── 31. Share Requests ─────────────────────────────────────────────
+model ShareRequest {
+  id                    Int       @id @default(autoincrement())
+  candidate_user_id     Int
+  client_user_id        Int
+  request_checklists    Boolean   @default(false)
+  request_credentials   Boolean   @default(false)
+  request_resume        Boolean   @default(false)
+  request_references    Boolean   @default(false)
+  status                String    @default("pending")
+  message               String?
+  created_at            DateTime  @default(now())
+
+  candidate_user        User      @relation("CandidateShareRequests", fields: [candidate_user_id], references: [id])
+  client_user           User      @relation("ClientShareRequests", fields: [client_user_id], references: [id])
+}
