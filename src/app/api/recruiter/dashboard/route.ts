@@ -46,7 +46,7 @@ export async function GET() {
           select: { id: true, name: true, profession: true, specialty: true },
         },
         candidate_response: {
-          select: { id: true, status: true, completion_pct: true },
+          select: { id: true, status: true, submitted_at: true },
         },
       },
       orderBy: { created_at: "desc" },
