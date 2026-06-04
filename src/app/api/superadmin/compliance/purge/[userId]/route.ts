@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAccountPurged } from "@/lib/audit";
 
 export async function POST(
   request: Request,
@@ -29,15 +30,7 @@ export async function POST(
     }
 
     // Log audit trail before deletion
-    await db.auditLog.create({
-      data: {
-        user_id: adminUserId,
-        role: "super_admin",
-        action: "compliance_purge",
-        entity_type: "user",
-        entity_id: targetUserId,
-      },
-    });
+    await logAccountPurged(adminUserId, targetUserId);
 
     // Delete all related data (immediate purge, no 30-day wait)
     await db.skillRating.deleteMany({

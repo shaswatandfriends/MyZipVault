@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendCredentialRejectedEmail } from "@/lib/email";
+import { logDocumentRejected } from "@/lib/audit";
 
 export async function PUT(
   request: Request,
@@ -56,6 +57,9 @@ export async function PUT(
         review_notes || "No specific feedback provided"
       );
     }
+
+    // Audit log
+    await logDocumentRejected(adminUserId, 'platform_admin', credentialId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   User,
   Briefcase,
+  Download,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -40,6 +41,7 @@ interface BAAOrganization {
   signedByName: string | null;
   signedByTitle: string | null;
   signedAt: string | null;
+  baaDocumentUrl: string | null;
 }
 
 interface BAAData {
@@ -72,6 +74,7 @@ export default function RecruiterBaaPage() {
   const [data, setData] = useState<BAAData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigning, setIsSigning] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Form state
   const [signerName, setSignerName] = useState("");
@@ -138,7 +141,47 @@ export default function RecruiterBaaPage() {
     }
   };
 
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch("/api/recruiter/baa/download");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to download BAA document");
+      }
+
+      // Check if the response is a JSON with a base64 URL
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const json = await res.json();
+        if (json.isBase64 && json.url) {
+          // Open base64 data URL in a new tab
+          const newWindow = window.open(json.url, "_blank");
+          if (!newWindow) {
+            toast.error("Pop-up blocked", {
+              description: "Please allow pop-ups to download the BAA document.",
+            });
+          }
+        } else if (json.url) {
+          window.open(json.url, "_blank");
+        }
+      } else {
+        // It was a redirect — the browser will have followed it,
+        // but since we used fetch, we need to extract the final URL
+        // and open it. For redirects with fetch, we get the redirected URL
+        // from res.url.
+        window.open(res.url, "_blank");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Download failed", { description: message });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const isSigned = data?.organization.baaStatus === "signed";
+  const hasDocumentUrl = !!data?.organization.baaDocumentUrl;
   const isPendingOrExpired =
     data?.organization.baaStatus === "pending" ||
     data?.organization.baaStatus === "expired" ||
@@ -209,6 +252,35 @@ export default function RecruiterBaaPage() {
                 </p>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Download button */}
+            {hasDocumentUrl && (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isDownloading}
+                  onClick={handleDownload}
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Preparing...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="size-4" />
+                      Download BAA
+                    </>
+                  )}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Signed document with signature details
+                </span>
+              </div>
+            )}
 
             <Separator />
 

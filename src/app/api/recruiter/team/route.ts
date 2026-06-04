@@ -193,7 +193,7 @@ export async function POST(request: Request) {
 
       // Create recruiter user
       const bcrypt = await import("bcryptjs");
-      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 10);
+      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 12);
 
       const newUser = await db.user.create({
         data: {

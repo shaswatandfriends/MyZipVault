@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logRecruiterUnlocked } from "@/lib/audit";
 
 export async function POST(
   request: Request,
@@ -108,6 +109,9 @@ export async function POST(
         credits_charged: 1,
       },
     });
+
+    // Audit log
+    await logRecruiterUnlocked(userId, entityType, entityId);
 
     return NextResponse.json({
       success: true,

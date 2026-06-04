@@ -1,19 +1,31 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Connect MyZipVault to Supabase PostgreSQL
+Task: Build all remaining MyZipVault features (except Stripe/Twilio)
 
 Work Log:
-- Updated .env with real Supabase credentials (DATABASE_URL, DIRECT_URL, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
-- URL-encoded the @ symbol in password (Shaswat@0047 → Shaswat%400047)
-- Switched Prisma from SQLite to PostgreSQL with directUrl for migrations
-- Ran prisma db push to create all 31 tables in Supabase
-- Created 3 Supabase Storage buckets (credentials, resumes, baa-documents)
-- Verified seed data already exists: 9 users, 2 orgs, 5 credentials, 5 resumes, 8 checklists, 2 references, 7 settings
-- Regenerated Prisma Client for PostgreSQL
+- Installed pdfmake, otplib, archiver, qrcode packages
+- Updated bcrypt cost factor from 10 to 12 across all files
+- Created src/lib/pdf.ts - PDF generation library with 5 functions
+- Created src/lib/audit.ts - Audit logging library with 13 convenience helpers
+- Added 5 missing email templates + baa_expiry_reminder automated rule
+- Implemented BAA PDF generation, storage, and download
+- Implemented Invoice PDF generation with download
+- Implemented Checklist/Reference/Resume PDF generation
+- Implemented Download Packet (individual + ZIP)
+- Implemented real TOTP for superadmin login
+- Added checklist reuse logic in send-request
+- Added missing email triggers (credential_rejected, account_suspension)
+- Added invoice-pdfs bucket, 15-min signed URL expiry
+- Added Manager gets free candidate vault logic
+- Added SMS toggle validation + Coming Soon badges
+- Added email template variable preview + Send Test Email
+- Added credential thumbnail preview in admin docs
+- Added HIPAA data export ZIP
+- Added 7 security headers
+- Integrated audit logging across 9 API routes
+- Build succeeds, database seeded
 
 Stage Summary:
-- Supabase PostgreSQL is fully connected and seeded
-- Storage buckets created and ready
-- All 31 database models synced to Supabase
-- Pending: Brevo API key, Affinda API key, app startup verification
+- All ~40 pending items now implemented (except Stripe/Twilio)
+- Key new files: pdf.ts, audit.ts, download-packet route, hipaa-export route, TOTP routes, invoice-pdf routes, BAA download, resume export, template send-test

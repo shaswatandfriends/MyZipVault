@@ -68,7 +68,7 @@ export async function PUT(request: Request) {
 
       if (!twilioKey || !twilioKey.encrypted_key) {
         return NextResponse.json(
-          { error: "Cannot enable SMS Notifications: Twilio API keys are not configured. Add them in the API Vault first." },
+          { error: "Cannot enable SMS notifications: Twilio API keys not configured in the API Vault" },
           { status: 400 }
         );
       }

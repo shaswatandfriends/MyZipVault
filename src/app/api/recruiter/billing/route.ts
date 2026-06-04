@@ -103,6 +103,14 @@ export async function GET(request: Request) {
       orderBy: { created_at: "desc" },
     });
 
+    const invoicesFormatted = invoices.map((inv) => ({
+      id: inv.id,
+      creditAmount: inv.credit_amount,
+      totalPrice: inv.total_price,
+      pdfUrl: inv.pdf_url,
+      createdAt: inv.created_at,
+    }));
+
     return NextResponse.json({
       organization: {
         name: organization?.name ?? "",
@@ -116,7 +124,7 @@ export async function GET(request: Request) {
         total: totalTransactions,
         totalPages: Math.ceil(totalTransactions / pageSize),
       },
-      invoices,
+      invoices: invoicesFormatted,
     });
   } catch (error) {
     console.error("Billing GET error:", error);

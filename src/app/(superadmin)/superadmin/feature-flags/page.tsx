@@ -10,7 +10,9 @@ import {
   Search,
   CreditCard,
   ClipboardCheck,
+  Info,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -240,18 +242,36 @@ export default function FeatureFlagsPage() {
                   const meta = FLAG_META[flagName];
                   const isEnabled = flag?.isEnabled ?? false;
                   const Icon = meta?.icon ?? ToggleLeft;
+                  const isSmsFlag = flagName === "sms_notifications";
+                  const twilioConfigured = isSmsFlag ? checkTwilioKeys() : true;
+                  const smsDisabled = isSmsFlag && !twilioConfigured;
 
                   return (
-                    <TableRow key={flagName}>
+                    <TableRow key={flagName} className={smsDisabled ? "bg-muted/30" : ""}>
                       <TableCell>
                         <div className="flex items-start gap-3">
-                          <div className="mt-0.5 size-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <Icon className="size-4 text-muted-foreground" />
+                          <div className={`mt-0.5 size-8 rounded-lg flex items-center justify-center shrink-0 ${smsDisabled ? "bg-amber-50" : "bg-muted"}`}>
+                            <Icon className={`size-4 ${smsDisabled ? "text-amber-500" : "text-muted-foreground"}`} />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium">{meta?.label ?? flagName}</p>
-                              {flagName === "sms_notifications" && !isEnabled && (
+                              {isSmsFlag && !twilioConfigured && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-50 gap-1 text-xs">
+                                        <AlertTriangle className="size-3" />
+                                        Setup Required
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Add Twilio API keys in the API Vault to enable SMS notifications.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {isSmsFlag && twilioConfigured && !isEnabled && (
                                 <span className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
                                   <AlertTriangle className="size-3" />
                                   SMS Off
@@ -264,7 +284,13 @@ export default function FeatureFlagsPage() {
                             <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">
                               {flagName}
                             </p>
-                            {meta?.warningWhenDisabled && !isEnabled && (
+                            {isSmsFlag && !twilioConfigured && (
+                              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                <Info className="size-3 shrink-0" />
+                                Requires Twilio API keys in API Vault
+                              </p>
+                            )}
+                            {meta?.warningWhenDisabled && !isEnabled && !smsDisabled && (
                               <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                                 <AlertTriangle className="size-3 shrink-0" />
                                 {meta.warningWhenDisabled}
@@ -285,11 +311,25 @@ export default function FeatureFlagsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Switch
-                          checked={isEnabled}
-                          onCheckedChange={(checked) => handleToggle(flagName, checked)}
-                          disabled={toggling[flagName]}
-                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0}>
+                                <Switch
+                                  checked={isEnabled}
+                                  onCheckedChange={(checked) => handleToggle(flagName, checked)}
+                                  disabled={toggling[flagName] || smsDisabled}
+                                  className={smsDisabled ? "opacity-50" : ""}
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            {smsDisabled && (
+                              <TooltipContent>
+                                <p>Configure Twilio API keys in the API Vault to enable this toggle.</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                     </TableRow>
                   );

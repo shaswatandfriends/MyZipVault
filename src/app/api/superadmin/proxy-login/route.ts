@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logProxyLogin } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -33,15 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Log audit trail
-    await db.auditLog.create({
-      data: {
-        user_id: superadminUserId,
-        role: "super_admin",
-        action: "proxy_login",
-        entity_type: "user",
-        entity_id: targetUserId,
-      },
-    });
+    await logProxyLogin(superadminUserId, "super_admin", targetUserId);
 
     return NextResponse.json({
       success: true,

@@ -83,6 +83,7 @@ export default function CandidateResumePage() {
   const [resume, setResume] = useState<ResumeData | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Builder state
@@ -244,8 +245,31 @@ export default function CandidateResumePage() {
     }
   };
 
-  const handleExportPdf = () => {
-    toast.info("PDF export will be available soon");
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/candidate/resume/export-pdf");
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("Export failed", { description: data.error || "Failed to generate PDF" });
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `resume-${(resume?.parsedData?.contact?.fullName || "candidate").replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Resume PDF exported successfully!");
+    } catch {
+      toast.error("Failed to export resume as PDF");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Calculate completeness
@@ -376,9 +400,9 @@ export default function CandidateResumePage() {
                   "Save Resume"
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportPdf} className="gap-2">
-                <Download className="size-4" />
-                Export as PDF
+              <Button variant="outline" onClick={handleExportPdf} disabled={isExporting} className="gap-2">
+                {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                {isExporting ? "Exporting..." : "Export as PDF"}
               </Button>
             </div>
           }
@@ -870,6 +894,15 @@ export default function CandidateResumePage() {
                 Edit in Builder
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleExportPdf}
+              disabled={isExporting}
+            >
+              {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              {isExporting ? "Exporting..." : "Export PDF"}
+            </Button>
             <Button
               variant="outline"
               className="gap-2"

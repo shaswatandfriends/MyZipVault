@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendAccountSuspensionEmail } from "@/lib/email";
+import { logAccountSuspended } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +13,12 @@ export async function POST(request: Request) {
     }
 
     const userId = Number(session.user.id);
+
+    // Fetch user email and phone for notification
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { email: true, phone: true },
+    });
 
     // Soft-delete: set account status to suspended_deleting
     await db.user.update({
@@ -26,6 +34,20 @@ export async function POST(request: Request) {
       where: { candidate_user_id: userId },
       data: { is_deleted: true },
     });
+
+    // Send account suspension confirmation email
+    if (user?.email) {
+      const deletionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const deletionDateStr = deletionDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      await sendAccountSuspensionEmail(user.email, deletionDateStr, user.phone ?? undefined);
+    }
+
+    // Audit log
+    await logAccountSuspended(userId, userId);
 
     return NextResponse.json({
       message:

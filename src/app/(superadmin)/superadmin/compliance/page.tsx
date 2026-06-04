@@ -13,6 +13,7 @@ import {
   RotateCcw,
   UserX,
   Plus,
+  Loader2,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -129,6 +130,8 @@ export default function SuperadminCompliancePage() {
   const [creditAmount, setCreditAmount] = useState("");
   const [pricePerCredit, setPricePerCredit] = useState("1.00");
   const [invoiceSaving, setInvoiceSaving] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
+  const [hipaaExportingId, setHipaaExportingId] = useState<number | null>(null);
 
   // ── Fetch deletion queue ────────────────────────────────────────
   const fetchDeletionQueue = useCallback(async () => {
@@ -231,21 +234,52 @@ export default function SuperadminCompliancePage() {
     if (!candidate) return;
     try {
       setExportGenerating(true);
-      const res = await fetch("/api/superadmin/compliance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "generate_hipaa_export", userId: candidate.id }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to generate export");
-      toast.success("HIPAA export generated", {
-        description: "In production, a ZIP file would be downloaded.",
-      });
+      const res = await fetch(`/api/superadmin/compliance/hipaa-export?userId=${candidate.id}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate export");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hipaa-export-${candidate.email.replace(/[^a-zA-Z0-9._-]/g, "_")}-${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("HIPAA export downloaded");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to generate export";
       toast.error("Export failed", { description: message });
     } finally {
       setExportGenerating(false);
+    }
+  };
+
+  const handleHipaaExportFromQueue = async (userId: number, email: string) => {
+    try {
+      setHipaaExportingId(userId);
+      const res = await fetch(`/api/superadmin/compliance/hipaa-export?userId=${userId}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate export");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hipaa-export-${email.replace(/[^a-zA-Z0-9._-]/g, "_")}-${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("HIPAA export downloaded");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to export data";
+      toast.error("Export failed", { description: message });
+    } finally {
+      setHipaaExportingId(null);
     }
   };
 
@@ -286,6 +320,40 @@ export default function SuperadminCompliancePage() {
   const totalInvoice = creditAmount && pricePerCredit
     ? formatCurrency(parseInt(creditAmount || "0") * parseFloat(pricePerCredit || "0"))
     : "$0.00";
+
+  const handleDownloadInvoicePdf = async (invoiceId: number) => {
+    try {
+      setDownloadingInvoiceId(invoiceId);
+      const res = await fetch(`/api/superadmin/compliance/invoice-pdf?invoiceId=${invoiceId}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate invoice PDF");
+      }
+      const json = await res.json();
+
+      if (json.isBase64 && json.url?.startsWith("data:")) {
+        // For base64 data URLs, convert to blob and open
+        const byteString = atob(json.url.split(",")[1]);
+        const mimeString = json.url.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } else if (json.url) {
+        window.open(json.url, "_blank");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to download PDF";
+      toast.error("Download failed", { description: message });
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -387,6 +455,20 @@ export default function SuperadminCompliancePage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1"
+                                  disabled={hipaaExportingId === item.id}
+                                  onClick={() => handleHipaaExportFromQueue(item.id, item.email)}
+                                >
+                                  {hipaaExportingId === item.id ? (
+                                    <Loader2 className="size-3 animate-spin" />
+                                  ) : (
+                                    <Download className="size-3" />
+                                  )}
+                                  {hipaaExportingId === item.id ? "Exporting…" : "Export (HIPAA)"}
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -505,12 +587,12 @@ export default function SuperadminCompliancePage() {
                       onClick={handleGenerateExport}
                       disabled={exportGenerating}
                     >
-                      <FileArchive className="size-4" />
-                      {exportGenerating ? "Generating…" : "Generate Export ZIP"}
-                    </Button>
-                    <Button variant="outline" className="gap-2" disabled>
-                      <Download className="size-4" />
-                      Download
+                      {exportGenerating ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {exportGenerating ? "Generating…" : "Download Export ZIP"}
                     </Button>
                   </div>
                 </div>
@@ -633,14 +715,20 @@ export default function SuperadminCompliancePage() {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{formatDate(inv.createdAt)}</TableCell>
                             <TableCell className="text-right">
-                              {inv.pdfUrl ? (
-                                <Button variant="ghost" size="sm" className="gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                disabled={downloadingInvoiceId === inv.id}
+                                onClick={() => handleDownloadInvoicePdf(inv.id)}
+                              >
+                                {downloadingInvoiceId === inv.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
                                   <Download className="size-3" />
-                                  PDF
-                                </Button>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">Pending</span>
-                              )}
+                                )}
+                                {downloadingInvoiceId === inv.id ? "Loading…" : "PDF"}
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}

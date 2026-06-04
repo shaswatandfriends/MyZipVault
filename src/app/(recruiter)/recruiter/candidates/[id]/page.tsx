@@ -8,7 +8,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
-  Download,
+  FileDown,
+  Archive,
   FileText,
   Lock,
   Mail,
@@ -183,6 +184,8 @@ export default function CandidateDetailPage() {
   const [data, setData] = useState<CandidateData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [unlockingId, setUnlockingId] = useState<number | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -232,6 +235,91 @@ export default function CandidateDetailPage() {
     }
   };
 
+  const handleDownloadDoc = async (doc: DocumentInfo) => {
+    const docKey = `${doc.type}-${doc.consentShareId}`;
+    setDownloadingDocId(docKey);
+    try {
+      const docId = doc.details.responseId ?? doc.details.credentialId ?? doc.details.resumeId ?? doc.details.referenceId;
+      if (!docId) {
+        toast.error("Cannot identify document");
+        return;
+      }
+
+      const url = `/api/recruiter/download-packet?candidateId=${candidateId}&docType=${doc.type}&docId=${docId}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to download document");
+      }
+
+      // Check if it's a redirect (for credentials/resumes with signed URLs)
+      if (res.redirected) {
+        window.open(res.url, "_blank");
+      } else {
+        // Download the blob (PDF or other file)
+        const blob = await res.blob();
+        const contentDisposition = res.headers.get("Content-Disposition");
+        let filename = `document.${doc.type === "checklist" || doc.type === "reference" ? "pdf" : "bin"}`;
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (match) {
+            filename = match[1].replace(/["']/g, "");
+          }
+        }
+
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
+
+      toast.success("Download started");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Failed to download", { description: message });
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (!accessibleDocs.length) return;
+    setDownloadingAll(true);
+    try {
+      const url = `/api/recruiter/download-packet?candidateId=${candidateId}&format=zip`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate ZIP");
+      }
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${fullName.replace(/\s+/g, "-")}-documents.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
+      toast.success("ZIP download started", {
+        description: `${accessibleDocs.length} document(s) included.`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Failed to download ZIP", { description: message });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
   const candidate = data?.candidate;
   const fullName = candidate
     ? [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.email
@@ -278,12 +366,29 @@ export default function CandidateDetailPage() {
         title="Candidate Details"
         description="View candidate verification status and documents."
         actions={
-          <Link href="/recruiter/dashboard">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="size-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {accessibleDocs.length > 0 && (
+              <Button
+                variant="default"
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={downloadingAll}
+                onClick={handleDownloadAll}
+              >
+                {downloadingAll ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Archive className="size-4" />
+                )}
+                Download All (ZIP)
+              </Button>
+            )}
+            <Link href="/recruiter/dashboard">
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="size-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -463,26 +568,41 @@ export default function CandidateDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                  {accessibleDocs.map((doc) => (
-                    <div
-                      key={doc.consentShareId}
-                      className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20 p-3"
-                    >
-                      {getDocTypeIcon(doc.type)}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Shared {formatDate(doc.sharedAt)}
-                        </p>
+                  {accessibleDocs.map((doc) => {
+                    const docKey = `${doc.type}-${doc.consentShareId}`;
+                    const isDownloading = downloadingDocId === docKey;
+                    return (
+                      <div
+                        key={doc.consentShareId}
+                        className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20 p-3"
+                      >
+                        {getDocTypeIcon(doc.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Shared {formatDate(doc.sharedAt)}
+                          </p>
+                        </div>
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs shrink-0">
+                          Accessible
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0 h-8 w-8 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+                          disabled={isDownloading}
+                          onClick={() => handleDownloadDoc(doc)}
+                          title="Download document"
+                        >
+                          {isDownloading ? (
+                            <Loader2 className="size-4 animate-spin text-emerald-600" />
+                          ) : (
+                            <FileDown className="size-4 text-emerald-600" />
+                          )}
+                        </Button>
                       </div>
-                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs shrink-0">
-                        Accessible
-                      </Badge>
-                      <Button variant="ghost" size="sm" className="shrink-0 h-8 w-8 p-0">
-                        <Download className="size-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import { logCreditsDeducted } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     } else {
       // Create new candidate user
       const bcrypt = await import("bcryptjs");
-      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 10);
+      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 12);
 
       const newUser = await db.user.create({
         data: {
@@ -105,6 +106,58 @@ export async function POST(request: Request) {
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
+    }
+
+    // Fetch checklist template name for reuse message
+    const checklistTemplate = await db.checklistTemplate.findUnique({
+      where: { id: Number(checklistTemplateId) },
+      select: { name: true },
+    });
+    const checklistTemplateName = checklistTemplate?.name || "Unknown";
+
+    // Check if there's an existing active checklist response for this candidate + template
+    const existingResponse = await db.candidateChecklistResponse.findFirst({
+      where: {
+        candidate_user_id: candidateUserId,
+        checklist_template_id: Number(checklistTemplateId),
+        status: 'active',
+        valid_until: { gte: new Date() }, // still valid
+      },
+    });
+
+    if (existingResponse) {
+      // Reuse the existing response - just create a new request linking to it
+      const checklistRequest = await db.checklistRequest.create({
+        data: {
+          client_user_id: userId,
+          candidate_user_id: candidateUserId,
+          checklist_template_id: Number(checklistTemplateId),
+          status: 'completed',
+          completion_pct: 100,
+          candidate_response_id: existingResponse.id,
+          opened_at: new Date(),
+        },
+      });
+
+      // Create consent share for the existing response
+      await db.consentShare.create({
+        data: {
+          candidate_user_id: candidateUserId,
+          client_user_id: userId,
+          checklist_response_id: existingResponse.id,
+          shared_at: new Date(),
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        checklistRequestId: checklistRequest.id,
+        candidateUserId,
+        isNewCandidate,
+        reusedExistingResponse: true,
+        message: `Checklist reused - ${firstName} ${lastName} already has an active ${checklistTemplateName} checklist`,
+      }, { status: 201 });
     }
 
     // Create checklist request
@@ -161,6 +214,9 @@ export async function POST(request: Request) {
           description: `Checklist request sent to ${firstName} ${lastName} (${docCount} documents)`,
         },
       });
+
+      // Audit log for credit deduction
+      await logCreditsDeducted(userId, organizationId, totalCredits);
     }
 
     // Update user last activity

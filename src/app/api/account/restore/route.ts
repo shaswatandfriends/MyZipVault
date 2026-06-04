@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAccountRestored } from "@/lib/audit";
 
 export async function POST() {
   try {
@@ -47,6 +48,9 @@ export async function POST() {
       },
       data: { is_deleted: false },
     });
+
+    // Audit log
+    await logAccountRestored(userId, userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logCandidateShared } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -60,9 +61,12 @@ export async function POST(request: Request) {
       consentData.reference_id = itemId;
     }
 
-    await db.consentShare.create({
+    const consentShare = await db.consentShare.create({
       data: consentData as Parameters<typeof db.consentShare.create>[0]["data"],
     });
+
+    // Audit log
+    await logCandidateShared(userId, consentShare.id);
 
     // Check if all items in the request have been actioned
     await db.notification.create({

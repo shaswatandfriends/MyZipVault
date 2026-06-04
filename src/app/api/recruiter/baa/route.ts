@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { generateBaaPdf } from "@/lib/pdf";
+import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
+import { logBaaSigned } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -41,6 +44,7 @@ export async function GET() {
         baa_signed_by_name: true,
         baa_signed_by_title: true,
         baa_signed_at: true,
+        baa_document_url: true,
       },
     });
 
@@ -53,6 +57,7 @@ export async function GET() {
         signedByName: organization?.baa_signed_by_name ?? null,
         signedByTitle: organization?.baa_signed_by_title ?? null,
         signedAt: organization?.baa_signed_at ?? null,
+        baaDocumentUrl: organization?.baa_document_url ?? null,
       },
     });
   } catch (error) {
@@ -92,6 +97,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get BAA content for PDF generation
+    const baaContentSetting = await db.platformSetting.findUnique({
+      where: { setting_key: "baa_content" },
+    });
+    const baaContent = baaContentSetting?.setting_value ?? "";
+
+    const signedAt = new Date();
+
     // Update organization BAA status
     await db.organization.update({
       where: { id: organizationId },
@@ -99,25 +112,57 @@ export async function POST(request: Request) {
         baa_status: "signed",
         baa_signed_by_name: fullName,
         baa_signed_by_title: title,
-        baa_signed_at: new Date(),
+        baa_signed_at: signedAt,
       },
     });
 
+    // Generate BAA PDF
+    let baaDocumentUrl: string | null = null;
+    try {
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+      });
+
+      const pdfBuffer = await generateBaaPdf({
+        organizationName: organization?.name ?? "Unknown Organization",
+        signerName: fullName,
+        signerTitle: title,
+        baaContent,
+        signedAt,
+      });
+
+      // Upload PDF to Supabase Storage
+      const uploadResult = await uploadFile(
+        STORAGE_BUCKETS.BAA,
+        `org-${organizationId}`,
+        pdfBuffer,
+        `BAA-${organization?.name?.replace(/\s+/g, "-") ?? "org"}-${signedAt.toISOString().split("T")[0]}.pdf`,
+        "application/pdf"
+      );
+
+      baaDocumentUrl = uploadResult.url;
+
+      // Update organization with document URL
+      await db.organization.update({
+        where: { id: organizationId },
+        data: {
+          baa_document_url: baaDocumentUrl,
+        },
+      });
+    } catch (pdfError) {
+      console.error("[BAA] PDF generation/upload failed (non-fatal):", pdfError);
+      // BAA signing still succeeds even if PDF generation fails
+    }
+
     // Create audit log
     const userId = Number(session.user.id);
-    await db.auditLog.create({
-      data: {
-        user_id: userId,
-        role: userRole,
-        action: "baa_signed",
-        entity_type: "organization",
-        entity_id: organizationId,
-      },
-    });
+    await logBaaSigned(userId, organizationId);
 
     return NextResponse.json({
       success: true,
       message: "BAA signed successfully",
+      baaDocumentUrl,
     });
   } catch (error) {
     console.error("BAA POST error:", error);

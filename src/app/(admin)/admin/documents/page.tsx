@@ -8,6 +8,10 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  Eye,
+  Loader2,
+  ImageIcon,
+  FileIcon,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -59,7 +63,61 @@ interface DocumentsData {
 
 type StatusFilter = "all" | "pending_review" | "verified" | "rejected";
 
+type FileType = "pdf" | "image" | "unknown";
+
 // ─── Helpers ────────────────────────────────────────────────────────
+
+function detectFileType(fileUrl: string): FileType {
+  if (!fileUrl) return "unknown";
+  // Handle base64 data URLs
+  if (fileUrl.startsWith("data:")) {
+    if (fileUrl.startsWith("data:image/")) return "image";
+    if (fileUrl.startsWith("data:application/pdf")) return "pdf";
+    return "unknown";
+  }
+  // Handle regular URLs
+  const lower = fileUrl.toLowerCase();
+  if (lower.includes(".pdf") || lower.includes("application/pdf")) return "pdf";
+  if (
+    lower.includes(".png") ||
+    lower.includes(".jpg") ||
+    lower.includes(".jpeg") ||
+    lower.includes(".gif") ||
+    lower.includes(".webp") ||
+    lower.includes(".svg") ||
+    lower.includes("/image")
+  )
+    return "image";
+  return "unknown";
+}
+
+async function getSignedUrl(fileUrl: string): Promise<string> {
+  if (!fileUrl) return "";
+  // If it's already a base64 data URL, return as-is
+  if (fileUrl.startsWith("data:")) return fileUrl;
+  try {
+    const res = await fetch("/api/storage/signed-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bucket: "credentials", filePath: fileUrl }),
+    });
+    if (!res.ok) return fileUrl;
+    const json = await res.json();
+    return json.signedUrl || fileUrl;
+  } catch {
+    return fileUrl;
+  }
+}
+
+function getFileNameFromUrl(fileUrl: string): string {
+  if (!fileUrl) return "document";
+  if (fileUrl.startsWith("data:")) return "uploaded-file";
+  const parts = fileUrl.split("/");
+  const last = parts[parts.length - 1];
+  // Remove query params
+  return last.split("?")[0] || "document";
+}
+
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString("en-US", {
@@ -143,6 +201,13 @@ export default function AdminDocumentsPage() {
   const [rejectTarget, setRejectTarget] = useState<DocumentItem | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<number, string>>({});
+
   const fetchDocuments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -223,6 +288,45 @@ export default function AdminDocumentsPage() {
     setRejectReason("");
     setRejectDialogOpen(true);
   };
+
+  const openPreview = async (doc: DocumentItem) => {
+    setPreviewDoc(doc);
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    const url = await getSignedUrl(doc.fileUrl);
+    setPreviewUrl(url);
+    setPreviewLoading(false);
+  };
+
+  // Load thumbnails for visible documents
+  useEffect(() => {
+    if (!data?.documents) return;
+    const imageDocs = data.documents.filter(
+      (d) => detectFileType(d.fileUrl) === "image" && !thumbnailUrls[d.id]
+    );
+    if (imageDocs.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(
+      imageDocs.map(async (doc) => {
+        const url = await getSignedUrl(doc.fileUrl);
+        return { id: doc.id, url };
+      })
+    ).then((results) => {
+      if (cancelled) return;
+      setThumbnailUrls((prev) => {
+        const next = { ...prev };
+        for (const r of results) {
+          next[r.id] = r.url;
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.documents]);
 
   const stats = data?.stats;
 
@@ -334,9 +438,31 @@ export default function AdminDocumentsPage() {
               <Card key={doc.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    {/* Thumbnail placeholder */}
-                    <div className="size-20 rounded-md bg-muted flex items-center justify-center shrink-0">
-                      <FileText className="size-8 text-muted-foreground" />
+                    {/* Thumbnail preview */}
+                    <div
+                      className="size-20 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden cursor-pointer relative group"
+                      onClick={() => openPreview(doc)}
+                    >
+                      {detectFileType(doc.fileUrl) === "image" && thumbnailUrls[doc.id] ? (
+                        <img
+                          src={thumbnailUrls[doc.id]}
+                          alt={doc.documentName}
+                          className="size-full object-cover"
+                        />
+                      ) : detectFileType(doc.fileUrl) === "pdf" ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <FileIcon className="size-7 text-red-500" />
+                          <span className="text-[9px] text-muted-foreground truncate max-w-[4.5rem] px-0.5">
+                            {getFileNameFromUrl(doc.fileUrl)}
+                          </span>
+                        </div>
+                      ) : (
+                        <FileText className="size-8 text-muted-foreground" />
+                      )}
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Eye className="size-5 text-white" />
+                      </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -365,28 +491,39 @@ export default function AdminDocumentsPage() {
                         </div>
                       )}
 
-                      {isPending && (
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                            disabled={isBusy}
-                            onClick={() => handleVerify(doc.id)}
-                          >
-                            <CheckCircle2 className="size-3.5" />
-                            Verify
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            disabled={isBusy}
-                            onClick={() => openRejectDialog(doc)}
-                          >
-                            <XCircle className="size-3.5" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => openPreview(doc)}
+                        >
+                          <Eye className="size-3.5" />
+                          Preview
+                        </Button>
+                        {isPending && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                              disabled={isBusy}
+                              onClick={() => handleVerify(doc.id)}
+                            >
+                              <CheckCircle2 className="size-3.5" />
+                              Verify
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={isBusy}
+                              onClick={() => openRejectDialog(doc)}
+                            >
+                              <XCircle className="size-3.5" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -424,6 +561,66 @@ export default function AdminDocumentsPage() {
               Reject Document
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Preview Dialog ─────────────────────────────────────────── */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {detectFileType(previewDoc?.fileUrl || "") === "pdf" ? (
+                <FileIcon className="size-5 text-red-500" />
+              ) : detectFileType(previewDoc?.fileUrl || "") === "image" ? (
+                <ImageIcon className="size-5 text-teal-600" />
+              ) : (
+                <FileText className="size-5 text-muted-foreground" />
+              )}
+              {previewDoc?.documentName || "Document Preview"}
+            </DialogTitle>
+            <DialogDescription>
+              {previewDoc && (
+                <span>
+                  Uploaded by{" "}
+                  {[previewDoc.candidate.firstName, previewDoc.candidate.lastName]
+                    .filter(Boolean)
+                    .join(" ") || previewDoc.candidate.email}{" "}
+                  on {formatDate(previewDoc.uploadedAt)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-[400px] max-h-[65vh] overflow-auto rounded-md border bg-muted/30">
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-[400px]">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : previewDoc && detectFileType(previewDoc.fileUrl) === "pdf" ? (
+              <iframe
+                src={previewUrl}
+                className="w-full h-[65vh] border-0"
+                title={previewDoc.documentName}
+              />
+            ) : previewDoc && detectFileType(previewDoc.fileUrl) === "image" ? (
+              <div className="flex items-center justify-center p-4">
+                <img
+                  src={previewUrl}
+                  alt={previewDoc.documentName}
+                  className="max-w-full max-h-[60vh] object-contain rounded-md"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                <FileText className="size-12 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground">
+                  Preview not available for this file type.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  File: {previewDoc?.documentName || "Unknown"}
+                </p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

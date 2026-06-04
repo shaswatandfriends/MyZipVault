@@ -6,8 +6,43 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // ─── 0. Clean up existing data ────────────────────────────────────
+  console.log('  🧹 Cleaning existing data...');
+  await prisma.notification.deleteMany();
+  await prisma.unlockedDocument.deleteMany();
+  await prisma.consentShare.deleteMany();
+  await prisma.shareRequest.deleteMany();
+  await prisma.creditTransaction.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.skillRating.deleteMany();
+  await prisma.candidateChecklistResponse.deleteMany();
+  await prisma.checklistRequest.deleteMany();
+  await prisma.credential.deleteMany();
+  await prisma.resume.deleteMany();
+  await prisma.candidateProfile.deleteMany();
+  await prisma.candidateReference.deleteMany();
+  await prisma.referenceResponse.deleteMany();
+  await prisma.referenceQuestion.deleteMany();
+  await prisma.announcement.deleteMany();
+  await prisma.documentFlag.deleteMany();
+  await prisma.systemErrorLog.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.pendingReminder.deleteMany();
+  await prisma.automatedRule.deleteMany();
+  await prisma.emailTemplate.deleteMany();
+  await prisma.featureFlag.deleteMany();
+  await prisma.platformSetting.deleteMany();
+  await prisma.adminPermission.deleteMany();
+  await prisma.inviteToken.deleteMany();
+  await prisma.apiKey.deleteMany();
+  await prisma.skill.deleteMany();
+  await prisma.checklistTemplate.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
+  console.log('  ✓ Data cleaned');
+
   // Hash the default password
-  const passwordHash = await bcrypt.hash('Admin123!', 10);
+  const passwordHash = await bcrypt.hash('Admin123!', 12);
 
   // ─── 1. Create Organization ─────────────────────────────────────
   const org = await prisma.organization.create({
@@ -599,6 +634,31 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
       subject: 'Low Credit Balance Alert',
       body: 'Hello {{admin_name}},\n\nYour organization {{organization_name}} has a low credit balance of {{credits_balance}} credits remaining.\n\nPlease purchase additional credits to ensure uninterrupted access to document verification services.\n\nThank you,\nMyZipVault Team',
     },
+    {
+      template_key: 'manager_invite',
+      subject: "You're Invited to Complete a Reference for {{nurse_name}}",
+      body: 'Hello {{manager_name}},\n\n{{nurse_name}} has listed you as a professional reference and we would like to invite you to complete a reference on their behalf.\n\n{{nurse_name}} is seeking opportunities at {{facility_name}} and your feedback would be greatly valued.\n\nPlease click the following link to complete the reference questionnaire:\n{{invite_link}}\n\nThank you for your time and consideration,\nMyZipVault Team',
+    },
+    {
+      template_key: 'credential_rejected',
+      subject: 'Credential Rejected: {{document_name}}',
+      body: 'Hello {{candidate_name}},\n\nWe regret to inform you that your credential "{{document_name}}" has been rejected after review.\n\nReview Notes: {{review_notes}}\n\nPlease log in to your MyZipVault account to address the issues and re-upload the corrected document.\n\n{{login_link}}\n\nThank you,\nMyZipVault Team',
+    },
+    {
+      template_key: 'low_credit_alert',
+      subject: 'Low Credit Balance Alert - {{organization_name}}',
+      body: 'Hello,\n\nThis is an alert that your organization {{organization_name}} has a critically low credit balance of {{credits_remaining}} credits remaining.\n\nTo avoid any interruption in service, please purchase additional credits at your earliest convenience.\n\n{{purchase_link}}\n\nThank you,\nMyZipVault Team',
+    },
+    {
+      template_key: 'baa_expiry',
+      subject: 'BAA Expiration Notice - {{organization_name}}',
+      body: 'Hello {{organization_name}},\n\nThis notice is to inform you that your Business Associate Agreement (BAA) is approaching its expiration date on {{expiry_date}}.\n\nTo ensure continued compliance with HIPAA regulations and uninterrupted access to platform services, please renew your BAA before it expires.\n\n{{renewal_link}}\n\nIf you have any questions, please contact our support team.\n\nThank you,\nMyZipVault Team',
+    },
+    {
+      template_key: 'account_suspension_confirmation',
+      subject: 'Account Scheduled for Deletion',
+      body: 'Hello {{candidate_name}},\n\nWe are writing to confirm that your MyZipVault account has been scheduled for deletion on {{deletion_date}}.\n\nYou are currently within the grace period. If you wish to keep your account active, please contact our support team before the deletion date.\n\n{{support_link}}\n\nThank you,\nMyZipVault Team',
+    },
   ];
 
   for (const tmpl of emailTemplates) {
@@ -641,7 +701,25 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
       is_active: true,
     },
   });
-  console.log('  ✓ Automated Rules: 2 created');
+
+  const baaExpiryTemplate = await prisma.emailTemplate.findUnique({
+    where: { template_key: 'baa_expiry' },
+  });
+
+  await prisma.automatedRule.create({
+    data: {
+      rule_name: 'baa_expiry_reminder',
+      trigger_condition: JSON.stringify({
+        event: 'baa_expiry_approaching',
+        days_before_expiry: 30,
+        condition: 'baa_status == active',
+      }),
+      action_type: 'email',
+      template_id: baaExpiryTemplate?.id ?? null,
+      is_active: true,
+    },
+  });
+  console.log('  ✓ Automated Rules: 3 created');
 
   // ─── 17. Create Reference Questions ─────────────────────────────
   const currentQuestions = [

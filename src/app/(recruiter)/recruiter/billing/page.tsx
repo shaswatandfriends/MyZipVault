@@ -12,6 +12,8 @@ import {
   ArrowUpCircle,
   RotateCcw,
   Loader2,
+  FileText,
+  Download,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -65,6 +67,14 @@ interface Pagination {
   totalPages: number;
 }
 
+interface Invoice {
+  id: number;
+  creditAmount: number;
+  totalPrice: number;
+  pdfUrl: string | null;
+  createdAt: string;
+}
+
 interface BillingData {
   organization: {
     name: string;
@@ -73,6 +83,7 @@ interface BillingData {
   creditPackages: CreditPackage[];
   transactions: Transaction[];
   pagination: Pagination;
+  invoices: Invoice[];
 }
 
 type TransactionFilter = "all" | "purchase" | "deduction" | "refund";
@@ -158,6 +169,7 @@ export default function RecruiterBillingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<TransactionFilter>("all");
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
 
   const fetchBilling = useCallback(async () => {
     try {
@@ -195,6 +207,41 @@ export default function RecruiterBillingPage() {
   };
 
   const totalPages = data?.pagination.totalPages ?? 1;
+
+  const handleDownloadInvoice = async (invoiceId: number) => {
+    try {
+      setDownloadingInvoiceId(invoiceId);
+      const res = await fetch(`/api/recruiter/billing/invoice-pdf?invoiceId=${invoiceId}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate invoice PDF");
+      }
+      const json = await res.json();
+
+      if (json.isBase64 && json.url?.startsWith("data:")) {
+        // For base64 data URLs, open in a new tab
+        const byteString = atob(json.url.split(",")[1]);
+        const mimeString = json.url.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+        // Clean up after a short delay
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } else if (json.url) {
+        window.open(json.url, "_blank");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to download PDF";
+      toast.error("Download failed", { description: message });
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -286,6 +333,86 @@ export default function RecruiterBillingPage() {
               ))}
         </div>
       </div>
+
+      {/* ── Invoices ───────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <FileText className="size-4 text-emerald-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Invoices</CardTitle>
+              <CardDescription>
+                Download PDF invoices for your credit purchases.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (data?.invoices ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FileText className="size-10 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-semibold">No invoices</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Invoices will appear here after you purchase credits.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Credits</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">PDF</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(data?.invoices ?? []).map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium text-sm">
+                        INV-{inv.id.toString().padStart(5, "0")}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(inv.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">{inv.creditAmount}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                        {formatCurrency(inv.totalPrice)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          disabled={downloadingInvoiceId === inv.id}
+                          onClick={() => handleDownloadInvoice(inv.id)}
+                        >
+                          {downloadingInvoiceId === inv.id ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <Download className="size-3" />
+                          )}
+                          {downloadingInvoiceId === inv.id ? "Loading…" : "PDF"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Transaction History ────────────────────────────────────── */}
       <Card>

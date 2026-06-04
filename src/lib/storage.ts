@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 const BUCKET_CREDENTIALS = "credentials";
 const BUCKET_RESUMES = "resumes";
 const BUCKET_BAA = "baa-documents";
+const BUCKET_INVOICES = "invoice-pdfs";
 
 /**
  * Upload a file to Supabase Storage.
@@ -75,7 +76,7 @@ export async function uploadFile(
 export async function getSignedUrl(
   bucket: string,
   filePath: string,
-  expiresIn: number = 3600
+  expiresIn: number = 900
 ): Promise<string> {
   // If it's a base64 data URL, return as-is
   if (filePath.startsWith("data:")) {
@@ -138,4 +139,5 @@ export const STORAGE_BUCKETS = {
   CREDENTIALS: BUCKET_CREDENTIALS,
   RESUMES: BUCKET_RESUMES,
   BAA: BUCKET_BAA,
+  INVOICES: BUCKET_INVOICES,
 } as const;

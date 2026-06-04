@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import {
@@ -10,6 +10,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,22 +26,65 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Shield, Loader2, ArrowLeft } from "lucide-react";
+import { Shield, Loader2, ArrowLeft, QrCode, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import QRCode from "qrcode";
+
+type LoginStep = 1 | 2;
 
 export default function SuperAdminLoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<LoginStep>(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const generateOtp = useCallback(() => {
-    return String(Math.floor(100000 + Math.random() * 900000));
+  // TOTP setup state
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [totpSecret, setTotpSecret] = useState("");
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+
+  // Generate QR code data URL from otpAuthUri
+  const generateQrCode = useCallback(async (otpAuthUri: string) => {
+    setIsGeneratingQr(true);
+    try {
+      const dataUrl = await QRCode.toDataURL(otpAuthUri, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      });
+      setQrCodeDataUrl(dataUrl);
+    } catch (err) {
+      console.error("QR code generation error:", err);
+    } finally {
+      setIsGeneratingQr(false);
+    }
   }, []);
+
+  // Clean up: sign out if we navigate away during step 2
+  useEffect(() => {
+    return () => {
+      // If we're in step 2 and the component unmounts, we might want to clean up
+    };
+  }, []);
+
+  const copySecretToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(totpSecret);
+      setCopiedSecret(true);
+      toast.success("Secret copied to clipboard");
+      setTimeout(() => setCopiedSecret(false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,28 +120,51 @@ export default function SuperAdminLoginPage() {
         toast.error("Access denied", {
           description: "This portal is for super administrators only",
         });
-        // Sign out since they're not a super admin
-        await signIn("credentials", { redirect: false }); // This won't do anything useful
+        // Sign out the non-super-admin user
+        await signIn("credentials", { redirect: false });
         setIsLoading(false);
         return;
       }
 
-      // Generate OTP (placeholder for TOTP)
-      const newOtp = generateOtp();
-      setGeneratedOtp(newOtp);
+      // Check if TOTP is set up
+      const statusRes = await fetch("/api/auth/totp/status");
+      const statusData = await statusRes.json();
 
-      // Show OTP in toast (placeholder - in production this would be sent via email/SMS or validated against TOTP)
-      toast.success("Verification code generated", {
-        description: `Your code: ${newOtp}`,
-        duration: 10000,
-      });
+      if (!statusData.setup) {
+        // TOTP not set up yet - generate secret and show setup dialog
+        const setupRes = await fetch("/api/auth/totp/setup", {
+          method: "POST",
+        });
+        const setupData = await setupRes.json();
 
+        if (setupRes.ok && setupData.secret) {
+          setTotpSecret(setupData.secret);
+          await generateQrCode(setupData.otpAuthUri);
+          setShowSetupDialog(true);
+        } else {
+          toast.error("Failed to set up TOTP", {
+            description: setupData.error || "Please try again",
+          });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // TOTP is already set up, proceed to step 2
       setStep(2);
     } catch {
       toast.error("Verification failed");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSetupComplete = () => {
+    setShowSetupDialog(false);
+    setStep(2);
+    toast.success("TOTP setup complete", {
+      description: "Please enter the code from your authenticator app",
+    });
   };
 
   const handleStep2 = async (e: React.FormEvent) => {
@@ -102,15 +175,24 @@ export default function SuperAdminLoginPage() {
       return;
     }
 
-    if (otp !== generatedOtp) {
-      toast.error("Invalid verification code", {
-        description: "Please check the code and try again",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
+      const verifyRes = await fetch("/api/auth/totp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token: otp }),
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.success) {
+        toast.error("Invalid verification code", {
+          description: verifyData.error || "Please check the code and try again",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       toast.success("Verified successfully!");
       router.push("/superadmin/dashboard");
     } catch {
@@ -118,6 +200,11 @@ export default function SuperAdminLoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToStep1 = () => {
+    setStep(1);
+    setOtp("");
   };
 
   return (
@@ -138,7 +225,7 @@ export default function SuperAdminLoginPage() {
             <>
               <CardTitle className="text-xl">Two-Factor Verification</CardTitle>
               <CardDescription>
-                Enter the verification code to complete sign in
+                Enter the code from your authenticator app
               </CardDescription>
             </>
           )}
@@ -189,7 +276,7 @@ export default function SuperAdminLoginPage() {
             <form onSubmit={handleStep2} className="space-y-6">
               <div className="space-y-4">
                 <Label className="text-center block">
-                  Enter the verification code
+                  Enter the 6-digit code from your authenticator app
                 </Label>
                 <div className="flex justify-center">
                   <InputOTP
@@ -211,7 +298,7 @@ export default function SuperAdminLoginPage() {
                   </InputOTP>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  A 6-digit verification code has been generated for you
+                  Open your authenticator app (Google Authenticator, Authy, etc.) and enter the code shown
                 </p>
               </div>
               <Button
@@ -232,10 +319,7 @@ export default function SuperAdminLoginPage() {
                 type="button"
                 variant="ghost"
                 className="w-full gap-2"
-                onClick={() => {
-                  setStep(1);
-                  setOtp("");
-                }}
+                onClick={handleBackToStep1}
               >
                 <ArrowLeft className="size-4" />
                 Back to credentials
@@ -252,6 +336,84 @@ export default function SuperAdminLoginPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* TOTP Setup Dialog */}
+      <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="size-5 text-rose-600" />
+              Set Up Authenticator
+            </DialogTitle>
+            <DialogDescription>
+              Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.) to set up two-factor authentication.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* QR Code */}
+            <div className="flex justify-center">
+              <div className="bg-white p-3 rounded-lg border">
+                {isGeneratingQr ? (
+                  <div className="size-[256px] flex items-center justify-center">
+                    <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : qrCodeDataUrl ? (
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="TOTP QR Code"
+                    width={256}
+                    height={256}
+                    className="size-[256px]"
+                  />
+                ) : (
+                  <div className="size-[256px] flex items-center justify-center text-muted-foreground text-sm">
+                    QR code unavailable
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Manual Entry */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Manual Entry Key
+              </Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-2 rounded-md text-xs font-mono break-all select-all">
+                  {totpSecret}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={copySecretToClipboard}
+                >
+                  {copiedSecret ? (
+                    <Check className="size-4 text-green-600" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                If you can&apos;t scan the QR code, enter this key manually in your authenticator app.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              className="w-full gap-2"
+              onClick={handleSetupComplete}
+            >
+              I&apos;ve Added the Account — Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
