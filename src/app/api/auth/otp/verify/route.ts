@@ -1,28 +1,36 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
-// Server-side superadmin email
+// Server-side superadmin email — never exposed to the client
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
 
+/**
+ * POST /api/auth/otp/verify
+ *
+ * Verifies the 6-digit OTP for superadmin login.
+ * On success, returns a flag that the client uses to call
+ * signIn("credentials") with the OTP as the password.
+ *
+ * The actual session creation happens in the NextAuth authorize()
+ * function which validates the OTP again server-side.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, otp } = body;
+    const { otp } = body;
 
-    if (!email || !otp) {
+    if (!otp) {
       return NextResponse.json(
-        { error: "Email and OTP code are required" },
+        { error: "OTP code is required" },
         { status: 400 }
       );
     }
 
-    // Verify email matches superadmin
-    if (!SUPERADMIN_EMAIL || email.toLowerCase() !== SUPERADMIN_EMAIL.toLowerCase()) {
+    // Verify superadmin email is configured
+    if (!SUPERADMIN_EMAIL) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 403 }
+        { error: "Super admin login is not configured" },
+        { status: 500 }
       );
     }
 
@@ -37,7 +45,7 @@ export async function POST(request: Request) {
 
     if (!otpRecord?.setting_value || !expiryRecord?.setting_value) {
       return NextResponse.json(
-        { error: "No OTP found. Please request a new one." },
+        { error: "No verification code found. Please request a new one." },
         { status: 400 }
       );
     }
@@ -47,10 +55,10 @@ export async function POST(request: Request) {
     if (new Date() > expiresAt) {
       // Clean up expired OTP
       await db.platformSetting.deleteMany({
-        where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires"] } },
+        where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
       });
       return NextResponse.json(
-        { error: "OTP has expired. Please request a new one." },
+        { error: "Verification code has expired. Please request a new one." },
         { status: 401 }
       );
     }
@@ -58,31 +66,46 @@ export async function POST(request: Request) {
     // Verify OTP
     if (otp !== otpRecord.setting_value) {
       return NextResponse.json(
-        { error: "Invalid OTP code" },
+        { error: "Invalid verification code" },
         { status: 401 }
       );
     }
 
-    // OTP verified — clean up
+    // OTP verified — clean up all OTP records
     await db.platformSetting.deleteMany({
-      where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires"] } },
+      where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
     });
 
-    // Check if the user is already signed in (step 1 was done)
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    // Verify the user still exists and is active
+    const user = await db.user.findUnique({
+      where: { email: SUPERADMIN_EMAIL },
+    });
+
+    if (!user || user.role !== "super_admin") {
       return NextResponse.json(
-        { error: "Please complete step 1 (credentials) first" },
-        { status: 401 }
+        { error: "Super admin account not found" },
+        { status: 404 }
       );
     }
+
+    if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
+      return NextResponse.json(
+        { error: "Account is not active" },
+        { status: 403 }
+      );
+    }
+
+    console.log(`[AUDIT] OTP verified for superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
 
     return NextResponse.json({
       success: true,
       message: "OTP verified successfully",
+      // Return the verified OTP so the client can use it to sign in via NextAuth
+      // The authorize() function will validate this OTP one final time server-side
+      verifiedOtp: otp,
     });
   } catch (error) {
-    console.error("OTP verify error:", error);
+    console.error("[OTP VERIFY] Error:", error);
     return NextResponse.json(
       { error: "Failed to verify OTP" },
       { status: 500 }

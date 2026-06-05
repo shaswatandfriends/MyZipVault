@@ -1,57 +1,67 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { compare } from "bcryptjs";
 import { sendOtpEmail } from "@/lib/otp-email";
 
-// Server-side superadmin email
+// Server-side superadmin email — never exposed to the client
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
 
-export async function POST(request: Request) {
+/**
+ * POST /api/auth/otp/send
+ *
+ * Sends a 6-digit OTP to the configured superadmin email.
+ * No password required — OTP is the sole authentication method.
+ *
+ * Security:
+ * - Only the env-configured SUPERADMIN_EMAIL can receive an OTP
+ * - Rate-limited by client-side cooldown (60s) + OTP expiry (5 min)
+ * - Previous OTPs are overwritten (only one valid OTP at a time)
+ */
+export async function POST() {
   try {
-    const body = await request.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
+    // Verify the superadmin email is configured
+    if (!SUPERADMIN_EMAIL) {
+      console.error("[OTP SEND] SUPERADMIN_EMAIL not configured");
       return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
+        { error: "Super admin login is not configured" },
+        { status: 500 }
       );
     }
 
-    // Only the configured superadmin email is allowed
-    if (!SUPERADMIN_EMAIL || email.toLowerCase() !== SUPERADMIN_EMAIL.toLowerCase()) {
-      return NextResponse.json(
-        { error: "This portal is for authorized super administrators only" },
-        { status: 403 }
-      );
-    }
-
-    // Verify user exists and is super_admin
+    // Verify the superadmin user exists in the database
     const user = await db.user.findUnique({
-      where: { email },
+      where: { email: SUPERADMIN_EMAIL },
     });
 
     if (!user || user.role !== "super_admin") {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+        { error: "Super admin account not found" },
+        { status: 404 }
       );
     }
 
-    // Verify password
-    const isValid = await compare(password, user.password_hash);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
-
-    if (user.accountStatus === "suspended" || user.accountStatus === "deleted") {
+    // Check account status
+    if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
       return NextResponse.json(
         { error: "Account is not active" },
         { status: 403 }
       );
+    }
+
+    // Rate limit: check if an OTP was recently sent (within last 60 seconds)
+    const recentOtp = await db.platformSetting.findUnique({
+      where: { setting_key: "superadmin_otp_sent_at" },
+    });
+
+    if (recentOtp?.setting_value) {
+      const lastSentAt = new Date(recentOtp.setting_value);
+      const secondsSinceLastSent = (Date.now() - lastSentAt.getTime()) / 1000;
+      if (secondsSinceLastSent < 60) {
+        const waitSeconds = Math.ceil(60 - secondsSinceLastSent);
+        return NextResponse.json(
+          { error: `Please wait ${waitSeconds} seconds before requesting a new code`, cooldown: waitSeconds },
+          { status: 429 }
+        );
+      }
     }
 
     // Generate a 6-digit OTP
@@ -86,16 +96,39 @@ export async function POST(request: Request) {
       },
     });
 
+    // Record when OTP was sent (for server-side rate limiting)
+    await db.platformSetting.upsert({
+      where: { setting_key: "superadmin_otp_sent_at" },
+      update: {
+        setting_value: new Date().toISOString(),
+        updated_by: user.id,
+      },
+      create: {
+        setting_key: "superadmin_otp_sent_at",
+        setting_value: new Date().toISOString(),
+        updated_by: user.id,
+      },
+    });
+
     // Send OTP via email
-    await sendOtpEmail(email, otp);
+    const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
+
+    if (!emailSent) {
+      return NextResponse.json(
+        { error: "Failed to send verification email. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    console.log(`[AUDIT] OTP sent to superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
 
     return NextResponse.json({
       success: true,
-      message: "OTP sent to your email address",
+      message: "Verification code sent to your email address",
       expiresAt,
     });
   } catch (error) {
-    console.error("OTP send error:", error);
+    console.error("[OTP SEND] Error:", error);
     return NextResponse.json(
       { error: "Failed to send OTP" },
       { status: 500 }

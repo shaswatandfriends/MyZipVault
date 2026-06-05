@@ -19,6 +19,76 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        // ── Superadmin OTP login ──
+        // When the client sends email: "__superadmin__" with password: "otp:<code>",
+        // we verify the OTP server-side instead of checking a password hash.
+        if (credentials.email === "__superadmin__" && credentials.password.startsWith("otp:")) {
+          if (!SUPERADMIN_EMAIL) {
+            throw new Error("Super admin login is not configured");
+          }
+
+          const otpCode = credentials.password.slice(4); // Remove "otp:" prefix
+
+          // Look up the superadmin user
+          const user = await db.user.findUnique({
+            where: { email: SUPERADMIN_EMAIL },
+          });
+
+          if (!user || user.role !== "super_admin") {
+            throw new Error("Invalid credentials");
+          }
+
+          if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
+            throw new Error("Account is not active. Please contact support.");
+          }
+
+          // Verify the OTP against stored records
+          const otpRecord = await db.platformSetting.findUnique({
+            where: { setting_key: "superadmin_otp_code" },
+          });
+
+          const expiryRecord = await db.platformSetting.findUnique({
+            where: { setting_key: "superadmin_otp_expires" },
+          });
+
+          if (!otpRecord?.setting_value || !expiryRecord?.setting_value) {
+            throw new Error("Verification code not found. Please request a new one.");
+          }
+
+          // Check expiry
+          const expiresAt = new Date(expiryRecord.setting_value);
+          if (new Date() > expiresAt) {
+            // Clean up expired OTP
+            await db.platformSetting.deleteMany({
+              where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
+            });
+            throw new Error("Verification code has expired. Please request a new one.");
+          }
+
+          // Verify OTP code
+          if (otpCode !== otpRecord.setting_value) {
+            throw new Error("Invalid verification code");
+          }
+
+          // OTP verified — clean up
+          await db.platformSetting.deleteMany({
+            where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
+          });
+
+          console.log(`[AUDIT] Superadmin OTP login successful — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
+
+          return {
+            id: String(user.id),
+            email: user.email,
+            role: user.role,
+            organizationId: user.organization_id,
+            isApproved: user.is_approved,
+            firstName: user.first_name,
+            lastName: user.last_name,
+          };
+        }
+
+        // ── Superadmin password login (legacy / fallback) ──
         // Map the superadmin placeholder to the actual env-configured email
         let lookupEmail = credentials.email;
         if (credentials.email === "__superadmin__" && SUPERADMIN_EMAIL) {

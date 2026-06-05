@@ -392,7 +392,19 @@ export function AppSidebar() {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={async () => {
+                    try {
+                      // Server-side audit logging + get role-based redirect
+                      const res = await fetch("/api/auth/signout", { method: "POST" });
+                      const data = await res.json();
+                      const redirectUrl = data?.redirectUrl || "/login";
+                      // Clear the NextAuth session and redirect
+                      await signOut({ callbackUrl: redirectUrl });
+                    } catch {
+                      // Fallback — still sign out even if audit fails
+                      await signOut({ callbackUrl: "/login" });
+                    }
+                  }}
                 >
                   Sign Out
                 </AlertDialogAction>

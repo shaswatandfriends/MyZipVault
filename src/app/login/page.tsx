@@ -93,22 +93,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-6 py-12">
-      <div className="w-full max-w-[420px]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-[440px]">
         {/* Branding */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground shadow-lg mb-5">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground shadow-lg mb-4">
             <Heart className="size-7" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome to MyZipVault</h1>
-          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Welcome to MyZipVault
+          </h1>
+          <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
             Healthcare credential verification, simplified
           </p>
         </div>
 
         <Card className="shadow-xl border-border/40">
           <form onSubmit={handleSubmit}>
-            <CardHeader className="px-8 pt-8 pb-2">
+            <CardHeader className="space-y-1.5 px-6 pt-6 pb-0">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <ShieldCheck className="size-5 text-primary" />
                 Sign In
@@ -117,7 +119,7 @@ export default function LoginPage() {
                 Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-8 py-6 space-y-5">
+            <CardContent className="px-6 pt-5 pb-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -166,7 +168,7 @@ export default function LoginPage() {
                 )}
               </div>
             </CardContent>
-            <CardFooter className="px-8 pb-8 flex flex-col gap-5">
+            <CardFooter className="px-6 pb-6 flex flex-col gap-4">
               <Button type="submit" className="w-full h-11" disabled={isLoading}>
                 {isLoading ? (
                   <>
