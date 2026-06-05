@@ -40,10 +40,13 @@ import {
 // ─── Types ──────────────────────────────────────────────────────────
 interface ApiService {
   serviceName: string;
-  keyStatus: "Set" | "Not Set";
+  keyStatus: string;
   maskedKey: string | null;
+  liveConnection: boolean;
+  liveLabel: string;
   updatedAt: string | null;
   updatedBy: number | null;
+  environmentVariables: { key: string; isSet: boolean }[];
 }
 
 interface VaultResponse {
@@ -52,23 +55,23 @@ interface VaultResponse {
 
 // ─── Service metadata ───────────────────────────────────────────────
 const SERVICE_INFO: Record<string, { label: string; description: string; color: string; icon: string }> = {
+  brevo: {
+    label: "Brevo",
+    description: "Transactional email delivery",
+    color: "bg-blue-50 text-blue-700 border-blue-200",
+    icon: "📧",
+  },
   stripe: {
     label: "Stripe",
     description: "Payment processing & billing",
     color: "bg-violet-50 text-violet-700 border-violet-200",
     icon: "💳",
   },
-  sendgrid: {
-    label: "SendGrid",
-    description: "Transactional email delivery",
-    color: "bg-blue-50 text-blue-700 border-blue-200",
-    icon: "📧",
-  },
-  twilio: {
-    label: "Twilio",
-    description: "SMS & voice communications",
-    color: "bg-red-50 text-red-700 border-red-200",
-    icon: "📱",
+  supabase: {
+    label: "Supabase / Storage",
+    description: "File storage & database",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    icon: "🗄️",
   },
   affinda: {
     label: "Affinda",
@@ -76,11 +79,11 @@ const SERVICE_INFO: Record<string, { label: string; description: string; color: 
     color: "bg-teal-50 text-teal-700 border-teal-200",
     icon: "📄",
   },
-  supabase: {
-    label: "Supabase / Storage",
-    description: "File storage & database",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    icon: "🗄️",
+  twilio: {
+    label: "Twilio",
+    description: "SMS & voice communications",
+    color: "bg-red-50 text-red-700 border-red-200",
+    icon: "📱",
   },
 };
 
@@ -237,7 +240,8 @@ export default function SuperadminApiVaultPage() {
             <div className="space-y-0">
               {(data?.services ?? []).map((service, index) => {
                 const info = SERVICE_INFO[service.serviceName];
-                const isSet = service.keyStatus === "Set";
+                const isLive = service.liveConnection;
+                const isKeyInVault = service.keyStatus === "Set (Encrypted in DB)";
                 return (
                   <div key={service.serviceName}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
@@ -248,7 +252,7 @@ export default function SuperadminApiVaultPage() {
                         <div className="min-w-0">
                           <p className="font-medium text-sm">{info?.label ?? service.serviceName}</p>
                           <p className="text-xs text-muted-foreground">{info?.description ?? service.serviceName}</p>
-                          {isSet && service.maskedKey && (
+                          {isKeyInVault && service.maskedKey && (
                             <p className="text-xs font-mono text-muted-foreground mt-0.5">
                               {service.maskedKey}
                             </p>
@@ -261,15 +265,15 @@ export default function SuperadminApiVaultPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {isSet ? (
+                        {isLive ? (
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
                             <KeyRound className="size-3 mr-1" />
-                            Set
+                            Connected
                           </Badge>
                         ) : (
                           <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">
                             <AlertTriangle className="size-3 mr-1" />
-                            Not Set
+                            Not Connected
                           </Badge>
                         )}
                         <Button
@@ -300,21 +304,21 @@ export default function SuperadminApiVaultPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {(data?.services ?? []).map((service) => {
               const info = SERVICE_INFO[service.serviceName];
-              const isSet = service.keyStatus === "Set";
+              const isLive = service.liveConnection;
               return (
                 <div
                   key={service.serviceName}
-                  className={`p-3 rounded-lg border ${isSet ? "bg-emerald-50/50 border-emerald-200" : "bg-red-50/50 border-red-200"}`}
+                  className={`p-3 rounded-lg border ${isLive ? "bg-emerald-50/50 border-emerald-200" : "bg-red-50/50 border-red-200"}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{info?.icon ?? "🔑"}</span>
                       <span className="text-sm font-medium">{info?.label ?? service.serviceName}</span>
                     </div>
-                    <span className={`size-2 rounded-full ${isSet ? "bg-emerald-500" : "bg-red-500"}`} />
+                    <span className={`size-2 rounded-full ${isLive ? "bg-emerald-500" : "bg-red-500"}`} />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {isSet ? "Connected — key configured" : "Not connected — key required"}
+                    {isLive ? "Connected — env vars configured" : "Not connected — env vars missing"}
                   </p>
                 </div>
               );
