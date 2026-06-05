@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skill Assessment — SkillVerify</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <style>
+    /* Assessment-specific overrides */
+    .assess-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 0.875rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .assess-hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a2d4a 60%, #0d1f35 100%);
+      color: #fff;
+      padding: 3.5rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .assess-hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 65%);
+      top: -200px; left: 50%; transform: translateX(-50%);
+      border-radius: 50%;
+    }
+    .assess-hero::after {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%);
+      bottom: -100px; right: -50px;
+      border-radius: 50%;
+    }
+    .assess-progress-bar {
+      background: var(--navy-2);
+      padding: 0.875rem 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .skill-row {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .skill-row:last-child { border-bottom: none; }
+    .skill-row:hover { background: #f8faff; margin: 0 -1.25rem; padding-left: 1.25rem; padding-right: 1.25rem; }
+    .skill-row-name { flex: 1; font-size: 0.875rem; color: var(--text-1); line-height: 1.4; }
+    .rating-btns { display: flex; gap: 5px; flex-shrink: 0; }
+    .rating-btn {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-3);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--trans-fast);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rating-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); transform: scale(1.08); }
+    .rating-btn.sel-1 { background: #FEE2E2; border-color: #F87171; color: #B91C1C; }
+    .rating-btn.sel-2 { background: #FEF3C7; border-color: #FBBF24; color: #92400E; }
+    .rating-btn.sel-3 { background: #DBEAFE; border-color: #60A5FA; color: #1E40AF; }
+    .rating-btn.sel-4 { background: #D1FAE5; border-color: #34D399; color: #065F46; }
+    .rating-lbl { font-size: 0.7rem; font-weight: 600; width: 60px; text-align: right; white-space: nowrap; }
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: var(--trans-mid);
+    }
+    .section-card:hover { box-shadow: var(--shadow-md); }
+    .section-head {
+      padding: 0.875rem 1.25rem;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    .section-body { padding: 0.25rem 1.25rem; }
+    .check-row {
+      display: flex;
+      gap: 0.875rem;
+      align-items: flex-start;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .check-row:hover { background: var(--surface-2); }
+    .check-box {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border-dark);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+      transition: var(--trans-fast);
+      background: var(--surface);
+    }
+    input[type="checkbox"]:checked ~ .check-row .check-box,
+    .check-row.checked .check-box {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body style="background:var(--bg);min-height:100vh">
+
+  <!-- HEADER -->
+  <header class="assess-header">
+    <!-- LEFT: SkillVerify -->
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--electric-2));
+        border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+        font-size:0.9rem;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,0.4)">
+        <i class="fas fa-check-double"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:0.95rem;line-height:1;color:#fff">SkillVerify</div>
+        <div style="font-size:0.62rem;opacity:0.55;line-height:1;margin-top:2px;color:#fff">Secure Assessment Portal</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Company logo or name -->
+    <div style="display:flex;align-items:center;gap:10px">
+      <img id="header-company-logo" src="" alt=""
+        style="max-height:34px;max-width:110px;object-fit:contain;display:none;
+          border-radius:4px;background:#fff;padding:2px">
+      <div id="header-company-name-text"
+        style="font-size:0.82rem;font-weight:600;color:rgba(255,255,255,0.8);
+          max-width:140px;text-align:right;line-height:1.3"></div>
+    </div>
+  </header>
+
+  <!-- LOADING -->
+  <div id="page-loader" style="min-height:70vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1rem;color:var(--text-3)">
+    <div style="width:44px;height:44px;border:3px solid var(--border);
+      border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="font-size:0.875rem;font-weight:500">Loading your assessment...</div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="page-error" class="hidden">
+    <div style="max-width:480px;margin:6rem auto;padding:2rem;text-align:center">
+      <div style="width:72px;height:72px;background:var(--danger-light);border-radius:var(--radius-xl);
+        display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:1.75rem">
+        ⚠️
+      </div>
+      <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-1);margin-bottom:0.5rem;letter-spacing:-0.3px">
+        Assessment Not Found
+      </h2>
+      <p style="color:var(--text-3);font-size:0.9rem;line-height:1.6" id="error-message">
+        This link may be invalid or has already expired.
+      </p>
+    </div>
+  </div>
+
+  <!-- ALREADY SUBMITTED -->
+  <div id="page-submitted" class="hidden">
+    <div style="max-width:480px;margin:6rem auto;padding:2rem;text-align:center">
+      <div style="width:72px;height:72px;background:var(--success-light);border-radius:var(--radius-xl);
+        display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:1.75rem">
+        ✅
+      </div>
+      <h2 style="font-size:1.35rem;font-weight:800;color:var(--success);margin-bottom:0.5rem;letter-spacing:-0.3px">
+        Already Submitted
+      </h2>
+      <p style="color:var(--text-3);font-size:0.9rem">
+        You have already completed this assessment. Thank you!
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN ASSESSMENT -->
+  <div id="page-assessment" class="hidden">
+
+    <!-- Hero -->
+    <div class="assess-hero">
+      <div style="font-size:0.78rem;opacity:0.6;margin-bottom:0.5rem;
+        position:relative;letter-spacing:0.02em" id="hero-company"></div>
+      <h1 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;
+        margin-bottom:0.5rem;position:relative" id="hero-name">Welcome</h1>
+      <p style="opacity:0.7;font-size:0.95rem;position:relative" id="hero-position"></p>
+      <div style="margin-top:1.25rem;display:inline-flex;align-items:center;gap:8px;
+        background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+        padding:0.5rem 1.25rem;border-radius:var(--radius-full);font-size:0.78rem;
+        color:rgba(255,255,255,0.8);position:relative;backdrop-filter:blur(4px)">
+        <i class="fas fa-shield-alt" style="color:var(--electric-2)"></i>
+        Secure &amp; Confidential
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="assess-progress-bar">
+      <div style="flex:1">
+        <div style="height:5px;background:rgba(255,255,255,0.1);border-radius:var(--radius-full);overflow:hidden">
+          <div id="progress-fill" style="height:100%;width:0%;
+            background:linear-gradient(90deg,var(--electric),var(--electric-2));
+            border-radius:var(--radius-full);transition:width 0.4s ease;
+            box-shadow:0 0 8px rgba(59,130,246,0.5)"></div>
+        </div>
+      </div>
+      <div style="color:rgba(255,255,255,0.75);font-size:0.78rem;font-weight:600;
+        white-space:nowrap" id="progress-text">0% Complete</div>
+    </div>
+
+    <!-- Body -->
+    <div style="max-width:780px;margin:0 auto;padding:1.75rem">
+
+      <!-- Instructions -->
+      <div style="background:var(--info-light);border:1px solid var(--info-mid);
+        border-left:4px solid var(--info);border-radius:var(--radius-sm);
+        padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.875rem;color:#0369a1">
+        <div style="font-weight:700;margin-bottom:0.35rem">
+          <i class="fas fa-info-circle" style="margin-right:6px"></i>How to complete this assessment
+        </div>
+        <ul style="padding-left:1.25rem;line-height:1.9;margin:0">
+          <li>Complete any missing personal information</li>
+          <li>Rate each skill from <strong>1 (Beginner)</strong> to <strong>4 (Expert)</strong></li>
+          <li>All skills must be rated before submitting</li>
+          <li>Sign the form at the bottom to confirm your responses</li>
+        </ul>
+      </div>
+
+      <!-- Personal Info -->
+      <div class="section-card" style="margin-bottom:1.25rem">
+        <div class="section-head">
+          <span><i class="fas fa-user" style="color:var(--primary);margin-right:8px"></i>Personal Information</span>
+        </div>
+        <div style="padding:1.25rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="c-name" class="form-input" readonly/>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="c-email" class="form-input" readonly/>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" id="c-phone" class="form-input" readonly/>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">
+                Last 4 Digits of SSN
+                <span id="ssn-req-badge" class="hidden"
+                  style="font-size:0.68rem;background:var(--warning-light);color:var(--warning-dark);
+                    padding:2px 8px;border-radius:var(--radius-full);margin-left:6px;font-weight:600">Required</span>
+              </label>
+              <input type="text" id="c-ssn" class="form-input" placeholder="e.g. 1234"
+                maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
+              <div class="form-hint">Numbers only — last 4 digits of your SSN</div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">
+                Date of Birth
+                <span id="dob-req-badge" class="hidden"
+                  style="font-size:0.68rem;background:var(--warning-light);color:var(--warning-dark);
+                    padding:2px 8px;border-radius:var(--radius-full);margin-left:6px;font-weight:600">Required</span>
+              </label>
+              <input type="date" id="c-dob" class="form-input"/>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating Scale Legend -->
+      <div style="background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius-md);padding:1rem 1.25rem;margin-bottom:1.5rem;
+        box-shadow:var(--shadow-xs)">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
+          letter-spacing:0.1em;margin-bottom:0.875rem">Rating Scale</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:#FEE2E2;
+              border:1.5px solid #F87171;display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:0.85rem;color:#B91C1C;flex-shrink:0">1</div>
+            <div>
+              <div style="font-size:0.78rem;font-weight:700;color:var(--text-1)">Beginner</div>
+              <div style="font-size:0.68rem;color:var(--text-3);line-height:1.3">Limited experience</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:#FEF3C7;
+              border:1.5px solid #FBBF24;display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:0.85rem;color:#92400E;flex-shrink:0">2</div>
+            <div>
+              <div style="font-size:0.78rem;font-weight:700;color:var(--text-1)">Basic</div>
+              <div style="font-size:0.68rem;color:var(--text-3);line-height:1.3">With supervision</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:#DBEAFE;
+              border:1.5px solid #60A5FA;display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:0.85rem;color:#1E40AF;flex-shrink:0">3</div>
+            <div>
+              <div style="font-size:0.78rem;font-weight:700;color:var(--text-1)">Proficient</div>
+              <div style="font-size:0.68rem;color:var(--text-3);line-height:1.3">Independently</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:#D1FAE5;
+              border:1.5px solid #34D399;display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:0.85rem;color:#065F46;flex-shrink:0">4</div>
+            <div>
+              <div style="font-size:0.78rem;font-weight:700;color:var(--text-1)">Expert</div>
+              <div style="font-size:0.68rem;color:var(--text-3);line-height:1.3">Can train others</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills Container -->
+      <div id="skills-container"></div>
+
+      <!-- Signature -->
+      <div class="section-card" style="margin-top:1.25rem">
+        <div class="section-head">
+          <span><i class="fas fa-pen-nib" style="color:var(--primary);margin-right:8px"></i>Digital Signature</span>
+        </div>
+        <div style="padding:1.25rem">
+          <p style="font-size:0.85rem;color:var(--text-2);margin-bottom:1rem;line-height:1.6">
+            By signing below, you confirm that all skill ratings and personal information
+            are accurate and true to the best of your knowledge.
+          </p>
+          <div style="border:2px dashed var(--border-dark);border-radius:var(--radius-md);
+            overflow:hidden;background:#fff;transition:var(--trans-fast)" id="sig-wrap">
+            <canvas id="signature-canvas" style="display:block;width:100%!important;
+              touch-action:none;height:160px"></canvas>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+            <button type="button" class="btn btn-ghost btn-sm" id="clear-sig">
+              <i class="fas fa-eraser"></i> Clear
+            </button>
+          </div>
+          <div id="sig-error" class="form-error hidden" style="margin-top:0.5rem">
+            <i class="fas fa-exclamation-circle"></i> Please provide your signature before submitting.
+          </div>
+        </div>
+      </div>
+
+      <!-- Attestation -->
+      <div class="section-card" style="margin-top:1rem">
+        <div class="section-head">
+          <span><i class="fas fa-file-contract" style="color:var(--primary);margin-right:8px"></i>Consent & Attestation</span>
+        </div>
+        <div style="padding:0.75rem 1.25rem">
+
+          <label style="display:flex;gap:0.875rem;align-items:flex-start;
+            padding:0.875rem;border-radius:var(--radius-sm);cursor:pointer;
+            transition:background 0.12s;margin-bottom:0.25rem"
+            onmouseover="this.style.background='var(--surface-2)'"
+            onmouseout="this.style.background=''">
+            <input type="checkbox" id="attest-checkbox"
+              style="width:18px;height:18px;margin-top:1px;flex-shrink:0;
+                cursor:pointer;accent-color:var(--primary)">
+            <span style="font-size:0.85rem;color:var(--text-2);line-height:1.6">
+              I attest that the information I have given is true and accurate to the best of
+              my knowledge and that I am the individual completing this form.
+            </span>
+          </label>
+
+          <label style="display:flex;gap:0.875rem;align-items:flex-start;
+            padding:0.875rem;border-radius:var(--radius-sm);cursor:pointer;
+            transition:background 0.12s"
+            onmouseover="this.style.background='var(--surface-2)'"
+            onmouseout="this.style.background=''">
+            <input type="checkbox" id="consent-checkbox"
+              style="width:18px;height:18px;margin-top:1px;flex-shrink:0;
+                cursor:pointer;accent-color:var(--primary)">
+            <span style="font-size:0.85rem;color:var(--text-2);line-height:1.6">
+              I hereby consent to allow
+              <strong id="company-name-attestation" style="color:var(--text-1)">the company</strong>
+              to release this skills checklist to the client facilities.
+            </span>
+          </label>
+
+          <div id="attest-error" class="form-error hidden" style="padding:0 0.875rem 0.875rem">
+            <i class="fas fa-exclamation-circle"></i> Please check both boxes before submitting.
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation message -->
+      <div id="validation-msg" class="warning-box hidden" style="margin-top:1rem">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="validation-text" style="margin-left:6px"></span>
+      </div>
+
+      <!-- Submit -->
+      <div style="margin-top:1rem;background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius-lg);padding:1.5rem;box-shadow:var(--shadow-sm)">
+        <button type="button" class="btn btn-success btn-full btn-lg"
+          id="submit-btn" onclick="submitAssessment()"
+          style="font-size:1rem;padding:0.875rem">
+          <i class="fas fa-paper-plane"></i> Submit Assessment
+        </button>
+        <p style="text-align:center;font-size:0.75rem;color:var(--text-4);margin-top:0.875rem;
+          display:flex;align-items:center;justify-content:center;gap:6px">
+          <i class="fas fa-lock"></i> Your responses are encrypted and stored securely.
+        </p>
+      </div>
+
+      <div style="height:3rem"></div>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="page-success" class="hidden">
+    <div style="max-width:560px;margin:5rem auto;padding:2rem;text-align:center">
+      <div style="width:88px;height:88px;
+        background:linear-gradient(135deg,var(--success-light),#A7F3D0);
+        border-radius:50%;display:flex;align-items:center;justify-content:center;
+        margin:0 auto 2rem;font-size:2.25rem;
+        box-shadow:0 8px 32px rgba(5,150,105,0.2)">✅</div>
+      <h1 style="font-size:1.85rem;font-weight:800;color:var(--success);
+        margin-bottom:0.75rem;letter-spacing:-0.5px">Assessment Submitted!</h1>
+      <p style="color:var(--text-2);margin-bottom:2rem;font-size:0.95rem;line-height:1.7"
+        id="success-message">Thank you for completing your skill assessment.</p>
+      <div style="background:var(--success-light);border:1px solid var(--success-mid);
+        border-left:4px solid var(--success);border-radius:var(--radius-md);
+        padding:1.25rem;text-align:left;margin-bottom:1.5rem">
+        <div style="font-weight:700;margin-bottom:0.75rem;color:var(--success-dark);font-size:0.9rem">
+          What happens next?
+        </div>
+        <ul style="padding-left:1.25rem;font-size:0.875rem;line-height:2;color:var(--success-dark)">
+          <li>Your recruiter has been notified</li>
+          <li>A PDF skill report will be generated</li>
+          <li>You may be contacted for follow-up</li>
+        </ul>
+      </div>
+      <p style="font-size:0.8rem;color:var(--text-4)">You may now close this window.</p>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import {
+      db, getDoc, getDocs, addDoc, updateDoc,
+      doc, collection, query, where,
+      serverTimestamp, showToast, RATING_LABELS, APP_NAME
+    } from './js/app.js';
+
+    let candidateData = null, candidateId = null, jobTitleData = null;
+    let ratings = {}, textAnswers = {}, totalSkills = 0, textSkillCount = 0, signaturePad = null;
+    const requiredTextSkills = new Set();
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      candidateId  = params.get('candidateId');
+      if (!candidateId) {
+        showState('error');
+        document.getElementById('error-message').textContent = 'No assessment ID found in this link.';
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'candidates', candidateId));
+        if (!snap.exists()) { showState('error'); return; }
+        candidateData = { id: snap.id, ...snap.data() };
+        if (candidateData.status === 'completed') { showState('submitted'); return; }
+        if (candidateData.jobTitleId) {
+          const jtSnap = await getDoc(doc(db, 'jobTitles', candidateData.jobTitleId));
+          if (jtSnap.exists()) jobTitleData = { id: jtSnap.id, ...jtSnap.data() };
+        }
+        renderAssessment();
+        showState('assessment');
+        initSignaturePad();
+      } catch (err) {
+        console.error(err);
+        showState('error');
+        document.getElementById('error-message').textContent =
+          'Failed to load assessment. Please try again or contact your recruiter.';
+      }
+    }
+
+    function renderAssessment() {
+      document.getElementById('hero-company').textContent = candidateData.companyName || APP_NAME;
+      document.getElementById('company-name-attestation').textContent = candidateData.companyName || APP_NAME;
+      document.getElementById('hero-name').textContent = `Hello, ${candidateData.name}!`;
+      document.getElementById('hero-position').textContent =
+        `${candidateData.jobTitle||''}${candidateData.specialty?' — '+candidateData.specialty:''}`;
+
+      // Company logo + branding (non-blocking)
+      const logoImg  = document.getElementById('header-company-logo');
+      const nameText = document.getElementById('header-company-name-text');
+      nameText.textContent = candidateData.companyName || '';
+      nameText.style.display = 'block';
+      if (candidateData.companyId) {
+        getDoc(doc(db, 'companies', candidateData.companyId)).then(snap => {
+          if (!snap.exists()) return;
+          const d = snap.data();
+          if (d.primaryColor) {
+            document.querySelector('.assess-header').style.background = d.primaryColor;
+            document.querySelector('.assess-hero').style.background   =
+              `linear-gradient(135deg, ${d.primaryColor} 0%, #1a2d4a 60%, #0d1f35 100%)`;
+            document.querySelector('.assess-progress-bar').style.background = d.primaryColor;
+          }
+          if (d.logoUrl) {
+            logoImg.src = d.logoUrl; logoImg.style.display = 'block';
+            nameText.style.display = 'none';
+          }
+        }).catch(() => {});
+      }
+
+      // Personal info
+      document.getElementById('c-name').value  = candidateData.name  || '';
+      document.getElementById('c-email').value = candidateData.email || '';
+      document.getElementById('c-phone').value = candidateData.phone || '';
+
+      const ssnInput = document.getElementById('c-ssn');
+      if (candidateData.ssn) {
+        ssnInput.value = candidateData.ssn; ssnInput.readOnly = true;
+      } else {
+        document.getElementById('ssn-req-badge').classList.remove('hidden');
+      }
+      const dobInput = document.getElementById('c-dob');
+      if (candidateData.dob) {
+        dobInput.value = candidateData.dob; dobInput.readOnly = true;
+      } else {
+        document.getElementById('dob-req-badge').classList.remove('hidden');
+      }
+
+      // Skills
+      const container = document.getElementById('skills-container');
+      container.innerHTML = '';
+      let categories = [];
+      if (jobTitleData && candidateData.specialty) {
+        const spec = (jobTitleData.specialties||[]).find(s => s.name === candidateData.specialty);
+        if (spec) categories = spec.categories || [];
+      } else if (jobTitleData) {
+        const first = (jobTitleData.specialties||[])[0];
+        if (first) categories = first.categories || [];
+      }
+
+      if (!categories.length) {
+        container.innerHTML = `<div class="section-card">
+          <div style="padding:2.5rem;text-align:center;color:var(--text-3)">
+            <div class="empty-state-icon" style="margin:0 auto 1rem"><i class="fas fa-info-circle"></i></div>
+            <p>No skills configured for this position. Contact your recruiter.</p>
+          </div></div>`;
+        totalSkills = 0; return;
+      }
+
+      totalSkills = categories.reduce((s, c) => s + (c.skills||[]).length, 0);
+      textSkillCount = 0;
+      requiredTextSkills.clear();
+
+      categories.forEach((cat, ci) => {
+        const catType = cat.type || 'rating';
+        const skills  = (cat.skills||[]).map((skill, si) => {
+          const skillName = typeof skill === 'object' ? skill.name : skill;
+          // Fix: 'default' means use catType, not literal 'default'
+          const rawType   = typeof skill === 'object' ? (skill.type || 'default') : 'default';
+          const skillType = (rawType === 'default') ? catType : rawType;
+          const key       = `${ci}-${si}`;
+
+          if (skillType === 'text') {
+            textSkillCount++;
+            totalSkills--;
+            requiredTextSkills.add(skillName);
+            return `<div class="skill-row" id="row-${key}" style="flex-wrap:wrap;gap:0.4rem">
+              <div class="skill-row-name" style="width:100%;font-weight:500">${skillName}</div>
+              <textarea rows="2" placeholder="Describe your experience..."
+                id="text-${key}"
+                onchange="setTextAnswer(this,'${key}','${skillName.replace(/'/g,"\\'")}')"
+                style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+                  padding:0.5rem 0.75rem;font-size:0.82rem;font-family:inherit;
+                  background:var(--surface);color:var(--text-1);resize:vertical;min-height:60px;
+                  transition:border-color 0.15s;outline:none"
+                onfocus="this.style.borderColor='var(--primary)'"
+                onblur="this.style.borderColor='var(--border)'"></textarea>
+            </div>`;
+          } else if (skillType === 'yesno') {
+            textSkillCount++;
+            totalSkills--;
+            requiredTextSkills.add(skillName);
+            return `<div class="skill-row" id="row-${key}" style="flex-wrap:wrap;gap:0.5rem;padding:0.875rem 0">
+              <div class="skill-row-name" style="width:100%;font-weight:500">${skillName}</div>
+              <div style="display:flex;gap:0.75rem;margin-top:0.25rem">
+                <button type="button" id="yes-${key}" class="rating-btn"
+                  style="width:auto;padding:0 1.25rem;font-size:0.82rem;font-weight:700;gap:6px"
+                  onclick="setYesNo('${key}','${skillName.replace(/'/g,"\\'")}',true,this)">
+                  <i class="fas fa-check" style="color:var(--ok)"></i> Yes
+                </button>
+                <button type="button" id="no-${key}" class="rating-btn"
+                  style="width:auto;padding:0 1.25rem;font-size:0.82rem;font-weight:700;gap:6px"
+                  onclick="setYesNo('${key}','${skillName.replace(/'/g,"\\'")}',false,this)">
+                  <i class="fas fa-times" style="color:var(--err)"></i> No
+                </button>
+              </div>
+            </div>`;
+          } else {
+            return `<div class="skill-row" id="row-${key}">
+              <div class="skill-row-name">${skillName}</div>
+              <div class="rating-btns" id="dots-${key}">
+                ${[1,2,3,4].map(n => `
+                  <button type="button" class="rating-btn"
+                    data-cat="${ci}" data-skill="${si}" data-value="${n}"
+                    data-name="${skillName.replace(/"/g,'&quot;')}"
+                    title="${RATING_LABELS[n]}" onclick="setRating(this)">${n}
+                  </button>`).join('')}
+              </div>
+              <div class="rating-lbl" id="label-${key}" style="color:var(--text-4)">—</div>
+            </div>`;
+          }
+        }).join('');
+
+        const div = document.createElement('div');
+        div.className = 'section-card';
+        div.innerHTML = `
+          <div class="section-head">
+            <span style="display:flex;align-items:center;gap:8px">
+              <i class="fas fa-clipboard-list" style="color:var(--primary)"></i>
+              ${cat.name}
+            </span>
+            <span style="font-size:0.75rem;color:var(--text-3);font-weight:400">${cat.skills.length} skills</span>
+          </div>
+          <div class="section-body">${skills}</div>`;
+        container.appendChild(div);
+      });
+
+      updateProgress();
+    }
+
+    window.setRating = function(btn) {
+      const ci = btn.dataset.cat, si = btn.dataset.skill;
+      const v  = parseInt(btn.dataset.value), name = btn.dataset.name;
+      ratings[name] = v;
+
+      document.getElementById(`dots-${ci}-${si}`).querySelectorAll('.rating-btn').forEach(b => {
+        b.className = 'rating-btn';
+        if (parseInt(b.dataset.value) <= v) b.classList.add(`sel-${v}`);
+      });
+
+      const colors = {1:'#B91C1C',2:'#92400E',3:'#1E40AF',4:'#065F46'};
+      const lbl = document.getElementById(`label-${ci}-${si}`);
+      lbl.textContent = RATING_LABELS[v]; lbl.style.color = colors[v];
+      updateProgress();
+    };
+
+    window.setTextAnswer = function(el, key, name) {
+      const val = el.value.trim();
+      if (val) { textAnswers[name] = val; el.style.borderColor = 'var(--primary)'; }
+      else { delete textAnswers[name]; el.style.borderColor = 'var(--border)'; }
+      updateProgress();
+    };
+
+    window.setYesNo = function(key, name, value, btn) {
+      // Store as text answer
+      textAnswers[name] = value ? 'Yes' : 'No';
+      updateProgress();
+
+      // Update button styles
+      const yesBtn = document.getElementById('yes-' + key);
+      const noBtn  = document.getElementById('no-'  + key);
+      if (yesBtn) {
+        yesBtn.style.background   = value ? '#D1FAE5' : '';
+        yesBtn.style.borderColor  = value ? '#34D399' : '';
+        yesBtn.style.color        = value ? '#065F46' : '';
+      }
+      if (noBtn) {
+        noBtn.style.background   = !value ? '#FEE2E2' : '';
+        noBtn.style.borderColor  = !value ? '#F87171' : '';
+        noBtn.style.color        = !value ? '#B91C1C' : '';
+      }
+    };
+
+    function updateProgress() {
+      const rated        = Object.keys(ratings).length;
+      // Count how many required text/yesno skills have been answered
+      const textAnswered = [...requiredTextSkills].filter(name => textAnswers[name] !== undefined).length;
+      const totalAll     = totalSkills + textSkillCount;
+      const doneAll      = rated + textAnswered;
+      const pct          = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
+      document.getElementById('progress-fill').style.width = `${pct}%`;
+      document.getElementById('progress-text').textContent = `${pct}% Complete (${doneAll}/${totalAll} skills)`;
+    }
+
+    function initSignaturePad() {
+      const canvas = document.getElementById('signature-canvas');
+      function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio||1,1);
+        canvas.width  = canvas.offsetWidth * ratio;
+        canvas.height = 160 * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        if (signaturePad) signaturePad.clear();
+      }
+      signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255,255,255)',
+        penColor: 'rgb(15,23,42)',
+        minWidth: 1.5, maxWidth: 3
+      });
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // Hover effect on sig wrap
+      const wrap = document.getElementById('sig-wrap');
+      canvas.addEventListener('mouseenter', () => wrap.style.borderColor = 'var(--primary)');
+      canvas.addEventListener('mouseleave', () => wrap.style.borderColor = 'var(--border-dark)');
+
+      document.getElementById('clear-sig').addEventListener('click', () => {
+        signaturePad.clear();
+        document.getElementById('sig-error').classList.add('hidden');
+        wrap.style.borderColor = 'var(--border-dark)';
+      });
+    }
+
+    window.submitAssessment = async function() {
+      const btn           = document.getElementById('submit-btn');
+      const validationMsg = document.getElementById('validation-msg');
+      const validationTxt = document.getElementById('validation-text');
+      const sigError      = document.getElementById('sig-error');
+
+      validationMsg.classList.add('hidden');
+      sigError.classList.add('hidden');
+
+      const ssnInput = document.getElementById('c-ssn');
+      if (!candidateData.ssn && !ssnInput.value.trim()) {
+        validationMsg.classList.remove('hidden');
+        validationTxt.textContent = 'Please enter the last 4 digits of your SSN.';
+        ssnInput.scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+      if (!candidateData.ssn && ssnInput.value.trim().length !== 4) {
+        validationMsg.classList.remove('hidden');
+        validationTxt.textContent = 'SSN must be exactly 4 digits.'; return;
+      }
+
+      const dobInput = document.getElementById('c-dob');
+      if (!candidateData.dob && !dobInput.value) {
+        validationMsg.classList.remove('hidden');
+        validationTxt.textContent = 'Please enter your Date of Birth.';
+        dobInput.scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+
+      // Check rating skills
+      if (totalSkills > 0 && Object.keys(ratings).length < totalSkills) {
+        const miss = totalSkills - Object.keys(ratings).length;
+        validationMsg.classList.remove('hidden');
+        validationTxt.textContent = `Please rate all skills. ${miss} skill${miss>1?'s':''} still need${miss===1?'s':''} a rating.`;
+        validationMsg.scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+      // Check text/yesno skills — must all be answered
+      const unansweredText = [...requiredTextSkills].filter(name => !textAnswers[name]);
+      if (unansweredText.length > 0) {
+        validationMsg.classList.remove('hidden');
+        validationTxt.textContent = `Please answer all questions. ${unansweredText.length} question${unansweredText.length>1?'s':''} still need${unansweredText.length===1?'s':''} a response.`;
+        validationMsg.scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+
+      if (signaturePad && signaturePad.isEmpty()) {
+        sigError.classList.remove('hidden');
+        document.getElementById('signature-canvas').scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+
+      const attestCheck  = document.getElementById('attest-checkbox');
+      const consentCheck = document.getElementById('consent-checkbox');
+      const attestError  = document.getElementById('attest-error');
+      if (!attestCheck.checked || !consentCheck.checked) {
+        attestError.classList.remove('hidden');
+        attestCheck.closest('label').scrollIntoView({ behavior:'smooth', block:'center' }); return;
+      }
+      attestError.classList.add('hidden');
+
+      btn.disabled  = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+      try {
+        const signature = signaturePad?.toDataURL('image/png') || null;
+        const finalSSN  = candidateData.ssn || ssnInput.value.trim();
+        const finalDOB  = candidateData.dob || dobInput.value;
+
+        await addDoc(collection(db, 'submissions'), {
+          candidateId, candidateName: candidateData.name,
+          candidateEmail: candidateData.email, phone: candidateData.phone || '',
+          ssn: finalSSN, dob: finalDOB,
+          jobTitle: candidateData.jobTitle || '', specialty: candidateData.specialty || '',
+          companyId: candidateData.companyId, skills: ratings, textAnswers, signature,
+          submittedAt: serverTimestamp()
+        });
+
+        const updates = {
+          status: 'completed', completedAt: serverTimestamp(),
+          skillCount: Object.keys(ratings).length,
+          avgScore: Object.values(ratings).length
+            ? parseFloat((Object.values(ratings).reduce((a,b)=>a+b,0)/Object.values(ratings).length).toFixed(2))
+            : 0
+        };
+        if (!candidateData.ssn) updates.ssn = finalSSN;
+        if (!candidateData.dob) updates.dob = finalDOB;
+        await updateDoc(doc(db, 'candidates', candidateId), updates);
+
+        document.getElementById('success-message').textContent =
+          `Thank you, ${candidateData.name}! Your skill assessment has been submitted to ${candidateData.companyName||APP_NAME}. Your recruiter will be in touch soon.`;
+
+        showState('success');
+        window.scrollTo({ top:0, behavior:'smooth' });
+      } catch (err) {
+        console.error(err);
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assessment';
+        showToast('Submission failed. Please check your connection and try again.', 'error');
+      }
+    };
+
+    function showState(state) {
+      ['loader','error','submitted','assessment','success'].forEach(s =>
+        document.getElementById(`page-${s}`).classList.add('hidden')
+      );
+      document.getElementById(`page-${state}`).classList.remove('hidden');
+    }
+
+    init();
+  </script>
+</body>
+</html>

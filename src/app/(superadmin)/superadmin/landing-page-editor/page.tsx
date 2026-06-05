@@ -13,7 +13,7 @@ import {
   LayoutGrid,
   Shield,
   ListOrdered,
-  Footer,
+  PanelBottom,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -963,7 +963,7 @@ export default function LandingPageEditorPage() {
           </EditorSection>
 
           {/* Section 6: Footer */}
-          <EditorSection icon={Footer} title="Footer">
+          <EditorSection icon={PanelBottom} title="Footer">
             <div className="space-y-4">
               <FormField label="Copyright Text">
                 <Input
