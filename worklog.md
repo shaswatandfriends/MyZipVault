@@ -50,3 +50,23 @@ Stage Summary:
 - New files: /api/auth/agency-signup/route.ts, /agency-signup/page.tsx, /agency-login/page.tsx
 - Modified files: page.tsx, login/page.tsx, signup/page.tsx, admin-login/page.tsx, middleware.ts
 - All builds pass, pushed to GitHub (3501e41), Vercel auto-deploy triggered
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix signout/logout not working properly
+
+Work Log:
+- Investigated all signout code paths: AppSidebar (active), 4 legacy sidebars (unused), signout API route, AuthProvider, NextAuth config
+- Found race condition: sidebar called audit API (await), then signOut with callbackUrl — but AuthProvider detected session loss and redirected to /login first
+- Found missing routes: AuthProvider PUBLIC_ROUTES didn't include /agency-login and /agency-signup
+- Found wrong redirects: client_admin/client_recruiter were sent to /admin-login instead of /agency-login after signout
+- Fixed AppSidebar: compute redirect URL from current role BEFORE signOut, audit API is now fire-and-forget
+- Fixed signout API route: client_admin/client_recruiter -> /agency-login, platform_admin -> /admin-login
+- Fixed AuthProvider: added /agency-login and /agency-signup to PUBLIC_ROUTES
+- Fixed AuthProvider: unauthenticated redirect is now context-aware (checks URL prefix to pick the right login page)
+- Added NextAuth events.signOut callback for server-side audit logging (redundant backup for the API route)
+
+Stage Summary:
+- Modified: sidebar.tsx, auth-provider.tsx, signout/route.ts, auth.ts
+- Build passes, pushed to GitHub (aa66fab), Vercel auto-deploy triggered
