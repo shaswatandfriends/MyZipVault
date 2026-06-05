@@ -404,15 +404,8 @@ export function AppSidebar() {
                       redirectUrl = "/admin-login";
                     }
 
-                    try {
-                      // Server-side audit logging (fire and forget)
-                      fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
-                    } catch {
-                      // Ignore audit errors
-                    }
-
                     // Clear the NextAuth session and redirect to role-appropriate login
-                    // Use callbackUrl to control the post-signout redirect
+                    // Audit logging is handled server-side by the events.signOut callback in auth.ts
                     await signOut({ callbackUrl: redirectUrl });
                   }}
                 >
