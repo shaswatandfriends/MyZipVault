@@ -7,12 +7,9 @@ const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
 /**
  * POST /api/auth/otp/verify
  *
- * Verifies the 6-digit OTP for superadmin login.
- * On success, returns a flag that the client uses to call
- * signIn("credentials") with the OTP as the password.
- *
- * The actual session creation happens in the NextAuth authorize()
- * function which validates the OTP again server-side.
+ * Pre-verifies the 6-digit OTP for superadmin login.
+ * Does NOT delete the OTP — the NextAuth authorize() function
+ * will validate it one final time and then clean it up.
  */
 export async function POST(request: Request) {
   try {
@@ -71,11 +68,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // OTP verified — clean up all OTP records
-    await db.platformSetting.deleteMany({
-      where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
-    });
-
     // Verify the user still exists and is active
     const user = await db.user.findUnique({
       where: { email: SUPERADMIN_EMAIL },
@@ -95,13 +87,14 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`[AUDIT] OTP verified for superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
+    // Pre-verification passed — do NOT delete OTP yet
+    // The NextAuth authorize() function will validate it again and clean up
+
+    console.log(`[AUDIT] OTP pre-verified for superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
 
     return NextResponse.json({
       success: true,
       message: "OTP verified successfully",
-      // Return the verified OTP so the client can use it to sign in via NextAuth
-      // The authorize() function will validate this OTP one final time server-side
       verifiedOtp: otp,
     });
   } catch (error) {
