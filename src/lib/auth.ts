@@ -163,6 +163,22 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  events: {
+    async signOut({ token }) {
+      // Server-side signout audit — this fires when NextAuth clears the JWT
+      const userId = token?.id;
+      const role = token?.role as string | undefined;
+      if (userId) {
+        console.log(`[AUDIT] NextAuth signout — userId: ${userId}, role: ${role}, timestamp: ${new Date().toISOString()}`);
+
+        // Update last_activity_at (fire and forget)
+        db.user.update({
+          where: { id: Number(userId) },
+          data: { last_activity_at: new Date() },
+        }).catch(() => {});
+      }
+    },
+  },
   pages: {
     signIn: "/login",
     error: "/login",

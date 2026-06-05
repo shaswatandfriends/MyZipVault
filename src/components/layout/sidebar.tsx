@@ -393,17 +393,27 @@ export function AppSidebar() {
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={async () => {
-                    try {
-                      // Server-side audit logging + get role-based redirect
-                      const res = await fetch("/api/auth/signout", { method: "POST" });
-                      const data = await res.json();
-                      const redirectUrl = data?.redirectUrl || "/login";
-                      // Clear the NextAuth session and redirect
-                      await signOut({ callbackUrl: redirectUrl });
-                    } catch {
-                      // Fallback — still sign out even if audit fails
-                      await signOut({ callbackUrl: "/login" });
+                    // Determine the correct redirect URL based on current role
+                    // (Do this BEFORE signing out, while we still know the role)
+                    let redirectUrl = "/login";
+                    if (role === "super_admin") {
+                      redirectUrl = "/superadmin-login";
+                    } else if (role === "client_admin" || role === "client_recruiter") {
+                      redirectUrl = "/agency-login";
+                    } else if (role === "platform_admin") {
+                      redirectUrl = "/admin-login";
                     }
+
+                    try {
+                      // Server-side audit logging (fire and forget)
+                      fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+                    } catch {
+                      // Ignore audit errors
+                    }
+
+                    // Clear the NextAuth session and redirect to role-appropriate login
+                    // Use callbackUrl to control the post-signout redirect
+                    await signOut({ callbackUrl: redirectUrl });
                   }}
                 >
                   Sign Out

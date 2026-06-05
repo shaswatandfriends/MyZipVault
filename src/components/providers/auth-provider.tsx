@@ -23,7 +23,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup"];
 
 const PUBLIC_ROUTE_PREFIXES = ["/reference/"];
 
@@ -90,9 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
     if (!session?.user) {
-      // Not authenticated — redirect to login if not on a public route
+      // Not authenticated — redirect to appropriate login page if not on a public route
       if (!isPublicRoute) {
-        router.replace("/login");
+        // Determine which login page to redirect to based on the route prefix
+        let loginPage = "/login";
+        if (pathname.startsWith("/superadmin")) {
+          loginPage = "/superadmin-login";
+        } else if (pathname.startsWith("/recruiter")) {
+          loginPage = "/agency-login";
+        } else if (pathname.startsWith("/admin")) {
+          loginPage = "/admin-login";
+        }
+        router.replace(loginPage);
       }
       return;
     }

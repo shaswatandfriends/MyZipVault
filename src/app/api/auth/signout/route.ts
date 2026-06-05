@@ -37,7 +37,9 @@ export async function POST() {
       let redirectUrl = "/login";
       if (role === "super_admin") {
         redirectUrl = "/superadmin-login";
-      } else if (role === "platform_admin" || role === "client_admin" || role === "client_recruiter") {
+      } else if (role === "client_admin" || role === "client_recruiter") {
+        redirectUrl = "/agency-login";
+      } else if (role === "platform_admin") {
         redirectUrl = "/admin-login";
       }
 
