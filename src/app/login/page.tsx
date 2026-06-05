@@ -93,33 +93,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-6 py-12">
+      <div className="w-full max-w-[420px]">
         {/* Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl font-bold text-sm shadow-md">
-              <Heart className="size-5" />
-            </div>
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground shadow-lg mb-5">
+            <Heart className="size-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome to MyZipVault</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="text-3xl font-bold tracking-tight">Welcome to MyZipVault</h1>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Healthcare credential verification, simplified
           </p>
         </div>
 
-        <Card className="shadow-lg border-border/50">
+        <Card className="shadow-xl border-border/40">
           <form onSubmit={handleSubmit}>
-            <CardHeader className="pb-4">
+            <CardHeader className="px-8 pt-8 pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <ShieldCheck className="size-5 text-primary" />
                 Sign In
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-8 py-6 space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -168,11 +166,11 @@ export default function LoginPage() {
                 )}
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
+            <CardFooter className="px-8 pb-8 flex flex-col gap-5">
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin mr-2" />
                     Signing in...
                   </>
                 ) : (

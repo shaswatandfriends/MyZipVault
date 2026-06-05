@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import {
   Card,
   CardContent,
@@ -10,13 +10,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,92 +19,54 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Shield, Loader2, ArrowLeft, QrCode, Copy, Check } from "lucide-react";
+import { Shield, Loader2, ArrowLeft, Mail, KeyRound, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import QRCode from "qrcode";
 
 type LoginStep = 1 | 2;
 
 export default function SuperAdminLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>(1);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [otpExpiry, setOtpExpiry] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  // TOTP setup state
-  const [showSetupDialog, setShowSetupDialog] = useState(false);
-  const [totpSecret, setTotpSecret] = useState("");
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
-  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
-  const [copiedSecret, setCopiedSecret] = useState(false);
-
-  // Generate QR code data URL from otpAuthUri
-  const generateQrCode = useCallback(async (otpAuthUri: string) => {
-    setIsGeneratingQr(true);
-    try {
-      const dataUrl = await QRCode.toDataURL(otpAuthUri, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      });
-      setQrCodeDataUrl(dataUrl);
-    } catch (err) {
-      console.error("QR code generation error:", err);
-    } finally {
-      setIsGeneratingQr(false);
-    }
-  }, []);
-
-  // Clean up: sign out if we navigate away during step 2
+  // Resend cooldown timer
   useEffect(() => {
-    return () => {
-      // If we're in step 2 and the component unmounts, we might want to clean up
-    };
-  }, []);
-
-  const copySecretToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(totpSecret);
-      setCopiedSecret(true);
-      toast.success("Secret copied to clipboard");
-      setTimeout(() => setCopiedSecret(false), 2000);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      toast.error("Please enter both email and password");
+    if (!password.trim()) {
+      toast.error("Please enter your password");
       return;
     }
 
     setIsLoading(true);
     try {
-      // First verify credentials
+      // First sign in with credentials
       const result = await signIn("credentials", {
-        email: email.trim(),
+        email: "__superadmin__", // placeholder — server uses env SUPERADMIN_EMAIL
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        toast.error("Invalid credentials", {
-          description: "Please check your email and password",
+        toast.error("Invalid password", {
+          description: "Please check your password and try again",
         });
         setIsLoading(false);
         return;
       }
 
-      // Verify super_admin role
+      // Verify the user is actually super_admin
       const sessionRes = await fetch("/api/auth/session");
       const session = await sessionRes.json();
       const role = (session?.user as Record<string, unknown>)?.role;
@@ -120,51 +75,40 @@ export default function SuperAdminLoginPage() {
         toast.error("Access denied", {
           description: "This portal is for super administrators only",
         });
-        // Sign out the non-super-admin user
-        await signIn("credentials", { redirect: false });
+        await signOut({ redirect: false });
         setIsLoading(false);
         return;
       }
 
-      // Check if TOTP is set up
-      const statusRes = await fetch("/api/auth/totp/status");
-      const statusData = await statusRes.json();
+      // Credentials verified — now send OTP
+      const otpRes = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.user.email, password }),
+      });
 
-      if (!statusData.setup) {
-        // TOTP not set up yet - generate secret and show setup dialog
-        const setupRes = await fetch("/api/auth/totp/setup", {
-          method: "POST",
+      const otpData = await otpRes.json();
+
+      if (!otpRes.ok) {
+        toast.error("Failed to send verification code", {
+          description: otpData.error || "Please try again",
         });
-        const setupData = await setupRes.json();
-
-        if (setupRes.ok && setupData.secret) {
-          setTotpSecret(setupData.secret);
-          await generateQrCode(setupData.otpAuthUri);
-          setShowSetupDialog(true);
-        } else {
-          toast.error("Failed to set up TOTP", {
-            description: setupData.error || "Please try again",
-          });
-        }
+        await signOut({ redirect: false });
         setIsLoading(false);
         return;
       }
 
-      // TOTP is already set up, proceed to step 2
+      setOtpExpiry(otpData.expiresAt);
+      setResendCooldown(60);
       setStep(2);
+      toast.success("Verification code sent", {
+        description: "Check your email for the 6-digit code",
+      });
     } catch {
       toast.error("Verification failed");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSetupComplete = () => {
-    setShowSetupDialog(false);
-    setStep(2);
-    toast.success("TOTP setup complete", {
-      description: "Please enter the code from your authenticator app",
-    });
   };
 
   const handleStep2 = async (e: React.FormEvent) => {
@@ -177,10 +121,14 @@ export default function SuperAdminLoginPage() {
 
     setIsLoading(true);
     try {
-      const verifyRes = await fetch("/api/auth/totp/verify", {
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      const email = session?.user?.email;
+
+      const verifyRes = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, token: otp }),
+        body: JSON.stringify({ email, otp }),
       });
 
       const verifyData = await verifyRes.json();
@@ -193,7 +141,9 @@ export default function SuperAdminLoginPage() {
         return;
       }
 
-      toast.success("Verified successfully!");
+      toast.success("Verified successfully!", {
+        description: "Welcome to the Super Admin Portal",
+      });
       router.push("/superadmin/dashboard");
     } catch {
       toast.error("Verification failed");
@@ -202,218 +152,196 @@ export default function SuperAdminLoginPage() {
     }
   };
 
-  const handleBackToStep1 = () => {
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+
+    setIsLoading(true);
+    try {
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      const email = session?.user?.email;
+
+      const otpRes = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const otpData = await otpRes.json();
+
+      if (!otpRes.ok) {
+        toast.error("Failed to resend code", {
+          description: otpData.error || "Please try again",
+        });
+        return;
+      }
+
+      setOtpExpiry(otpData.expiresAt);
+      setResendCooldown(60);
+      setOtp("");
+      toast.success("New code sent", {
+        description: "Check your email for the new 6-digit code",
+      });
+    } catch {
+      toast.error("Failed to resend code");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToStep1 = async () => {
+    await signOut({ redirect: false });
     setStep(1);
     setOtp("");
+    setPassword("");
   };
 
   return (
-    <div className="min-h-screen bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="size-14 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mx-auto mb-4">
-            <Shield className="size-7 text-rose-600 dark:text-rose-400" />
-          </div>
-          {step === 1 ? (
-            <>
-              <CardTitle className="text-xl">Super Admin Portal</CardTitle>
-              <CardDescription>
-                Enter your credentials to continue
-              </CardDescription>
-            </>
-          ) : (
-            <>
-              <CardTitle className="text-xl">Two-Factor Verification</CardTitle>
-              <CardDescription>
-                Enter the code from your authenticator app
-              </CardDescription>
-            </>
-          )}
-        </CardHeader>
-        <CardContent>
-          {step === 1 ? (
-            <form onSubmit={handleStep1} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="sa-email">Email</Label>
-                <Input
-                  id="sa-email"
-                  type="email"
-                  placeholder="superadmin@myzipvault.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sa-password">Password</Label>
-                <Input
-                  id="sa-password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Continue"
-                )}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleStep2} className="space-y-6">
-              <div className="space-y-4">
-                <Label className="text-center block">
-                  Enter the 6-digit code from your authenticator app
-                </Label>
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otp}
-                    onChange={setOtp}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                    </InputOTPGroup>
-                    <InputOTPSeparator />
-                    <InputOTPGroup>
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  Open your authenticator app (Google Authenticator, Authy, etc.) and enter the code shown
-                </p>
-              </div>
-              <Button
-                type="submit"
-                className="w-full gap-2"
-                disabled={isLoading || otp.length !== 6}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify & Sign In"
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full gap-2"
-                onClick={handleBackToStep1}
-              >
-                <ArrowLeft className="size-4" />
-                Back to credentials
-              </Button>
-            </form>
-          )}
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              &larr; Back to main site
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* TOTP Setup Dialog */}
-      <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
-        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="size-5 text-rose-600" />
-              Set Up Authenticator
-            </DialogTitle>
-            <DialogDescription>
-              Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.) to set up two-factor authentication.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* QR Code */}
-            <div className="flex justify-center">
-              <div className="bg-white p-3 rounded-lg border">
-                {isGeneratingQr ? (
-                  <div className="size-[256px] flex items-center justify-center">
-                    <Loader2 className="size-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : qrCodeDataUrl ? (
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="TOTP QR Code"
-                    width={256}
-                    height={256}
-                    className="size-[256px]"
-                  />
-                ) : (
-                  <div className="size-[256px] flex items-center justify-center text-muted-foreground text-sm">
-                    QR code unavailable
-                  </div>
-                )}
-              </div>
+    <div className="min-h-screen bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-[420px]">
+        <Card className="shadow-xl border-rose-200/60 dark:border-rose-800/40">
+          <CardHeader className="px-8 pt-8 pb-2 text-center">
+            <div className="size-14 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mx-auto mb-5">
+              <Shield className="size-7 text-rose-600 dark:text-rose-400" />
             </div>
-
-            {/* Manual Entry */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Manual Entry Key
-              </Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded-md text-xs font-mono break-all select-all">
-                  {totpSecret}
-                </code>
+            {step === 1 ? (
+              <>
+                <CardTitle className="text-xl">Super Admin Portal</CardTitle>
+                <CardDescription className="text-sm mt-1">
+                  Enter your password to continue
+                </CardDescription>
+              </>
+            ) : (
+              <>
+                <CardTitle className="text-xl">Email Verification</CardTitle>
+                <CardDescription className="text-sm mt-1">
+                  Enter the 6-digit code sent to your email
+                </CardDescription>
+              </>
+            )}
+          </CardHeader>
+          <CardContent className="px-8 py-6">
+            {step === 1 ? (
+              <form onSubmit={handleStep1} className="space-y-5">
+                {/* Fixed email display (no input — server controls this) */}
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="flex items-center gap-2 bg-rose-100/60 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/40 rounded-md px-3 py-2.5">
+                    <Mail className="size-4 text-rose-500 shrink-0" />
+                    <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">Super Administrator</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Email is configured server-side for security
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sa-password">Password</Label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input
+                      id="sa-password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={copySecretToClipboard}
+                  type="submit"
+                  className="w-full h-11 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+                  disabled={isLoading}
                 >
-                  {copiedSecret ? (
-                    <Check className="size-4 text-green-600" />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Verifying...
+                    </>
                   ) : (
-                    <Copy className="size-4" />
+                    "Continue"
                   )}
                 </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                If you can&apos;t scan the QR code, enter this key manually in your authenticator app.
-              </p>
+              </form>
+            ) : (
+              <form onSubmit={handleStep2} className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-center block">
+                    Enter the 6-digit code from your email
+                  </Label>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={setOtp}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-11 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+                  disabled={isLoading || otp.length !== 6}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Verifying...
+                    </>
+                    ) : (
+                    "Verify & Sign In"
+                  )}
+                </Button>
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="gap-2 text-muted-foreground"
+                    onClick={handleBackToStep1}
+                  >
+                    <ArrowLeft className="size-4" />
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="gap-2 text-rose-600 hover:text-rose-700"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || isLoading}
+                  >
+                    <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+                    {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
+                  </Button>
+                </div>
+              </form>
+            )}
+            <div className="mt-8 text-center">
+              <Link
+                href="/"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                &larr; Back to main site
+              </Link>
             </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              className="w-full gap-2"
-              onClick={handleSetupComplete}
-            >
-              I&apos;ve Added the Account — Continue
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

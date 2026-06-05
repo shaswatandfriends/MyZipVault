@@ -58,7 +58,7 @@ async function main() {
   // ─── 2. Create Users ────────────────────────────────────────────
   const superAdmin = await prisma.user.create({
     data: {
-      email: 'superadmin@myzipvault.com',
+      email: process.env.SUPERADMIN_EMAIL || 'superadmin@myzipvault.com',
       password_hash: passwordHash,
       role: 'super_admin',
       is_approved: true,

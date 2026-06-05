@@ -31,6 +31,7 @@ import {
   LogOut,
   CheckCheck,
   Info,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -43,6 +44,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { UserRole } from "@/lib/types";
 
 // ─── Nav Item Type ────────────────────────────────────────────────────
@@ -357,16 +369,36 @@ export function AppSidebar() {
             </Badge>
           </div>
 
-          {/* Logout Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            <LogOut className="mr-2 size-4" />
-            Sign Out
-          </Button>
+          {/* Logout Button with Confirmation */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                <LogOut className="mr-2 size-4" />
+                Sign Out
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sign out of MyZipVault?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You will need to sign in again to access your account. Any unsaved changes may be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                >
+                  Sign Out
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </Sidebar>

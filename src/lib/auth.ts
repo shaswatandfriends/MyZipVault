@@ -3,6 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
 
+// Server-side superadmin email — never exposed to the client
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -16,8 +19,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        // Map the superadmin placeholder to the actual env-configured email
+        let lookupEmail = credentials.email;
+        if (credentials.email === "__superadmin__" && SUPERADMIN_EMAIL) {
+          lookupEmail = SUPERADMIN_EMAIL;
+        }
+
         const user = await db.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: lookupEmail },
         });
 
         if (!user) {
@@ -26,6 +35,13 @@ export const authOptions: NextAuthOptions = {
 
         if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
           throw new Error("Account is not active. Please contact support.");
+        }
+
+        // Super Admin gate: only the env-configured email can be super_admin
+        if (user.role === "super_admin") {
+          if (!SUPERADMIN_EMAIL || user.email.toLowerCase() !== SUPERADMIN_EMAIL.toLowerCase()) {
+            throw new Error("Unauthorized access");
+          }
         }
 
         const isValidPassword = await compare(
