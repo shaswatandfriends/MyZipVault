@@ -99,7 +99,7 @@ function CandidateView() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="px-4 py-20 md:py-28 lg:py-36">
+      <section className="px-4 py-14 md:py-18 lg:py-22">
         <div className="mx-auto max-w-4xl text-center">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -114,7 +114,7 @@ function CandidateView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
+            className="mx-auto mt-6 max-w-2xl text-lg text-foreground/70 md:text-xl"
           >
             The secure, candidate-controlled vault for healthcare professionals.
             Complete your skills checklists once, store your credentials, collect
@@ -148,12 +148,12 @@ function CandidateView() {
 
       {/* Problem */}
       <FadeInOnScroll>
-        <section className="border-t border-b bg-muted/30 px-4 py-20 md:py-28">
+        <section className="border-t border-b bg-muted/30 px-4 py-14 md:py-18">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               The Problem Every Nurse Knows
             </h2>
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl">
+            <p className="mt-6 text-lg leading-relaxed text-foreground/75 md:text-xl">
               Every time you apply for a travel assignment, it&apos;s the same
               nightmare. Refilling the exact same Med-Surg skills checklist for the
               fifth time. Digging through your email to find a photo of your BLS
@@ -165,8 +165,58 @@ function CandidateView() {
         </section>
       </FadeInOnScroll>
 
+      {/* How It Works */}
+      <FadeInOnScroll>
+        <section className="px-4 py-14 md:py-18">
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                How It Works
+              </h2>
+              <p className="mt-3 text-foreground/60">
+                Three steps. Under five minutes. Your career data, organized forever.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-8 sm:grid-cols-3">
+              {/* Step 1 */}
+              <div className="relative flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  1
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Create Your Vault</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  Sign up free. Upload your resume and our builder auto-fills your profile. Add your BLS, ACLS, RN License, and immunizations in minutes.
+                </p>
+                <div className="absolute right-0 top-7 hidden h-px w-1/2 translate-x-1/2 bg-border sm:block" />
+              </div>
+              {/* Step 2 */}
+              <div className="relative flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  2
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Complete Your Checklists</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  When an agency requests a skills checklist, fill it out once. It stays in your vault for 30 days. Next agency asks? Click Share. No retakes.
+                </p>
+                <div className="absolute right-0 top-7 hidden h-px w-1/2 translate-x-1/2 bg-border sm:block" />
+              </div>
+              {/* Step 3 */}
+              <div className="flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  3
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Share On Your Terms</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  Grant expiring access to any recruiter — 7, 14, or 30 days. Revoke anytime. They see only what you allow. Nothing more.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </FadeInOnScroll>
+
       {/* Features */}
-      <section className="px-4 py-20 md:py-28">
+      <section className="border-t px-4 py-14 md:py-18">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-12 md:grid-cols-2">
             {/* Feature 1 */}
@@ -179,7 +229,7 @@ function CandidateView() {
                   <h3 className="text-xl font-semibold">
                     Complete Once, Reuse for 30 Days
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Receive a checklist request from an agency. Rate yourself on our
                     industry-standard lists. Once submitted, it&apos;s saved in your
                     vault. If another agency asks for the same list within 30 days,
@@ -199,7 +249,7 @@ function CandidateView() {
                   <h3 className="text-xl font-semibold">
                     Never Start From Scratch
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Upload your current resume and our builder auto-fills your
                     profile. Next time you need to add a new assignment, click Add
                     Experience. Edit, update, and export a formatted resume in
@@ -219,7 +269,7 @@ function CandidateView() {
                   <h3 className="text-xl font-semibold">
                     Never Let a Cert Expire Unnoticed
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Upload your BLS, ACLS, RN License, and Immunizations. Turn on
                     expiration reminders and we&apos;ll alert you 30 days before
                     it&apos;s time to renew.
@@ -238,7 +288,7 @@ function CandidateView() {
                   <h3 className="text-xl font-semibold">
                     Build Your Verified Reference Network
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Connect with your managers and request an evaluation. They get a
                     free vault too. Store their verified signed reference in your
                     vault, ready to share the second a recruiter asks.
@@ -252,44 +302,43 @@ function CandidateView() {
 
       {/* Privacy */}
       <FadeInOnScroll>
-        <section className="border-t bg-muted/30 px-4 py-20 md:py-28">
+        <section className="border-t bg-muted/30 px-4 py-14 md:py-18">
           <div className="mx-auto max-w-4xl">
             <div className="text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 Your Vault. Your Rules.{" "}
                 <span className="text-primary">Zero Surprises.</span>
               </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
+              <p className="mt-4 text-lg text-foreground/60">
                 We&apos;re not a job board. Recruiters can never browse your profile.
               </p>
             </div>
-            <div className="mt-12 grid gap-8 sm:grid-cols-3">
+            <div className="mt-10 grid gap-8 sm:grid-cols-3">
               <div className="flex flex-col items-center text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary/15">
                   <Lock className="size-6 text-primary" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">Explicit Consent</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  A recruiter only sees what you share.
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Explicit Consent</h3>
+                <p className="mt-2 text-sm text-foreground/70">
+                  A recruiter only sees what you share. Nothing is ever visible by default.
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary/15">
                   <Timer className="size-6 text-primary" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">Expiring Access</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  You set the timer — 7, 14, or 30 days.
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Expiring Access</h3>
+                <p className="mt-2 text-sm text-foreground/70">
+                  You set the timer — 7, 14, or 30 days. Access ends automatically.
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary/15">
                   <Trash2 className="size-6 text-primary" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">No Data Hoarding</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  If you delete your account, all recruiter access is killed
-                  instantly.
+                <h3 className="mt-4 text-lg font-semibold text-foreground">No Data Hoarding</h3>
+                <p className="mt-2 text-sm text-foreground/70">
+                  If you delete your account, all recruiter access is killed instantly.
                 </p>
               </div>
             </div>
@@ -299,12 +348,12 @@ function CandidateView() {
 
       {/* Final CTA */}
       <FadeInOnScroll>
-        <section className="px-4 py-20 md:py-28">
+        <section className="px-4 py-14 md:py-18">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Claim Your Free Vault Now
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-foreground/60">
               No credit card. No catch. Your career data, your control.
             </p>
             <div className="mt-8">
@@ -325,7 +374,7 @@ function RecruiterView() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="px-4 py-20 md:py-28 lg:py-36">
+      <section className="px-4 py-14 md:py-18 lg:py-22">
         <div className="mx-auto max-w-4xl text-center">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -340,7 +389,7 @@ function RecruiterView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
+            className="mx-auto mt-6 max-w-2xl text-lg text-foreground/70 md:text-xl"
           >
             MyZipVault automates the healthcare compliance packet. Request a
             checklist, credentials, and references — and watch them complete in real
@@ -361,8 +410,58 @@ function RecruiterView() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <FadeInOnScroll>
+        <section className="border-t px-4 py-14 md:py-18">
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                How It Works
+              </h2>
+              <p className="mt-3 text-foreground/60">
+                Request, track, and receive — in real time.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-8 sm:grid-cols-3">
+              {/* Step 1 */}
+              <div className="relative flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  1
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Send a Request</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  Request a checklist, credentials, and references from any nurse on the platform. One request, all documents.
+                </p>
+                <div className="absolute right-0 top-7 hidden h-px w-1/2 translate-x-1/2 bg-border sm:block" />
+              </div>
+              {/* Step 2 */}
+              <div className="relative flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  2
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Track in Real Time</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  See who opened your request, who is at 30% or 90%, and who has submitted. No more guessing or follow-up emails.
+                </p>
+                <div className="absolute right-0 top-7 hidden h-px w-1/2 translate-x-1/2 bg-border sm:block" />
+              </div>
+              {/* Step 3 */}
+              <div className="flex flex-col items-center text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  3
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">Access Verified Documents</h3>
+                <p className="mt-2 text-sm text-foreground/65">
+                  Nurses share via expiring, HIPAA-aligned links. You get compliant, verified documents without storing sensitive data.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </FadeInOnScroll>
+
       {/* Features */}
-      <section className="border-t px-4 py-20 md:py-28">
+      <section className="border-t px-4 py-14 md:py-18">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-12 md:grid-cols-2">
             {/* Feature 1 */}
@@ -373,7 +472,7 @@ function RecruiterView() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">Real-Time Tracking</h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     See exactly who opened your request, who&apos;s currently filling
                     it out at 30% or 50% or 90%, and who has submitted. No more
                     guessing.
@@ -392,7 +491,7 @@ function RecruiterView() {
                   <h3 className="text-xl font-semibold">
                     Instant Document Access
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Request a checklist and BLS. If the nurse shares their ACLS and
                     resume too, unlock each extra verified document for just 1
                     credit.
@@ -409,7 +508,7 @@ function RecruiterView() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">Verified References</h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     When nurses request references from their managers, the manager
                     joins the vault. Next time you need a reference from that
                     manager, it&apos;s already verified.
@@ -428,7 +527,7 @@ function RecruiterView() {
                   <h3 className="text-xl font-semibold">
                     HIPAA-Aligned Sharing
                   </h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                  <p className="mt-3 leading-relaxed text-foreground/65">
                     Candidates set expiring access links. You get compliant
                     verifiable documents without storing sensitive data in your own
                     inbox.
@@ -442,12 +541,12 @@ function RecruiterView() {
 
       {/* Final CTA */}
       <FadeInOnScroll>
-        <section className="border-t bg-muted/30 px-4 py-20 md:py-28">
+        <section className="border-t bg-muted/30 px-4 py-14 md:py-18">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Get Started
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-foreground/60">
               Compliance packets that complete themselves.
             </p>
             <div className="mt-8">
@@ -476,27 +575,27 @@ function Footer() {
             <span className="font-semibold text-lg">MyZipVault</span>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <Link href="#" className="hover:text-foreground transition-colors">
+            <Link href="/about" className="hover:text-foreground transition-colors">
               About
             </Link>
-            <Link href="#" className="hover:text-foreground transition-colors">
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:text-foreground transition-colors">
+            <Link href="/terms" className="hover:text-foreground transition-colors">
               Terms of Service
             </Link>
-            <Link href="#" className="hover:text-foreground transition-colors">
+            <Link href="mailto:support@myzipvault.com" className="hover:text-foreground transition-colors">
               Contact
             </Link>
           </nav>
         </div>
         <div className="mt-8 flex flex-col items-center gap-4 border-t pt-6 sm:flex-row sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            &copy; 2024 MyZipVault. All rights reserved.
+            &copy; 2025 MyZipVault. All rights reserved.
           </p>
           <Badge variant="outline" className="gap-1.5 py-1 text-xs">
             <ShieldCheck className="size-3.5 text-primary" />
-            HIPAA Compliant
+            HIPAA-Aligned Security
           </Badge>
         </div>
       </div>
