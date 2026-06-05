@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,11 +49,29 @@ export default function AdminLoginPage() {
         toast.error("Access denied", {
           description: "This portal is for administrators only",
         });
+        await signOut({ redirect: false });
         return;
       }
 
+      // Check approval status for client roles
+      const isApproved = (session?.user as Record<string, unknown>)?.isApproved;
+      if ((role === "client_admin" || role === "client_recruiter") && isApproved === false) {
+        toast.error("Account pending approval", {
+          description: "Your account is awaiting admin approval. You will be notified once approved.",
+          duration: 8000,
+        });
+        await signOut({ redirect: false });
+        return;
+      }
+
+      // Role-based redirect
+      let dashboard = "/admin/dashboard";
+      if (role === "client_admin" || role === "client_recruiter") {
+        dashboard = "/recruiter/dashboard";
+      }
+
       toast.success("Signed in successfully!");
-      router.push("/admin/dashboard");
+      router.push(dashboard);
     } catch {
       toast.error("Sign in failed");
     } finally {

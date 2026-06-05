@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { Loader2, Heart, ShieldCheck } from "lucide-react";
+import { Loader2, Briefcase, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { signOut } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,27 +20,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function getRoleDashboard(role: string): string {
-  switch (role) {
-    case "super_admin":
-      return "/superadmin/dashboard";
-    case "platform_admin":
-      return "/admin/dashboard";
-    case "client_admin":
-    case "client_recruiter":
-      return "/recruiter/dashboard";
-    case "candidate":
-      return "/dashboard";
-    default:
-      return "/dashboard";
-  }
-}
-
-export default function LoginPage() {
+export default function AgencyLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {}
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
@@ -71,20 +58,43 @@ export default function LoginPage() {
 
       if (result?.error) {
         toast.error("Sign in failed", {
-          description: result.error || "Invalid email or password",
+          description: "Invalid email or password",
         });
-      } else {
-        // Fetch session to get role for redirect
-        const sessionRes = await fetch("/api/auth/session");
-        const sessionData = await sessionRes.json();
-        const role = sessionData?.user?.role || "candidate";
-        const dashboard = getRoleDashboard(role);
-        toast.success("Welcome back!", {
-          description: "You have been signed in successfully.",
-        });
-        router.push(dashboard);
-        router.refresh();
+        return;
       }
+
+      // Fetch session to get role + approval status
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+      const role = sessionData?.user?.role as string | undefined;
+      const isApproved = sessionData?.user?.isApproved as boolean | undefined;
+
+      // Check role — only client_admin and client_recruiter allowed
+      if (role !== "client_admin" && role !== "client_recruiter") {
+        toast.error("Access denied", {
+          description:
+            "This portal is for staffing agencies and recruiters only. Use the candidate login instead.",
+        });
+        await signOut({ redirect: false });
+        return;
+      }
+
+      // Check approval status
+      if (isApproved === false) {
+        toast.error("Account pending approval", {
+          description:
+            "Your account is awaiting admin approval. You will be notified once approved.",
+          duration: 8000,
+        });
+        await signOut({ redirect: false });
+        return;
+      }
+
+      toast.success("Welcome back!", {
+        description: "You have been signed in successfully.",
+      });
+      router.push("/recruiter/dashboard");
+      router.refresh();
     } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
@@ -98,38 +108,36 @@ export default function LoginPage() {
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground shadow-lg mb-4">
-            <Heart className="size-7" />
+            <Briefcase className="size-7" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Welcome to MyZipVault
+            Agency Portal
           </h1>
           <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
-            Healthcare credential verification, simplified
+            Sign in to your staffing agency or recruiter account
           </p>
         </div>
 
         <Card className="shadow-xl border-border/40">
           <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-1.5 px-6 pt-6 pb-0">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="size-5 text-primary" />
-                Sign In
-              </CardTitle>
+              <CardTitle className="text-lg">Sign In</CardTitle>
               <CardDescription className="text-sm">
-                Enter your credentials to access your account
+                Enter your credentials to access your agency dashboard
               </CardDescription>
             </CardHeader>
             <CardContent className="px-6 pt-5 pb-4 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Work Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="you@agency.com"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: undefined }));
                   }}
                   disabled={isLoading}
                   className={errors.email ? "border-destructive" : ""}
@@ -145,7 +153,9 @@ export default function LoginPage() {
                   <button
                     type="button"
                     className="text-xs text-primary hover:underline"
-                    onClick={() => toast.info("Password reset coming soon!")}
+                    onClick={() =>
+                      toast.info("Password reset coming soon!")
+                    }
                   >
                     Forgot password?
                   </button>
@@ -157,7 +167,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                    if (errors.password)
+                      setErrors((prev) => ({ ...prev, password: undefined }));
                   }}
                   disabled={isLoading}
                   className={errors.password ? "border-destructive" : ""}
@@ -169,7 +180,11 @@ export default function LoginPage() {
               </div>
             </CardContent>
             <CardFooter className="px-6 pb-6 flex flex-col gap-4">
-              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-2" />
@@ -182,10 +197,10 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground text-center">
                 Don&apos;t have an account?{" "}
                 <Link
-                  href="/signup"
+                  href="/agency-signup"
                   className="text-primary font-medium hover:underline"
                 >
-                  Sign up
+                  Register your agency
                 </Link>
               </p>
               <div className="relative">
@@ -193,21 +208,33 @@ export default function LoginPage() {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                  <span className="bg-card px-2 text-muted-foreground">
+                    or
+                  </span>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                Staffing agency or recruiter?{" "}
+                Healthcare professional?{" "}
                 <Link
-                  href="/agency-login"
+                  href="/login"
                   className="text-primary font-medium hover:underline"
                 >
-                  Agency Login
+                  Candidate Login
                 </Link>
               </p>
             </CardFooter>
           </form>
         </Card>
+
+        {/* Back link */}
+        <div className="mt-6 text-center">
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            &larr; Back to main site
+          </Link>
+        </div>
       </div>
     </div>
   );

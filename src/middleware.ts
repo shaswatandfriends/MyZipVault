@@ -9,7 +9,7 @@ export default withAuth({
       const pathname = req.nextUrl.pathname;
 
       // Public routes - always allowed
-      const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login"];
+      const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/"];
 
       if (publicRoutes.some((r) => pathname === r)) return true;

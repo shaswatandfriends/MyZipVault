@@ -253,6 +253,23 @@ export default function SignupPage() {
                   Sign in
                 </Link>
               </p>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Staffing agency or recruiter?{" "}
+                <Link
+                  href="/agency-signup"
+                  className="text-primary font-medium hover:underline"
+                >
+                  Register here
+                </Link>
+              </p>
             </CardFooter>
           </form>
         </Card>

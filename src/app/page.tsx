@@ -352,7 +352,7 @@ function RecruiterView() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-8"
           >
-            <Link href="/signup">
+            <Link href="/agency-signup">
               <Button size="lg" className="gap-2 text-base px-8 py-6">
                 Get Started <ArrowRight className="size-4" />
               </Button>
@@ -451,7 +451,7 @@ function RecruiterView() {
               Compliance packets that complete themselves.
             </p>
             <div className="mt-8">
-              <Link href="/signup">
+              <Link href="/agency-signup">
                 <Button size="lg" className="gap-2 text-base px-8 py-6">
                   Get Started <ArrowRight className="size-4" />
                 </Button>
@@ -520,12 +520,12 @@ export default function LandingPage() {
           </div>
           <ViewToggle view={view} setView={setView} />
           <nav className="flex items-center gap-2">
-            <Link href="/login">
+            <Link href={view === "candidate" ? "/login" : "/agency-login"}>
               <Button variant="ghost" size="sm">
                 Log In
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href={view === "candidate" ? "/signup" : "/agency-signup"}>
               <Button size="sm">Sign Up</Button>
             </Link>
           </nav>
