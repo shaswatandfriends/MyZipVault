@@ -70,3 +70,22 @@ Work Log:
 Stage Summary:
 - Modified: sidebar.tsx, auth-provider.tsx, signout/route.ts, auth.ts
 - Build passes, pushed to GitHub (aa66fab), Vercel auto-deploy triggered
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix signout not working - user gets signed back in automatically
+
+Work Log:
+- Found ROOT CAUSE: custom /api/auth/signout/route.ts was intercepting NextAuth's built-in signout endpoint
+- When signOut() from next-auth/react sends POST to /api/auth/signout, Next.js routes to our custom handler (more specific than [...nextauth] catch-all)
+- Our handler only did audit logging + returned JSON — NEVER cleared the session cookie
+- JWT remained valid → AuthProvider detected session → auto-redirected user back into the app
+- Fix: Deleted /api/auth/signout/route.ts entirely so NextAuth's built-in handler runs
+- Audit logging already handled by events.signOut callback in auth.ts
+- Removed fetch('/api/auth/signout') from sidebar, now just calls signOut({ callbackUrl }) directly
+
+Stage Summary:
+- Deleted: src/app/api/auth/signout/route.ts
+- Modified: src/components/layout/sidebar.tsx (removed audit fetch call)
+- Build passes, pushed to GitHub (aa61a4c), Vercel auto-deploy triggered
