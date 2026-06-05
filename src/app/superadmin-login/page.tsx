@@ -3,13 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
@@ -17,11 +10,17 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Shield, Loader2, Mail, RefreshCw } from "lucide-react";
+import { Loader2, Mail, RefreshCw, Check } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
 type LoginStep = "request" | "verify";
+
+const trustPoints = [
+  "Highest Security Level",
+  "Full System Access",
+  "Audit Trail Enabled",
+];
 
 export default function SuperAdminLoginPage() {
   const router = useRouter();
@@ -166,52 +165,67 @@ export default function SuperAdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-[440px]">
-        <Card className="shadow-xl border-rose-200/60 dark:border-rose-800/40">
-          <CardHeader className="space-y-1.5 px-6 pt-6 pb-0 text-center">
-            <div className="size-14 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mx-auto mb-3">
-              <Shield className="size-7 text-rose-600 dark:text-rose-400" />
+    <div className="min-h-screen flex">
+      {/* Left Panel - Decorative */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+          </div>
+          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>Platform Administration</p>
+          <div className="mt-12 space-y-4">
+            {trustPoints.map((point) => (
+              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Check className="size-4 shrink-0" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+        <div className="max-w-[400px] w-full">
+          {/* Mobile branding */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
+              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
             </div>
-            {step === "request" ? (
-              <>
-                <CardTitle className="text-xl">Super Admin Portal</CardTitle>
-                <CardDescription className="text-sm">
-                  Verify your identity with a one-time code
-                </CardDescription>
-              </>
-            ) : (
-              <>
-                <CardTitle className="text-xl">Email Verification</CardTitle>
-                <CardDescription className="text-sm">
-                  Enter the 6-digit code sent to your email
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-          <CardContent className="px-6 pt-5 pb-6">
-            {step === "request" ? (
+            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+          </div>
+
+          {step === "request" ? (
+            <>
+              <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
+                Super Admin Portal
+              </h1>
+              <p className="text-[#6B7280] text-base mt-2 mb-8">
+                Verify your identity with a one-time code
+              </p>
+
               <div className="space-y-5">
-                {/* Fixed email indicator (no input — server controls this) */}
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Email</span>
-                  <div className="flex items-center gap-2 bg-rose-100/60 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/40 rounded-md px-3 py-2.5">
-                    <Mail className="size-4 text-rose-500 shrink-0" />
-                    <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">Super Administrator</span>
+                {/* Fixed email indicator */}
+                <div className="space-y-1.5">
+                  <span className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">Email</span>
+                  <div className="flex items-center gap-2 bg-[#DCFCE7] border border-[#166534]/20 rounded-xl px-4 py-3">
+                    <Mail className="size-4 text-[#166534] shrink-0" />
+                    <span className="text-sm text-[#166534] font-medium">Super Administrator</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-[#9CA3AF]">
                     Email is configured server-side for security
                   </p>
                 </div>
                 <Button
                   type="button"
-                  className="w-full h-11 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+                  className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
                   disabled={isLoading}
                   onClick={handleSendOtp}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin mr-2" />
                       Sending Code...
                     </>
                   ) : (
@@ -219,10 +233,19 @@ export default function SuperAdminLoginPage() {
                   )}
                 </Button>
               </div>
-            ) : (
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
+                Email Verification
+              </h1>
+              <p className="text-[#6B7280] text-base mt-2 mb-8">
+                Enter the 6-digit code sent to your email
+              </p>
+
               <form onSubmit={handleVerifyOtp} className="space-y-6">
                 <div className="space-y-4">
-                  <span className="text-sm font-medium text-center block">
+                  <span className="text-sm font-medium text-[#6B7280] text-center block">
                     Enter the 6-digit code from your email
                   </span>
                   <div className="flex justify-center">
@@ -244,18 +267,18 @@ export default function SuperAdminLoginPage() {
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-[#9CA3AF] text-center">
                     Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
                   </p>
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-11 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+                  className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
                   disabled={isLoading || otp.length !== 6}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin mr-2" />
                       Verifying...
                     </>
                   ) : (
@@ -267,7 +290,7 @@ export default function SuperAdminLoginPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground"
+                    className="text-[#6B7280]"
                     onClick={handleBackToRequest}
                   >
                     Back
@@ -276,7 +299,7 @@ export default function SuperAdminLoginPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-rose-600 hover:text-rose-700"
+                    className="text-[#0D9488] hover:text-[#0D9488]"
                     onClick={handleResendOtp}
                     disabled={resendCooldown > 0 || isLoading}
                   >
@@ -285,17 +308,18 @@ export default function SuperAdminLoginPage() {
                   </Button>
                 </div>
               </form>
-            )}
-            <div className="mt-6 text-center">
-              <Link
-                href="/"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                &larr; Back to main site
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+            </>
+          )}
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/"
+              className="text-sm text-[#9CA3AF] hover:text-[#111827] transition-colors"
+            >
+              &larr; Back to main site
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

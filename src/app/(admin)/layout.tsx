@@ -13,14 +13,17 @@ export default function AdminLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 !h-4" />
-          <span className="text-sm font-medium text-muted-foreground">
+        <header className="flex h-16 items-center gap-3 border-b border-[#E5E7EB] px-6 bg-white">
+          <SidebarTrigger className="-ml-1 text-[#6B7280] hover:text-[#111827]" />
+          <Separator orientation="vertical" className="mr-2 !h-4 bg-[#E5E7EB]" />
+          <span
+            className="text-sm font-semibold text-[#111827]"
+            style={{ fontFamily: "'Clash Display', sans-serif" }}
+          >
             Platform Admin Portal
           </span>
         </header>
-        <div className="p-4 md:p-6">{children}</div>
+        <div className="p-6 md:p-8 bg-[#F8F7F4] min-h-screen">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

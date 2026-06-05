@@ -65,24 +65,6 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
-// ─── Role Background Colors ──────────────────────────────────────────
-const roleBgColors: Record<UserRole, string> = {
-  candidate: "bg-emerald-800",
-  client_recruiter: "bg-teal-800",
-  client_admin: "bg-teal-800",
-  platform_admin: "bg-slate-800",
-  super_admin: "bg-rose-900",
-};
-
-// ─── Role Badge Styles ───────────────────────────────────────────────
-const roleBadgeStyles: Record<UserRole, string> = {
-  candidate: "bg-emerald-400/20 text-emerald-200 border-emerald-400/30",
-  client_recruiter: "bg-teal-400/20 text-teal-200 border-teal-400/30",
-  client_admin: "bg-teal-400/20 text-teal-200 border-teal-400/30",
-  platform_admin: "bg-slate-400/20 text-slate-200 border-slate-400/30",
-  super_admin: "bg-rose-400/20 text-rose-200 border-rose-400/30",
-};
-
 // ─── Role Display Labels ─────────────────────────────────────────────
 const roleLabels: Record<UserRole, string> = {
   candidate: "Candidate",
@@ -132,6 +114,7 @@ const superAdminNav: NavItem[] = [
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
   { title: "Templates", href: "/superadmin/templates", icon: Mail },
   { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+  { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
@@ -235,23 +218,28 @@ function NotificationBell() {
   return (
     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <PopoverTrigger asChild>
-        <button className="relative flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white">
-          <Bell className="size-4 shrink-0" />
+        <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[#111827]">
+          <Bell className="size-5 shrink-0" />
           <span>Notifications</span>
           {unreadCount > 0 && (
-            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[#166534] text-[10px] font-bold text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent side="right" align="start" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h4 className="text-sm font-semibold">Notifications</h4>
+      <PopoverContent side="right" align="start" className="w-80 rounded-xl border-[#E5E7EB] bg-white p-0 shadow-lg">
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
+          <h4
+            className="text-sm font-semibold text-[#111827]"
+            style={{ fontFamily: "'Clash Display', sans-serif" }}
+          >
+            Notifications
+          </h4>
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
-              className="flex items-center gap-1 text-xs text-primary hover:underline"
+              className="flex items-center gap-1 text-xs text-[#166534] hover:underline"
             >
               <CheckCheck className="size-3" />
               Mark all read
@@ -260,7 +248,7 @@ function NotificationBell() {
         </div>
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="px-4 py-6 text-center text-sm text-[#9CA3AF]">
               No notifications
             </p>
           ) : (
@@ -270,17 +258,17 @@ function NotificationBell() {
                 return (
                   <div
                     key={n.id}
-                    className="flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/50"
+                    className="flex items-start gap-3 border-b border-[#E5E7EB] px-4 py-3 transition-colors last:border-b-0 hover:bg-[#F8F7F4]"
                   >
-                    <IconComp className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <IconComp className="mt-0.5 size-4 shrink-0 text-[#9CA3AF]" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm">{n.message}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="truncate text-sm text-[#111827]">{n.message}</p>
+                      <p className="mt-0.5 text-xs text-[#9CA3AF]">
                         {formatDate(n.createdAt)}
                       </p>
                     </div>
                     {!n.isRead && (
-                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500" />
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[#166534]" />
                     )}
                   </div>
                 );
@@ -300,28 +288,43 @@ export function AppSidebar() {
 
   if (!role) return null;
 
-  const bgColor = roleBgColors[role];
   const navItems = getNavItems(role);
-  const badgeStyle = roleBadgeStyles[role];
   const label = roleLabels[role];
+
+  const initials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`
+      : user?.email?.[0]?.toUpperCase() ?? "U";
+
+  const displayName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.email ?? "User";
 
   return (
     <Sidebar collapsible="offcanvas">
-      <div
-        className={cn(
-          bgColor,
-          "flex h-full w-full flex-col overflow-hidden text-white"
-        )}
-      >
-        {/* ── Top Section ── */}
-        <div className="flex items-center gap-2 px-4 py-3">
-          <Shield className="size-5 shrink-0 text-white" />
-          <span className="text-lg font-bold text-white">MyZipVault</span>
+      <div className="flex h-full w-full flex-col overflow-hidden bg-white border-r border-[#E5E7EB]">
+        {/* ── Top Section: Logo + Brand ── */}
+        <div className="flex items-center gap-3 px-4 py-4">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-[#166534] text-xs font-bold text-white">
+            ZV
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span
+              className="text-[15px] font-semibold leading-tight text-[#111827]"
+              style={{ fontFamily: "'Clash Display', sans-serif" }}
+            >
+              MyZipVault
+            </span>
+            <span className="text-[11px] font-medium text-[#9CA3AF]">
+              {label}
+            </span>
+          </div>
         </div>
-        <div className="mx-2 h-px bg-white/20" />
+        <div className="mx-3 h-px bg-[#E5E7EB]" />
 
         {/* ── Navigation Section ── */}
-        <ScrollArea className="flex-1 px-2 py-2">
+        <ScrollArea className="flex-1 px-3 py-3">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => {
               const isActive =
@@ -332,13 +335,13 @@ export function AppSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                     isActive
-                      ? "bg-white/20 font-medium text-white"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                      ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                      : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
                   )}
                 >
-                  <item.icon className="size-4 shrink-0" />
+                  <item.icon className="size-5 shrink-0" />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -346,52 +349,55 @@ export function AppSidebar() {
           </nav>
         </ScrollArea>
 
-        {/* ── Bottom Section ── */}
-        <div className="space-y-2 border-t border-white/20 p-3">
+        {/* ── Bottom Section: User + Sign Out ── */}
+        <div className="space-y-2 border-t border-[#E5E7EB] p-3">
           {/* Notification Bell (candidates only) */}
           {role === "candidate" && <NotificationBell />}
 
-          {/* User Email */}
-          <p
-            className="truncate px-1 text-xs text-white/60"
-            title={user?.email ?? ""}
-          >
-            {user?.email}
-          </p>
-
-          {/* Role Badge */}
-          <div className="px-1">
-            <Badge
-              variant="outline"
-              className={cn("border px-1.5 py-0 text-[10px]", badgeStyle)}
-            >
-              {label}
-            </Badge>
+          {/* User Info */}
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2">
+            <div className="flex size-8 items-center justify-center rounded-full bg-[#DCFCE7] text-xs font-semibold text-[#166534]">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[#111827]">
+                {displayName}
+              </p>
+              <p
+                className="truncate text-xs text-[#9CA3AF]"
+                title={user?.email ?? ""}
+              >
+                {user?.email}
+              </p>
+            </div>
           </div>
 
           {/* Logout Button with Confirmation */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
-              >
-                <LogOut className="mr-2 size-4" />
-                Sign Out
-              </Button>
+              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[#111827]">
+                <LogOut className="size-5" />
+                <span>Sign Out</span>
+              </button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="border-[#E5E7EB] bg-white">
               <AlertDialogHeader>
-                <AlertDialogTitle>Sign out of MyZipVault?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogTitle
+                  className="text-[#111827]"
+                  style={{ fontFamily: "'Clash Display', sans-serif" }}
+                >
+                  Sign out of MyZipVault?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-[#6B7280]">
                   You will need to sign in again to access your account. Any unsaved changes may be lost.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6]">
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="bg-[#166534] text-white hover:bg-[#14532D]"
                   onClick={async () => {
                     // Determine the correct redirect URL based on current role
                     // (Do this BEFORE signing out, while we still know the role)

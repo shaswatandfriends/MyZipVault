@@ -3,13 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+
+const trustPoints = [
+  "Secure Admin Access",
+  "Role-Based Controls",
+  "Audit Logging",
+];
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -80,69 +85,100 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-[440px]">
-        <Card className="shadow-xl border-slate-200/60 dark:border-slate-800/40">
-          <CardHeader className="space-y-1.5 px-6 pt-6 pb-0 text-center">
-            <div className="size-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
-              <Shield className="size-7 text-slate-600 dark:text-slate-300" />
-            </div>
-            <CardTitle className="text-xl">Admin Portal</CardTitle>
-            <CardDescription className="text-sm">
-              Sign in to the platform administration portal
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pt-5 pb-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@myzipvault.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
+    <div className="min-h-screen flex">
+      {/* Left Panel - Decorative */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+          </div>
+          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>Platform Administration</p>
+          <div className="mt-12 space-y-4">
+            {trustPoints.map((point) => (
+              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Check className="size-4 shrink-0" />
+                <span>{point}</span>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full h-11 gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
-            <div className="mt-5 text-center">
-              <Link
-                href="/"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                &larr; Back to main site
-              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+        <div className="max-w-[400px] w-full">
+          {/* Mobile branding */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
+              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
             </div>
-          </CardContent>
-        </Card>
+            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+          </div>
+
+          <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
+            Admin Portal
+          </h1>
+          <p className="text-[#6B7280] text-base mt-2 mb-8">
+            Sign in to the platform administration portal
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@myzipvault.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1]"
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1]"
+                autoComplete="current-password"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/"
+              className="text-sm text-[#9CA3AF] hover:text-[#111827] transition-colors"
+            >
+              &larr; Back to main site
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

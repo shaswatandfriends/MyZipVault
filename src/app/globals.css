@@ -3,11 +3,37 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ─── Font Imports ─────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Clash Display';
+  src: url('https://api.fontshare.com/v1/css?f[]=clash-display@200,300,400,500,600,700&display=swap');
+  font-display: swap;
+}
+
+/* ─── Design System Theme ──────────────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Clash Display', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  
+  /* Custom design tokens */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-light: var(--accent-light);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border-strong: var(--border-strong);
+  --color-badge-red: var(--badge-red);
+  --color-badge-red-bg: var(--badge-red-bg);
+  --color-badge-yellow: var(--badge-yellow);
+  --color-badge-yellow-bg: var(--badge-yellow-bg);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,79 +63,119 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.99 0.002 165);
-  --foreground: oklch(0.15 0.02 165);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 165);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 165);
-  --primary: oklch(0.47 0.14 172);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 172);
-  --secondary-foreground: oklch(0.25 0.04 172);
-  --muted: oklch(0.96 0.006 172);
-  --muted-foreground: oklch(0.52 0.03 172);
-  --accent: oklch(0.94 0.02 172);
-  --accent-foreground: oklch(0.25 0.04 172);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 172);
-  --input: oklch(0.91 0.01 172);
-  --ring: oklch(0.47 0.14 172);
-  --chart-1: oklch(0.47 0.14 172);
-  --chart-2: oklch(0.55 0.12 165);
-  --chart-3: oklch(0.40 0.08 172);
-  --chart-4: oklch(0.70 0.15 165);
-  --chart-5: oklch(0.60 0.10 172);
-  --sidebar: oklch(0.98 0.005 172);
-  --sidebar-foreground: oklch(0.15 0.02 165);
-  --sidebar-primary: oklch(0.47 0.14 172);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.02 172);
-  --sidebar-accent-foreground: oklch(0.25 0.04 172);
-  --sidebar-border: oklch(0.91 0.01 172);
-  --sidebar-ring: oklch(0.47 0.14 172);
+  /* Core palette */
+  --background: #F8F7F4;
+  --foreground: #111827;
+  --surface: #FFFFFF;
+  --surface-2: #F3F4F6;
+  --primary: #166534;
+  --primary-hover: #14532D;
+  --primary-light: #DCFCE7;
+  --primary-foreground: #FFFFFF;
+  --accent-teal: #0D9488;
+  --accent-light: #CCFBF1;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --badge-red: #DC2626;
+  --badge-red-bg: #FEE2E2;
+  --badge-yellow: #CA8A04;
+  --badge-yellow-bg: #FEF9C3;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+  
+  /* shadcn/ui compatibility */
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
+  --secondary: #F3F4F6;
+  --secondary-foreground: #1F2937;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --accent: #F3F4F6;
+  --accent-foreground: #1F2937;
+  --destructive: #EF4444;
+  --input: #E5E7EB;
+  --ring: #166534;
+  --chart-1: #166534;
+  --chart-2: #0D9488;
+  --chart-3: #059669;
+  --chart-4: #34D399;
+  --chart-5: #6EE7B7;
+  
+  /* Sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #166534;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #DCFCE7;
+  --sidebar-accent-foreground: #166534;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #166534;
 }
 
 .dark {
-  --background: oklch(0.14 0.02 172);
-  --foreground: oklch(0.96 0.01 172);
-  --card: oklch(0.18 0.025 172);
-  --card-foreground: oklch(0.96 0.01 172);
-  --popover: oklch(0.18 0.025 172);
-  --popover-foreground: oklch(0.96 0.01 172);
-  --primary: oklch(0.62 0.15 172);
-  --primary-foreground: oklch(0.14 0.02 172);
-  --secondary: oklch(0.24 0.03 172);
-  --secondary-foreground: oklch(0.96 0.01 172);
-  --muted: oklch(0.24 0.03 172);
-  --muted-foreground: oklch(0.65 0.04 172);
-  --accent: oklch(0.24 0.03 172);
-  --accent-foreground: oklch(0.96 0.01 172);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.15 172);
-  --chart-1: oklch(0.62 0.15 172);
-  --chart-2: oklch(0.55 0.12 165);
-  --chart-3: oklch(0.70 0.15 165);
-  --chart-4: oklch(0.50 0.10 172);
-  --chart-5: oklch(0.45 0.08 172);
-  --sidebar: oklch(0.16 0.022 172);
-  --sidebar-foreground: oklch(0.96 0.01 172);
-  --sidebar-primary: oklch(0.62 0.15 172);
-  --sidebar-primary-foreground: oklch(0.14 0.02 172);
-  --sidebar-accent: oklch(0.24 0.03 172);
-  --sidebar-accent-foreground: oklch(0.96 0.01 172);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.15 172);
+  --background: #0F1A14;
+  --foreground: #F3F4F6;
+  --surface: #1A2B22;
+  --surface-2: #162119;
+  --primary: #34D399;
+  --primary-hover: #6EE7B7;
+  --primary-light: rgba(52, 211, 153, 0.15);
+  --primary-foreground: #0F1A14;
+  --accent-teal: #2DD4BF;
+  --accent-light: rgba(45, 212, 191, 0.15);
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --border: rgba(255,255,255,0.1);
+  --border-strong: rgba(255,255,255,0.2);
+  --badge-red: #F87171;
+  --badge-red-bg: rgba(248,113,113,0.15);
+  --badge-yellow: #FBBF24;
+  --badge-yellow-bg: rgba(251,191,36,0.15);
+  
+  --card: #1A2B22;
+  --card-foreground: #F3F4F6;
+  --popover: #1A2B22;
+  --popover-foreground: #F3F4F6;
+  --secondary: #162119;
+  --secondary-foreground: #F3F4F6;
+  --muted: #162119;
+  --muted-foreground: #9CA3AF;
+  --accent: #162119;
+  --accent-foreground: #F3F4F6;
+  --destructive: #EF4444;
+  --input: rgba(255,255,255,0.15);
+  --ring: #34D399;
+  --chart-1: #34D399;
+  --chart-2: #2DD4BF;
+  --chart-3: #10B981;
+  --chart-4: #6EE7B7;
+  --chart-5: #A7F3D0;
+  
+  --sidebar: #0F1A14;
+  --sidebar-foreground: #F3F4F6;
+  --sidebar-primary: #34D399;
+  --sidebar-primary-foreground: #0F1A14;
+  --sidebar-accent: rgba(52,211,153,0.15);
+  --sidebar-accent-foreground: #34D399;
+  --sidebar-border: rgba(255,255,255,0.1);
+  --sidebar-ring: #34D399;
 }
 
 @layer base {
@@ -119,4 +185,60 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Clash Display', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/* ─── Gradient Shimmer Animation (hero headline only) ──────────────── */
+@keyframes gradient-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-shimmer {
+  background-size: 200% 200%;
+  animation: gradient-shimmer 6s ease infinite;
+}
+
+/* ─── Fade-up on scroll ────────────────────────────────────────────── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
+}
+
+/* ─── Page fade-in ─────────────────────────────────────────────────── */
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-page-fade {
+  animation: page-fade-in 0.3s ease-out;
+}
+
+/* ─── Custom scrollbar ─────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

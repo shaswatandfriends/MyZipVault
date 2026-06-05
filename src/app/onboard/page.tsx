@@ -3,21 +3,13 @@
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Heart, Check, X, Mail, ArrowLeft } from "lucide-react";
+import { Loader2, Check, X, Mail, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
@@ -38,6 +30,27 @@ function getPasswordChecks(password: string) {
     number: /[0-9]/.test(password),
   };
 }
+
+function PasswordCheck({ label, met }: { label: string; met: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {met ? (
+        <Check className="size-3.5 text-[#166534] shrink-0" />
+      ) : (
+        <X className="size-3.5 text-[#9CA3AF] shrink-0" />
+      )}
+      <span className={met ? "text-[#166534]" : "text-[#9CA3AF]"}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+const trustPoints = [
+  "HIPAA-Aligned Security",
+  "You Control Access",
+  "100% Free for Nurses",
+];
 
 function OnboardPageInner() {
   const router = useRouter();
@@ -153,27 +166,31 @@ function OnboardPageInner() {
     }
   };
 
+  // Get the invite message based on token type
+  const inviteMessage =
+    tokenInfo?.tokenType === "reference_request"
+      ? `${tokenInfo?.nurseName || "A nurse"}, who worked with you at ${tokenInfo?.facilityName || "a facility"}, is requesting a professional reference`
+      : `You've been invited to MyZipVault by ${tokenInfo?.agencyName || "an agency"}`;
+
   // Loading state
   if (isValidating) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-md">
-                <Heart className="size-5" />
-              </div>
+      <div className="min-h-screen flex">
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">Welcome Aboard</h1>
+            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
           </div>
-          <Card className="shadow-lg border-border/50">
-            <CardContent className="p-6 space-y-4">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+          <div className="max-w-[400px] w-full space-y-4">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -182,182 +199,192 @@ function OnboardPageInner() {
   // Error state
   if (tokenError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-md">
-                <Heart className="size-5" />
-              </div>
+      <div className="min-h-screen flex">
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
             </div>
+            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
           </div>
-          <Card className="shadow-lg border-border/50">
-            <CardContent className="p-6 text-center">
-              <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-lg mb-4">
-                {tokenError}
-              </div>
-              <Link href="/login">
-                <Button variant="outline" className="gap-2">
-                  <ArrowLeft className="size-4" />
-                  Go to Sign In
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+          <div className="max-w-[400px] w-full text-center">
+            <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-xl mb-6">
+              {tokenError}
+            </div>
+            <Link href="/login">
+              <Button variant="outline" className="gap-2 rounded-xl border-[#E5E7EB]">
+                <ArrowLeft className="size-4" />
+                Go to Sign In
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Get the invite message based on token type
-  const inviteMessage =
-    tokenInfo?.tokenType === "reference_request"
-      ? `${tokenInfo?.nurseName || "A nurse"}, who worked with you at ${tokenInfo?.facilityName || "a facility"}, is requesting a professional reference`
-      : `You've been invited to MyZipVault by ${tokenInfo?.agencyName || "an agency"}`;
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="w-full max-w-md">
-        {/* Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-md">
-              <Heart className="size-5" />
-            </div>
+    <div className="min-h-screen flex">
+      {/* Left Panel - Decorative */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome Aboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>Healthcare credential verification, simplified</p>
+          <div className="mt-12 space-y-4">
+            {trustPoints.map((point) => (
+              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Check className="size-4 shrink-0" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+        <div className="max-w-[400px] w-full">
+          {/* Mobile branding */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
+              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+            </div>
+            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+          </div>
+
+          {/* Invited badge */}
+          <div className="inline-flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-3.5 py-1.5 rounded-full text-sm font-medium mb-4">
+            <Mail className="size-3.5" />
+            You have been invited
+          </div>
+
+          <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
+            Welcome aboard
+          </h1>
+          <p className="text-[#6B7280] text-base mt-2 mb-8">
             Set up your account to get started
           </p>
-        </div>
 
-        {/* Invite message */}
-        <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Mail className="size-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-sm text-foreground">{inviteMessage}</p>
+          {/* Invite message */}
+          <div className="mb-6 p-4 bg-[#DCFCE7] border border-[#166534]/10 rounded-xl">
+            <div className="flex items-start gap-3">
+              <Mail className="size-5 text-[#166534] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#166534]">{inviteMessage}</p>
+            </div>
           </div>
-        </div>
 
-        <Card className="shadow-lg border-border/50">
-          <form onSubmit={handleSubmit}>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Complete Your Profile</CardTitle>
-              <CardDescription>
-                Create a password to activate your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={tokenInfo?.email || ""}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">This email is from your invitation</p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={tokenInfo?.email || ""}
+                disabled
+                className="bg-[#F8F7F4] border-[#E5E7EB] rounded-xl p-3.5 text-[#9CA3AF]"
+              />
+              <p className="text-xs text-[#9CA3AF]">This email is from your invitation</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+                }}
+                disabled={isLoading}
+                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.password ? "border-destructive" : ""}`}
+                autoComplete="new-password"
+              />
+              <div className="space-y-1.5 pt-1">
+                <PasswordCheck label="At least 8 characters" met={checks.minLength} />
+                <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
+                <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
+                <PasswordCheck label="One number" met={checks.number} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }}
+                disabled={isLoading}
+                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.confirmPassword ? "border-destructive" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="tos"
+                  checked={tosAccepted}
+                  onCheckedChange={(checked) => {
+                    setTosAccepted(checked === true);
+                    if (errors.tos) setErrors((prev) => ({ ...prev, tos: "" }));
                   }}
                   disabled={isLoading}
-                  className={errors.password ? "border-destructive" : ""}
-                  autoComplete="new-password"
+                  className="mt-0.5"
                 />
-                <div className="space-y-1 pt-1">
-                  <PasswordCheck label="At least 8 characters" met={checks.minLength} />
-                  <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
-                  <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
-                  <PasswordCheck label="One number" met={checks.number} />
-                </div>
+                <Label htmlFor="tos" className="text-sm font-normal leading-snug text-[#6B7280]">
+                  I agree to the{" "}
+                  <span className="text-[#166534] hover:underline cursor-pointer">
+                    Terms & Conditions
+                  </span>{" "}
+                  and{" "}
+                  <span className="text-[#166534] hover:underline cursor-pointer">
+                    Privacy Policy
+                  </span>
+                </Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={errors.confirmPassword ? "border-destructive" : ""}
-                  autoComplete="new-password"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    id="tos"
-                    checked={tosAccepted}
-                    onCheckedChange={(checked) => {
-                      setTosAccepted(checked === true);
-                      if (errors.tos) setErrors((prev) => ({ ...prev, tos: "" }));
-                    }}
-                    disabled={isLoading}
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="tos" className="text-sm font-normal leading-snug">
-                    I agree to the{" "}
-                    <span className="text-primary hover:underline cursor-pointer">
-                      Terms & Conditions
-                    </span>{" "}
-                    and{" "}
-                    <span className="text-primary hover:underline cursor-pointer">
-                      Privacy Policy
-                    </span>
-                  </Label>
-                </div>
-                {errors.tos && (
-                  <p className="text-xs text-destructive">{errors.tos}</p>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Activate Account"
-                )}
-              </Button>
-            </CardFooter>
+              {errors.tos && (
+                <p className="text-xs text-destructive">{errors.tos}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Creating account...
+                </>
+              ) : (
+                "Activate Account"
+              )}
+            </Button>
           </form>
-        </Card>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function PasswordCheck({ label, met }: { label: string; met: boolean }) {
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      {met ? (
-        <Check className="size-3.5 text-emerald-600 shrink-0" />
-      ) : (
-        <X className="size-3.5 text-muted-foreground shrink-0" />
-      )}
-      <span className={met ? "text-emerald-600" : "text-muted-foreground"}>
-        {label}
-      </span>
     </div>
   );
 }
@@ -366,24 +393,22 @@ export default function OnboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-md">
-                  <Heart className="size-5" />
-                </div>
+        <div className="min-h-screen flex">
+          <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
+                <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">Welcome Aboard</h1>
+              <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
             </div>
-            <Card className="shadow-lg border-border/50">
-              <CardContent className="p-6 space-y-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+            <div className="max-w-[400px] w-full space-y-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
           </div>
         </div>
       }
