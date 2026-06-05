@@ -1,10 +1,23 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
+import crypto from "crypto";
 import { db } from "@/lib/db";
 
 // Server-side superadmin email — never exposed to the client
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
+
+/**
+ * Timing-safe string comparison to prevent timing attacks on OTP codes.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Still perform a comparison to avoid leaking length information
+    crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,16 +33,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         // ── Superadmin OTP login ──
-        // When the client sends email: "__superadmin__" with password: "otp:<code>",
-        // we verify the OTP server-side instead of checking a password hash.
         if (credentials.email === "__superadmin__" && credentials.password.startsWith("otp:")) {
           if (!SUPERADMIN_EMAIL) {
             throw new Error("Super admin login is not configured");
           }
 
-          const otpCode = credentials.password.slice(4); // Remove "otp:" prefix
+          const otpCode = credentials.password.slice(4);
 
-          // Look up the superadmin user
           const user = await db.user.findUnique({
             where: { email: SUPERADMIN_EMAIL },
           });
@@ -58,15 +68,14 @@ export const authOptions: NextAuthOptions = {
           // Check expiry
           const expiresAt = new Date(expiryRecord.setting_value);
           if (new Date() > expiresAt) {
-            // Clean up expired OTP
             await db.platformSetting.deleteMany({
               where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
             });
             throw new Error("Verification code has expired. Please request a new one.");
           }
 
-          // Verify OTP code
-          if (otpCode !== otpRecord.setting_value) {
+          // Timing-safe OTP comparison
+          if (!timingSafeEqual(otpCode, otpRecord.setting_value)) {
             throw new Error("Invalid verification code");
           }
 
@@ -75,7 +84,7 @@ export const authOptions: NextAuthOptions = {
             where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
           });
 
-          console.log(`[AUDIT] Superadmin OTP login successful — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
+          console.log(`[AUDIT] Superadmin OTP login successful — user: ${user.id}, timestamp: ${new Date().toISOString()}`);
 
           return {
             id: String(user.id),
@@ -88,8 +97,7 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        // ── Superadmin password login (legacy / fallback) ──
-        // Map the superadmin placeholder to the actual env-configured email
+        // ── Standard email/password login ──
         let lookupEmail = credentials.email;
         if (credentials.email === "__superadmin__" && SUPERADMIN_EMAIL) {
           lookupEmail = SUPERADMIN_EMAIL;
@@ -112,6 +120,11 @@ export const authOptions: NextAuthOptions = {
           if (!SUPERADMIN_EMAIL || user.email.toLowerCase() !== SUPERADMIN_EMAIL.toLowerCase()) {
             throw new Error("Unauthorized access");
           }
+        }
+
+        // Block unapproved client_admin / client_recruiter from logging in
+        if ((user.role === "client_admin" || user.role === "client_recruiter") && !user.is_approved) {
+          throw new Error("Your account is pending admin approval. You will be notified once approved.");
         }
 
         const isValidPassword = await compare(
@@ -165,13 +178,10 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signOut({ token }) {
-      // Server-side signout audit — this fires when NextAuth clears the JWT
       const userId = token?.id;
       const role = token?.role as string | undefined;
       if (userId) {
         console.log(`[AUDIT] NextAuth signout — userId: ${userId}, role: ${role}, timestamp: ${new Date().toISOString()}`);
-
-        // Update last_activity_at (fire and forget)
         db.user.update({
           where: { id: Number(userId) },
           data: { last_activity_at: new Date() },

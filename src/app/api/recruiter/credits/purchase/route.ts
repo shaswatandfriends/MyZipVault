@@ -47,69 +47,48 @@ export async function POST(request: Request) {
       where: { id: organizationId },
     });
 
-    // ─── If Stripe is configured, create a real Checkout Session ───
-    if (isStripeConfigured()) {
-      const checkoutSession = await createCreditCheckoutSession({
-        organizationId,
-        organizationName: org?.name || "Unknown Organization",
-        creditAmount: amount,
-        pricePerCredit: costPerCredit,
-        customerEmail: userEmail,
-        successUrl: `${process.env.NEXTAUTH_URL}/recruiter/credits?success=true`,
-        cancelUrl: `${process.env.NEXTAUTH_URL}/recruiter/credits?canceled=true`,
-      });
-
-      if (checkoutSession) {
-        // Create a pending invoice (marked as pending until webhook confirms payment)
-        await db.invoice.create({
-          data: {
-            organization_id: organizationId,
-            credit_amount: amount,
-            total_price: totalPrice,
-            pdf_url: `stripe_session:${checkoutSession.sessionId}`,
-          },
-        });
-
-        return NextResponse.json({
-          success: true,
-          requiresPayment: true,
-          checkoutUrl: checkoutSession.sessionUrl,
-          sessionId: checkoutSession.sessionId,
-        });
-      }
+    // ─── Block credit purchases when Stripe is not configured ───
+    if (!isStripeConfigured()) {
+      return NextResponse.json(
+        { error: "Credit purchases are not available at this time. Please contact support." },
+        { status: 503 }
+      );
     }
 
-    // ─── Fallback: Direct credit grant (no real payment) ───
-    console.warn(`[STRIPE] Not configured. Granting ${amount} credits without payment.`);
-
-    const updatedOrg = await db.organization.update({
-      where: { id: organizationId },
-      data: { credits_balance: { increment: amount } },
+    // ─── Create Stripe Checkout Session ───
+    const checkoutSession = await createCreditCheckoutSession({
+      organizationId,
+      organizationName: org?.name || "Unknown Organization",
+      creditAmount: amount,
+      pricePerCredit: costPerCredit,
+      customerEmail: userEmail,
+      successUrl: `${process.env.NEXTAUTH_URL}/recruiter/credits?success=true`,
+      cancelUrl: `${process.env.NEXTAUTH_URL}/recruiter/credits?canceled=true`,
     });
 
-    await db.creditTransaction.create({
-      data: {
-        organization_id: organizationId,
-        transaction_type: "purchase",
-        credit_amount: amount,
-        description: `Purchased ${amount} credits (no payment - Stripe not configured)`,
-      },
-    });
+    if (checkoutSession) {
+      // Create a pending invoice (marked as pending until webhook confirms payment)
+      await db.invoice.create({
+        data: {
+          organization_id: organizationId,
+          credit_amount: amount,
+          total_price: totalPrice,
+          pdf_url: `stripe_session:${checkoutSession.sessionId}`,
+        },
+      });
 
-    await db.invoice.create({
-      data: {
-        organization_id: organizationId,
-        credit_amount: amount,
-        total_price: totalPrice,
-      },
-    });
+      return NextResponse.json({
+        success: true,
+        requiresPayment: true,
+        checkoutUrl: checkoutSession.sessionUrl,
+        sessionId: checkoutSession.sessionId,
+      });
+    }
 
-    return NextResponse.json({
-      success: true,
-      requiresPayment: false,
-      credits: updatedOrg.credits_balance,
-      message: "Credits granted (Stripe not configured - no payment collected)",
-    });
+    return NextResponse.json(
+      { error: "Failed to create payment session. Please try again." },
+      { status: 500 }
+    );
   } catch (error) {
     console.error("[RECRUITER_CREDITS_PURCHASE]", error);
     return NextResponse.json(

@@ -16,7 +16,7 @@ export default withAuth({
       if (publicPrefixes.some((p) => pathname.startsWith(p))) return true;
 
       // Static files and API routes for auth
-      if (pathname.startsWith("/_next/") || pathname.startsWith("/upload/")) return true;
+      if (pathname.startsWith("/_next/")) return true;
 
       // Not authenticated
       if (!token) return false;

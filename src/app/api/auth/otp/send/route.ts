@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendOtpEmail } from "@/lib/otp-email";
 
@@ -34,8 +35,8 @@ export async function POST() {
 
     if (!user || user.role !== "super_admin") {
       return NextResponse.json(
-        { error: "Super admin account not found" },
-        { status: 404 }
+        { error: "Unable to send verification code" },
+        { status: 400 }
       );
     }
 
@@ -64,8 +65,36 @@ export async function POST() {
       }
     }
 
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Max OTP requests: limit to 5 per hour to prevent abuse
+    const otpCountRecord = await db.platformSetting.findUnique({
+      where: { setting_key: "superadmin_otp_request_count" },
+    });
+    const otpCountResetRecord = await db.platformSetting.findUnique({
+      where: { setting_key: "superadmin_otp_count_reset_at" },
+    });
+
+    let otpCount = 0;
+    let countResetAt = otpCountResetRecord ? new Date(otpCountResetRecord.setting_value) : new Date();
+
+    if (otpCountRecord?.setting_value) {
+      // Reset counter if more than 1 hour has passed
+      if (Date.now() - countResetAt.getTime() > 60 * 60 * 1000) {
+        otpCount = 0;
+        countResetAt = new Date();
+      } else {
+        otpCount = parseInt(otpCountRecord.setting_value, 10) || 0;
+      }
+    }
+
+    if (otpCount >= 5) {
+      return NextResponse.json(
+        { error: "Too many verification code requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
+    // Generate a 6-digit OTP using crypto.randomInt for cryptographic randomness
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
     // Store OTP in platform_settings with expiry (5 minutes from now)
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
@@ -110,19 +139,32 @@ export async function POST() {
       },
     });
 
+    // Increment OTP request counter
+    await db.platformSetting.upsert({
+      where: { setting_key: "superadmin_otp_request_count" },
+      update: { setting_value: String(otpCount + 1), updated_by: user.id },
+      create: { setting_key: "superadmin_otp_request_count", setting_value: "1", updated_by: user.id },
+    });
+    await db.platformSetting.upsert({
+      where: { setting_key: "superadmin_otp_count_reset_at" },
+      update: { setting_value: countResetAt.toISOString(), updated_by: user.id },
+      create: { setting_key: "superadmin_otp_count_reset_at", setting_value: countResetAt.toISOString(), updated_by: user.id },
+    });
+
     // Try to send OTP via email
     const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
 
     if (!emailSent) {
-      // Email failed but OTP is stored — log it for admin access via Vercel logs
-      console.warn(`[OTP SEND] Email delivery failed — OTP code for ${SUPERADMIN_EMAIL}: ${otp}`);
-      // Still return success so the user can enter the code (they can check Vercel logs)
-      // This prevents blocking login entirely if Brevo has issues
-      return NextResponse.json({
-        success: true,
-        message: "Verification code generated (check server logs if email not received)",
-        expiresAt,
+      // Email failed — do NOT log the OTP code
+      console.warn(`[OTP SEND] Email delivery failed for superadmin user: ${user.id}`);
+      // Clean up the OTP so it can't be used without email delivery
+      await db.platformSetting.deleteMany({
+        where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
       });
+      return NextResponse.json(
+        { error: "Failed to send verification code. Please try again." },
+        { status: 500 }
+      );
     }
 
     console.log(`[AUDIT] OTP sent to superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);

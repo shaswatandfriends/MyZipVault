@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { db } from "@/lib/db";
 
 // Server-side superadmin email — never exposed to the client
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
+
+/**
+ * Timing-safe string comparison to prevent timing attacks.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 /**
  * POST /api/auth/otp/verify
@@ -23,15 +35,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify superadmin email is configured
     if (!SUPERADMIN_EMAIL) {
       return NextResponse.json(
-        { error: "Super admin login is not configured" },
+        { error: "Unable to verify code" },
         { status: 500 }
       );
     }
 
-    // Fetch stored OTP and expiry
     const otpRecord = await db.platformSetting.findUnique({
       where: { setting_key: "superadmin_otp_code" },
     });
@@ -47,10 +57,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check expiry
     const expiresAt = new Date(expiryRecord.setting_value);
     if (new Date() > expiresAt) {
-      // Clean up expired OTP
       await db.platformSetting.deleteMany({
         where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
       });
@@ -60,23 +68,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify OTP
-    if (otp !== otpRecord.setting_value) {
+    // Timing-safe OTP verification
+    if (!timingSafeEqual(String(otp), otpRecord.setting_value)) {
       return NextResponse.json(
         { error: "Invalid verification code" },
         { status: 401 }
       );
     }
 
-    // Verify the user still exists and is active
     const user = await db.user.findUnique({
       where: { email: SUPERADMIN_EMAIL },
     });
 
     if (!user || user.role !== "super_admin") {
       return NextResponse.json(
-        { error: "Super admin account not found" },
-        { status: 404 }
+        { error: "Unable to verify code" },
+        { status: 400 }
       );
     }
 
@@ -87,15 +94,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Pre-verification passed — do NOT delete OTP yet
-    // The NextAuth authorize() function will validate it again and clean up
+    console.log(`[AUDIT] OTP pre-verified for superadmin — user: ${user.id}, timestamp: ${new Date().toISOString()}`);
 
-    console.log(`[AUDIT] OTP pre-verified for superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
-
+    // Do NOT return the OTP code in the response
     return NextResponse.json({
       success: true,
       message: "OTP verified successfully",
-      verifiedOtp: otp,
     });
   } catch (error) {
     console.error("[OTP VERIFY] Error:", error);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from "otplib";
 import { db } from "@/lib/db";
 
@@ -7,12 +8,21 @@ const base32 = new ScureBase32Plugin();
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, token } = body;
-
-    if (!email || !token) {
+    // Require authentication to prevent unauthenticated brute force
+    const session = await getServerSession();
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Email and token are required" },
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { token } = body;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token is required" },
         { status: 400 }
       );
     }
