@@ -110,14 +110,19 @@ export async function POST() {
       },
     });
 
-    // Send OTP via email
+    // Try to send OTP via email
     const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
 
     if (!emailSent) {
-      return NextResponse.json(
-        { error: "Failed to send verification email. Please try again." },
-        { status: 500 }
-      );
+      // Email failed but OTP is stored — log it for admin access via Vercel logs
+      console.warn(`[OTP SEND] Email delivery failed — OTP code for ${SUPERADMIN_EMAIL}: ${otp}`);
+      // Still return success so the user can enter the code (they can check Vercel logs)
+      // This prevents blocking login entirely if Brevo has issues
+      return NextResponse.json({
+        success: true,
+        message: "Verification code generated (check server logs if email not received)",
+        expiresAt,
+      });
     }
 
     console.log(`[AUDIT] OTP sent to superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
@@ -130,7 +135,7 @@ export async function POST() {
   } catch (error) {
     console.error("[OTP SEND] Error:", error);
     return NextResponse.json(
-      { error: "Failed to send OTP" },
+      { error: "Failed to send OTP. Please check if the service is properly configured." },
       { status: 500 }
     );
   }
