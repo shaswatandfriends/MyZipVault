@@ -46,7 +46,7 @@ import {
   Phone,
   Briefcase,
   Stethoscope,
-} from "lucide-react";
+} from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

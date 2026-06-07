@@ -11,7 +11,7 @@ import {
   Bell,
   LogOut,
   ChevronLeft,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import {
   Sidebar,

@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { useAuth } from "@/components/providers/auth-provider";
 import { PageHeader } from "@/components/layout/page-header";

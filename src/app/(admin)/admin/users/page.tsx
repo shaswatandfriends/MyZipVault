@@ -10,7 +10,7 @@ import {
   Ban,
   CheckCircle2,
   Eye,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

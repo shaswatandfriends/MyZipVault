@@ -10,7 +10,7 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Loader2, Mail, RefreshCw, Check } from "lucide-react";
+import { Loader2, Mail, RefreshCw, Check } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
 

@@ -8,7 +8,7 @@ import {
   AlertTriangle,
   RefreshCw,
   ExternalLink,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

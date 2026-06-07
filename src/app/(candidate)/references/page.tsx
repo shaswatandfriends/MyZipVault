@@ -28,7 +28,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 
 interface ReferenceItem {

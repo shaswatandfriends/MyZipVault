@@ -14,7 +14,7 @@ import {
   Loader2,
   FileText,
   Download,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
 import {

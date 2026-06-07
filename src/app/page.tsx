@@ -24,7 +24,7 @@ import {
   Clock,
   Upload,
   CheckCircle2,
-} from "lucide-react";
+} from "@/lib/icons";
 
 type ViewMode = "candidate" | "recruiter";
 

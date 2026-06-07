@@ -11,7 +11,7 @@ import {
   Users,
   LogOut,
   ChevronLeft,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import {
   Sidebar,

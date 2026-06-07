@@ -11,7 +11,7 @@ import {
   CreditCard,
   ClipboardCheck,
   Info,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { PageHeader } from "@/components/layout/page-header";

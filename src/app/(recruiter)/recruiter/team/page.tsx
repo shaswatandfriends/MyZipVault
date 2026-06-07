@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   CreditCard,
   Send,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
 import {

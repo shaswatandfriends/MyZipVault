@@ -19,7 +19,7 @@ import {
   PartyPopper,
   CheckCircle2,
   Sparkles,
-} from "lucide-react";
+} from "@/lib/icons";
 import Link from "next/link";
 
 interface DashboardData {

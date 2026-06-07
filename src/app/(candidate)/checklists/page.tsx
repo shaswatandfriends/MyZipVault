@@ -19,7 +19,7 @@ import {
   X,
   Send,
   Loader2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 
 interface ChecklistRequestItem {

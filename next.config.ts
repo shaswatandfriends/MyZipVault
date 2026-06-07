@@ -33,6 +33,13 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   headers: () => securityHeaders,
+
+  // Fix: lucide-react uses a double-barrel ESM structure that causes
+  // "Cannot access 'ey' before initialization" (TDZ error) with Turbopack + React 19.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
+  transpilePackages: ["lucide-react", "signature_pad"],
 };
 
 export default nextConfig;

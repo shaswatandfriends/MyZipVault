@@ -10,7 +10,7 @@ import {
   ClipboardList,
   ArrowDownRight,
   ArrowRight,
-} from "lucide-react";
+} from "@/lib/icons";
 import {
   BarChart,
   Bar,

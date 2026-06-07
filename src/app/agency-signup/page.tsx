@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock } from "lucide-react";
+import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

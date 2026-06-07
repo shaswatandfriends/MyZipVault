@@ -29,7 +29,7 @@ import {
   FileText,
   Plus,
   X,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 
 interface CredentialItem {

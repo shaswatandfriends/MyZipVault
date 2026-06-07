@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, FileText, ShieldCheck, ArrowRight } from "lucide-react";
+import { CheckCircle2, FileText, ShieldCheck, ArrowRight } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
 

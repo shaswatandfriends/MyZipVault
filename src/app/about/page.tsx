@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Users, Lock, ArrowLeft, Heart, Target } from "lucide-react";
+import { ShieldCheck, Users, Lock, ArrowLeft, Heart, Target } from "@/lib/icons";
 
 export default function About() {
   return (

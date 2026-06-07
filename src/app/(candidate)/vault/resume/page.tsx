@@ -34,7 +34,7 @@ import {
   GraduationCap,
   Award,
   Wrench,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 
 interface ResumeData {

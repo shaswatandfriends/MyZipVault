@@ -8,13 +8,13 @@ import {
   Save,
   RotateCcw,
   ChevronDown,
-  Paintbrush,
+  Palette,
   Type,
   LayoutGrid,
   Shield,
   ListOrdered,
   PanelBottom,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -774,7 +774,7 @@ export default function LandingPageEditorPage() {
           </EditorSection>
 
           {/* Section 2: Colors */}
-          <EditorSection icon={Paintbrush} title="Colors">
+          <EditorSection icon={Palette} title="Colors">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ColorPickerField
                 label="Primary"

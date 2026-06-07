@@ -19,7 +19,7 @@ import {
   Loader2,
   Send,
   Building2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 
 interface ReferenceInfo {

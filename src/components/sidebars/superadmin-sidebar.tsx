@@ -20,7 +20,7 @@ import {
   ChevronLeft,
   ToggleLeft,
   PencilRuler,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import {
   Sidebar,

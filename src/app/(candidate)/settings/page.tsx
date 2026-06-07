@@ -26,7 +26,7 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
-} from "lucide-react";
+} from "@/lib/icons";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { signOut } from "next-auth/react";
