@@ -20,7 +20,7 @@ export async function GET() {
       orderBy: { created_at: "desc" },
       include: {
         users: {
-          select: { id: true, email: true, first_name: true, last_name: true, role: true, account_status: true },
+          select: { id: true, email: true, first_name: true, last_name: true, role: true, account_status: true, last_activity_at: true, created_at: true, must_change_pass: true },
         },
         credit_transactions: {
           orderBy: { created_at: "desc" },
@@ -54,6 +54,9 @@ export async function GET() {
             lastName: u.last_name,
             role: u.role,
             accountStatus: u.account_status,
+            lastActivityAt: u.last_activity_at,
+            createdAt: u.created_at,
+            mustChangePass: u.must_change_pass,
           })),
           transactions: org.credit_transactions.map((t) => ({
             id: t.id,
@@ -363,6 +366,92 @@ export async function POST(request: Request) {
           message: `${targetRole === "client_admin" ? "Admin" : "Recruiter"} added successfully`,
           userId: newUser.id,
           password: rawPassword,
+        });
+      }
+      case "reset-password": {
+        const { userId: targetUserId } = body;
+        if (!targetUserId) {
+          return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const targetUser = await db.user.findUnique({ where: { id: targetUserId } });
+        if (!targetUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        if (targetUser.role !== "client_recruiter" && targetUser.role !== "client_admin") {
+          return NextResponse.json({ error: "Can only reset passwords for client users" }, { status: 400 });
+        }
+        const bcrypt = await import("bcryptjs");
+        const newPassword = body.newPassword || (Math.random().toString(36).slice(-10) + "Aa1!");
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        await db.user.update({
+          where: { id: targetUserId },
+          data: {
+            password_hash: hashedPassword,
+            must_change_pass: true,
+          },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "reset_password",
+            entity_type: "user",
+            entity_id: targetUserId,
+            details: `Password reset for ${targetUser.email}`,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: "Password reset successfully",
+          password: newPassword,
+        });
+      }
+      case "set-member-role": {
+        const { userId: roleUserId, newRole, organizationId: roleOrgId } = body;
+        if (!roleUserId || !newRole || !roleOrgId) {
+          return NextResponse.json({ error: "User ID, new role, and organization ID are required" }, { status: 400 });
+        }
+        if (newRole !== "client_admin" && newRole !== "client_recruiter") {
+          return NextResponse.json({ error: "Invalid role. Must be client_admin or client_recruiter" }, { status: 400 });
+        }
+        const roleUser = await db.user.findUnique({ where: { id: roleUserId } });
+        if (!roleUser || roleUser.organization_id !== roleOrgId) {
+          return NextResponse.json({ error: "User not found in this organization" }, { status: 404 });
+        }
+        // If promoting to admin, check single admin rule
+        if (newRole === "client_admin") {
+          const existingAdmin = await db.user.findFirst({
+            where: {
+              organization_id: roleOrgId,
+              role: "client_admin",
+              account_status: "active",
+              id: { not: roleUserId },
+            },
+          });
+          if (existingAdmin) {
+            return NextResponse.json(
+              { error: "This organization already has an admin. Only one admin is allowed per company. Demote the current admin first." },
+              { status: 400 }
+            );
+          }
+        }
+        await db.user.update({
+          where: { id: roleUserId },
+          data: { role: newRole },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "change_member_role",
+            entity_type: "user",
+            entity_id: roleUserId,
+            details: `Changed role of ${roleUser.email} from ${roleUser.role} to ${newRole}`,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `Role updated to ${newRole === "client_admin" ? "Admin" : "Recruiter"}`,
         });
       }
       case "delete": {

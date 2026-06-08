@@ -10,6 +10,7 @@
 
 // ─── Import all needed icons from lucide-react ─────────────────────────
 import {
+  Activity,
   AlertCircle,
   AlertTriangle,
   AlarmClock,
@@ -18,6 +19,7 @@ import {
   ArrowDownRight,
   ArrowLeft,
   ArrowRight,
+  ArrowRightLeft,
   ArrowUpCircle,
   ArrowUpDown,
   ArrowUpRight,
@@ -153,6 +155,7 @@ import {
 
 // ─── Re-export everything ──────────────────────────────────────────────
 export {
+  Activity,
   AlertCircle,
   AlertTriangle,
   AlarmClock,
@@ -161,6 +164,7 @@ export {
   ArrowDownRight,
   ArrowLeft,
   ArrowRight,
+  ArrowRightLeft,
   ArrowUpCircle,
   ArrowUpDown,
   ArrowUpRight,

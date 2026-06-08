@@ -17,6 +17,14 @@ import {
   ShieldCheck,
   Copy,
   Check,
+  Eye,
+  KeyRound,
+  ArrowRightLeft,
+  Loader2,
+  Activity,
+  Clock,
+  Send,
+  FileText,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -83,6 +91,9 @@ interface Member {
   lastName: string | null;
   role: string;
   accountStatus: string;
+  lastActivityAt: string | null;
+  createdAt: string;
+  mustChangePass: boolean;
 }
 
 interface Company {
@@ -204,6 +215,26 @@ export default function SuperadminCompaniesPage() {
   const [addRecruiterEmail, setAddRecruiterEmail] = useState("");
   const [addRecruiterResult, setAddRecruiterResult] = useState<{ password: string; role: string } | null>(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+
+  // Member Profile dialog
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [profileMember, setProfileMember] = useState<Member | null>(null);
+  const [profileCompany, setProfileCompany] = useState<Company | null>(null);
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Reset Password dialog
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [resetPasswordMember, setResetPasswordMember] = useState<Member | null>(null);
+  const [resetPasswordNew, setResetPasswordNew] = useState("");
+  const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
+  const [resetPasswordCopied, setResetPasswordCopied] = useState(false);
+
+  // Change Role dialog
+  const [showChangeRoleDialog, setShowChangeRoleDialog] = useState(false);
+  const [changeRoleMember, setChangeRoleMember] = useState<Member | null>(null);
+  const [changeRoleCompany, setChangeRoleCompany] = useState<Company | null>(null);
+  const [changeRoleNew, setChangeRoleNew] = useState("");
 
   const fetchCompanies = useCallback(async () => {
     try {
@@ -411,6 +442,75 @@ export default function SuperadminCompaniesPage() {
     }
   };
 
+  // ── Member Profile ──────────────────────────────────────────────
+  const openProfileDialog = async (member: Member, company: Company) => {
+    setProfileMember(member);
+    setProfileCompany(company);
+    setShowProfileDialog(true);
+    setProfileLoading(true);
+    setProfileData(null);
+    try {
+      const res = await fetch(`/api/superadmin/companies/member?userId=${member.id}`);
+      if (!res.ok) throw new Error("Failed to fetch profile");
+      const data = await res.json();
+      setProfileData(data);
+    } catch {
+      toast.error("Failed to load member profile");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // ── Reset Password ──────────────────────────────────────────────
+  const openResetPasswordDialog = (member: Member) => {
+    setResetPasswordMember(member);
+    setResetPasswordNew("");
+    setResetPasswordResult(null);
+    setResetPasswordCopied(false);
+    setShowResetPasswordDialog(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordMember) return;
+    const result = await postAction({
+      action: "reset-password",
+      userId: resetPasswordMember.id,
+      newPassword: resetPasswordNew.trim() || undefined,
+    });
+    if (result?.success) {
+      setResetPasswordResult(result.password);
+    }
+  };
+
+  const copyResetPassword = () => {
+    if (resetPasswordResult) {
+      navigator.clipboard.writeText(resetPasswordResult);
+      setResetPasswordCopied(true);
+      setTimeout(() => setResetPasswordCopied(false), 2000);
+    }
+  };
+
+  // ── Change Role ─────────────────────────────────────────────────
+  const openChangeRoleDialog = (member: Member, company: Company) => {
+    setChangeRoleMember(member);
+    setChangeRoleCompany(company);
+    setChangeRoleNew(member.role === "client_admin" ? "client_recruiter" : "client_admin");
+    setShowChangeRoleDialog(true);
+  };
+
+  const handleChangeRole = async () => {
+    if (!changeRoleMember || !changeRoleCompany) return;
+    const result = await postAction({
+      action: "set-member-role",
+      userId: changeRoleMember.id,
+      newRole: changeRoleNew,
+      organizationId: changeRoleCompany.id,
+    });
+    if (result?.success) {
+      setShowChangeRoleDialog(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -598,9 +698,9 @@ export default function SuperadminCompaniesPage() {
                                     const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
                                     const initials = (member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0];
                                     return (
-                                      <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                          <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
+                                      <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                          <div className="flex size-9 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
                                             {initials.toUpperCase()}
                                           </div>
                                           <div className="min-w-0">
@@ -608,7 +708,7 @@ export default function SuperadminCompaniesPage() {
                                             <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        <div className="flex items-center gap-1.5 shrink-0">
                                           {member.role === "client_admin" ? (
                                             <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
                                               <ShieldCheck className="size-3" />
@@ -619,9 +719,39 @@ export default function SuperadminCompaniesPage() {
                                               Recruiter
                                             </Badge>
                                           )}
-                                          {member.accountStatus !== "active" && (
-                                            <Badge variant="outline" className="text-xs">{member.accountStatus}</Badge>
+                                          {member.mustChangePass && (
+                                            <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">
+                                              Must Reset
+                                            </Badge>
                                           )}
+                                          {/* Action Buttons */}
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="size-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            title="View Profile & Activity"
+                                            onClick={() => openProfileDialog(member, company)}
+                                          >
+                                            <Eye className="size-3.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="size-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                            title="Reset Password"
+                                            onClick={() => openResetPasswordDialog(member)}
+                                          >
+                                            <KeyRound className="size-3.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="size-7 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                            title="Change Role"
+                                            onClick={() => openChangeRoleDialog(member, company)}
+                                          >
+                                            <ArrowRightLeft className="size-3.5" />
+                                          </Button>
                                         </div>
                                       </div>
                                     );
@@ -1025,6 +1155,256 @@ export default function SuperadminCompaniesPage() {
                 </Button>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Member Profile & Activity Dialog ────────────────────────── */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="size-5 text-blue-600" />
+              Member Profile
+            </DialogTitle>
+            <DialogDescription>
+              {profileMember ? [profileMember.firstName, profileMember.lastName].filter(Boolean).join(" ") : "Loading..."}
+              {profileCompany ? ` — ${profileCompany.name}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {profileLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !profileData || !profileMember ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Failed to load profile</p>
+          ) : (
+            <div className="space-y-5 py-2">
+              {/* Profile Header */}
+              <div className="flex items-center gap-4">
+                <div className="flex size-14 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-lg font-bold shrink-0">
+                  {((profileMember.firstName?.[0] || "") + (profileMember.lastName?.[0] || "") || profileMember.email[0]).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-base">{[profileMember.firstName, profileMember.lastName].filter(Boolean).join(" ") || profileMember.email}</p>
+                  <p className="text-sm text-muted-foreground truncate">{profileMember.email}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {profileMember.role === "client_admin" ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
+                        <ShieldCheck className="size-3" /> Admin
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">Recruiter</Badge>
+                    )}
+                    {profileMember.mustChangePass && (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">Must Reset Password</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Details */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="size-3" /> Joined</p>
+                  <p className="font-medium">{formatDate(profileMember.createdAt)}</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Activity className="size-3" /> Last Active</p>
+                  <p className="font-medium">{profileMember.lastActivityAt ? formatDate(profileMember.lastActivityAt) : "Never"}</p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-blue-700">{(profileData.stats as Record<string, number>)?.totalChecklistsSent ?? 0}</p>
+                  <p className="text-xs text-blue-600 flex items-center justify-center gap-1"><Send className="size-3" /> Checklists Sent</p>
+                </div>
+                <div className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-teal-700">{(profileData.stats as Record<string, number>)?.totalDocumentsUnlocked ?? 0}</p>
+                  <p className="text-xs text-teal-600 flex items-center justify-center gap-1"><FileText className="size-3" /> Documents Unlocked</p>
+                </div>
+              </div>
+
+              {/* Activity Timeline */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <Activity className="size-4 text-muted-foreground" />
+                  Recent Activity
+                </h4>
+                <div className="space-y-1.5 max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                  {(() => {
+                    const activity = profileData.activity as Record<string, Array<Record<string, unknown>>>;
+                    const allActivity = [
+                      ...(activity?.checklistRequests || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),
+                      ...(activity?.unlockedDocuments || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),
+                      ...(activity?.auditLogs || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),
+                    ].sort((a, b) => b.sortDate - a.sortDate).slice(0, 15);
+
+                    if (allActivity.length === 0) {
+                      return <p className="text-xs text-muted-foreground text-center py-4">No activity recorded</p>;
+                    }
+
+                    return allActivity.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2 py-1.5 px-2 text-xs rounded hover:bg-muted/50">
+                        <div className="mt-0.5 shrink-0">
+                          {item.type === "checklist_request" ? (
+                            <Send className="size-3.5 text-blue-500" />
+                          ) : item.type === "document_unlock" ? (
+                            <FileText className="size-3.5 text-teal-500" />
+                          ) : (
+                            <Activity className="size-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-muted-foreground truncate">{item.description as string}</p>
+                          <p className="text-muted-foreground/60">{formatDate(item.date as string)}</p>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Reset Password Dialog ──────────────────────────────────── */}
+      <Dialog open={showResetPasswordDialog} onOpenChange={(open) => {
+        if (!open) setResetPasswordResult(null);
+        setShowResetPasswordDialog(open);
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="size-5 text-amber-600" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              {resetPasswordMember ? `Reset password for ${[resetPasswordMember.firstName, resetPasswordMember.lastName].filter(Boolean).join(" ") || resetPasswordMember.email}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetPasswordResult ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                <p className="text-sm font-medium text-emerald-800">Password reset successfully</p>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">New Password</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono bg-white rounded px-2 py-1 border flex-1 break-all">
+                      {resetPasswordResult}
+                    </p>
+                    <Button size="sm" variant="outline" className="shrink-0 gap-1" onClick={copyResetPassword}>
+                      {resetPasswordCopied ? (
+                        <><Check className="size-3.5" /> Copied</>
+                      ) : (
+                        <><Copy className="size-3.5" /> Copy</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-amber-600">
+                The member must change this password on next login.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border bg-amber-50 border-amber-200 px-3 py-2 text-sm text-amber-800">
+                This will generate a new password. The member will be required to change it on next login.
+              </div>
+              <div className="space-y-2">
+                <Label>New Password (leave blank to auto-generate)</Label>
+                <Input
+                  value={resetPasswordNew}
+                  onChange={(e) => setResetPasswordNew(e.target.value)}
+                  placeholder="Auto-generated if blank"
+                  type="text"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            {resetPasswordResult ? (
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => setShowResetPasswordDialog(false)}
+              >
+                Done
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setShowResetPasswordDialog(false)}>Cancel</Button>
+                <Button
+                  className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                  onClick={handleResetPassword}
+                  disabled={actionLoading}
+                >
+                  <KeyRound className="size-3.5" />
+                  {actionLoading ? "Resetting..." : "Reset Password"}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Change Role Dialog ──────────────────────────────────────── */}
+      <Dialog open={showChangeRoleDialog} onOpenChange={setShowChangeRoleDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="size-5 text-purple-600" />
+              Change Role
+            </DialogTitle>
+            <DialogDescription>
+              {changeRoleMember ? `Change role for ${[changeRoleMember.firstName, changeRoleMember.lastName].filter(Boolean).join(" ") || changeRoleMember.email}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border bg-muted/50 px-3 py-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Current Role</span>
+              <Badge className={changeRoleMember?.role === "client_admin" ? "bg-emerald-100 text-emerald-800 border-emerald-200 text-xs gap-1" : "bg-teal-100 text-teal-800 border-teal-200 text-xs"}>
+                {changeRoleMember?.role === "client_admin" ? (
+                  <><ShieldCheck className="size-3" /> Admin</>
+                ) : (
+                  "Recruiter"
+                )}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <Label>New Role</Label>
+              <Select value={changeRoleNew} onValueChange={setChangeRoleNew}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client_recruiter">Recruiter</SelectItem>
+                  <SelectItem value="client_admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              {changeRoleNew === "client_admin" && (
+                <p className="text-xs text-amber-600">
+                  Only one admin is allowed per company. If an admin already exists, this will fail.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangeRoleDialog(false)}>Cancel</Button>
+            <Button
+              className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+              onClick={handleChangeRole}
+              disabled={actionLoading || changeRoleNew === changeRoleMember?.role}
+            >
+              <ArrowRightLeft className="size-3.5" />
+              {actionLoading ? "Changing..." : "Change Role"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
