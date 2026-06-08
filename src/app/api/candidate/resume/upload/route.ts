@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
+import { parseResume as parseResumeAffinda, isAffindaConfigured } from "@/lib/affinda";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import { randomUUID } from "crypto";
 import ZAI from "z-ai-web-dev-sdk";
 
 const ALLOWED_MIME_TYPES = [
@@ -15,8 +19,8 @@ const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 /**
- * Uses AI to parse resume text content into structured data.
- * Falls back gracefully if AI parsing fails.
+ * Uses AI Vision to parse resume content into structured data.
+ * Primary parsing method — uses z-ai-web-dev-sdk VLM.
  */
 async function parseResumeWithAI(file: File): Promise<Record<string, unknown> | null> {
   try {
@@ -114,7 +118,28 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no code blocks.
 
     return null;
   } catch (error) {
-    console.error("[RESUME_UPLOAD] AI parsing failed:", error);
+    console.error("[RESUME_UPLOAD] AI Vision parsing failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Fallback: Parse resume with Affinda API if AI Vision fails.
+ */
+async function parseResumeWithAffinda(file: File): Promise<string | null> {
+  if (!isAffindaConfigured()) {
+    console.log("[RESUME_UPLOAD] Affinda not configured, skipping fallback parsing");
+    return null;
+  }
+
+  try {
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const fileName = file.name || "resume.pdf";
+    const result = await parseResumeAffinda(fileBuffer, fileName);
+    console.log("[RESUME_UPLOAD] Affinda fallback parsing completed");
+    return result;
+  } catch (parseError) {
+    console.warn("[RESUME_UPLOAD] Affinda fallback parsing also failed:", parseError);
     return null;
   }
 }
@@ -175,22 +200,93 @@ export async function POST(request: Request) {
     }
 
     // ── 5. Upload file to storage ─────────────────────────────────────
-    const folder = `user-${userId}`;
-    const { url: fileUrl } = await uploadFile(
-      STORAGE_BUCKETS.RESUMES,
-      folder,
-      file,
-      file.name,
-      file.type
-    );
+    let fileUrl: string;
+    try {
+      const folder = `user-${userId}`;
+      const result = await uploadFile(
+        STORAGE_BUCKETS.RESUMES,
+        folder,
+        file,
+        file.name,
+        file.type
+      );
+      fileUrl = result.url;
+    } catch (storageError) {
+      console.warn("[RESUME_UPLOAD] Storage upload failed, saving to local filesystem:", storageError);
+      // Fallback: save to local filesystem
+      const ext = file.name.split(".").pop() || "pdf";
+      const uniqueName = `${randomUUID()}.${ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "upload", "resumes");
+      await mkdir(uploadDir, { recursive: true });
+      const filePath = path.join(uploadDir, uniqueName);
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(filePath, fileBuffer);
+      fileUrl = `/upload/resumes/${uniqueName}`;
+    }
 
-    // ── 6. AI-parse the resume content ────────────────────────────────
+    // ── 6. Parse the resume — try AI Vision first, then Affinda fallback ──
     let parsedData: Record<string, unknown> | null = null;
+
+    // Primary: AI Vision parsing
     try {
       parsedData = await parseResumeWithAI(file);
+      if (parsedData) {
+        console.log("[RESUME_UPLOAD] AI Vision parsing succeeded");
+      }
     } catch {
-      // Non-blocking — the file is still uploaded even if parsing fails
-      console.warn("[RESUME_UPLOAD] AI parsing skipped due to error");
+      console.warn("[RESUME_UPLOAD] AI Vision parsing skipped due to error");
+    }
+
+    // Fallback: Affinda parsing if AI Vision didn't work
+    if (!parsedData) {
+      try {
+        const affindaResult = await parseResumeWithAffinda(file);
+        if (affindaResult) {
+          // Convert Affinda format to our standard format
+          const affindaParsed = JSON.parse(affindaResult);
+          parsedData = {
+            contact: {
+              fullName: affindaParsed.name || "",
+              phone: affindaParsed.phone || "",
+              email: affindaParsed.email || "",
+              address: affindaParsed.location || "",
+            },
+            summary: affindaParsed.summary || "",
+            experience: (affindaParsed.workExperience || []).map(
+              (exp: { title?: string; organization?: string; startDate?: string; endDate?: string; current?: boolean; description?: string }) => ({
+                facility: exp.organization || "",
+                unit: exp.title || "",
+                startDate: exp.startDate || "",
+                endDate: exp.current ? "" : (exp.endDate || ""),
+                description: exp.description || "",
+              })
+            ),
+            education: (affindaParsed.education || []).map(
+              (edu: { institution?: string; degree?: string; startDate?: string; endDate?: string }) => ({
+                school: edu.institution || "",
+                degree: edu.degree || "",
+                year: edu.endDate || "",
+              })
+            ),
+            certifications: (affindaParsed.certifications || []).map(
+              (c: string) => ({
+                name: c,
+                issuingOrg: "",
+                year: "",
+              })
+            ),
+            skills: (affindaParsed.skills || []).map(
+              (s: string) => ({
+                skill: s,
+                proficiency: "Intermediate",
+              })
+            ),
+          };
+          console.log("[RESUME_UPLOAD] Affinda fallback parsing succeeded");
+        }
+      } catch {
+        console.warn("[RESUME_UPLOAD] Affinda fallback also failed");
+      }
     }
 
     // ── 7. Create or update the resume record ─────────────────────────
@@ -201,7 +297,6 @@ export async function POST(request: Request) {
     let resume;
 
     if (existingResume) {
-      // Replace the existing resume file_url and parsed data
       resume = await db.resume.update({
         where: { id: existingResume.id },
         data: {
@@ -211,7 +306,6 @@ export async function POST(request: Request) {
         },
       });
     } else {
-      // Create a new resume record
       resume = await db.resume.create({
         data: {
           candidate_user_id: userId,
