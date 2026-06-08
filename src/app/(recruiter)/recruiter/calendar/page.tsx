@@ -27,6 +27,8 @@ import {
   Sparkles,
   UserCheck,
   Send,
+  Printer,
+  FileDown,
 } from "@/lib/icons";
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -194,6 +196,18 @@ interface ShiftRequest {
     last_name: string | null;
     email: string;
   };
+}
+
+interface AutoMatchResult {
+  candidateId: number;
+  candidateName: string;
+  specialty: string | null;
+  availabilityStatus: string;
+  matchScore: number;
+  matchReasons: string[];
+  leadId: number;
+  leadName: string;
+  leadSpecialty: string | null;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────
@@ -1099,8 +1113,9 @@ function LeadDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#166534]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-[#166534] flex items-center gap-3" style={{ fontFamily: "'Clash Display', sans-serif" }}>
             {editing ? "Edit Lead" : `${lead.first_name} ${lead.last_name}`}
+            {!editing && <StarRatingDisplay value={lead.star_rating} />}
           </DialogTitle>
         </DialogHeader>
 
@@ -1430,6 +1445,144 @@ function MyCalendarTab({
     setOutcomeOpen(true);
   };
 
+  const handlePrintCallSheet = async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`/api/recruiter/calendar/daily-call-sheet?date=${today}`);
+      if (!res.ok) throw new Error("Failed to fetch call sheet");
+      const data = await res.json();
+
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast.error("Please allow popups to print the call sheet");
+        return;
+      }
+
+      const rows = data.calls.map((call: {
+        leadName: string;
+        phone: string;
+        email: string;
+        specialty: string;
+        scheduledTime: string;
+        pipelineStage: string;
+        remark: string;
+        starRating: number | null;
+      }, i: number) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${i + 1}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">${call.leadName}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.phone || "—"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.email || "—"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.specialty || "—"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;font-weight:500;">${call.scheduledTime || "TBD"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.pipelineStage ? call.pipelineStage.replace(/_/g, " ") : "—"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.starRating ? "★".repeat(call.starRating) : "—"}</td>
+          <td style="padding:8px;border:1px solid #e5e7eb;">${call.remark || "—"}</td>
+        </tr>
+      `).join("");
+
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Call Sheet — ${data.date}</title>
+  <style>
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #111827; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    h2 { font-size: 14px; color: #6b7280; font-weight: normal; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+    th { background: #f3f4f6; padding: 8px; border: 1px solid #e5e7eb; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta { display: flex; gap: 24px; margin-top: 8px; font-size: 13px; color: #374151; }
+    .meta span { font-weight: 500; }
+    .print-btn { margin-top: 16px; padding: 8px 16px; background: #166534; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .print-btn:hover { background: #14532D; }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom: 12px;">
+    <button class="print-btn" onclick="window.print()">Print Call Sheet</button>
+  </div>
+  <h1>Call Sheet — ${data.date}</h1>
+  <div class="meta">
+    <div>Recruiter: <span>${data.recruiterName}</span></div>
+    <div>Organization: <span>${data.organizationName}</span></div>
+  </div>
+  ${data.calls.length === 0 ? '<p style="margin-top:24px;color:#9ca3af;">No scheduled calls for today.</p>' : `
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Lead Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Specialty</th>
+        <th>Scheduled Time</th>
+        <th>Pipeline Stage</th>
+        <th>Rating</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>`}
+</body>
+</html>`);
+      printWindow.document.close();
+    } catch {
+      toast.error("Failed to generate call sheet");
+    }
+  };
+
+  const handleExportCallSheetCSV = async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`/api/recruiter/calendar/daily-call-sheet?date=${today}`);
+      if (!res.ok) throw new Error("Failed to fetch call sheet");
+      const data = await res.json();
+
+      const headers = ["#", "Lead Name", "Phone", "Email", "Specialty", "Scheduled Time", "Pipeline Stage", "Star Rating", "Remarks"];
+      const rows = data.calls.map((call: {
+        leadName: string;
+        phone: string;
+        email: string;
+        specialty: string;
+        scheduledTime: string;
+        pipelineStage: string;
+        remark: string;
+        starRating: number | null;
+      }, i: number) => [
+        i + 1,
+        call.leadName,
+        call.phone || "",
+        call.email || "",
+        call.specialty || "",
+        call.scheduledTime || "TBD",
+        call.pipelineStage ? call.pipelineStage.replace(/_/g, " ") : "",
+        call.starRating?.toString() || "",
+        call.remark || "",
+      ]);
+
+      const csv = [headers, ...rows]
+        .map((r) => r.map((c: string | number) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `call_sheet_${today}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Call sheet exported");
+    } catch {
+      toast.error("Failed to export call sheet");
+    }
+  };
+
   // Get schedules for a specific day
   const getSchedulesForDay = (date: Date) => {
     return schedules.filter((s) => {
@@ -1654,6 +1807,24 @@ function MyCalendarTab({
             <Plus className="size-4 mr-1" />
             Add New Lead
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <FileDown className="size-3.5 mr-1" />
+                Call Sheet
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handlePrintCallSheet}>
+                <Printer className="size-3.5 mr-2" />
+                Print Call Sheet
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCallSheetCSV}>
+                <Download className="size-3.5 mr-2" />
+                Export CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -1702,6 +1873,11 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [shiftDialogCandidate, setShiftDialogCandidate] = useState<CandidateCalendar | null>(null);
 
+  // Auto-Match state
+  const [autoMatches, setAutoMatches] = useState<AutoMatchResult[]>([]);
+  const [autoMatchLoading, setAutoMatchLoading] = useState(false);
+  const [showAutoMatch, setShowAutoMatch] = useState(false);
+
   const fetchCandidates = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -1741,6 +1917,48 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
     }
     return filtered;
   }, [candidates, statusFilter]);
+
+  const handleFindMatches = async () => {
+    setAutoMatchLoading(true);
+    setShowAutoMatch(true);
+    try {
+      const res = await fetch("/api/recruiter/calendar/auto-match");
+      if (!res.ok) throw new Error("Failed to fetch matches");
+      const data = await res.json();
+      setAutoMatches(data.matches ?? []);
+    } catch {
+      toast.error("Failed to find matches");
+    } finally {
+      setAutoMatchLoading(false);
+    }
+  };
+
+  const handleScheduleMatchCall = (match: AutoMatchResult) => {
+    // Create a minimal candidate object for the shift dialog
+    const candidate: CandidateCalendar = {
+      userId: match.candidateId,
+      firstName: match.candidateName.split(" ")[0] || null,
+      lastName: match.candidateName.split(" ").slice(1).join(" ") || null,
+      email: "",
+      phone: null,
+      specialty: match.specialty,
+      availabilities: [],
+    };
+    setShiftDialogCandidate(candidate);
+  };
+
+  const handleSendShiftRequest = (match: AutoMatchResult) => {
+    const candidate: CandidateCalendar = {
+      userId: match.candidateId,
+      firstName: match.candidateName.split(" ")[0] || null,
+      lastName: match.candidateName.split(" ").slice(1).join(" ") || null,
+      email: "",
+      phone: null,
+      specialty: match.specialty,
+      availabilities: [],
+    };
+    setShiftDialogCandidate(candidate);
+  };
 
   const getWeeklyAvailabilityGrid = (availabilities: CandidateAvailability[]) => {
     const days = [0, 1, 2, 3, 4, 5, 6];
@@ -1821,6 +2039,123 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
           </span>
         </div>
       )}
+
+      {/* Auto-Match Section */}
+      <Card className="border-[#0D9488]/20 bg-gradient-to-r from-teal-50/50 to-white">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-[#0D9488]" />
+              <h3 className="font-semibold text-[#111827]">Auto-Match</h3>
+              <span className="text-xs text-gray-500">Match candidates to your open positions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {showAutoMatch && (
+                <Button variant="ghost" size="sm" onClick={() => setShowAutoMatch(false)} className="text-gray-500">
+                  <X className="size-3.5 mr-1" />
+                  Hide
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleFindMatches}
+                disabled={autoMatchLoading}
+                className="bg-[#0D9488] hover:bg-[#0F766E] text-white"
+              >
+                {autoMatchLoading ? (
+                  <Loader2 className="size-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3.5 mr-1" />
+                )}
+                Find Matches
+              </Button>
+            </div>
+          </div>
+
+          {showAutoMatch && (
+            autoMatchLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : autoMatches.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-gray-400">No matches found. Add more leads and connect with candidates to see matches.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {autoMatches.map((match, i) => (
+                  <div key={`${match.candidateId}-${match.leadId}-${i}`} className="rounded-lg border border-teal-200 bg-white p-3 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm text-[#111827]">{match.candidateName}</p>
+                        {match.specialty && (
+                          <p className="text-xs text-gray-500">{match.specialty}</p>
+                        )}
+                      </div>
+                      <Badge className={`text-[10px] shrink-0 ${
+                        match.matchScore >= 70
+                          ? "bg-green-100 text-green-800"
+                          : match.matchScore >= 40
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-600"
+                      } border-0`}>
+                        {match.matchScore}% match
+                      </Badge>
+                    </div>
+                    <div className="mb-2">
+                      <p className="text-[10px] text-gray-400">Matched to lead:</p>
+                      <p className="text-xs text-[#166534] font-medium">{match.leadName} {match.leadSpecialty ? `(${match.leadSpecialty})` : ""}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {match.matchReasons.map((reason, ri) => (
+                        <Badge key={ri} variant="outline" className="text-[9px] h-5 px-1.5">
+                          {reason}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Badge className={`text-[10px] border-0 ${
+                        match.availabilityStatus === "actively_looking"
+                          ? "bg-green-100 text-green-700"
+                          : match.availabilityStatus === "open"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {match.availabilityStatus === "actively_looking"
+                          ? "Actively Looking"
+                          : match.availabilityStatus === "open"
+                          ? "Open"
+                          : "Unknown"}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-7 text-xs"
+                        onClick={() => handleScheduleMatchCall(match)}
+                      >
+                        <Phone className="size-3 mr-1" />
+                        Schedule Call
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-xs bg-[#0D9488] hover:bg-[#0F766E] text-white"
+                        onClick={() => handleSendShiftRequest(match)}
+                      >
+                        <Send className="size-3 mr-1" />
+                        Send Shift Request
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
 
       {/* Candidates grid */}
       {isLoading ? (
@@ -2095,9 +2430,11 @@ function LeadsListTab({
   const [sourceFilter, setSourceFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [starFilter, setStarFilter] = useState("");
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [scheduleLeadId, setScheduleLeadId] = useState<number | null>(null);
+  const [editingRatingId, setEditingRatingId] = useState<number | null>(null);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
@@ -2110,9 +2447,10 @@ function LeadsListTab({
       const matchesSource = !sourceFilter || l.source === sourceFilter;
       const matchesDateFrom = !dateFrom || new Date(l.created_at) >= new Date(dateFrom);
       const matchesDateTo = !dateTo || new Date(l.created_at) <= new Date(dateTo);
-      return matchesSearch && matchesStage && matchesSource && matchesDateFrom && matchesDateTo;
+      const matchesStar = !starFilter || starFilter === "_all" || (starFilter === "none" ? !l.star_rating : l.star_rating === Number(starFilter));
+      return matchesSearch && matchesStage && matchesSource && matchesDateFrom && matchesDateTo && matchesStar;
     });
-  }, [leads, search, stageFilter, sourceFilter, dateFrom, dateTo]);
+  }, [leads, search, stageFilter, sourceFilter, dateFrom, dateTo, starFilter]);
 
   const handleDelete = async (leadId: number) => {
     try {
@@ -2122,6 +2460,22 @@ function LeadsListTab({
       refresh();
     } catch {
       toast.error("Failed to delete lead");
+    }
+  };
+
+  const handleInlineStarRating = async (leadId: number, rating: number | null) => {
+    setEditingRatingId(null);
+    try {
+      const res = await fetch(`/api/recruiter/calendar/leads/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ starRating: rating }),
+      });
+      if (!res.ok) throw new Error("Failed to update rating");
+      toast.success("Rating updated");
+      refresh();
+    } catch {
+      toast.error("Failed to update rating");
     }
   };
 
@@ -2153,7 +2507,7 @@ function LeadsListTab({
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Search</Label>
               <div className="relative">
@@ -2191,6 +2545,23 @@ function LeadsListTab({
                   {SOURCE_OPTIONS.map((s) => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Star Rating</Label>
+              <Select value={starFilter} onValueChange={setStarFilter}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="All ratings" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">All ratings</SelectItem>
+                  <SelectItem value="5">★★★★★ (5)</SelectItem>
+                  <SelectItem value="4">★★★★ (4)</SelectItem>
+                  <SelectItem value="3">★★★ (3)</SelectItem>
+                  <SelectItem value="2">★★ (2)</SelectItem>
+                  <SelectItem value="1">★ (1)</SelectItem>
+                  <SelectItem value="none">No rating</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2266,7 +2637,26 @@ function LeadsListTab({
                       <TableCell className="text-sm text-gray-600">{l.specialty || "—"}</TableCell>
                       <TableCell className="text-sm text-gray-600">{getSourceLabel(l.source)}</TableCell>
                       <TableCell>{getStageBadge(l.pipeline_stage)}</TableCell>
-                      <TableCell><StarRatingDisplay value={l.star_rating} /></TableCell>
+                      <TableCell>
+                        {editingRatingId === l.id ? (
+                          <StarRatingInput
+                            value={l.star_rating}
+                            onChange={(v) => handleInlineStarRating(l.id, v)}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => setEditingRatingId(l.id)}
+                            className="hover:opacity-70 transition-opacity"
+                            title="Click to edit rating"
+                          >
+                            {l.star_rating ? (
+                              <StarRatingDisplay value={l.star_rating} />
+                            ) : (
+                              <span className="text-xs text-gray-400 hover:text-gray-600">— rate —</span>
+                            )}
+                          </button>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-gray-500">{formatDate(l.updated_at)}</TableCell>
                       <TableCell>
                         <DropdownMenu>

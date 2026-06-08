@@ -659,6 +659,11 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
       subject: 'Account Scheduled for Deletion',
       body: 'Hello {{candidate_name}},\n\nWe are writing to confirm that your MyZipVault account has been scheduled for deletion on {{deletion_date}}.\n\nYou are currently within the grace period. If you wish to keep your account active, please contact our support team before the deletion date.\n\n{{support_link}}\n\nThank you,\nMyZipVault Team',
     },
+    {
+      template_key: 'email_verification',
+      subject: 'Verify Your Email Address — MyZipVault',
+      body: 'Hello {{candidate_name}},\n\nThank you for creating your MyZipVault account! Please verify your email address by clicking the link below:\n\n{{verification_link}}\n\nThis link will expire in 24 hours. If you did not create an account with MyZipVault, please ignore this email.\n\nThank you,\nMyZipVault Team',
+    },
   ];
 
   for (const tmpl of emailTemplates) {

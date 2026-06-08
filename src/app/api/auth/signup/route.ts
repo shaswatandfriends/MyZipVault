@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
+import crypto from "crypto";
 import { db } from "@/lib/db";
+import { sendVerificationEmail } from "@/lib/email";
+
+const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 export async function POST(request: Request) {
   try {
@@ -61,6 +65,7 @@ export async function POST(request: Request) {
         last_name: lastName || null,
         is_approved: true,
         account_status: "active",
+        // email_verified_at is null by default — user must verify
       },
     });
 
@@ -73,6 +78,38 @@ export async function POST(request: Request) {
         profile_completion_pct: firstName && lastName ? 10 : 0,
       },
     });
+
+    // Send verification email
+    try {
+      const verifyToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      await db.platformSetting.upsert({
+        where: { setting_key: `verify_${verifyToken}` },
+        update: {
+          setting_value: JSON.stringify({
+            userId: user.id,
+            email: user.email,
+            expiresAt,
+          }),
+        },
+        create: {
+          setting_key: `verify_${verifyToken}`,
+          setting_value: JSON.stringify({
+            userId: user.id,
+            email: user.email,
+            expiresAt,
+          }),
+        },
+      });
+
+      const verificationLink = `${BASE_URL}/verify-email?token=${verifyToken}`;
+      await sendVerificationEmail(user.email, verificationLink);
+      console.log(`[AUDIT] Verification email sent on signup — user: ${user.id}, email: ${user.email}`);
+    } catch (emailError) {
+      console.error("[SIGNUP] Failed to send verification email:", emailError);
+      // Don't fail signup if email sending fails
+    }
 
     return NextResponse.json(
       { message: "Account created successfully", userId: user.id },

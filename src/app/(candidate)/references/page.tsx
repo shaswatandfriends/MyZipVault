@@ -19,6 +19,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Users,
   UserPlus,
   Clock,
@@ -28,6 +39,9 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  RefreshCw,
+  XCircle,
+  Send,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -74,6 +88,12 @@ function getStatusBadge(status: string) {
           <AlertCircle className="size-3" /> Expired
         </Badge>
       );
+    case "cancelled":
+      return (
+        <Badge className="bg-gray-100 text-gray-700 dark:bg-gray-800/30 dark:text-gray-400 border-0 gap-1">
+          <XCircle className="size-3" /> Cancelled
+        </Badge>
+      );
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
@@ -98,6 +118,8 @@ export default function CandidateReferencesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedRef, setExpandedRef] = useState<number | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   // Form state
   const [managerFirstName, setManagerFirstName] = useState("");
@@ -177,6 +199,58 @@ export default function CandidateReferencesPage() {
       toast.error("Failed to send reference request");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async (referenceId: number) => {
+    setResendingId(referenceId);
+    try {
+      const res = await fetch("/api/references/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to resend");
+      }
+
+      toast.success("Reference request resent!", {
+        description: "A new email has been sent to the manager.",
+      });
+      fetchReferences();
+    } catch (err) {
+      toast.error("Failed to resend reference", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleCancel = async (referenceId: number) => {
+    setCancellingId(referenceId);
+    try {
+      const res = await fetch("/api/references/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to cancel");
+      }
+
+      toast.success("Reference request cancelled");
+      fetchReferences();
+    } catch (err) {
+      toast.error("Failed to cancel reference", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -341,6 +415,7 @@ export default function CandidateReferencesPage() {
         <div className="space-y-3">
           {references.map((ref) => {
             const isCompleted = ref.status === "completed";
+            const isPending = ref.status === "pending_request";
             const isExpanded = expandedRef === ref.id;
             const managerName = ref.manager_user
               ? `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email
@@ -354,6 +429,8 @@ export default function CandidateReferencesPage() {
                       className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${
                         isCompleted
                           ? "bg-emerald-100 dark:bg-emerald-900/30"
+                          : ref.status === "cancelled"
+                          ? "bg-gray-100 dark:bg-gray-800/30"
                           : "bg-primary/10"
                       }`}
                     >
@@ -361,6 +438,8 @@ export default function CandidateReferencesPage() {
                         className={`size-5 ${
                           isCompleted
                             ? "text-emerald-600 dark:text-emerald-400"
+                            : ref.status === "cancelled"
+                            ? "text-gray-500 dark:text-gray-400"
                             : "text-primary"
                         }`}
                       />
@@ -385,6 +464,60 @@ export default function CandidateReferencesPage() {
                           Requested {new Date(ref.requested_at).toLocaleDateString()}
                         </span>
                       </div>
+
+                      {/* Action buttons for pending references */}
+                      {isPending && (
+                        <div className="flex items-center gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-7 text-xs"
+                            disabled={resendingId === ref.id}
+                            onClick={() => handleResend(ref.id)}
+                          >
+                            {resendingId === ref.id ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <RefreshCw className="size-3" />
+                            )}
+                            Resend
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 h-7 text-xs text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                                disabled={cancellingId === ref.id}
+                              >
+                                {cancellingId === ref.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <XCircle className="size-3" />
+                                )}
+                                Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Reference Request</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to cancel the reference request to {managerName} at {ref.facility_name}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Request</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => handleCancel(ref.id)}
+                                >
+                                  Cancel Request
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
 
                       {/* View details button for completed references */}
                       {isCompleted && ref.reference_responses?.length > 0 && (

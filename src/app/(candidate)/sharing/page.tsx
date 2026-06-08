@@ -7,8 +7,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Share2,
   Check,
@@ -22,6 +42,8 @@ import {
   User,
   Loader2,
   Ban,
+  Pencil,
+  Calendar,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -67,6 +89,13 @@ export default function CandidateSharingPage() {
   const [expirySelections, setExpirySelections] = useState<Record<string, string>>({});
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+
+  // Modify expiry dialog state
+  const [isExpiryDialogOpen, setIsExpiryDialogOpen] = useState(false);
+  const [editingShare, setEditingShare] = useState<ConsentShareItem | null>(null);
+  const [expiryOption, setExpiryOption] = useState("14");
+  const [customExpiryDate, setCustomExpiryDate] = useState("");
+  const [isSavingExpiry, setIsSavingExpiry] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -119,11 +148,6 @@ export default function CandidateSharingPage() {
   };
 
   const handleRevoke = async (consentShareId: number) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to revoke this share? The employer will immediately lose access."
-    );
-    if (!confirmed) return;
-
     setRevokingId(consentShareId);
     try {
       const res = await fetch("/api/sharing/revoke", {
@@ -172,13 +196,69 @@ export default function CandidateSharingPage() {
     }
   };
 
+  const openExpiryDialog = (share: ConsentShareItem) => {
+    setEditingShare(share);
+    setExpiryOption("14");
+    setCustomExpiryDate("");
+    setIsExpiryDialogOpen(true);
+  };
+
+  const handleSaveExpiry = async () => {
+    if (!editingShare) return;
+
+    let newExpiresAt: Date;
+
+    if (expiryOption === "custom") {
+      if (!customExpiryDate) {
+        toast.error("Please select a custom expiry date");
+        return;
+      }
+      newExpiresAt = new Date(customExpiryDate);
+      if (newExpiresAt <= new Date()) {
+        toast.error("Expiry date must be in the future");
+        return;
+      }
+    } else {
+      const days = parseInt(expiryOption);
+      newExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    }
+
+    setIsSavingExpiry(true);
+    try {
+      const res = await fetch("/api/sharing/modify-expiry", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          consentShareId: editingShare.id,
+          newExpiresAt: newExpiresAt.toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update expiry");
+      }
+
+      toast.success("Share expiry updated successfully");
+      setIsExpiryDialogOpen(false);
+      setEditingShare(null);
+      fetchData();
+    } catch (err) {
+      toast.error("Failed to update share expiry", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsSavingExpiry(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="Sharing & Consent" />
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-40 w-full" />
+            <Skeleton key={i} className="h-140 w-full" />
           ))}
         </div>
       </div>
@@ -369,22 +449,53 @@ export default function CandidateSharingPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {!isExpired && !share.is_deleted && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 h-7 text-xs text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
-                          disabled={revokingId === share.id}
-                          onClick={() => handleRevoke(share.id)}
-                        >
-                          {revokingId === share.id ? (
-                            <Loader2 className="size-3 animate-spin" />
-                          ) : (
-                            <Ban className="size-3" />
-                          )}
-                          Revoke
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="gap-1 h-7 text-xs"
+                            onClick={() => openExpiryDialog(share)}
+                          >
+                            <Pencil className="size-3" />
+                            <span className="hidden sm:inline">Edit</span>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                                disabled={revokingId === share.id}
+                              >
+                                {revokingId === share.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <Ban className="size-3" />
+                                )}
+                                Revoke
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Revoke Share Access</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to revoke access for {recruiterName} at {agencyName}? They will immediately lose access to your shared documents.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Sharing</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => handleRevoke(share.id)}
+                                >
+                                  Yes, Revoke Access
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
                       )}
                       <Badge variant={isExpired ? "secondary" : "default"} className="text-xs">
                         {isExpired ? "Expired" : "Active"}
@@ -413,6 +524,105 @@ export default function CandidateSharingPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modify Expiry Dialog */}
+      <Dialog open={isExpiryDialogOpen} onOpenChange={setIsExpiryDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="size-5" />
+              Modify Share Expiry
+            </DialogTitle>
+            <DialogDescription>
+              Change how long {editingShare?.client_user
+                ? `${editingShare.client_user.first_name || ""} ${editingShare.client_user.last_name || ""}`.trim() || "the recruiter"
+                : "the recruiter"} can access your shared documents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <Label>Select new expiry period</Label>
+              <RadioGroup
+                value={expiryOption}
+                onValueChange={setExpiryOption}
+                className="space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="7" id="exp-7" />
+                  <Label htmlFor="exp-7" className="font-normal text-sm cursor-pointer">
+                    7 days from now
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="14" id="exp-14" />
+                  <Label htmlFor="exp-14" className="font-normal text-sm cursor-pointer">
+                    14 days from now
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="30" id="exp-30" />
+                  <Label htmlFor="exp-30" className="font-normal text-sm cursor-pointer">
+                    30 days from now
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="custom" id="exp-custom" />
+                  <Label htmlFor="exp-custom" className="font-normal text-sm cursor-pointer">
+                    Custom date
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {expiryOption === "custom" && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-expiry-date">Expiry Date</Label>
+                <Input
+                  id="custom-expiry-date"
+                  type="date"
+                  value={customExpiryDate}
+                  onChange={(e) => setCustomExpiryDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+            )}
+
+            {editingShare && (
+              <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground">
+                <p>Current expiry: {new Date(editingShare.expires_at).toLocaleDateString()}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsExpiryDialogOpen(false)}
+              disabled={isSavingExpiry}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isSavingExpiry}
+              className="gap-2"
+              onClick={handleSaveExpiry}
+            >
+              {isSavingExpiry ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Calendar className="size-4" />
+                  Update Expiry
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

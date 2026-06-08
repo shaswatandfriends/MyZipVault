@@ -22,6 +22,7 @@ export async function GET() {
         candidate_profile: {
           select: {
             profile_completion_pct: true,
+            notification_preferences: true,
           },
         },
       },
@@ -31,12 +32,30 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Parse notification preferences from JSON string
+    let notificationPreferences = {
+      email_notifications: true,
+      sms_notifications: false,
+      reminder_notifications: true,
+    };
+    if (user.candidate_profile?.notification_preferences) {
+      try {
+        notificationPreferences = {
+          ...notificationPreferences,
+          ...JSON.parse(user.candidate_profile.notification_preferences),
+        };
+      } catch {
+        // Use defaults if parsing fails
+      }
+    }
+
     return NextResponse.json({
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
       phone: user.phone,
       profile_completion_pct: user.candidate_profile?.profile_completion_pct ?? 0,
+      notification_preferences: notificationPreferences,
     });
   } catch (error) {
     console.error("[CANDIDATE_PROFILE_GET]", error);
@@ -56,7 +75,7 @@ export async function PUT(request: Request) {
 
     const userId = Number(session.user.id);
     const body = await request.json();
-    const { first_name, last_name, phone } = body;
+    const { first_name, last_name, phone, notification_preferences } = body;
 
     // Update user record
     await db.user.update({
@@ -74,13 +93,19 @@ export async function PUT(request: Request) {
     });
 
     if (existingProfile) {
+      const profileUpdateData: Record<string, unknown> = {};
+
+      if (first_name !== undefined) profileUpdateData.first_name = first_name;
+      if (last_name !== undefined) profileUpdateData.last_name = last_name;
+      if (phone !== undefined) profileUpdateData.phone = phone;
+
+      if (notification_preferences !== undefined) {
+        profileUpdateData.notification_preferences = JSON.stringify(notification_preferences);
+      }
+
       await db.candidateProfile.update({
         where: { user_id: userId },
-        data: {
-          first_name: first_name ?? existingProfile.first_name,
-          last_name: last_name ?? existingProfile.last_name,
-          phone: phone ?? existingProfile.phone,
-        },
+        data: profileUpdateData,
       });
     }
 

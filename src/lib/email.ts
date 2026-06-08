@@ -177,6 +177,17 @@ export async function sendLowCreditAlertEmail(email: string, organizationName: s
   });
 }
 
+export async function sendVerificationEmail(email: string, verificationLink: string) {
+  return sendEmail({
+    to: email,
+    templateKey: "email_verification",
+    variables: {
+      candidate_name: email.split("@")[0],
+      verification_link: verificationLink,
+    },
+  });
+}
+
 export async function sendPasswordResetEmail(email: string, resetLink: string) {
   return sendEmail({
     to: email,

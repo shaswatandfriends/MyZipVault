@@ -48,6 +48,7 @@ import {
   Download,
   Trash2,
   Loader2,
+  Pencil,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -114,6 +115,19 @@ function getVerificationBadge(status: string) {
   }
 }
 
+function getFileType(fileUrl: string): "pdf" | "image" | "other" {
+  const lower = fileUrl.toLowerCase();
+  if (lower.includes(".pdf") || lower.startsWith("data:application/pdf")) return "pdf";
+  if (
+    lower.includes(".jpg") ||
+    lower.includes(".jpeg") ||
+    lower.includes(".png") ||
+    lower.startsWith("data:image/jpeg") ||
+    lower.startsWith("data:image/png")
+  ) return "image";
+  return "other";
+}
+
 export default function CandidateCredentialsPage() {
   const [credentials, setCredentials] = useState<CredentialItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,6 +142,20 @@ export default function CandidateCredentialsPage() {
   const [expirationDate, setExpirationDate] = useState("");
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCredential, setEditingCredential] = useState<CredentialItem | null>(null);
+  const [editDocumentName, setEditDocumentName] = useState("");
+  const [editExpirationDate, setEditExpirationDate] = useState("");
+  const [editReminderEnabled, setEditReminderEnabled] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Preview dialog state
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [previewCredential, setPreviewCredential] = useState<CredentialItem | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const fetchCredentials = useCallback(async () => {
     try {
@@ -242,6 +270,84 @@ export default function CandidateCredentialsPage() {
       });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openEditDialog = (credential: CredentialItem) => {
+    setEditingCredential(credential);
+    setEditDocumentName(credential.document_name);
+    setEditExpirationDate(
+      credential.expiration_date
+        ? new Date(credential.expiration_date).toISOString().split("T")[0]
+        : ""
+    );
+    setEditReminderEnabled(credential.reminder_enabled);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCredential) return;
+
+    if (!editDocumentName.trim()) {
+      toast.error("Document name cannot be empty");
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch(`/api/credentials/${editingCredential.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_name: editDocumentName.trim(),
+          expiration_date: editExpirationDate || null,
+          reminder_enabled: editReminderEnabled,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update credential");
+      }
+
+      toast.success("Credential updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingCredential(null);
+      fetchCredentials();
+    } catch (err) {
+      toast.error("Failed to update credential", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const openPreviewDialog = async (credential: CredentialItem) => {
+    setPreviewCredential(credential);
+    setIsPreviewDialogOpen(true);
+    setIsLoadingPreview(true);
+    setPreviewUrl(null);
+
+    try {
+      const res = await fetch("/api/storage/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl: credential.file_url }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get preview URL");
+      }
+
+      const { signedUrl } = await res.json();
+      setPreviewUrl(signedUrl);
+    } catch {
+      toast.error("Failed to load preview");
+      setPreviewUrl(null);
+    } finally {
+      setIsLoadingPreview(false);
     }
   };
 
@@ -442,7 +548,35 @@ export default function CandidateCredentialsPage() {
                         {credential.document_name}
                       </p>
                       {/* Action buttons */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => openPreviewDialog(credential)}
+                            >
+                              <Eye className="size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Preview</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => openEditDialog(credential)}
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
+
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -523,6 +657,146 @@ export default function CandidateCredentialsPage() {
           ))}
         </div>
       )}
+
+      {/* Edit Credential Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleEditSave}>
+            <DialogHeader>
+              <DialogTitle>Edit Credential</DialogTitle>
+              <DialogDescription>
+                Update your credential details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editDocName">Document Name</Label>
+                <Input
+                  id="editDocName"
+                  placeholder="e.g., RN License, BLS Certification"
+                  value={editDocumentName}
+                  onChange={(e) => setEditDocumentName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editExpDate">Expiration Date (Optional)</Label>
+                <Input
+                  id="editExpDate"
+                  type="date"
+                  value={editExpirationDate}
+                  onChange={(e) => setEditExpirationDate(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="editReminder">30-Day Reminder</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Get alerted 30 days before expiration
+                  </p>
+                </div>
+                <Switch
+                  id="editReminder"
+                  checked={editReminderEnabled}
+                  onCheckedChange={setEditReminderEnabled}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isSavingEdit}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSavingEdit} className="gap-2">
+                {isSavingEdit ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="size-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Credential Dialog */}
+      <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="size-5" />
+              {previewCredential?.document_name || "Preview"}
+            </DialogTitle>
+            <DialogDescription>
+              File preview — close this dialog when done
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-[300px] max-h-[60vh] overflow-auto rounded-lg border bg-muted/30">
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : previewUrl ? (
+              (() => {
+                const fileType = getFileType(previewCredential?.file_url || "");
+                if (fileType === "pdf") {
+                  return (
+                    <iframe
+                      src={previewUrl}
+                      className="w-full h-[60vh] border-0"
+                      title="PDF Preview"
+                    />
+                  );
+                }
+                if (fileType === "image") {
+                  return (
+                    <div className="flex items-center justify-center p-4">
+                      <img
+                        src={previewUrl}
+                        alt={previewCredential?.document_name || "Credential preview"}
+                        className="max-w-full max-h-[60vh] object-contain rounded"
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex flex-col items-center justify-center h-[300px] gap-3">
+                    <FileText className="size-12 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Preview not available for this file type.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        if (previewCredential) handleDownload(previewCredential);
+                      }}
+                    >
+                      <Download className="size-4" />
+                      Download File
+                    </Button>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-sm text-muted-foreground">Failed to load preview</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

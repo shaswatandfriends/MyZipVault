@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { ProxyModeBanner } from "@/components/proxy-mode-banner";
 import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased bg-background text-foreground font-sans`}
       >
+        <ProxyModeBanner />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

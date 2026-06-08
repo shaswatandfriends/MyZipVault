@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Users,
@@ -10,6 +11,7 @@ import {
   Ban,
   CheckCircle2,
   Eye,
+  User,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -161,6 +163,7 @@ function TableRowSkeleton() {
 
 // ─── Main Component ─────────────────────────────────────────────────
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [data, setData] = useState<UsersData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -387,8 +390,8 @@ export default function AdminUsersPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Eye className="size-4" />
+                                <DropdownMenuItem onClick={() => router.push(`/admin/users/${user.id}`)}>
+                                  <User className="size-4" />
                                   View Profile
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />

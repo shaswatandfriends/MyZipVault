@@ -10,6 +10,8 @@ import {
   Eye,
   Mail,
   ToggleLeft,
+  Loader2,
+  CheckCircle2,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -97,6 +99,14 @@ function AnnouncementSkeleton() {
   );
 }
 
+// ─── Segment label map ─────────────────────────────────────────────
+const segmentLabels: Record<string, string> = {
+  all_candidates: "All Candidates",
+  expiring_credentials: "Candidates with Expiring Credentials",
+  all_recruiters: "All Recruiters",
+  inactive_users: "Inactive Users (30d+)",
+};
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function SuperadminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -116,6 +126,14 @@ export default function SuperadminAnnouncementsPage() {
   // Email section
   const [emailSegment, setEmailSegment] = useState("all_candidates");
   const [emailTemplate, setEmailTemplate] = useState("");
+  const [emailAnnouncementId, setEmailAnnouncementId] = useState<number | null>(null);
+  const [sendingCampaign, setSendingCampaign] = useState(false);
+  const [campaignResult, setCampaignResult] = useState<{
+    sentCount: number;
+    failedCount: number;
+    totalTargets: number;
+    notificationsCreated: number;
+  } | null>(null);
 
   const fetchAnnouncements = useCallback(async () => {
     try {
@@ -226,6 +244,56 @@ export default function SuperadminAnnouncementsPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete";
       toast.error("Delete failed", { description: message });
+    }
+  };
+
+  const handleSendCampaign = async () => {
+    if (!emailTemplate) {
+      toast.error("Please select an email template");
+      return;
+    }
+    try {
+      setSendingCampaign(true);
+      setCampaignResult(null);
+
+      const res = await fetch("/api/superadmin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_campaign",
+          announcementId: emailAnnouncementId,
+          targetRoles: [emailSegment],
+          sendEmail: true,
+          emailTemplate,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to send campaign");
+
+      setCampaignResult({
+        sentCount: json.sentCount,
+        failedCount: json.failedCount,
+        totalTargets: json.totalTargets,
+        notificationsCreated: json.notificationsCreated,
+      });
+
+      if (json.failedCount > 0) {
+        toast.warning("Campaign partially sent", {
+          description: `${json.sentCount} emails sent, ${json.failedCount} failed. ${json.notificationsCreated} notifications created.`,
+          duration: 6000,
+        });
+      } else {
+        toast.success("Email campaign sent!", {
+          description: `${json.sentCount} emails sent. ${json.notificationsCreated} in-app notifications created.`,
+          duration: 5000,
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send campaign";
+      toast.error("Campaign failed", { description: message });
+    } finally {
+      setSendingCampaign(false);
     }
   };
 
@@ -390,24 +458,73 @@ export default function SuperadminAnnouncementsPage() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Attach Announcement (Optional)</Label>
+              <Select
+                value={emailAnnouncementId ? String(emailAnnouncementId) : "none"}
+                onValueChange={(val) => setEmailAnnouncementId(val === "none" ? null : parseInt(val, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Announcement</SelectItem>
+                  {announcements.filter((a) => a.isActive).map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)}>
+                      {a.message.slice(0, 50)}{a.message.length > 50 ? "…" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Separator />
 
             <div className="rounded-lg border border-dashed p-4 text-center">
               <Mail className="size-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm font-medium">Email Preview</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {emailSegment === "all_candidates"
-                  ? "All candidates on the platform"
-                  : emailSegment === "expiring_credentials"
-                  ? "Candidates with credentials expiring in 30 days"
-                  : emailSegment === "all_recruiters"
-                  ? "All recruiters on the platform"
-                  : "Users inactive for 30+ days"}
+                {segmentLabels[emailSegment] || emailSegment}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Template: {emailTemplate || "None selected"}
+                Template: {emailTemplate ? emailTemplate.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "None selected"}
               </p>
+              {emailAnnouncementId && (
+                <p className="text-xs text-teal-600 mt-1">
+                  + Announcement attached
+                </p>
+              )}
             </div>
+
+            {/* Campaign Result */}
+            {campaignResult && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+                  <CheckCircle2 className="size-4" />
+                  Campaign Sent
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-emerald-600 font-semibold">{campaignResult.sentCount}</span>
+                    <span className="text-emerald-700"> emails sent</span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-600 font-semibold">{campaignResult.notificationsCreated}</span>
+                    <span className="text-emerald-700"> notifications</span>
+                  </div>
+                  {campaignResult.failedCount > 0 && (
+                    <div>
+                      <span className="text-red-600 font-semibold">{campaignResult.failedCount}</span>
+                      <span className="text-red-700"> failed</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-emerald-600 font-semibold">{campaignResult.totalTargets}</span>
+                    <span className="text-emerald-700"> total targets</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -423,11 +540,15 @@ export default function SuperadminAnnouncementsPage() {
               <Button
                 className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                 size="sm"
-                disabled={!emailTemplate}
-                onClick={() => toast.success("Email campaign queued (placeholder)")}
+                disabled={!emailTemplate || sendingCampaign}
+                onClick={handleSendCampaign}
               >
-                <Send className="size-4" />
-                Send
+                {sendingCampaign ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                {sendingCampaign ? "Sending…" : "Send"}
               </Button>
             </div>
           </CardContent>

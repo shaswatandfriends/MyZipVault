@@ -20,8 +20,11 @@ import {
   CheckCircle2,
   Sparkles,
   CalendarDays,
+  Mail,
+  Loader2,
 } from "@/lib/icons";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface DashboardData {
   profile: {
@@ -47,6 +50,7 @@ interface DashboardData {
     isRead: boolean;
     createdAt: string;
   }[];
+  emailVerified: boolean;
 }
 
 export default function CandidateDashboardPage() {
@@ -55,6 +59,8 @@ export default function CandidateDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [showBanner, setShowBanner] = useState(true);
+  const [showEmailBanner, setShowEmailBanner] = useState(true);
+  const [isResending, setIsResending] = useState(false);
   const [thankYouState, setThankYouState] = useState<{
     show: boolean;
     pct: number;
@@ -85,6 +91,42 @@ export default function CandidateDashboardPage() {
       setThankYouState({ show: true, pct: data?.profile?.profileCompletionPct ?? 0 });
     }
   }, [data?.profile?.profileCompletionPct]);
+
+  // Check if email verification banner was dismissed this session
+  useEffect(() => {
+    const dismissed = sessionStorage.getItem("emailBannerDismissed");
+    if (dismissed === "true") {
+      setShowEmailBanner(false);
+    }
+  }, []);
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    setIsResending(true);
+    try {
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      if (res.ok) {
+        toast.success("Verification email sent", {
+          description: "Check your inbox for the verification link.",
+        });
+      } else {
+        toast.error("Failed to send verification email. Please try again.");
+      }
+    } catch {
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const dismissEmailBanner = () => {
+    setShowEmailBanner(false);
+    sessionStorage.setItem("emailBannerDismissed", "true");
+  };
 
   const dismissBanner = () => setShowBanner(false);
 
@@ -186,6 +228,46 @@ export default function CandidateDashboardPage() {
             <Button variant="ghost" size="sm" className="shrink-0" onClick={dismissThankYou}>
               <X className="size-4" />
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Email Verification Banner */}
+      {!data?.emailVerified && showEmailBanner && (
+        <Card className="border-green-300 bg-green-50 dark:bg-green-950/30 dark:border-green-800">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Mail className="size-5 text-green-700 dark:text-green-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                Please verify your email address
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                Check your inbox or resend the verification email.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1 border-green-300 text-green-800 hover:bg-green-100 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-900"
+                disabled={isResending}
+                onClick={handleResendVerification}
+              >
+                {isResending ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  "Resend"
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={dismissEmailBanner}
+                className="text-green-600 dark:text-green-400"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

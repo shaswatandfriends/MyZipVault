@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Monitor,
@@ -14,6 +14,8 @@ import {
   Shield,
   ListOrdered,
   PanelBottom,
+  Loader2,
+  CheckCircle2,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
@@ -534,15 +536,43 @@ export default function LandingPageEditorPage() {
     "desktop"
   );
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [loadedFromServer, setLoadedFromServer] = useState(false);
+
+  // ── Load content from API on mount ──
+  const loadContent = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/superadmin/landing-page");
+      if (res.ok) {
+        const json = await res.json();
+        setData(json as LandingPageData);
+        setLoadedFromServer(true);
+        setHasUnsavedChanges(false);
+      }
+    } catch {
+      // Silently fail — will use default data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   // ── Hero helpers ──
   const updateHero = (key: keyof HeroContent, value: string) => {
     setData((prev) => ({ ...prev, hero: { ...prev.hero, [key]: value } }));
+    setHasUnsavedChanges(true);
   };
 
   // ── Color helpers ──
   const updateColor = (key: keyof ColorSettings, value: string) => {
     setData((prev) => ({ ...prev, colors: { ...prev.colors, [key]: value } }));
+    setHasUnsavedChanges(true);
   };
 
   // ── Feature card helpers ──
@@ -556,6 +586,7 @@ export default function LandingPageEditorPage() {
       cards[index] = { ...cards[index], [key]: value };
       return { ...prev, featureCards: cards };
     });
+    setHasUnsavedChanges(true);
   };
 
   // ── Privacy item helpers ──
@@ -569,6 +600,7 @@ export default function LandingPageEditorPage() {
       items[index] = { ...items[index], [key]: value };
       return { ...prev, privacySection: items };
     });
+    setHasUnsavedChanges(true);
   };
 
   // ── How It Works helpers ──
@@ -582,11 +614,13 @@ export default function LandingPageEditorPage() {
       steps[index] = { ...steps[index], [key]: value };
       return { ...prev, howItWorks: steps };
     });
+    setHasUnsavedChanges(true);
   };
 
   // ── Footer helpers ──
   const updateFooter = (key: keyof FooterContent, value: string) => {
     setData((prev) => ({ ...prev, footer: { ...prev.footer, [key]: value } }));
+    setHasUnsavedChanges(true);
   };
 
   // ── Save & Publish ──
@@ -602,6 +636,9 @@ export default function LandingPageEditorPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Failed to save");
       }
+      const result = await res.json();
+      setLastSaved(result.savedAt || new Date().toISOString());
+      setHasUnsavedChanges(false);
       toast.success("Landing page published successfully!");
     } catch (err) {
       const message =
@@ -613,10 +650,44 @@ export default function LandingPageEditorPage() {
   };
 
   // ── Discard Changes ──
-  const handleDiscard = () => {
-    setData(defaultData);
+  const handleDiscard = async () => {
+    if (loadedFromServer) {
+      // Reload from server
+      await loadContent();
+    } else {
+      setData(defaultData);
+    }
+    setHasUnsavedChanges(false);
     toast.info("Changes discarded");
   };
+
+  // Format last saved time
+  const formatLastSaved = (isoStr: string) => {
+    const date = new Date(isoStr);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 w-64 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-4 w-96 bg-gray-50 rounded mt-2 animate-pulse" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-36 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-10 w-36 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+        </div>
+        <div className="h-96 bg-gray-50 rounded-2xl animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -634,6 +705,32 @@ export default function LandingPageEditorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Save status indicator */}
+          <div className="flex items-center gap-1.5 text-xs">
+            {saving ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin text-[#0D9488]" />
+                <span className="text-[#6B7280]">Saving…</span>
+              </>
+            ) : hasUnsavedChanges ? (
+              <>
+                <div className="size-2 rounded-full bg-amber-400" />
+                <span className="text-amber-600 font-medium">Unsaved changes</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <span className="text-emerald-600">
+                  Saved at {formatLastSaved(lastSaved)}
+                </span>
+              </>
+            ) : loadedFromServer ? (
+              <>
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <span className="text-emerald-600">Loaded from server</span>
+              </>
+            ) : null}
+          </div>
           <Button
             variant="outline"
             onClick={handleDiscard}

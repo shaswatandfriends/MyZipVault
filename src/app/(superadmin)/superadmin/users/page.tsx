@@ -251,9 +251,54 @@ export default function SuperadminUsersPage() {
     setPage(1);
   }, [searchQuery, roleFilter, statusFilter, companyFilter]);
 
+  /** Determine the dashboard route for a given role. */
+  function getRoleDashboard(role: string): string {
+    switch (role) {
+      case "super_admin":
+        return "/superadmin/dashboard";
+      case "platform_admin":
+        return "/admin/dashboard";
+      case "client_admin":
+      case "client_recruiter":
+        return "/recruiter/dashboard";
+      case "candidate":
+      default:
+        return "/dashboard";
+    }
+  }
+
   const handleAction = async (action: string, userId: number) => {
     try {
       setActionLoading(true);
+
+      // ── Proxy Login — use the dedicated endpoint ──────────────────
+      if (action === "proxy-login") {
+        const res = await fetch("/api/superadmin/proxy-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUserId: userId }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Proxy login failed");
+
+        const target = body.targetUser;
+        const targetName = [target.firstName, target.lastName]
+          .filter(Boolean)
+          .join(" ");
+
+        toast.success("Proxy login active", {
+          description: `You are now viewing as ${targetName} (${target.role}).`,
+        });
+
+        // Hard-navigate to the target user's dashboard.
+        // A full page reload is required because the session cookie
+        // has changed — NextAuth client state must be re-hydrated.
+        const dashboard = getRoleDashboard(target.role);
+        window.location.href = dashboard;
+        return; // Don't re-fetch users — we're leaving this page
+      }
+
+      // ── All other actions ────────────────────────────────────────
       const res = await fetch("/api/superadmin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -262,14 +307,7 @@ export default function SuperadminUsersPage() {
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Action failed");
 
-      if (action === "proxy-login" && body.proxyUser) {
-        toast.success("Proxy login authorized", {
-          description: `Logged in as ${body.proxyUser.email}`,
-        });
-        // In production, this would redirect to the user's dashboard
-      } else {
-        toast.success(body.message || "Action completed");
-      }
+      toast.success(body.message || "Action completed");
       fetchUsers();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Action failed";
@@ -361,6 +399,20 @@ export default function SuperadminUsersPage() {
                   className="pl-8 w-full sm:w-64"
                 />
               </div>
+              <Select value={companyFilter} onValueChange={setCompanyFilter} disabled={orgsLoading}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Building2 className="size-4 mr-1.5 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder={orgsLoading ? "Loading…" : "All Companies"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Companies</SelectItem>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={String(org.id)}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant={showFilters ? "default" : "outline"}
                 size="sm"

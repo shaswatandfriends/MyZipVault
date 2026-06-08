@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const search = searchParams.get("search") || "";
     const roleFilter = searchParams.get("role") || "all";
     const statusFilter = searchParams.get("status") || "all";
-    const organizationId = searchParams.get("organizationId") || "all";
+    const organizationId = searchParams.get("organizationId") || searchParams.get("companyId") || "all";
     const lastLoginFrom = searchParams.get("lastLoginFrom") || "";
     const lastLoginTo = searchParams.get("lastLoginTo") || "";
     const profileMin = searchParams.get("profileMin") || "";

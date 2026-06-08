@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ToggleLeft,
   PencilRuler,
+  CalendarDays,
 } from "@/lib/icons";
 
 import {
@@ -45,6 +46,7 @@ const coreNavItems = [
   { title: "Users", href: "/superadmin/users", icon: Users },
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Admins", href: "/superadmin/admins", icon: ShieldCheck },
+  { title: "Calendar", href: "/superadmin/calendar", icon: CalendarDays },
 ];
 
 const systemNavItems = [

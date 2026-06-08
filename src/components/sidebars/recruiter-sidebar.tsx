@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
+  CalendarDays,
   Send,
   CreditCard,
   FileSignature,
   Users,
   LogOut,
   ChevronLeft,
+  Bell,
 } from "@/lib/icons";
 
 import {
@@ -38,6 +40,7 @@ const navItems = [
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileSignature },
   { title: "Team", href: "/recruiter/team", icon: Users, adminOnly: true },
+  { title: "Notifications", href: "/recruiter/notifications", icon: Bell },
 ];
 
 export function RecruiterSidebar() {

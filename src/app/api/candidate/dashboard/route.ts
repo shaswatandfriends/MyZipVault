@@ -16,6 +16,11 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { email_verified_at: true },
+    });
+
     const profile = await db.candidateProfile.findUnique({
       where: { user_id: userId },
     });
@@ -101,6 +106,7 @@ export async function GET() {
         isRead: n.is_read,
         createdAt: n.created_at,
       })),
+      emailVerified: !!user?.email_verified_at,
     });
   } catch (error) {
     console.error("Dashboard error:", error);

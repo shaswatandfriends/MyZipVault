@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logRecruiterUnlocked } from "@/lib/audit";
+import { checkCreditAccess, deductCredits } from "@/lib/credit-gating";
 
 export async function POST(
   request: Request,
@@ -51,53 +52,57 @@ export async function POST(
       return NextResponse.json({ error: "Document already unlocked", alreadyUnlocked: true }, { status: 400 });
     }
 
-    // Check credit balance
-    const org = await db.organization.findUnique({
-      where: { id: organizationId },
-    });
-
-    if (!org || org.credits_balance < 1) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 400 });
-    }
-
-    // Determine entity type and ID
+    // Determine entity type for the feature gate check
+    let featureName = "unlock_candidate";
     let entityType = "other";
     let entityId = consentShareId;
 
     if (consentShare.checklist_response_id) {
       entityType = "checklist";
       entityId = consentShare.checklist_response_id;
+      featureName = "view_full_packet";
     } else if (consentShare.credential_id) {
       entityType = "credential";
       entityId = consentShare.credential_id;
+      featureName = "view_credentials";
     } else if (consentShare.resume_id) {
       entityType = "resume";
       entityId = consentShare.resume_id;
+      featureName = "view_resume";
     } else if (consentShare.reference_id) {
       entityType = "reference";
       entityId = consentShare.reference_id;
+      featureName = "view_references";
     }
 
-    // Deduct credit
-    await db.organization.update({
-      where: { id: organizationId },
-      data: { credits_balance: org.credits_balance - 1 },
-    });
+    // Use credit gating utility to check access
+    const accessResult = await checkCreditAccess(organizationId, featureName);
 
-    // Create credit transaction
+    if (!accessResult.allowed) {
+      return NextResponse.json(
+        {
+          error: accessResult.reason || "Insufficient credits",
+          creditsRequired: accessResult.creditsRequired,
+          currentBalance: accessResult.currentBalance,
+        },
+        { status: 403 }
+      );
+    }
+
+    const creditsCharged = accessResult.creditsRequired;
+
+    // Deduct credits using the utility
     const candidate = await db.user.findUnique({
       where: { id: candidateId },
       select: { first_name: true, last_name: true },
     });
 
-    await db.creditTransaction.create({
-      data: {
-        organization_id: organizationId,
-        transaction_type: "deduction",
-        credit_amount: -1,
-        description: `Unlock ${entityType} for ${candidate?.first_name ?? ""} ${candidate?.last_name ?? ""}`,
-      },
-    });
+    const { newBalance } = await deductCredits(
+      organizationId,
+      creditsCharged,
+      `Unlock ${entityType} for ${candidate?.first_name ?? ""} ${candidate?.last_name ?? ""}`,
+      userId
+    );
 
     // Create unlocked document record
     const unlockedDoc = await db.unlockedDocument.create({
@@ -106,7 +111,7 @@ export async function POST(
         consent_share_id: consentShare.id,
         entity_type: entityType,
         entity_id: entityId,
-        credits_charged: 1,
+        credits_charged: creditsCharged,
       },
     });
 
@@ -116,8 +121,8 @@ export async function POST(
     return NextResponse.json({
       success: true,
       unlockedDocumentId: unlockedDoc.id,
-      creditsCharged: 1,
-      newBalance: org.credits_balance - 1,
+      creditsCharged,
+      newBalance,
     });
   } catch (error) {
     console.error("Unlock document POST error:", error);

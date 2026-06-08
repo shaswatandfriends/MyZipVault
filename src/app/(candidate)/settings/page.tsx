@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,10 +29,20 @@ import {
   User,
   Phone,
   Save,
+  Bell,
+  Mail,
+  Smartphone,
+  AlarmClock,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { signOut, useSession } from "next-auth/react";
+
+interface NotificationPreferences {
+  email_notifications: boolean;
+  sms_notifications: boolean;
+  reminder_notifications: boolean;
+}
 
 export default function CandidateSettingsPage() {
   const { user } = useAuth();
@@ -44,6 +55,14 @@ export default function CandidateSettingsPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
+  // Notification preferences state
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
+    email_notifications: true,
+    sms_notifications: false,
+    reminder_notifications: true,
+  });
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+
   // Fetch profile data (for phone which is not in auth context)
   useEffect(() => {
     async function fetchProfile() {
@@ -54,6 +73,9 @@ export default function CandidateSettingsPage() {
           setFirstName(data.first_name || "");
           setLastName(data.last_name || "");
           setPhone(data.phone || "");
+          if (data.notification_preferences) {
+            setNotificationPrefs(data.notification_preferences);
+          }
         }
       } catch {
         // Silently fail — fields will remain with auth context defaults
@@ -99,6 +121,32 @@ export default function CandidateSettingsPage() {
       toast.error("Failed to save profile");
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    setIsSavingNotifications(true);
+    try {
+      const res = await fetch("/api/candidate/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notification_preferences: notificationPrefs,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error("Failed to save notification preferences", { description: data.error });
+        return;
+      }
+
+      toast.success("Notification preferences updated");
+    } catch {
+      toast.error("Failed to save notification preferences");
+    } finally {
+      setIsSavingNotifications(false);
     }
   };
 
@@ -267,6 +315,112 @@ export default function CandidateSettingsPage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Notification Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="size-5 text-primary" />
+            Notification Preferences
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Email Notifications */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Mail className="size-4 text-primary" />
+              </div>
+              <div>
+                <Label htmlFor="email-notifications" className="text-sm font-medium">
+                  Email Notifications
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Receive email alerts for credential expiry, reference requests, and sharing requests
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="email-notifications"
+              checked={notificationPrefs.email_notifications}
+              onCheckedChange={(checked) =>
+                setNotificationPrefs((prev) => ({ ...prev, email_notifications: checked }))
+              }
+              disabled={isSavingNotifications}
+            />
+          </div>
+
+          {/* SMS Notifications */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Smartphone className="size-4 text-primary" />
+              </div>
+              <div>
+                <Label htmlFor="sms-notifications" className="text-sm font-medium">
+                  SMS Notifications
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Receive text message alerts {phone ? `at ${phone}` : "(phone number required)"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="sms-notifications"
+              checked={notificationPrefs.sms_notifications}
+              onCheckedChange={(checked) =>
+                setNotificationPrefs((prev) => ({ ...prev, sms_notifications: checked }))
+              }
+              disabled={isSavingNotifications || !phone}
+            />
+          </div>
+
+          {/* Reminder Notifications */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <AlarmClock className="size-4 text-primary" />
+              </div>
+              <div>
+                <Label htmlFor="reminder-notifications" className="text-sm font-medium">
+                  Credential Expiry Reminders
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Get reminded 30 days before your credentials expire
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="reminder-notifications"
+              checked={notificationPrefs.reminder_notifications}
+              onCheckedChange={(checked) =>
+                setNotificationPrefs((prev) => ({ ...prev, reminder_notifications: checked }))
+              }
+              disabled={isSavingNotifications}
+            />
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              onClick={handleSaveNotifications}
+              disabled={isSavingNotifications || isProfileLoading}
+              className="gap-2"
+            >
+              {isSavingNotifications ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="size-4" />
+                  Save Preferences
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
