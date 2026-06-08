@@ -222,21 +222,11 @@ export async function POST(request: Request) {
       fileUrl = `/upload/resumes/${uniqueName}`;
     }
 
-    // ── 6. Parse the resume — try AI Vision first, then Affinda fallback ──
+    // ── 6. Parse the resume — try Affinda first (works on Vercel), then AI Vision fallback ──
     let parsedData: Record<string, unknown> | null = null;
 
-    // Primary: AI Vision parsing
-    try {
-      parsedData = await parseResumeWithAI(file);
-      if (parsedData) {
-        console.log("[RESUME_UPLOAD] AI Vision parsing succeeded");
-      }
-    } catch {
-      console.warn("[RESUME_UPLOAD] AI Vision parsing skipped due to error");
-    }
-
-    // Fallback: Affinda parsing if AI Vision didn't work
-    if (!parsedData) {
+    // Primary: Affinda parsing (publicly accessible API, works on Vercel)
+    if (isAffindaConfigured()) {
       try {
         const affindaResult = await parseResumeWithAffinda(file);
         if (affindaResult) {
@@ -280,10 +270,24 @@ export async function POST(request: Request) {
               })
             ),
           };
-          console.log("[RESUME_UPLOAD] Affinda fallback parsing succeeded");
+          console.log("[RESUME_UPLOAD] Affinda parsing succeeded");
         }
       } catch {
-        console.warn("[RESUME_UPLOAD] Affinda fallback also failed");
+        console.warn("[RESUME_UPLOAD] Affinda parsing failed, trying AI Vision fallback");
+      }
+    } else {
+      console.log("[RESUME_UPLOAD] Affinda not configured, trying AI Vision fallback");
+    }
+
+    // Fallback: AI Vision parsing (only works in local dev where internal-api.z.ai is reachable)
+    if (!parsedData) {
+      try {
+        parsedData = await parseResumeWithAI(file);
+        if (parsedData) {
+          console.log("[RESUME_UPLOAD] AI Vision fallback parsing succeeded");
+        }
+      } catch {
+        console.warn("[RESUME_UPLOAD] AI Vision fallback also failed");
       }
     }
 

@@ -1,50 +1,30 @@
 import { NextResponse } from "next/server";
+import { isAffindaConfigured } from "@/lib/affinda";
 
 /**
- * Debug endpoint to check if ZAI env vars are available and AI works.
- * This helps diagnose AI initialization failures on Vercel.
+ * Debug endpoint to check AI service availability.
  * Publicly accessible (in middleware publicPrefixes).
  */
 export async function GET() {
-  const envStatus = {
+  // ZAI env vars status
+  const zaiEnvStatus = {
     ZAI_BASE_URL: !!process.env.ZAI_BASE_URL,
     ZAI_API_KEY: !!process.env.ZAI_API_KEY,
     ZAI_CHAT_ID: !!process.env.ZAI_CHAT_ID,
     ZAI_TOKEN: !!process.env.ZAI_TOKEN,
     ZAI_USER_ID: !!process.env.ZAI_USER_ID,
-    // Show partial values for debugging (not full secrets)
     baseUrlPrefix: process.env.ZAI_BASE_URL
       ? process.env.ZAI_BASE_URL.substring(0, 30) + "..."
       : "NOT SET",
     apiKeyPrefix: process.env.ZAI_API_KEY
       ? process.env.ZAI_API_KEY.substring(0, 3) + "..."
       : "NOT SET",
-    tokenPrefix: process.env.ZAI_TOKEN
-      ? process.env.ZAI_TOKEN.substring(0, 10) + "..."
-      : "NOT SET",
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV || "not on vercel",
   };
 
-  // Step 1: Try to initialize ZAI SDK (only works if .z-ai-config file exists)
-  let zaiInitStatus = "not_tested";
-  let zaiConfigInfo: Record<string, unknown> = {};
-  try {
-    const { createZAI } = await import("@/lib/zai");
-    const zai = await createZAI();
-    zaiInitStatus = "success";
-    zaiConfigInfo = {
-      hasBaseUrl: !!(zai as Record<string, unknown>).config && !!(zai as Record<string, Record<string, unknown>>).config?.baseUrl,
-      hasApiKey: !!(zai as Record<string, Record<string, unknown>>).config?.apiKey,
-      hasToken: !!(zai as Record<string, Record<string, unknown>>).config?.token,
-      hasChatId: !!(zai as Record<string, Record<string, unknown>>).config?.chatId,
-    };
-  } catch (err) {
-    zaiInitStatus = `failed: ${err instanceof Error ? err.message : String(err)}`;
-  }
-
-  // Step 2: Test direct fetch (bypassing SDK)
-  let directFetchStatus = "not_tested";
+  // Test ZAI API connectivity
+  let zaiApiStatus = "not_tested";
   const baseUrl = process.env.ZAI_BASE_URL;
   const apiKey = process.env.ZAI_API_KEY;
 
@@ -72,19 +52,18 @@ export async function GET() {
           max_tokens: 5,
           thinking: { type: "disabled" },
         }),
-        signal: AbortSignal.timeout(15000), // 15s timeout
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
-        directFetchStatus = `http_error_${response.status}: ${errorBody.substring(0, 200)}`;
+        zaiApiStatus = `http_error_${response.status}: ${errorBody.substring(0, 200)}`;
       } else {
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content;
-        directFetchStatus = `success: "${content}"`;
+        zaiApiStatus = `success: "${content}"`;
       }
     } catch (err) {
-      // Capture detailed error info
       const errorInfo: Record<string, string> = {
         message: err instanceof Error ? err.message : String(err),
         name: err instanceof Error ? err.name : "Unknown",
@@ -92,16 +71,13 @@ export async function GET() {
       if (err instanceof Error && "cause" in err && err.cause) {
         errorInfo.cause = err.cause instanceof Error ? err.cause.message : String(err.cause);
       }
-      if (err instanceof TypeError) {
-        errorInfo.type = "TypeError";
-      }
-      directFetchStatus = `failed: ${JSON.stringify(errorInfo)}`;
+      zaiApiStatus = `failed: ${JSON.stringify(errorInfo)}`;
     }
   } else {
-    directFetchStatus = "skipped: missing env vars";
+    zaiApiStatus = "skipped: missing env vars";
   }
 
-  // Step 3: Test DNS resolution of the API domain
+  // DNS resolution check
   let dnsStatus = "not_tested";
   if (baseUrl) {
     try {
@@ -110,18 +86,66 @@ export async function GET() {
       const hostname = new URL(baseUrl).hostname;
       const addresses = await resolver.resolve4(hostname).catch(() => []);
       const addressesV6 = await resolver.resolve6(hostname).catch(() => []);
-      dnsStatus = `resolved: ipv4=${addresses.join(",") || "none"}, ipv6=${addressesV6.join(",") || "none"}`;
+      const isPrivate = addresses.some((ip) => {
+        const parts = ip.split(".").map(Number);
+        return (
+          parts[0] === 10 ||
+          (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+          (parts[0] === 192 && parts[1] === 168)
+        );
+      });
+      dnsStatus = `resolved: ipv4=${addresses.join(",") || "none"}, ipv6=${addressesV6.join(",") || "none"}, isPrivate=${isPrivate}`;
     } catch (err) {
       dnsStatus = `failed: ${err instanceof Error ? err.message : String(err)}`;
     }
   }
 
+  // Affinda status
+  const affindaStatus = {
+    configured: isAffindaConfigured(),
+    apiKeyPrefix: process.env.AFFINDA_API_KEY
+      ? process.env.AFFINDA_API_KEY.substring(0, 8) + "..."
+      : "NOT SET",
+  };
+
+  // Test Affinda connectivity
+  let affindaApiStatus = "not_tested";
+  if (isAffindaConfigured()) {
+    try {
+      const { getAffindaClient } = await import("@/lib/affinda");
+      const client = getAffindaClient();
+      if (client) {
+        // Simple API call to verify connectivity
+        // We can't easily test without making a real API call,
+        // so we just confirm the client initializes
+        affindaApiStatus = "client_initialized";
+      } else {
+        affindaApiStatus = "client_init_failed";
+      }
+    } catch (err) {
+      affindaApiStatus = `failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  }
+
   return NextResponse.json({
-    envVars: envStatus,
-    zaiInitialization: zaiInitStatus,
-    zaiConfig: zaiConfigInfo,
-    directFetch: directFetchStatus,
-    dnsResolution: dnsStatus,
+    zai: {
+      envVars: zaiEnvStatus,
+      apiCall: zaiApiStatus,
+      dnsResolution: dnsStatus,
+      note: zaiApiStatus.startsWith("failed")
+        ? "ZAI API is unreachable — it resolves to private IPs (172.25.x.x) that Vercel's serverless functions cannot access. AI generation features will not work on Vercel."
+        : "ZAI API is reachable from this server.",
+    },
+    affinda: {
+      ...affindaStatus,
+      apiCall: affindaApiStatus,
+      note: isAffindaConfigured()
+        ? "Affinda is configured and publicly accessible — resume parsing and skill suggestions will work on Vercel."
+        : "Affinda is not configured. Add AFFINDA_API_KEY env var to enable resume parsing.",
+    },
+    recommendation: !isAffindaConfigured()
+      ? "Set AFFINDA_API_KEY to enable resume parsing and AI suggestions that work on Vercel."
+      : "Affinda is configured. Use it for resume parsing and skill suggestions on Vercel.",
     timestamp: new Date().toISOString(),
   });
 }

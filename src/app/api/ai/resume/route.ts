@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { zaiChatCompletion } from "@/lib/zai";
+import { isAffindaConfigured, suggestSkills as affindaSuggestSkills } from "@/lib/affinda";
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +25,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
     }
 
+    // ── Affinda-backed actions (work on Vercel) ──────────────────────
+    if (action === "suggest_skills") {
+      // Try Affinda first (works on Vercel since it's a public API)
+      if (isAffindaConfigured()) {
+        try {
+          const existingSkills = context?.skills?.map((s: { skill: string }) => s.skill) || [];
+          const affindaSuggestions = await affindaSuggestSkills(existingSkills);
+          if (affindaSuggestions.length > 0) {
+            return NextResponse.json({
+              result: affindaSuggestions.map((skill) => ({
+                skill,
+                proficiency: "Intermediate",
+              })),
+              source: "affinda",
+            });
+          }
+        } catch (err) {
+          console.warn("[AI_RESUME] Affinda skill suggestion failed, trying ZAI:", err);
+        }
+      }
+
+      // Fallback to ZAI (only works in local dev)
+      const systemPrompt = `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare skills that the candidate should include in their resume. Return a JSON array of objects with "skill" (string) and "proficiency" (one of: Beginner, Intermediate, Advanced, Expert) fields. Return ONLY the JSON array, no additional text.`;
+      const userPrompt = context
+        ? `Suggest healthcare skills for this professional:\n\n${JSON.stringify(context, null, 2)}`
+        : "Suggest common healthcare skills for an experienced nurse or healthcare professional.";
+
+      try {
+        const completion = await zaiChatCompletion({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        });
+        const result = completion.choices?.[0]?.message?.content || "";
+        if (result) {
+          try {
+            const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result];
+            const jsonStr = jsonMatch[1].trim();
+            const parsed = JSON.parse(jsonStr);
+            return NextResponse.json({ result: parsed, raw: result, source: "zai" });
+          } catch {
+            return NextResponse.json({ result: null, raw: result, source: "zai" });
+          }
+        }
+      } catch (apiErr) {
+        const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
+        return NextResponse.json(
+          { error: "AI skill suggestions are currently unavailable. The AI service is not reachable from this hosting environment.", details: errMsg },
+          { status: 502 }
+        );
+      }
+    }
+
+    // ── ZAI-backed actions (generative AI — only works in local dev) ──
     let systemPrompt = "";
     let userPrompt = "";
 
@@ -45,14 +103,6 @@ export async function POST(request: Request) {
       case "improve_experience": {
         systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Improve and enhance the given work experience description to make it more impactful, using strong action verbs and quantifiable achievements where possible. Tailor it for healthcare positions. Return ONLY the improved description text, no additional commentary.`;
         userPrompt = `Improve this work experience description for a healthcare position:\n\n"${currentContent}"\n\nContext: ${context ? JSON.stringify(context) : "Healthcare professional"}`;
-        break;
-      }
-
-      case "suggest_skills": {
-        systemPrompt = `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare skills that the candidate should include in their resume. Return a JSON array of objects with "skill" (string) and "proficiency" (one of: Beginner, Intermediate, Advanced, Expert) fields. Return ONLY the JSON array, no additional text.`;
-        userPrompt = context
-          ? `Suggest healthcare skills for this professional:\n\n${JSON.stringify(context, null, 2)}`
-          : "Suggest common healthcare skills for an experienced nurse or healthcare professional.";
         break;
       }
 
@@ -107,9 +157,9 @@ Return ONLY valid JSON, no additional text or markdown.`;
       console.error("[AI_RESUME] AI API call failed:", apiErr);
       const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
       // Provide more specific error messages
-      if (errMsg.includes("fetch failed")) {
+      if (errMsg.includes("fetch failed") || errMsg.includes("unreachable") || errMsg.includes("ECONNREFUSED")) {
         return NextResponse.json(
-          { error: "AI service is unreachable from the server. This may be a network/DNS issue on the hosting platform.", details: errMsg },
+          { error: "AI generation is currently unavailable on this hosting environment. The AI provider uses an internal network address that is not publicly accessible. Resume parsing via Affinda still works — try uploading your resume for automatic data extraction.", details: errMsg },
           { status: 502 }
         );
       }
@@ -132,13 +182,11 @@ Return ONLY valid JSON, no additional text or markdown.`;
     // For actions that return structured data, try to parse JSON
     if (["suggest_skills", "suggest_certifications", "generate_full_resume"].includes(action)) {
       try {
-        // Try to extract JSON from the response (may be wrapped in markdown code blocks)
         const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result];
         const jsonStr = jsonMatch[1].trim();
         const parsed = JSON.parse(jsonStr);
         return NextResponse.json({ result: parsed, raw: result });
       } catch {
-        // If parsing fails, return raw text
         return NextResponse.json({ result: null, raw: result });
       }
     }

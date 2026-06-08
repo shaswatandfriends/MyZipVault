@@ -75,3 +75,95 @@ export async function parseResume(
     return null;
   }
 }
+
+/**
+ * Get skill suggestions based on a list of existing skills.
+ * Uses Affinda's Resume Search Suggestion API.
+ * Returns an array of suggested skill names.
+ */
+export async function suggestSkills(existingSkills: string[]): Promise<string[]> {
+  const client = getAffindaClient();
+  if (!client) return [];
+
+  try {
+    const result = await client.getResumeSearchSuggestionSkill(existingSkills);
+    // The result contains suggested skills
+    const suggestions = result as unknown as { data?: { name: string }[]; name?: string }[];
+    if (Array.isArray(suggestions)) {
+      return suggestions
+        .map((s) => (typeof s === "string" ? s : s.name || s.data?.name || ""))
+        .filter(Boolean) as string[];
+    }
+    // Handle different response formats
+    if (suggestions && typeof suggestions === "object") {
+      const data = (suggestions as Record<string, unknown>).data;
+      if (Array.isArray(data)) {
+        return data
+          .map((s: unknown) =>
+            typeof s === "string" ? s : (s as Record<string, unknown>)?.name || ""
+          )
+          .filter(Boolean) as string[];
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error("[AFFINDA] Skill suggestion failed:", error);
+    return [];
+  }
+}
+
+/**
+ * Get job title suggestions based on existing job titles.
+ * Uses Affinda's Resume Search Suggestion API.
+ * Returns an array of suggested job title names.
+ */
+export async function suggestJobTitles(existingTitles: string[]): Promise<string[]> {
+  const client = getAffindaClient();
+  if (!client) return [];
+
+  try {
+    const result = await client.getResumeSearchSuggestionJobTitle(existingTitles);
+    const suggestions = result as unknown as { data?: { name: string }[]; name?: string }[];
+    if (Array.isArray(suggestions)) {
+      return suggestions
+        .map((s) => (typeof s === "string" ? s : s.name || s.data?.name || ""))
+        .filter(Boolean) as string[];
+    }
+    if (suggestions && typeof suggestions === "object") {
+      const data = (suggestions as Record<string, unknown>).data;
+      if (Array.isArray(data)) {
+        return data
+          .map((s: unknown) =>
+            typeof s === "string" ? s : (s as Record<string, unknown>)?.name || ""
+          )
+          .filter(Boolean) as string[];
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error("[AFFINDA] Job title suggestion failed:", error);
+    return [];
+  }
+}
+
+/**
+ * Get a resume-job match score.
+ * Uses Affinda's Resume Search Match API.
+ * Returns a score between 0 and 1.
+ */
+export async function getResumeJobMatchScore(
+  resumeIdentifier: string,
+  jobDescriptionIdentifier: string
+): Promise<number | null> {
+  const client = getAffindaClient();
+  if (!client) return null;
+
+  try {
+    const result = await client.getResumeSearchMatch(resumeIdentifier, jobDescriptionIdentifier);
+    const matchResult = result as unknown as { score?: number };
+    return matchResult.score ?? null;
+  } catch (error) {
+    console.error("[AFFINDA] Resume-job match failed:", error);
+    return null;
+  }
+}
