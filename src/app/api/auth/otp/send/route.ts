@@ -41,7 +41,7 @@ export async function POST() {
     }
 
     // Check account status
-    if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
+    if (user.account_status === "suspended" || user.account_status === "deleted" || user.account_status === "suspended_deleting") {
       return NextResponse.json(
         { error: "Account is not active" },
         { status: 403 }

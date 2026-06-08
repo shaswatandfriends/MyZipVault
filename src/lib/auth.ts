@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
+          if (user.account_status === "suspended" || user.account_status === "deleted" || user.account_status === "suspended_deleting") {
             throw new Error("Account is not active. Please contact support.");
           }
 
@@ -111,7 +111,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
-        if (user.accountStatus === "suspended" || user.accountStatus === "deleted" || user.accountStatus === "suspended_deleting") {
+        if (user.account_status === "suspended" || user.account_status === "deleted" || user.account_status === "suspended_deleting") {
           throw new Error("Account is not active. Please contact support.");
         }
 
