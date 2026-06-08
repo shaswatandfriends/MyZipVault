@@ -42,7 +42,9 @@ import {
   RefreshCw,
   XCircle,
   Send,
+  Trash2,
 } from "@/lib/icons";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 interface ReferenceItem {
@@ -121,6 +123,13 @@ export default function CandidateReferencesPage() {
   const [resendingId, setResendingId] = useState<number | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
 
+  // Delete reference request state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedRefForDeletion, setSelectedRefForDeletion] = useState<number | null>(null);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [isSubmittingDeletion, setIsSubmittingDeletion] = useState(false);
+  const [pendingDeletionRequests, setPendingDeletionRequests] = useState<Set<number>>(new Set());
+
   // Form state
   const [managerFirstName, setManagerFirstName] = useState("");
   const [managerLastName, setManagerLastName] = useState("");
@@ -135,6 +144,17 @@ export default function CandidateReferencesPage() {
       if (!res.ok) throw new Error("Failed to fetch references");
       const data = await res.json();
       setReferences(data.references || []);
+
+      // Also fetch pending deletion requests to know which refs have pending requests
+      const delRes = await fetch("/api/references/delete-request");
+      if (delRes.ok) {
+        const delData = await delRes.json();
+        const pendingIds = new Set<number>();
+        (delData.requests || []).forEach((r: { reference_id: number; status: string }) => {
+          if (r.status === "pending") pendingIds.add(r.reference_id);
+        });
+        setPendingDeletionRequests(pendingIds);
+      }
     } catch {
       toast.error("Failed to load references");
     } finally {
@@ -256,6 +276,45 @@ export default function CandidateReferencesPage() {
 
   const toggleExpand = (refId: number) => {
     setExpandedRef(expandedRef === refId ? null : refId);
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!selectedRefForDeletion || !deletionReason.trim()) {
+      toast.error("Please provide a reason for the deletion request");
+      return;
+    }
+
+    setIsSubmittingDeletion(true);
+    try {
+      const res = await fetch("/api/references/delete-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referenceId: selectedRefForDeletion,
+          reason: deletionReason.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to submit deletion request");
+      }
+
+      toast.success("Deletion request submitted", {
+        description: "A super admin will review your request and make a decision.",
+      });
+
+      setIsDeleteDialogOpen(false);
+      setSelectedRefForDeletion(null);
+      setDeletionReason("");
+      fetchReferences();
+    } catch (err) {
+      toast.error("Failed to submit deletion request", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsSubmittingDeletion(false);
+    }
   };
 
   if (isLoading) {
@@ -559,6 +618,32 @@ export default function CandidateReferencesPage() {
                           )}
                         </div>
                       )}
+
+                      {/* Delete Reference Request button — for completed or cancelled references */}
+                      {(isCompleted || ref.status === "cancelled") && !isPending && (
+                        <div className="mt-3 pt-3 border-t">
+                          {pendingDeletionRequests.has(ref.id) ? (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                              <Clock className="size-3" />
+                              Deletion request pending — awaiting admin review
+                            </p>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1.5 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setSelectedRefForDeletion(ref.id);
+                                setDeletionReason("");
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="size-3" />
+                              Delete Reference
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -567,6 +652,91 @@ export default function CandidateReferencesPage() {
           })}
         </div>
       )}
+
+      {/* Delete Reference Request Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="size-5" />
+              Request to Delete Reference
+            </DialogTitle>
+            <DialogDescription>
+              This will submit a deletion request to a super admin. They will review your reason and decide whether to delete the reference. You cannot undo this request once submitted.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedRefForDeletion && (() => {
+              const selectedRef = references.find((r) => r.id === selectedRefForDeletion);
+              if (!selectedRef) return null;
+              const managerName = selectedRef.manager_user
+                ? `${selectedRef.manager_user.first_name || ""} ${selectedRef.manager_user.last_name || ""}`.trim() || selectedRef.manager_email
+                : selectedRef.manager_email;
+              return (
+                <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                  <p className="text-sm font-medium">{managerName}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Building2 className="size-3" />
+                    {selectedRef.facility_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Status: {selectedRef.status === "completed" ? "Completed" : "Cancelled"}
+                  </p>
+                </div>
+              );
+            })()}
+            <div className="space-y-2">
+              <Label htmlFor="deletion-reason">
+                Please mention a valid reason why you want to delete this reference
+              </Label>
+              <Textarea
+                id="deletion-reason"
+                placeholder="e.g., The manager provided incorrect information, I no longer wish to use this reference, etc."
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                A super admin will review your request and make the final decision.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedRefForDeletion(null);
+                setDeletionReason("");
+              }}
+              disabled={isSubmittingDeletion}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isSubmittingDeletion || !deletionReason.trim()}
+              className="gap-2"
+              onClick={handleDeleteRequest}
+            >
+              {isSubmittingDeletion ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="size-4" />
+                  Send Request
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

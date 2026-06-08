@@ -33,6 +33,9 @@ import {
   CheckCheck,
   Info,
   Loader2,
+  ScrollText,
+  Trash2,
+  XCircle,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -112,6 +115,7 @@ const superAdminNav: NavItem[] = [
   { title: "Users", href: "/superadmin/users", icon: Users },
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
+  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
@@ -149,6 +153,9 @@ const notificationTypeIcons: Record<string, LucideIcon> = {
   reference: Users,
   sharing: Share2,
   system: Info,
+  reference_deletion: ScrollText,
+  reference_deleted: Trash2,
+  reference_deletion_rejected: XCircle,
 };
 
 // ─── Notification Shape ──────────────────────────────────────────────

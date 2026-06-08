@@ -85,6 +85,8 @@ model User {
   shift_requests_as_recruiter ShiftRequest[]   @relation("RecruiterShiftRequests")
   call_schedules         CallSchedule[]
   call_logs              CallLog[]
+  reference_deletion_requests ReferenceDeletionRequest[] @relation("CandidateDeletionRequests")
+  reference_deletion_reviewed ReferenceDeletionRequest[] @relation("AdminDeletionReviews")
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -244,6 +246,7 @@ model CandidateReference {
   manager_user        User?              @relation("ReferenceManager", fields: [manager_user_id], references: [id])
   reference_responses ReferenceResponse[]
   consent_shares      ConsentShare[]
+  deletion_requests  ReferenceDeletionRequest[]
 }
 
 // ─── 13. Reference Questions ────────────────────────────────────────
@@ -616,7 +619,24 @@ model RecruiterAvailability {
   recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
 }
 
-// ─── 38. Shift Requests ─────────────────────────────────────────────
+// ─── 38. Reference Deletion Requests ────────────────────────────────
+model ReferenceDeletionRequest {
+  id                  Int       @id @default(autoincrement())
+  candidate_user_id   Int
+  reference_id        Int
+  reason              String
+  status              String    @default("pending") // pending, approved, rejected
+  reviewed_by         Int?
+  review_notes        String?
+  reviewed_at         DateTime?
+  created_at          DateTime  @default(now())
+
+  candidate_user      User               @relation("CandidateDeletionRequests", fields: [candidate_user_id], references: [id])
+  reference           CandidateReference @relation(fields: [reference_id], references: [id])
+  reviewer            User?              @relation("AdminDeletionReviews", fields: [reviewed_by], references: [id])
+}
+
+// ─── 39. Shift Requests ─────────────────────────────────────────────
 model ShiftRequest {
   id                Int       @id @default(autoincrement())
   recruiter_user_id Int
