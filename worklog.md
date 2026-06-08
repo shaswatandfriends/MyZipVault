@@ -144,3 +144,32 @@ Stage Summary:
 - OTP system now resilient: keeps OTP even when email fails, logs for recovery
 - Brevo email delivery blocked by IP restriction — user needs to add Vercel IPs at https://app.brevo.com/security/authorised_ips
 - Superadmin can find OTP in Vercel function logs if email not received
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Implement AI Resume Builder features - AI assist, live preview, edit for uploaded resumes
+
+Work Log:
+- Investigated current AI implementation in MyZipVault — found z-ai-web-dev-sdk installed but unused, Affinda library defined but never called, upload route missing entirely
+- Added AFFINDA_API_KEY to .env file (aff_0589f429a7a73780fdef2c4d45630792c360fc2a)
+- Created /api/candidate/resume/upload/route.ts — handles file upload with dual parsing: AI Vision (primary) + Affinda (fallback)
+- Created /api/ai/resume/route.ts — AI-powered resume assistance using z-ai-web-dev-sdk (generate_summary, improve_summary, improve_experience, suggest_skills, suggest_certifications, generate_full_resume, chat)
+- Rewrote candidate resume page with major new features:
+  - AI Resume Builder option on landing page (3rd card with violet styling)
+  - AI Assist buttons in builder tabs (Generate/Improve Summary, AI Improve Experience, AI Suggest Skills/Certifications)
+  - Live Resume Preview panel (toggleable, auto-updates as user types)
+  - AI Chat Assistant panel (conversational help with the AI)
+  - Edit in Builder + AI Edit buttons now visible for ALL resumes (not just builder resumes)
+  - Graceful handling when uploaded resume has no parsed data
+- Resolved git rebase conflicts (remote had a different upload route version; merged both approaches)
+- Installed missing signature_pad dependency
+- Build succeeded, pushed to origin/main
+
+Stage Summary:
+- AI is now fully functional in the platform via z-ai-web-dev-sdk
+- Resume upload + AI Vision parsing works (with Affinda as fallback)
+- All resume sections have AI assist capabilities
+- Live preview shows real-time resume formatting
+- Uploaded resumes can now be edited (previously blocked by isBuilderResume check)
+- Commit: f06450d pushed to origin/main
