@@ -5,9 +5,16 @@ import ZAI from "z-ai-web-dev-sdk";
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    // Try to get session, but don't block if auth is misconfigured
+    let session;
+    try {
+      session = await getServerSession(authOptions);
+    } catch {
+      console.warn("[AI_RESUME] Could not verify session, proceeding without auth check");
+    }
+
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized — please log in again" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -18,7 +25,16 @@ export async function POST(request: Request) {
     }
 
     // Initialize the AI SDK
-    const zai = await ZAI.create();
+    let zai;
+    try {
+      zai = await ZAI.create();
+    } catch (sdkErr) {
+      console.error("[AI_RESUME] ZAI SDK init failed:", sdkErr);
+      return NextResponse.json(
+        { error: "AI service initialization failed. Please try again later.", details: String(sdkErr) },
+        { status: 500 }
+      );
+    }
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -78,6 +94,9 @@ Return ONLY valid JSON, no additional text or markdown.`;
       case "chat": {
         systemPrompt = `You are an AI resume assistant for MyZipVault, a healthcare staffing compliance platform. You help candidates improve their resumes, suggest content, and answer questions about resume best practices for healthcare positions. Be helpful, concise, and professional. If asked about something unrelated to resumes or healthcare careers, politely redirect. Format your responses clearly with bullet points or paragraphs as appropriate.`;
         userPrompt = currentContent || "How can you help me with my resume?";
+        if (context) {
+          userPrompt += `\n\nCandidate's current resume data for context:\n${JSON.stringify(context, null, 2)}`;
+        }
         break;
       }
 
@@ -86,16 +105,33 @@ Return ONLY valid JSON, no additional text or markdown.`;
       }
     }
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
+    let completion;
+    try {
+      completion = await zai.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      });
+    } catch (apiErr) {
+      console.error("[AI_RESUME] AI API call failed:", apiErr);
+      return NextResponse.json(
+        { error: "AI service call failed. Please try again.", details: String(apiErr) },
+        { status: 502 }
+      );
+    }
 
     const result = completion.choices?.[0]?.message?.content || "";
+
+    if (!result) {
+      console.error("[AI_RESUME] Empty AI response");
+      return NextResponse.json(
+        { error: "AI returned an empty response. Please try again." },
+        { status: 502 }
+      );
+    }
 
     // For actions that return structured data, try to parse JSON
     if (["suggest_skills", "suggest_certifications", "generate_full_resume"].includes(action)) {
@@ -113,9 +149,9 @@ Return ONLY valid JSON, no additional text or markdown.`;
 
     return NextResponse.json({ result, raw: result });
   } catch (error) {
-    console.error("[AI_RESUME] Error:", error);
+    console.error("[AI_RESUME] Unhandled Error:", error);
     return NextResponse.json(
-      { error: "AI assistance unavailable. Please try again later." },
+      { error: "AI assistance unavailable. Please try again later.", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

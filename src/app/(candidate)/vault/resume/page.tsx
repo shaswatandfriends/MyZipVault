@@ -306,10 +306,14 @@ function AiChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change using both methods for reliability
   useEffect(() => {
-    // Use requestAnimationFrame to ensure DOM has updated
     requestAnimationFrame(() => {
+      // Method 1: Direct scrollTop on the scrollable container
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      }
+      // Method 2: scrollIntoView as backup
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     });
   }, [messages, isSending]);
@@ -335,22 +339,31 @@ function AiChatPanel({
       });
 
       if (!res.ok) {
+        let errorDetail = "Unknown error";
+        try {
+          const errData = await res.json();
+          errorDetail = errData.error || errData.details || JSON.stringify(errData);
+        } catch {
+          errorDetail = `HTTP ${res.status}: ${res.statusText}`;
+        }
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
+          { role: "assistant", content: `Sorry, I encountered an error: ${errorDetail}. Please try again.` },
         ]);
         return;
       }
 
       const data = await res.json();
+      const resultText = typeof data.result === "string" ? data.result : data.raw || JSON.stringify(data.result);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.result || "I couldn't generate a response." },
+        { role: "assistant", content: resultText || "I couldn't generate a response." },
       ]);
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I'm unavailable right now. Please try again later." },
+        { role: "assistant", content: `Sorry, I'm unavailable right now: ${errMsg}. Please try again later.` },
       ]);
     } finally {
       setIsSending(false);
@@ -365,101 +378,103 @@ function AiChatPanel({
   ];
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-140px)] min-h-[500px]">
-      <CardHeader className="pb-2 shrink-0 border-b">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <div className="size-6 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
-            <Sparkles className="size-3.5 text-violet-600 dark:text-violet-400" />
-          </div>
-          AI Resume Assistant
-          <Badge variant="secondary" className="text-[10px] ml-auto">AI</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-0 overflow-hidden p-0">
-        {/* Scrollable messages area */}
-        <ScrollArea className="flex-1 px-4 py-3" ref={scrollAreaRef}>
-          <div className="space-y-3 pr-2">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "assistant" && (
-                  <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="size-4 text-violet-600 dark:text-violet-400" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                </div>
-              </div>
-            ))}
-            {isSending && (
-              <div className="flex gap-2 justify-start">
-                <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+    <div className="flex flex-col h-[calc(100vh-140px)] min-h-[500px] rounded-xl border bg-card text-card-foreground shadow-sm">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+        <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+          <Sparkles className="size-4 text-violet-600 dark:text-violet-400" />
+        </div>
+        <span className="text-sm font-semibold">AI Resume Assistant</span>
+        <Badge variant="secondary" className="text-[10px] ml-auto">AI</Badge>
+      </div>
+
+      {/* Scrollable messages - using plain overflow-y-auto for reliable scrolling */}
+      <div
+        className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth"
+        ref={scrollAreaRef}
+        style={{ scrollbarGutter: "stable" }}
+      >
+        <div className="space-y-3 pr-1">
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
                   <Bot className="size-4 text-violet-600 dark:text-violet-400" />
                 </div>
-                <div className="bg-muted rounded-xl px-3.5 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Thinking...</span>
-                  </div>
+              )}
+              <div
+                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {isSending && (
+            <div className="flex gap-2 justify-start">
+              <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                <Bot className="size-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="bg-muted rounded-xl px-3.5 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Thinking...</span>
                 </div>
               </div>
-            )}
-            {/* Invisible element to scroll to */}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-
-        {/* Quick actions */}
-        {messages.length <= 1 && !isSending && (
-          <div className="px-4 pb-2 shrink-0">
-            <p className="text-[11px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Quick Actions</p>
-            <div className="flex flex-wrap gap-1.5">
-              {quickActions.map((action) => (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7 gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
-                  onClick={() => handleSend(action.message)}
-                >
-                  <Sparkles className="size-3" />
-                  {action.label}
-                </Button>
-              ))}
             </div>
-          </div>
-        )}
-
-        {/* Input area */}
-        <div className="flex gap-2 shrink-0 p-4 pt-2 border-t bg-card">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Ask AI to improve your resume..."
-            className="flex-1"
-            disabled={isSending}
-          />
-          <Button size="icon" onClick={() => handleSend()} disabled={isSending || !input.trim()}>
-            <Send className="size-4" />
-          </Button>
+          )}
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Quick actions */}
+      {messages.length <= 1 && !isSending && (
+        <div className="px-4 pb-2 shrink-0 border-t pt-2">
+          <p className="text-[11px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Quick Actions</p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickActions.map((action) => (
+              <Button
+                key={action.label}
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+                onClick={() => handleSend(action.message)}
+              >
+                <Sparkles className="size-3" />
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input area */}
+      <div className="flex gap-2 shrink-0 p-4 pt-2 border-t bg-card">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder="Ask AI to improve your resume..."
+          className="flex-1"
+          disabled={isSending}
+        />
+        <Button size="icon" onClick={() => handleSend()} disabled={isSending || !input.trim()}>
+          <Send className="size-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
 
