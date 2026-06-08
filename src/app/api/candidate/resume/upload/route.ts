@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
+import ZAI from "z-ai-web-dev-sdk";
 
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -12,6 +13,111 @@ const ALLOWED_MIME_TYPES = [
 
 const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+/**
+ * Uses AI to parse resume text content into structured data.
+ * Falls back gracefully if AI parsing fails.
+ */
+async function parseResumeWithAI(file: File): Promise<Record<string, unknown> | null> {
+  try {
+    const zai = await ZAI.create();
+
+    // Read the file as base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+    const mimeType = file.type || "application/octet-stream";
+
+    const completion = await zai.chat.completions.createVision({
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional resume parser specializing in healthcare resumes. Extract ALL information from this resume and return it as a JSON object with exactly this structure. Be thorough — extract every detail you can find:
+
+{
+  "contact": {
+    "fullName": "",
+    "phone": "",
+    "email": "",
+    "address": ""
+  },
+  "summary": "",
+  "experience": [
+    {
+      "facility": "",
+      "unit": "",
+      "startDate": "",
+      "endDate": "",
+      "description": ""
+    }
+  ],
+  "education": [
+    {
+      "school": "",
+      "degree": "",
+      "year": ""
+    }
+  ],
+  "certifications": [
+    {
+      "name": "",
+      "issuingOrg": "",
+      "year": ""
+    }
+  ],
+  "skills": [
+    {
+      "skill": "",
+      "proficiency": "Intermediate"
+    }
+  ]
+}
+
+IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no code blocks. If a field is not found, leave it as an empty string or empty array. For experience descriptions, include key responsibilities and achievements. For skills, infer proficiency as Beginner/Intermediate/Advanced/Expert based on years of experience mentioned.`,
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Parse this resume and extract all information into the structured JSON format. Be thorough and capture every detail.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64}`,
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 2000,
+    });
+
+    const rawContent = completion.choices[0]?.message?.content?.trim();
+    if (!rawContent) return null;
+
+    // Try to extract JSON from the response (handle markdown code blocks)
+    let jsonStr = rawContent;
+    const jsonMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    // Validate it has the expected structure
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[RESUME_UPLOAD] AI parsing failed:", error);
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -78,7 +184,16 @@ export async function POST(request: Request) {
       file.type
     );
 
-    // ── 6. Create or update the resume record ─────────────────────────
+    // ── 6. AI-parse the resume content ────────────────────────────────
+    let parsedData: Record<string, unknown> | null = null;
+    try {
+      parsedData = await parseResumeWithAI(file);
+    } catch {
+      // Non-blocking — the file is still uploaded even if parsing fails
+      console.warn("[RESUME_UPLOAD] AI parsing skipped due to error");
+    }
+
+    // ── 7. Create or update the resume record ─────────────────────────
     const existingResume = await db.resume.findFirst({
       where: { candidate_user_id: userId },
     });
@@ -86,12 +201,13 @@ export async function POST(request: Request) {
     let resume;
 
     if (existingResume) {
-      // Replace the existing resume file_url
+      // Replace the existing resume file_url and parsed data
       resume = await db.resume.update({
         where: { id: existingResume.id },
         data: {
           file_url: fileUrl,
           is_builder_resume: false,
+          parsed_data: parsedData ? JSON.stringify(parsedData) : existingResume.parsed_data,
         },
       });
     } else {
@@ -101,10 +217,11 @@ export async function POST(request: Request) {
           candidate_user_id: userId,
           file_url: fileUrl,
           is_builder_resume: false,
+          parsed_data: parsedData ? JSON.stringify(parsedData) : null,
         },
       });
 
-      // ── 7. Link to CandidateProfile if one exists ───────────────────
+      // ── 8. Link to CandidateProfile if one exists ───────────────────
       const profile = await db.candidateProfile.findUnique({
         where: { user_id: userId },
       });
@@ -116,7 +233,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── 8. Also link if we updated an existing resume and the profile
+    // ── 9. Also link if we updated an existing resume and the profile
     //       doesn't reference it yet (edge-case safety net) ────────────
     if (existingResume) {
       const profile = await db.candidateProfile.findUnique({
@@ -130,14 +247,16 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── 9. Return the resume record ───────────────────────────────────
+    // ── 10. Return the resume record ───────────────────────────────────
     return NextResponse.json({
       resume: {
         id: resume.id,
         fileUrl: resume.file_url,
         isBuilderResume: resume.is_builder_resume,
         createdAt: resume.created_at,
+        parsedData: parsedData,
       },
+      parsed: !!parsedData,
     });
   } catch (error) {
     console.error("[RESUME UPLOAD] Error:", error);

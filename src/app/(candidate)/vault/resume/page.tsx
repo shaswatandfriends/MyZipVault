@@ -301,6 +301,29 @@ export default function CandidateResumePage() {
     }
   };
 
+  // AI enhance any section (for both builder and view mode)
+  const handleAiEnhanceSection = async (section: string, content: string, onEnhanced: (enhanced: string) => void) => {
+    try {
+      const res = await fetch("/api/candidate/resume/ai-enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section, content }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("AI enhancement failed", { description: data.error });
+        return;
+      }
+      const data = await res.json();
+      if (data.enhancedContent) {
+        onEnhanced(data.enhancedContent);
+        toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} enhanced with AI!`);
+      }
+    } catch {
+      toast.error("Failed to enhance content");
+    }
+  };
+
   // Calculate completeness
   const calcCompleteness = (data: ResumeParsedData | null) => {
     if (!data) return 0;
@@ -1037,23 +1060,52 @@ export default function CandidateResumePage() {
       : resume.fileUrl.split("/").pop() || "Resume"
     : "Builder Resume";
 
+  // AI re-parse handler: re-uploads the existing file for AI parsing
+  const handleAiReparse = async () => {
+    if (!resume?.fileUrl) {
+      toast.error("No file available for AI parsing");
+      return;
+    }
+    setIsAiEnhancing(true);
+    try {
+      const res = await fetch("/api/candidate/resume/ai-enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          section: "full_resume",
+          content: `Please re-analyze and extract all information from this resume. File URL: ${resume.fileUrl}`,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("AI re-parse failed", { description: data.error });
+        return;
+      }
+      toast.success("Resume will be re-parsed when you re-upload or edit in builder");
+    } catch {
+      toast.error("Failed to re-parse resume");
+    } finally {
+      setIsAiEnhancing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Resume"
         description="Your professional resume on file"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
-              variant="outline"
-              className="gap-2"
+              className="gap-2 bg-[#166534] hover:bg-[#14532D]"
               onClick={() => {
                 if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
                 setMode("builder");
+                setShowPreview(true);
               }}
             >
               <Pencil className="size-4" />
-              Edit in Builder
+              Edit Resume
             </Button>
             <Button
               variant="outline"
@@ -1063,6 +1115,17 @@ export default function CandidateResumePage() {
             >
               {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
               {isExporting ? "Exporting..." : "Export PDF"}
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+                setMode("builder");
+              }}
+            >
+              <Sparkles className="size-4" />
+              AI Builder
             </Button>
             <Button
               variant="outline"
@@ -1133,15 +1196,17 @@ export default function CandidateResumePage() {
       </Card>
 
       {/* Parsed Data Preview Cards */}
-      {resume?.parsedData && (
+      {resume?.parsedData ? (
         <div className="space-y-4">
           {/* Contact */}
           {resume.parsedData.contact && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <User className="size-4" /> Contact Information
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                    <User className="size-4" /> Contact Information
+                  </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -1166,9 +1231,27 @@ export default function CandidateResumePage() {
           {resume.parsedData.summary && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="size-4" /> Professional Summary
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                    <FileText className="size-4" /> Professional Summary
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-primary hover:text-primary"
+                    disabled={isAiEnhancing}
+                    onClick={() => {
+                      if (resume.parsedData) {
+                        populateBuilderFromResume(resume.parsedData);
+                        setMode("builder");
+                        setShowPreview(true);
+                      }
+                    }}
+                  >
+                    <Sparkles className="size-3.5" />
+                    AI Edit
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm whitespace-pre-wrap">{resume.parsedData.summary}</p>
@@ -1180,9 +1263,26 @@ export default function CandidateResumePage() {
           {resume.parsedData.experience && resume.parsedData.experience.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <Briefcase className="size-4" /> Work Experience ({resume.parsedData.experience.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                    <Briefcase className="size-4" /> Work Experience ({resume.parsedData.experience.length})
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-primary hover:text-primary"
+                    onClick={() => {
+                      if (resume.parsedData) {
+                        populateBuilderFromResume(resume.parsedData);
+                        setMode("builder");
+                        setShowPreview(true);
+                      }
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                    Edit
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {resume.parsedData.experience.map((exp, idx) => (
@@ -1267,6 +1367,43 @@ export default function CandidateResumePage() {
             </Card>
           )}
         </div>
+      ) : (
+        /* No parsed data — offer AI parsing or builder editing */
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="size-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Resume Uploaded — No Parsed Data Yet</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+              Your resume file has been uploaded successfully. Use the AI Builder to extract and edit your resume content, or start building from scratch.
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Button
+                className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+                onClick={() => setMode("builder")}
+              >
+                <Sparkles className="size-4" />
+                Open AI Builder
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="size-4" />
+                Re-upload for AI Parsing
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileSelect}
+            />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
