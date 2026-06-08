@@ -29,6 +29,7 @@ import {
   Send,
   Printer,
   FileDown,
+  GripVertical,
 } from "@/lib/icons";
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -2298,6 +2299,10 @@ function PipelineTab({
   const [detailOpen, setDetailOpen] = useState(false);
   const [changingStage, setChangingStage] = useState<number | null>(null);
 
+  // Drag-and-drop state
+  const [draggedLeadId, setDraggedLeadId] = useState<number | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+
   const leadsByStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     PIPELINE_STAGES.forEach((s) => { map[s.value] = []; });
@@ -2329,6 +2334,49 @@ function PipelineTab({
     }
   };
 
+  // Drag-and-drop handlers
+  const handleDragStart = (e: React.DragEvent, leadId: number) => {
+    setDraggedLeadId(leadId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(leadId));
+    // Add a semi-transparent drag image
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedLeadId(null);
+    setDragOverStage(null);
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "1";
+  };
+
+  const handleDragOver = (e: React.DragEvent, stageValue: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverStage(stageValue);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverStage(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStage: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const leadId = Number(e.dataTransfer.getData("text/plain"));
+    if (!leadId) return;
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+    // Skip if dropped on same stage
+    if (lead.pipeline_stage === targetStage) {
+      setDraggedLeadId(null);
+      return;
+    }
+    await handleStageChange(leadId, targetStage);
+    setDraggedLeadId(null);
+  };
+
   const getLastContact = (lead: Lead): string => {
     if (lead.call_logs.length > 0) return formatDate(lead.call_logs[0].call_date);
     if (lead.call_schedules.length > 0) return formatDate(lead.call_schedules[0].created_at);
@@ -2337,10 +2385,25 @@ function PipelineTab({
 
   return (
     <div className="space-y-4">
+      {/* Drag hint */}
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <GripVertical className="size-3.5" />
+        <span>Drag cards between columns to change pipeline stage</span>
+      </div>
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-3 min-w-max">
           {PIPELINE_STAGES.map((stage) => (
-            <div key={stage.value} className="w-64 shrink-0">
+            <div
+              key={stage.value}
+              className={`w-64 shrink-0 transition-colors rounded-lg ${
+                dragOverStage === stage.value
+                  ? "ring-2 ring-[#166534]/40 bg-emerald-50/30"
+                  : ""
+              }`}
+              onDragOver={(e) => handleDragOver(e, stage.value)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, stage.value)}
+            >
               {/* Column header */}
               <div className={`rounded-t-lg px-3 py-2 ${stage.headerBg}`}>
                 <div className="flex items-center justify-between">
@@ -2351,49 +2414,69 @@ function PipelineTab({
                 </div>
               </div>
 
-              {/* Cards */}
-              <div className="bg-gray-50 rounded-b-lg p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
+              {/* Cards drop zone */}
+              <div
+                className={`bg-gray-50 rounded-b-lg p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 transition-colors ${
+                  dragOverStage === stage.value ? "bg-emerald-50" : ""
+                }`}
+              >
                 {(leadsByStage[stage.value] ?? []).map((lead) => (
                   <Card
                     key={lead.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow py-0"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, lead.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`cursor-grab hover:shadow-md transition-shadow py-0 active:cursor-grabbing ${
+                      draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[#166534]/30" : ""
+                    }`}
                     onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-medium text-sm text-[#111827] truncate">
-                          {lead.first_name} {lead.last_name}
-                        </p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <GripVertical className="size-3.5 text-gray-300 shrink-0" />
+                          <p className="font-medium text-sm text-[#111827] truncate">
+                            {lead.first_name} {lead.last_name}
+                          </p>
+                        </div>
                         <StarRatingDisplay value={lead.star_rating} />
                       </div>
                       {lead.specialty && (
-                        <p className="text-xs text-gray-500 mb-1.5">{lead.specialty}</p>
+                        <p className="text-xs text-gray-500 mb-1.5 pl-5">{lead.specialty}</p>
                       )}
-                      <p className="text-[10px] text-gray-400 mb-2">
+                      <p className="text-[10px] text-gray-400 mb-2 pl-5">
                         Last contact: {getLastContact(lead)}
                       </p>
-                      {/* Stage change dropdown (simplified drag) */}
-                      <Select
-                        value={lead.pipeline_stage}
-                        onValueChange={(v) => handleStageChange(lead.id, v)}
-                        disabled={changingStage === lead.id}
-                      >
-                        <SelectTrigger className="h-7 text-xs" onClick={(e) => e.stopPropagation()}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent onClick={(e) => e.stopPropagation()}>
-                          {PIPELINE_STAGES.map((s) => (
-                            <SelectItem key={s.value} value={s.value}>
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {/* Stage change dropdown (alternative to drag) */}
+                      <div className="pl-5" onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={lead.pipeline_stage}
+                          onValueChange={(v) => handleStageChange(lead.id, v)}
+                          disabled={changingStage === lead.id}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PIPELINE_STAGES.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>
+                                {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
                 {leadsByStage[stage.value]?.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center py-6">No leads</p>
+                  <div className={`text-center py-6 ${
+                    dragOverStage === stage.value ? "text-emerald-600" : "text-gray-400"
+                  }`}>
+                    <p className="text-xs">
+                      {dragOverStage === stage.value ? "Drop here" : "No leads"}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

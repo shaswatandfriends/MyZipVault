@@ -107,6 +107,13 @@ const segmentLabels: Record<string, string> = {
   inactive_users: "Inactive Users (30d+)",
 };
 
+const templateLabels: Record<string, string> = {
+  credential_expiry_reminder: "Credential Expiry Reminder",
+  profile_completion: "Complete Your Profile",
+  new_features: "New Features on MyZipVault",
+  monthly_digest: "Monthly Digest",
+};
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function SuperadminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -128,6 +135,7 @@ export default function SuperadminAnnouncementsPage() {
   const [emailTemplate, setEmailTemplate] = useState("");
   const [emailAnnouncementId, setEmailAnnouncementId] = useState<number | null>(null);
   const [sendingCampaign, setSendingCampaign] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [campaignResult, setCampaignResult] = useState<{
     sentCount: number;
     failedCount: number;
@@ -532,7 +540,7 @@ export default function SuperadminAnnouncementsPage() {
                 size="sm"
                 className="flex-1 gap-2"
                 disabled={!emailTemplate}
-                onClick={() => toast.info("Preview would open in a new window")}
+                onClick={() => setPreviewOpen(true)}
               >
                 <Eye className="size-4" />
                 Preview
@@ -614,6 +622,102 @@ export default function SuperadminAnnouncementsPage() {
             >
               <Plus className="size-4" />
               {saving ? "Saving…" : editId ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Email Preview Dialog ──────────────────────────────────── */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Email Preview</DialogTitle>
+            <DialogDescription>
+              Preview of the email that will be sent to the selected segment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Subject & Segment Info */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground font-medium">Subject:</span>
+                <span className="font-semibold">
+                  {emailTemplate
+                    ? templateLabels[emailTemplate] || emailTemplate
+                    : "No template selected"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground font-medium">Segment:</span>
+                <Badge variant="outline">{segmentLabels[emailSegment] || emailSegment}</Badge>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Email Body Card */}
+            <Card className="border">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                    <Mail className="size-4 text-teal-600" />
+                  </div>
+                  <CardTitle className="text-sm">MyZipVault</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <h3 className="text-base font-semibold">
+                  {emailTemplate
+                    ? templateLabels[emailTemplate] || emailTemplate
+                    : "No template selected"}
+                </h3>
+
+                {emailTemplate === "credential_expiry_reminder" && (
+                  <p className="text-sm text-muted-foreground">
+                    This is a reminder that some of your credentials are expiring soon.
+                    Please log in to review your credentials and take action before they expire.
+                  </p>
+                )}
+                {emailTemplate === "profile_completion" && (
+                  <p className="text-sm text-muted-foreground">
+                    Your profile is almost complete! Finish setting up your account to unlock
+                    all features and get the most out of MyZipVault.
+                  </p>
+                )}
+                {emailTemplate === "new_features" && (
+                  <p className="text-sm text-muted-foreground">
+                    We\u2019ve added new features to MyZipVault! Check out the latest updates
+                    and improvements to enhance your experience.
+                  </p>
+                )}
+                {emailTemplate === "monthly_digest" && (
+                  <p className="text-sm text-muted-foreground">
+                    Here\u2019s your monthly digest of activity and highlights from MyZipVault.
+                    Stay informed with the latest updates and insights.
+                  </p>
+                )}
+                {!emailTemplate && (
+                  <p className="text-sm text-muted-foreground italic">
+                    Select a template to see the email body content.
+                  </p>
+                )}
+
+                {emailAnnouncementId && (() => {
+                  const announcement = announcements.find((a) => a.id === emailAnnouncementId);
+                  if (!announcement) return null;
+                  return (
+                    <div className="mt-3 rounded-md border border-dashed bg-muted/50 p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Attached Announcement</p>
+                      <p className="text-sm">{announcement.message}</p>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

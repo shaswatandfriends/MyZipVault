@@ -26,6 +26,69 @@ import {
   CheckCircle2,
 } from "@/lib/icons";
 
+interface LandingPageContent {
+  hero: {
+    candidateHeadline: string;
+    candidateGradientText: string;
+    candidateSubheadline: string;
+    candidateCtaText: string;
+    recruiterHeadline: string;
+    recruiterGradientText: string;
+    recruiterSubheadline: string;
+    recruiterCtaText: string;
+    trustLine1: string;
+    trustLine2: string;
+    trustLine3: string;
+  };
+  colors: {
+    primary: string;
+    accent: string;
+    background: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
+  featureCards: { icon: string; heading: string; body: string }[];
+  privacySection: { icon: string; heading: string; body: string }[];
+  howItWorks: { title: string; description: string }[];
+  footer: {
+    copyrightText: string;
+    hipaaBadgeText: string;
+  };
+}
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  ClipboardCheck,
+  FileText,
+  Bell,
+  Users,
+  Lock,
+  Timer,
+  Trash2,
+  Eye,
+  FolderOpen,
+  BadgeCheck,
+  Handshake,
+  ShieldCheck,
+  Shield,
+  Zap,
+  Clock,
+  Upload,
+  CheckCircle2,
+};
+
+function DynamicIcon({
+  name,
+  fallback: Fallback,
+  className,
+}: {
+  name?: string;
+  fallback: React.ComponentType<{ className?: string }>;
+  className: string;
+}) {
+  const Icon = name && iconMap[name] ? iconMap[name] : Fallback;
+  return <Icon className={className} />;
+}
+
 type ViewMode = "candidate" | "recruiter";
 
 function FadeInOnScroll({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -90,7 +153,7 @@ function ViewToggle({ view, setView }: { view: ViewMode; setView: (v: ViewMode) 
   );
 }
 
-function CandidateView() {
+function CandidateView({ content }: { content?: LandingPageContent }) {
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -113,9 +176,9 @@ function CandidateView() {
             className="mt-6 text-[#111827] text-4xl sm:text-5xl md:text-6xl lg:text-[64px] leading-tight font-bold tracking-tight"
             style={{ fontFamily: "'Clash Display', sans-serif" }}
           >
-            Stop Filling Out the Same Checklists.{" "}
+            {content?.hero?.candidateHeadline ?? "Stop Filling Out the Same Checklists."}{" "}
             <span className="bg-gradient-to-r from-[#166534] to-[#0D9488] bg-clip-text text-transparent gradient-shimmer inline-block">
-              Own Your Career
+              {content?.hero?.candidateGradientText ?? "Own Your Career"}
             </span>{" "}
             with MyZipVault.
           </motion.h1>
@@ -126,9 +189,7 @@ function CandidateView() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mt-5 max-w-xl text-lg text-[#6B7280]"
           >
-            The secure, candidate-controlled vault for healthcare professionals.
-            Complete your skills checklists once, store your credentials, collect
-            references, and share with recruiters on your terms.
+            {content?.hero?.candidateSubheadline ?? "The secure, candidate-controlled vault for healthcare professionals. Complete your skills checklists once, store your credentials, collect references, and share with recruiters on your terms."}
           </motion.p>
 
           <motion.div
@@ -139,18 +200,18 @@ function CandidateView() {
           >
             <Link href="/signup">
               <button className="inline-flex items-center gap-2 rounded-xl bg-[#166534] px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-[#14532D]">
-                Create Your Free Vault <ArrowRight className="size-4" />
+                {content?.hero?.candidateCtaText ?? "Create Your Free Vault"} <ArrowRight className="size-4" />
               </button>
             </Link>
             <div className="flex flex-wrap items-center justify-center gap-6 mt-1">
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Shield className="size-3.5" /> HIPAA-Aligned Security
+                <Shield className="size-3.5" /> {content?.hero?.trustLine1 ?? "HIPAA-Aligned Security"}
               </span>
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Lock className="size-3.5" /> You Control Access
+                <Lock className="size-3.5" /> {content?.hero?.trustLine2 ?? "You Control Access"}
               </span>
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Zap className="size-3.5" /> 100% Free for Nurses
+                <Zap className="size-3.5" /> {content?.hero?.trustLine3 ?? "100% Free for Nurses"}
               </span>
             </div>
           </motion.div>
@@ -213,10 +274,10 @@ function CandidateView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Create Your Vault
+                  {content?.howItWorks?.[0]?.title ?? "Create Your Vault"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  Sign up free. Upload your resume and our builder auto-fills your profile. Add your BLS, ACLS, RN License, and immunizations in minutes.
+                  {content?.howItWorks?.[0]?.description ?? "Sign up free. Upload your resume and our builder auto-fills your profile. Add your BLS, ACLS, RN License, and immunizations in minutes."}
                 </p>
                 <div className="absolute right-0 top-7 hidden w-1/2 translate-x-1/2 sm:block">
                   <div className="border-t-2 border-dashed border-[#D1D5DB]" />
@@ -234,10 +295,10 @@ function CandidateView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Complete Your Checklists
+                  {content?.howItWorks?.[1]?.title ?? "Complete Your Checklists"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  When an agency requests a skills checklist, fill it out once. It stays in your vault for 30 days. Next agency asks? Click Share. No retakes.
+                  {content?.howItWorks?.[1]?.description ?? "When an agency requests a skills checklist, fill it out once. It stays in your vault for 30 days. Next agency asks? Click Share. No retakes."}
                 </p>
                 <div className="absolute right-0 top-7 hidden w-1/2 translate-x-1/2 sm:block">
                   <div className="border-t-2 border-dashed border-[#D1D5DB]" />
@@ -255,10 +316,10 @@ function CandidateView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Share On Your Terms
+                  {content?.howItWorks?.[2]?.title ?? "Share On Your Terms"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  Grant expiring access to any recruiter — 7, 14, or 30 days. Revoke anytime. They see only what you allow. Nothing more.
+                  {content?.howItWorks?.[2]?.description ?? "Grant expiring access to any recruiter — 7, 14, or 30 days. Revoke anytime. They see only what you allow. Nothing more."}
                 </p>
               </div>
             </div>
@@ -284,18 +345,15 @@ function CandidateView() {
             {/* Card 1 - span-7 */}
             <FadeInOnScroll className="col-span-12 md:col-span-7">
               <div className="h-full bg-white border border-[#E5E7EB] rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <ClipboardCheck className="size-6 text-[#166534] mb-4" />
+                <DynamicIcon name={content?.featureCards?.[0]?.icon} fallback={ClipboardCheck} className="size-6 text-[#166534] mb-4" />
                 <h3
                   className="text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Complete Once, Reuse for 30 Days
+                  {content?.featureCards?.[0]?.heading ?? "Complete Once, Reuse for 30 Days"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-[#6B7280]">
-                  Receive a checklist request from an agency. Rate yourself on our
-                  industry-standard lists. Once submitted, it&apos;s saved in your
-                  vault. If another agency asks for the same list within 30 days,
-                  just click Share. No retakes. No redundancy.
+                  {content?.featureCards?.[0]?.body ?? "Receive a checklist request from an agency. Rate yourself on our industry-standard lists. Once submitted, it's saved in your vault. If another agency asks for the same list within 30 days, just click Share. No retakes. No redundancy."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -303,18 +361,15 @@ function CandidateView() {
             {/* Card 2 - span-5 */}
             <FadeInOnScroll className="col-span-12 md:col-span-5">
               <div className="h-full bg-[#166534] text-white rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <FileText className="size-6 text-white mb-4" />
+                <DynamicIcon name={content?.featureCards?.[1]?.icon} fallback={FileText} className="size-6 text-white mb-4" />
                 <h3
                   className="text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Never Start From Scratch
+                  {content?.featureCards?.[1]?.heading ?? "Never Start From Scratch"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-white/80">
-                  Upload your current resume and our builder auto-fills your
-                  profile. Next time you need to add a new assignment, click Add
-                  Experience. Edit, update, and export a formatted resume in
-                  seconds.
+                  {content?.featureCards?.[1]?.body ?? "Upload your current resume and our builder auto-fills your profile. Next time you need to add a new assignment, click Add Experience. Edit, update, and export a formatted resume in seconds."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -322,17 +377,15 @@ function CandidateView() {
             {/* Card 3 - span-5 */}
             <FadeInOnScroll className="col-span-12 md:col-span-5">
               <div className="h-full bg-[#0D9488] text-white rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <Bell className="size-6 text-white mb-4" />
+                <DynamicIcon name={content?.featureCards?.[2]?.icon} fallback={Bell} className="size-6 text-white mb-4" />
                 <h3
                   className="text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Never Let a Cert Expire Unnoticed
+                  {content?.featureCards?.[2]?.heading ?? "Never Let a Cert Expire Unnoticed"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-white/80">
-                  Upload your BLS, ACLS, RN License, and Immunizations. Turn on
-                  expiration reminders and we&apos;ll alert you 30 days before
-                  it&apos;s time to renew.
+                  {content?.featureCards?.[2]?.body ?? "Upload your BLS, ACLS, RN License, and Immunizations. Turn on expiration reminders and we'll alert you 30 days before it's time to renew."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -340,17 +393,15 @@ function CandidateView() {
             {/* Card 4 - span-7 */}
             <FadeInOnScroll className="col-span-12 md:col-span-7">
               <div className="h-full bg-white border border-[#E5E7EB] rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <Users className="size-6 text-[#166534] mb-4" />
+                <DynamicIcon name={content?.featureCards?.[3]?.icon} fallback={Users} className="size-6 text-[#166534] mb-4" />
                 <h3
                   className="text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Build Your Verified Reference Network
+                  {content?.featureCards?.[3]?.heading ?? "Build Your Verified Reference Network"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-[#6B7280]">
-                  Connect with your managers and request an evaluation. They get a
-                  free vault too. Store their verified signed reference in your
-                  vault, ready to share the second a recruiter asks.
+                  {content?.featureCards?.[3]?.body ?? "Connect with your managers and request an evaluation. They get a free vault too. Store their verified signed reference in your vault, ready to share the second a recruiter asks."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -377,44 +428,44 @@ function CandidateView() {
             <div className="mt-12 grid gap-8 sm:grid-cols-3">
               <div className="flex flex-col items-center text-center">
                 <div className="flex size-12 items-center justify-center rounded-full bg-white/10">
-                  <Lock className="size-6 text-white" />
+                  <DynamicIcon name={content?.privacySection?.[0]?.icon} fallback={Lock} className="size-6 text-white" />
                 </div>
                 <h3
                   className="mt-4 text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Explicit Consent
+                  {content?.privacySection?.[0]?.heading ?? "Explicit Consent"}
                 </h3>
                 <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  A recruiter only sees what you share. Nothing is ever visible by default.
+                  {content?.privacySection?.[0]?.body ?? "A recruiter only sees what you share. Nothing is ever visible by default."}
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="flex size-12 items-center justify-center rounded-full bg-white/10">
-                  <Timer className="size-6 text-white" />
+                  <DynamicIcon name={content?.privacySection?.[1]?.icon} fallback={Timer} className="size-6 text-white" />
                 </div>
                 <h3
                   className="mt-4 text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Expiring Access
+                  {content?.privacySection?.[1]?.heading ?? "Expiring Access"}
                 </h3>
                 <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  You set the timer — 7, 14, or 30 days. Access ends automatically.
+                  {content?.privacySection?.[1]?.body ?? "You set the timer — 7, 14, or 30 days. Access ends automatically."}
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="flex size-12 items-center justify-center rounded-full bg-white/10">
-                  <Trash2 className="size-6 text-white" />
+                  <DynamicIcon name={content?.privacySection?.[2]?.icon} fallback={Trash2} className="size-6 text-white" />
                 </div>
                 <h3
                   className="mt-4 text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  No Data Hoarding
+                  {content?.privacySection?.[2]?.heading ?? "No Data Hoarding"}
                 </h3>
                 <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  If you delete your account, all recruiter access is killed instantly.
+                  {content?.privacySection?.[2]?.body ?? "If you delete your account, all recruiter access is killed instantly."}
                 </p>
               </div>
             </div>
@@ -430,7 +481,7 @@ function CandidateView() {
               className="text-3xl sm:text-4xl font-bold tracking-tight"
               style={{ fontFamily: "'Clash Display', sans-serif" }}
             >
-              Claim Your Free Vault Now
+              {content?.hero?.candidateCtaText ? `${content.hero.candidateCtaText} Now` : "Claim Your Free Vault Now"}
             </h2>
             <p className="mt-4" style={{ color: "rgba(255,255,255,0.8)" }}>
               No credit card. No catch. Your career data, your control.
@@ -438,7 +489,7 @@ function CandidateView() {
             <div className="mt-8">
               <Link href="/signup">
                 <button className="inline-flex items-center gap-2 rounded-xl bg-white px-10 py-4 text-base font-semibold text-[#166534] transition-colors hover:bg-[#DCFCE7]">
-                  Create Your Free Vault <ArrowRight className="size-4" />
+                  {content?.hero?.candidateCtaText ?? "Create Your Free Vault"} <ArrowRight className="size-4" />
                 </button>
               </Link>
             </div>
@@ -449,7 +500,7 @@ function CandidateView() {
   );
 }
 
-function RecruiterView() {
+function RecruiterView({ content }: { content?: LandingPageContent }) {
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -472,9 +523,9 @@ function RecruiterView() {
             className="mt-6 text-[#111827] text-4xl sm:text-5xl md:text-6xl lg:text-[64px] leading-tight font-bold tracking-tight"
             style={{ fontFamily: "'Clash Display', sans-serif" }}
           >
-            Stop Chasing Nurses for{" "}
+            {content?.hero?.recruiterHeadline ?? "Stop Chasing Nurses for"}{" "}
             <span className="bg-gradient-to-r from-[#166534] to-[#0D9488] bg-clip-text text-transparent gradient-shimmer inline-block">
-              Checklists and References.
+              {content?.hero?.recruiterGradientText ?? "Checklists and References."}
             </span>
           </motion.h1>
 
@@ -484,9 +535,7 @@ function RecruiterView() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mt-5 max-w-xl text-lg text-[#6B7280]"
           >
-            MyZipVault automates the healthcare compliance packet. Request a
-            checklist, credentials, and references — and watch them complete in real
-            time. No more endless email threads.
+            {content?.hero?.recruiterSubheadline ?? "MyZipVault automates the healthcare compliance packet. Request a checklist, credentials, and references — and watch them complete in real time. No more endless email threads."}
           </motion.p>
 
           <motion.div
@@ -497,18 +546,18 @@ function RecruiterView() {
           >
             <Link href="/agency-signup">
               <button className="inline-flex items-center gap-2 rounded-xl bg-[#166534] px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-[#14532D]">
-                Get Started <ArrowRight className="size-4" />
+                {content?.hero?.recruiterCtaText ?? "Get Started"} <ArrowRight className="size-4" />
               </button>
             </Link>
             <div className="flex flex-wrap items-center justify-center gap-6 mt-1">
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Clock className="size-3.5" /> Real-Time Tracking
+                <Clock className="size-3.5" /> {content?.hero?.trustLine1 ?? "Real-Time Tracking"}
               </span>
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Zap className="size-3.5" /> Credit-Based Pricing
+                <Zap className="size-3.5" /> {content?.hero?.trustLine2 ?? "Credit-Based Pricing"}
               </span>
               <span className="flex items-center gap-1.5 text-sm text-[#9CA3AF]">
-                <Shield className="size-3.5" /> HIPAA-Aligned
+                <Shield className="size-3.5" /> {content?.hero?.trustLine3 ?? "HIPAA-Aligned"}
               </span>
             </div>
           </motion.div>
@@ -546,10 +595,10 @@ function RecruiterView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Send a Request
+                  {content?.howItWorks?.[0]?.title ?? "Send a Request"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  Request a checklist, credentials, and references from any nurse on the platform. One request, all documents.
+                  {content?.howItWorks?.[0]?.description ?? "Request a checklist, credentials, and references from any nurse on the platform. One request, all documents."}
                 </p>
                 <div className="absolute right-0 top-7 hidden w-1/2 translate-x-1/2 sm:block">
                   <div className="border-t-2 border-dashed border-[#D1D5DB]" />
@@ -567,10 +616,10 @@ function RecruiterView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Track in Real Time
+                  {content?.howItWorks?.[1]?.title ?? "Track in Real Time"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  See who opened your request, who is at 30% or 90%, and who has submitted. No more guessing or follow-up emails.
+                  {content?.howItWorks?.[1]?.description ?? "See who opened your request, who is at 30% or 90%, and who has submitted. No more guessing or follow-up emails."}
                 </p>
                 <div className="absolute right-0 top-7 hidden w-1/2 translate-x-1/2 sm:block">
                   <div className="border-t-2 border-dashed border-[#D1D5DB]" />
@@ -588,10 +637,10 @@ function RecruiterView() {
                   className="mt-4 text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Access Verified Documents
+                  {content?.howItWorks?.[2]?.title ?? "Access Verified Documents"}
                 </h3>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  Nurses share via expiring, HIPAA-aligned links. You get compliant, verified documents without storing sensitive data.
+                  {content?.howItWorks?.[2]?.description ?? "Nurses share via expiring, HIPAA-aligned links. You get compliant, verified documents without storing sensitive data."}
                 </p>
               </div>
             </div>
@@ -617,17 +666,15 @@ function RecruiterView() {
             {/* Card 1 - span-7 */}
             <FadeInOnScroll className="col-span-12 md:col-span-7">
               <div className="h-full bg-white border border-[#E5E7EB] rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <Eye className="size-6 text-[#166534] mb-4" />
+                <DynamicIcon name={content?.featureCards?.[0]?.icon} fallback={Eye} className="size-6 text-[#166534] mb-4" />
                 <h3
                   className="text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Real-Time Tracking
+                  {content?.featureCards?.[0]?.heading ?? "Real-Time Tracking"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-[#6B7280]">
-                  See exactly who opened your request, who&apos;s currently filling
-                  it out at 30% or 50% or 90%, and who has submitted. No more
-                  guessing.
+                  {content?.featureCards?.[0]?.body ?? "See exactly who opened your request, who's currently filling it out at 30% or 50% or 90%, and who has submitted. No more guessing."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -635,17 +682,15 @@ function RecruiterView() {
             {/* Card 2 - span-5 */}
             <FadeInOnScroll className="col-span-12 md:col-span-5">
               <div className="h-full bg-[#166534] text-white rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <FolderOpen className="size-6 text-white mb-4" />
+                <DynamicIcon name={content?.featureCards?.[1]?.icon} fallback={FolderOpen} className="size-6 text-white mb-4" />
                 <h3
                   className="text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Instant Document Access
+                  {content?.featureCards?.[1]?.heading ?? "Instant Document Access"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-white/80">
-                  Request a checklist and BLS. If the nurse shares their ACLS and
-                  resume too, unlock each extra verified document for just 1
-                  credit.
+                  {content?.featureCards?.[1]?.body ?? "Request a checklist and BLS. If the nurse shares their ACLS and resume too, unlock each extra verified document for just 1 credit."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -653,17 +698,15 @@ function RecruiterView() {
             {/* Card 3 - span-5 */}
             <FadeInOnScroll className="col-span-12 md:col-span-5">
               <div className="h-full bg-[#0D9488] text-white rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <BadgeCheck className="size-6 text-white mb-4" />
+                <DynamicIcon name={content?.featureCards?.[2]?.icon} fallback={BadgeCheck} className="size-6 text-white mb-4" />
                 <h3
                   className="text-lg font-semibold"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  Verified References
+                  {content?.featureCards?.[2]?.heading ?? "Verified References"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-white/80">
-                  When nurses request references from their managers, the manager
-                  joins the vault. Next time you need a reference from that
-                  manager, it&apos;s already verified.
+                  {content?.featureCards?.[2]?.body ?? "When nurses request references from their managers, the manager joins the vault. Next time you need a reference from that manager, it's already verified."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -671,17 +714,15 @@ function RecruiterView() {
             {/* Card 4 - span-7 */}
             <FadeInOnScroll className="col-span-12 md:col-span-7">
               <div className="h-full bg-white border border-[#E5E7EB] rounded-2xl p-8 min-h-[220px] hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <Handshake className="size-6 text-[#166534] mb-4" />
+                <DynamicIcon name={content?.featureCards?.[3]?.icon} fallback={Handshake} className="size-6 text-[#166534] mb-4" />
                 <h3
                   className="text-lg font-semibold text-[#111827]"
                   style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  HIPAA-Aligned Sharing
+                  {content?.featureCards?.[3]?.heading ?? "HIPAA-Aligned Sharing"}
                 </h3>
                 <p className="mt-3 leading-relaxed text-[#6B7280]">
-                  Candidates set expiring access links. You get compliant
-                  verifiable documents without storing sensitive data in your own
-                  inbox.
+                  {content?.featureCards?.[3]?.body ?? "Candidates set expiring access links. You get compliant verifiable documents without storing sensitive data in your own inbox."}
                 </p>
               </div>
             </FadeInOnScroll>
@@ -697,7 +738,7 @@ function RecruiterView() {
               className="text-3xl sm:text-4xl font-bold tracking-tight"
               style={{ fontFamily: "'Clash Display', sans-serif" }}
             >
-              Get Started
+              {content?.hero?.recruiterCtaText ?? "Get Started"}
             </h2>
             <p className="mt-4" style={{ color: "rgba(255,255,255,0.8)" }}>
               Compliance packets that complete themselves.
@@ -705,7 +746,7 @@ function RecruiterView() {
             <div className="mt-8">
               <Link href="/agency-signup">
                 <button className="inline-flex items-center gap-2 rounded-xl bg-white px-10 py-4 text-base font-semibold text-[#166534] transition-colors hover:bg-[#DCFCE7]">
-                  Get Started <ArrowRight className="size-4" />
+                  {content?.hero?.recruiterCtaText ?? "Get Started"} <ArrowRight className="size-4" />
                 </button>
               </Link>
             </div>
@@ -716,7 +757,7 @@ function RecruiterView() {
   );
 }
 
-function Footer() {
+function Footer({ content }: { content?: LandingPageContent }) {
   return (
     <footer className="bg-[#111827] text-white py-12 px-8">
       <div className="mx-auto max-w-6xl">
@@ -752,11 +793,11 @@ function Footer() {
         </div>
         <div className="mt-8 flex flex-col items-center gap-4 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
           <p className="text-sm text-white/40">
-            &copy; 2025 MyZipVault. All rights reserved.
+            &copy; {content?.footer?.copyrightText ?? "2025 MyZipVault. All rights reserved."}
           </p>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/80">
             <ShieldCheck className="size-3.5 text-white/60" />
-            HIPAA-Aligned Security
+            {content?.footer?.hipaaBadgeText ?? "HIPAA-Aligned Security"}
           </span>
         </div>
       </div>
@@ -766,6 +807,21 @@ function Footer() {
 
 export default function LandingPage() {
   const [view, setView] = useState<ViewMode>("candidate");
+  const [content, setContent] = useState<LandingPageContent | undefined>(undefined);
+
+  useEffect(() => {
+    fetch("/api/superadmin/landing-page")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
+      .then((data: LandingPageContent) => {
+        setContent(data);
+      })
+      .catch(() => {
+        // Silently fail — hardcoded defaults will be used
+      });
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F7F4]">
@@ -812,13 +868,13 @@ export default function LandingPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            {view === "candidate" ? <CandidateView /> : <RecruiterView />}
+            {view === "candidate" ? <CandidateView content={content} /> : <RecruiterView content={content} />}
           </motion.div>
         </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer content={content} />
     </div>
   );
 }

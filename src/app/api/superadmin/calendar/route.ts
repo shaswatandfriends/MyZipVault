@@ -95,8 +95,8 @@ export async function GET(request: Request) {
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
 
-    // Get all recruiters (users with role "recruiter" in organizations)
-    const recruiterWhere: Record<string, unknown> = { role: "recruiter" };
+    // Get all recruiters (users with role "client_recruiter" or "client_admin" in organizations)
+    const recruiterWhere: Record<string, unknown> = { role: { in: ["client_recruiter", "client_admin"] } };
     if (companyIdParam) {
       recruiterWhere.organization_id = parseInt(companyIdParam, 10);
     }
