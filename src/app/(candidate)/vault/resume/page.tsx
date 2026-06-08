@@ -756,6 +756,14 @@ export default function CandidateResumePage() {
 
   // Builder Mode
   if (mode === "builder") {
+    // Determine grid columns based on which panels are open
+    const rightPanelCount = (showPreview ? 1 : 0) + (showAiChat ? 1 : 0);
+    const gridCols = rightPanelCount === 0
+      ? "grid-cols-1"
+      : rightPanelCount === 1
+        ? "grid-cols-1 xl:grid-cols-[1fr_420px]"
+        : "grid-cols-1 xl:grid-cols-[1fr_420px_380px]";
+
     return (
       <div className="space-y-6">
         <PageHeader
@@ -764,16 +772,16 @@ export default function CandidateResumePage() {
           actions={
             <div className="flex items-center gap-2 flex-wrap">
               <Button
-                variant="outline"
+                variant={showAiChat ? "default" : "outline"}
                 size="sm"
-                className="gap-1.5 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+                className={`gap-1.5 ${!showAiChat ? "text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950" : "bg-violet-600 hover:bg-violet-700"}`}
                 onClick={() => setShowAiChat(!showAiChat)}
               >
                 <Sparkles className="size-3.5" />
                 {showAiChat ? "Hide AI" : "AI Assist"}
               </Button>
               <Button
-                variant="outline"
+                variant={showPreview ? "default" : "outline"}
                 size="sm"
                 className="gap-1.5"
                 onClick={() => setShowPreview(!showPreview)}
@@ -814,9 +822,9 @@ export default function CandidateResumePage() {
           }
         />
 
-        <div className={`grid gap-6 ${showPreview ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1"}`}>
-          {/* Left: Builder Tabs */}
-          <div>
+        <div className={`grid gap-6 ${gridCols}`}>
+          {/* Left: Builder Tabs (always shown) */}
+          <div className="min-w-0">
             <Tabs value={activeBuilderTab} onValueChange={setActiveBuilderTab} className="space-y-4">
               <TabsList className="flex-wrap">
                 <TabsTrigger value="contact" className="gap-1.5">
@@ -843,9 +851,7 @@ export default function CandidateResumePage() {
               <TabsContent value="contact">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">Contact Information</CardTitle>
-                    </div>
+                    <CardTitle className="text-base">Contact Information</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -895,17 +901,15 @@ export default function CandidateResumePage() {
               <TabsContent value="summary">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <CardTitle className="text-base">Professional Summary</CardTitle>
-                      <div className="flex gap-2">
-                        <AiAssistButton
-                          label="AI Generate"
-                          action={summary ? "improve_summary" : "generate_summary"}
-                          context={getAiContext()}
-                          currentContent={summary}
-                          onResult={(r) => setSummary(r)}
-                        />
-                      </div>
+                      <AiAssistButton
+                        label={summary ? "AI Improve" : "AI Generate"}
+                        action={summary ? "improve_summary" : "generate_summary"}
+                        context={getAiContext()}
+                        currentContent={summary}
+                        onResult={(r) => setSummary(r)}
+                      />
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -928,20 +932,18 @@ export default function CandidateResumePage() {
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <CardTitle className="text-base">Work Experience</CardTitle>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="gap-1"
-                          onClick={() =>
-                            setExperiences([
-                              ...experiences,
-                              { facility: "", unit: "", startDate: "", endDate: "", description: "" },
-                            ])
-                          }
-                        >
-                          <Plus className="size-3.5" /> Add Experience
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        className="gap-1"
+                        onClick={() =>
+                          setExperiences([
+                            ...experiences,
+                            { facility: "", unit: "", startDate: "", endDate: "", description: "" },
+                          ])
+                        }
+                      >
+                        <Plus className="size-3.5" /> Add Experience
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1161,7 +1163,7 @@ export default function CandidateResumePage() {
                           className="gap-1"
                           onClick={() => setCertifications([...certifications, { name: "", issuingOrg: "", year: "" }])}
                         >
-                          <Plus className="size-3.5" /> Add Certification
+                          <Plus className="size-3.5" /> Add
                         </Button>
                       </div>
                     </div>
@@ -1190,7 +1192,7 @@ export default function CandidateResumePage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Issuing Organization</Label>
+                            <Label>Issuing Org</Label>
                             <Input
                               placeholder="AHA, ANCC..."
                               value={cert.issuingOrg}
@@ -1262,7 +1264,7 @@ export default function CandidateResumePage() {
                           className="gap-1"
                           onClick={() => setSkills([...skills, { skill: "", proficiency: "Intermediate" }])}
                         >
-                          <Plus className="size-3.5" /> Add Skill
+                          <Plus className="size-3.5" /> Add
                         </Button>
                       </div>
                     </div>
@@ -1326,45 +1328,33 @@ export default function CandidateResumePage() {
                 </Card>
               </TabsContent>
             </Tabs>
-
-            {/* AI Chat Panel (below builder when preview is also shown) */}
-            {showAiChat && (
-              <div className="mt-6">
-                <AiChatPanel
-                  resumeContext={currentPreviewData}
-                  onApplySuggestion={() => {}}
-                />
-              </div>
-            )}
           </div>
 
-          {/* Right: Live Preview */}
+          {/* Right Panel 1: Live Preview */}
           {showPreview && (
             <div className="xl:sticky xl:top-6 self-start">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Live Preview
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="size-3.5" /> Live Preview
                 </h3>
-                <Badge variant="outline" className="text-xs">
-                  Auto-updating
-                </Badge>
+                <Badge variant="outline" className="text-xs">Auto</Badge>
               </div>
-              <ScrollArea className="h-[700px]">
+              <ScrollArea className="h-[calc(100vh-180px)] min-h-[500px]">
                 <ResumePreview data={currentPreviewData} />
               </ScrollArea>
             </div>
           )}
-        </div>
 
-        {/* AI Chat Panel (full width when preview is off) */}
-        {showAiChat && !showPreview && (
-          <div className="mt-6 max-w-2xl">
-            <AiChatPanel
-              resumeContext={currentPreviewData}
-              onApplySuggestion={() => {}}
-            />
-          </div>
-        )}
+          {/* Right Panel 2: AI Chat Assistant */}
+          {showAiChat && (
+            <div className="xl:sticky xl:top-6 self-start">
+              <AiChatPanel
+                resumeContext={currentPreviewData}
+                onApplySuggestion={() => {}}
+              />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
