@@ -90,6 +90,7 @@ const candidateNav: NavItem[] = [
 // ─── Recruiter Nav Items ─────────────────────────────────────────────
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
+  { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileSignature },
@@ -160,15 +161,20 @@ interface SidebarNotification {
 }
 
 // ─── Notification Bell Sub-component ─────────────────────────────────
-function NotificationBell() {
+function NotificationBell({ role }: { role: UserRole }) {
   const [notifications, setNotifications] = useState<SidebarNotification[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const apiEndpoint =
+    role === "candidate"
+      ? "/api/candidate/notifications"
+      : "/api/recruiter/notifications";
 
   useEffect(() => {
     let mounted = true;
 
     const doFetch = () => {
-      fetch("/api/candidate/notifications")
+      fetch(apiEndpoint)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!mounted || !data) return;
@@ -188,13 +194,13 @@ function NotificationBell() {
       clearTimeout(initialTimer);
       clearInterval(interval);
     };
-  }, []);
+  }, [apiEndpoint]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const markAllRead = async () => {
     try {
-      await fetch("/api/candidate/notifications", {
+      await fetch(apiEndpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ markAllRead: true }),
@@ -355,8 +361,10 @@ export function AppSidebar() {
 
         {/* ── Bottom Section: User + Sign Out ── */}
         <div className="space-y-2 border-t border-[#E5E7EB] p-3">
-          {/* Notification Bell (candidates only) */}
-          {role === "candidate" && <NotificationBell />}
+          {/* Notification Bell (candidates & recruiters) */}
+          {(role === "candidate" || role === "client_admin" || role === "client_recruiter") && (
+            <NotificationBell role={role} />
+          )}
 
           {/* User Info */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-2">

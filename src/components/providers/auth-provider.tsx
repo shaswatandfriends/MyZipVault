@@ -23,7 +23,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password"];
 
 const PUBLIC_ROUTE_PREFIXES = ["/reference/"];
 

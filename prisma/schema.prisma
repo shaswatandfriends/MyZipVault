@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ─── 1. Organizations ────────────────────────────────────────────────
@@ -26,6 +25,7 @@ model Organization {
   credit_transactions CreditTransaction[]
   invoices            Invoice[]
   invite_tokens       InviteToken[]
+  recruiter_leads     RecruiterLead[]
 }
 
 // ─── 2. Users ────────────────────────────────────────────────────────
@@ -73,6 +73,17 @@ model User {
   api_keys_updated       ApiKey[]
   share_requests_as_candidate ShareRequest[]  @relation("CandidateShareRequests")
   share_requests_as_client   ShareRequest[]  @relation("ClientShareRequests")
+
+  // Calendar & Scheduler relations
+  calendar_availabilities     CalendarAvailability[]
+  calendar_shares_as_candidate CalendarShare[]  @relation("CandidateCalendarShares")
+  calendar_shares_as_recruiter CalendarShare[]  @relation("RecruiterCalendarShares")
+  recruiter_leads             RecruiterLead[]
+  recruiter_availability      RecruiterAvailability[]
+  shift_requests_as_candidate ShiftRequest[]   @relation("CandidateShiftRequests")
+  shift_requests_as_recruiter ShiftRequest[]   @relation("RecruiterShiftRequests")
+  call_schedules         CallSchedule[]
+  call_logs              CallLog[]
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -487,4 +498,135 @@ model ShareRequest {
 
   candidate_user        User      @relation("CandidateShareRequests", fields: [candidate_user_id], references: [id])
   client_user           User      @relation("ClientShareRequests", fields: [client_user_id], references: [id])
+}
+
+// ─── 32. Calendar Availability (Candidate) ──────────────────────────
+model CalendarAvailability {
+  id                Int       @id @default(autoincrement())
+  candidate_user_id Int
+  day_of_week       Int?      // 0=Sun, 1=Mon, ..., 6=Sat (null for specific dates)
+  specific_date     DateTime? // For block-out dates or one-time overrides
+  start_time        String?   // "09:00" format, null = all day
+  end_time          String?   // "17:00" format, null = all day
+  is_available      Boolean   @default(true) // true = available, false = blocked
+  is_recurring      Boolean   @default(false) // true = weekly recurring
+  label             String?   // "Lunch break", "Night shift available", etc.
+  template_name     String?   // "Morning Person", "Night Owl", etc.
+  min_notice_hours  Int       @default(24)
+  shift_duration_pref String? // "8hr", "12hr", "4hr_min"
+  availability_status String  @default("actively_looking") // actively_looking, open, not_available
+
+  candidate_user    User      @relation(fields: [candidate_user_id], references: [id], onDelete: Cascade)
+}
+
+// ─── 33. Calendar Shares ────────────────────────────────────────────
+model CalendarShare {
+  id                Int       @id @default(autoincrement())
+  candidate_user_id Int
+  recruiter_user_id Int?      // Direct share to specific recruiter
+  share_token       String?   @unique // For link-based sharing
+  share_type        String    @default("direct") // "direct" or "link"
+  expiry_type       String    @default("30_days") // "1_day", "1_month", "1_year", "never"
+  expires_at        DateTime?
+  is_revoked        Boolean   @default(false)
+  created_at        DateTime  @default(now())
+
+  candidate_user    User      @relation("CandidateCalendarShares", fields: [candidate_user_id], references: [id], onDelete: Cascade)
+  recruiter_user    User?     @relation("RecruiterCalendarShares", fields: [recruiter_user_id], references: [id])
+}
+
+// ─── 34. Recruiter Leads ────────────────────────────────────────────
+model RecruiterLead {
+  id                Int       @id @default(autoincrement())
+  recruiter_user_id Int
+  organization_id   Int
+  first_name        String
+  last_name         String
+  email             String?
+  phone             String?
+  job_title         String?
+  specialty         String?
+  reached_for       String?   // What position/role they were contacted for
+  remark            String?   // How the call went, what was discussed
+  source            String    @default("cold_call") // cold_call, referral, job_board, walk_in, linkedin, other
+  pipeline_stage    String    @default("new_lead") // new_lead, doc_pending, submitted, interested_no_job, interview_scheduled, offer_sent, onboarding, started, not_interested
+  star_rating       Int?      // 1-5, optional
+  is_active         Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now())
+
+  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  organization      Organization @relation(fields: [organization_id], references: [id])
+  call_schedules    CallSchedule[]
+  call_logs         CallLog[]
+}
+
+// ─── 35. Call Schedules ─────────────────────────────────────────────
+model CallSchedule {
+  id                Int       @id @default(autoincrement())
+  lead_id           Int
+  recruiter_user_id Int
+  scheduled_date    DateTime? // Specific date/time (null for month-range)
+  scheduled_month   String?   // "2026-12" for month-range scheduling
+  status            String    @default("scheduled") // scheduled, completed, rescheduled, cancelled, no_answer
+  reminder_sent_at  DateTime?
+  created_at        DateTime  @default(now())
+
+  lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  call_logs         CallLog[]
+}
+
+// ─── 36. Call Logs ──────────────────────────────────────────────────
+model CallLog {
+  id                Int       @id @default(autoincrement())
+  lead_id           Int
+  call_schedule_id  Int?
+  recruiter_user_id Int
+  call_date         DateTime  @default(now())
+  outcome           String    // good, no_answer, voicemail, not_interested
+  remark            String?   // What was discussed
+  next_action       String?   // What the next step is
+  created_at        DateTime  @default(now())
+
+  lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  call_schedule     CallSchedule? @relation(fields: [call_schedule_id], references: [id], onDelete: SetNull)
+  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+}
+
+// ─── 37. Recruiter Availability ─────────────────────────────────────
+model RecruiterAvailability {
+  id                Int       @id @default(autoincrement())
+  recruiter_user_id Int
+  day_of_week       Int?      // 0=Sun, 1=Mon, ..., 6=Sat
+  specific_date     DateTime?
+  start_time        String?   // "09:00"
+  end_time          String?   // "17:00"
+  is_available      Boolean   @default(true)
+  is_recurring      Boolean   @default(false)
+  label             String?   // "Free before lunch", "Available evenings"
+  created_at        DateTime  @default(now())
+
+  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+}
+
+// ─── 38. Shift Requests ─────────────────────────────────────────────
+model ShiftRequest {
+  id                Int       @id @default(autoincrement())
+  recruiter_user_id Int
+  candidate_user_id Int
+  shift_date        DateTime
+  start_time        String?
+  end_time          String?
+  position          String?   // Role/position for the shift
+  facility_name     String?
+  notes             String?
+  status            String    @default("pending") // pending, accepted, declined, expired
+  response_deadline DateTime? // When the request auto-expires
+  responded_at      DateTime?
+  response_note     String?
+  created_at        DateTime  @default(now())
+
+  recruiter_user    User      @relation("RecruiterShiftRequests", fields: [recruiter_user_id], references: [id])
+  candidate_user    User      @relation("CandidateShiftRequests", fields: [candidate_user_id], references: [id])
 }

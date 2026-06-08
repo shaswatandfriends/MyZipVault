@@ -167,15 +167,12 @@ export default function AgencyLoginPage() {
                 <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
                   Password
                 </Label>
-                <button
-                  type="button"
+                <Link
+                  href="/forgot-password"
                   className="text-xs text-[#0D9488] hover:underline"
-                  onClick={() =>
-                    toast.info("Password reset coming soon!")
-                  }
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <Input
                 id="password"

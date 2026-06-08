@@ -354,13 +354,13 @@ function OnboardPageInner() {
                 />
                 <Label htmlFor="tos" className="text-sm font-normal leading-snug text-[#6B7280]">
                   I agree to the{" "}
-                  <span className="text-[#166534] hover:underline cursor-pointer">
+                  <Link href="/terms" className="text-[#166534] hover:underline cursor-pointer">
                     Terms & Conditions
-                  </span>{" "}
+                  </Link>{" "}
                   and{" "}
-                  <span className="text-[#166534] hover:underline cursor-pointer">
+                  <Link href="/privacy" className="text-[#166534] hover:underline cursor-pointer">
                     Privacy Policy
-                  </span>
+                  </Link>
                 </Label>
               </div>
               {errors.tos && (

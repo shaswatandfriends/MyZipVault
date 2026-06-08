@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,13 +25,82 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
+  User,
+  Phone,
+  Save,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export default function CandidateSettingsPage() {
   const { user } = useAuth();
+  const { update: updateSession } = useSession();
+
+  // Profile state
+  const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [lastName, setLastName] = useState(user?.lastName || "");
+  const [phone, setPhone] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  // Fetch profile data (for phone which is not in auth context)
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch("/api/candidate/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setFirstName(data.first_name || "");
+          setLastName(data.last_name || "");
+          setPhone(data.phone || "");
+        }
+      } catch {
+        // Silently fail — fields will remain with auth context defaults
+      } finally {
+        setIsProfileLoading(false);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!firstName.trim()) {
+      toast.error("First name is required");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const res = await fetch("/api/candidate/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error("Failed to save profile", { description: data.error });
+        return;
+      }
+
+      // Refresh the session so auth context picks up updated firstName/lastName
+      await updateSession();
+
+      toast.success("Profile updated successfully");
+    } catch {
+      toast.error("Failed to save profile");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   // Change password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -130,6 +198,77 @@ export default function CandidateSettingsPage() {
         title="Settings"
         description="Manage your account settings and preferences."
       />
+
+      {/* Profile Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <User className="size-5 text-primary" />
+            Profile Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="Enter your first name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Enter your last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center gap-1.5">
+                <Phone className="size-3.5 text-muted-foreground" />
+                Phone Number
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={isSavingProfile || isProfileLoading}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isSavingProfile || isProfileLoading}
+                className="gap-2"
+              >
+                {isSavingProfile ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4" />
+                    Save Profile
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Account Info */}
       <Card>

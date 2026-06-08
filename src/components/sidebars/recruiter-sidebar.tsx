@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
+  { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileSignature },

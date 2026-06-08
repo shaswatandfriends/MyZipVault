@@ -16,6 +16,7 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -164,6 +165,9 @@ export default function SuperadminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const [organizations, setOrganizations] = useState<{ id: number; name: string }[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [lastLoginFrom, setLastLoginFrom] = useState("");
@@ -183,6 +187,31 @@ export default function SuperadminUsersPage() {
   // View user dialog
   const [viewUser, setViewUser] = useState<UserRow | null>(null);
 
+  // Fetch organizations for the Company filter dropdown
+  const fetchOrganizations = useCallback(async () => {
+    try {
+      setOrgsLoading(true);
+      const res = await fetch("/api/superadmin/companies");
+      if (res.ok) {
+        const json = await res.json();
+        setOrganizations(
+          (json.companies as { id: number; name: string }[]).map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))
+        );
+      }
+    } catch {
+      // Silently fail – dropdown will just show no options
+    } finally {
+      setOrgsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, [fetchOrganizations]);
+
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -190,6 +219,7 @@ export default function SuperadminUsersPage() {
         search: searchQuery,
         role: roleFilter,
         status: statusFilter,
+        organizationId: companyFilter,
         page: String(page),
       });
       if (lastLoginFrom) params.set("lastLoginFrom", lastLoginFrom);
@@ -210,7 +240,7 @@ export default function SuperadminUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, roleFilter, statusFilter, page, lastLoginFrom, lastLoginTo, profileMin, profileMax]);
+  }, [searchQuery, roleFilter, statusFilter, companyFilter, page, lastLoginFrom, lastLoginTo, profileMin, profileMax]);
 
   useEffect(() => {
     fetchUsers();
@@ -219,7 +249,7 @@ export default function SuperadminUsersPage() {
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, roleFilter, statusFilter]);
+  }, [searchQuery, roleFilter, statusFilter, companyFilter]);
 
   const handleAction = async (action: string, userId: number) => {
     try {
@@ -279,6 +309,7 @@ export default function SuperadminUsersPage() {
   const activeFilterCount = [
     roleFilter !== "all" ? 1 : 0,
     statusFilter !== "all" ? 1 : 0,
+    companyFilter !== "all" ? 1 : 0,
     lastLoginFrom ? 1 : 0,
     lastLoginTo ? 1 : 0,
     profileMin ? 1 : 0,
@@ -383,6 +414,25 @@ export default function SuperadminUsersPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Building2 className="size-3.5" />
+                  Company
+                </Label>
+                <Select value={companyFilter} onValueChange={setCompanyFilter} disabled={orgsLoading}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={orgsLoading ? "Loading…" : "All Companies"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Companies</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={String(org.id)}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label className="text-xs font-medium">Last Login From</Label>
                 <Input
                   type="date"
@@ -428,6 +478,7 @@ export default function SuperadminUsersPage() {
                 onClick={() => {
                   setRoleFilter("all");
                   setStatusFilter("all");
+                  setCompanyFilter("all");
                   setLastLoginFrom("");
                   setLastLoginTo("");
                   setProfileMin("");

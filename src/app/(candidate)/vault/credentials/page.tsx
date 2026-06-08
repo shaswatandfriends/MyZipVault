@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ShieldCheck,
   Upload,
   Clock,
@@ -29,6 +45,9 @@ import {
   FileText,
   Plus,
   X,
+  Download,
+  Trash2,
+  Loader2,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -101,6 +120,8 @@ export default function CandidateCredentialsPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   // Upload form state
   const [documentName, setDocumentName] = useState("");
@@ -164,6 +185,63 @@ export default function CandidateCredentialsPage() {
       toast.error("Failed to upload credential");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDownload = async (credential: CredentialItem) => {
+    setDownloadingId(credential.id);
+    try {
+      const res = await fetch("/api/storage/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl: credential.file_url }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get download URL");
+      }
+
+      const { signedUrl } = await res.json();
+
+      if (signedUrl.startsWith("data:")) {
+        // For base64 data URLs, create a temporary link to download
+        const link = document.createElement("a");
+        link.href = signedUrl;
+        link.download = credential.document_name || "credential";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For signed URLs, open in a new tab
+        window.open(signedUrl, "_blank");
+      }
+    } catch {
+      toast.error("Failed to download credential");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDelete = async (credentialId: number) => {
+    setDeletingId(credentialId);
+    try {
+      const res = await fetch(`/api/credentials/${credentialId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Delete failed" }));
+        throw new Error(data.error || "Delete failed");
+      }
+
+      toast.success("Credential deleted successfully");
+      setCredentials((prev) => prev.filter((c) => c.id !== credentialId));
+    } catch (err) {
+      toast.error("Failed to delete credential", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -359,9 +437,71 @@ export default function CandidateCredentialsPage() {
                     <FileText className="size-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {credential.document_name}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium text-sm truncate">
+                        {credential.document_name}
+                      </p>
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => handleDownload(credential)}
+                              disabled={downloadingId === credential.id}
+                            >
+                              {downloadingId === credential.id ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <Download className="size-3.5" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Download</TooltipContent>
+                        </Tooltip>
+
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  disabled={deletingId === credential.id}
+                                >
+                                  {deletingId === credential.id ? (
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="size-3.5" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                          </Tooltip>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Credential</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure? This cannot be undone. The credential &quot;{credential.document_name}&quot; will be permanently removed from your vault.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() => handleDelete(credential.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {getStatusBadge(credential.status)}
                       {getVerificationBadge(credential.verification_status)}

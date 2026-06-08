@@ -21,6 +21,7 @@ import {
   Building2,
   User,
   Loader2,
+  Ban,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -65,6 +66,7 @@ export default function CandidateSharingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expirySelections, setExpirySelections] = useState<Record<string, string>>({});
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -113,6 +115,35 @@ export default function CandidateSharingPage() {
       toast.error("Failed to approve sharing");
     } finally {
       setActioningId(null);
+    }
+  };
+
+  const handleRevoke = async (consentShareId: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to revoke this share? The employer will immediately lose access."
+    );
+    if (!confirmed) return;
+
+    setRevokingId(consentShareId);
+    try {
+      const res = await fetch("/api/sharing/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consentShareId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("Failed to revoke", { description: data.error });
+        return;
+      }
+
+      toast.success("Share revoked successfully");
+      fetchData();
+    } catch {
+      toast.error("Failed to revoke share");
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -338,9 +369,27 @@ export default function CandidateSharingPage() {
                         </span>
                       </div>
                     </div>
-                    <Badge variant={isExpired ? "secondary" : "default"} className="text-xs shrink-0">
-                      {isExpired ? "Expired" : "Active"}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {!isExpired && !share.is_deleted && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 h-7 text-xs text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                          disabled={revokingId === share.id}
+                          onClick={() => handleRevoke(share.id)}
+                        >
+                          {revokingId === share.id ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <Ban className="size-3" />
+                          )}
+                          Revoke
+                        </Button>
+                      )}
+                      <Badge variant={isExpired ? "secondary" : "default"} className="text-xs">
+                        {isExpired ? "Expired" : "Active"}
+                      </Badge>
+                    </div>
                   </CardContent>
                 </Card>
               );

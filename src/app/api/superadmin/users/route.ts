@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const search = searchParams.get("search") || "";
     const roleFilter = searchParams.get("role") || "all";
     const statusFilter = searchParams.get("status") || "all";
+    const organizationId = searchParams.get("organizationId") || "all";
     const lastLoginFrom = searchParams.get("lastLoginFrom") || "";
     const lastLoginTo = searchParams.get("lastLoginTo") || "";
     const profileMin = searchParams.get("profileMin") || "";
@@ -44,6 +45,10 @@ export async function GET(request: Request) {
 
     if (statusFilter !== "all") {
       where.account_status = statusFilter;
+    }
+
+    if (organizationId !== "all") {
+      where.organization_id = parseInt(organizationId, 10);
     }
 
     if (lastLoginFrom || lastLoginTo) {
