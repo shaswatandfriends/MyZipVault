@@ -303,16 +303,19 @@ function AiChatPanel({
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+  }, [messages, isSending]);
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  const handleSend = async (message?: string) => {
+    const trimmed = (message || input).trim();
     if (!trimmed || isSending) return;
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
@@ -332,7 +335,6 @@ function AiChatPanel({
       });
 
       if (!res.ok) {
-        const data = await res.json();
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
@@ -355,16 +357,27 @@ function AiChatPanel({
     }
   };
 
+  const quickActions = [
+    { label: "Generate Summary", message: "Generate a professional summary for my resume" },
+    { label: "Suggest Skills", message: "What skills should I add for a healthcare position?" },
+    { label: "Improve Experience", message: "Help me improve my work experience descriptions" },
+    { label: "Suggest Certifications", message: "What certifications are recommended for healthcare workers?" },
+  ];
+
   return (
-    <Card className="flex flex-col h-[500px]">
-      <CardHeader className="pb-2 shrink-0">
+    <Card className="flex flex-col h-[calc(100vh-140px)] min-h-[500px]">
+      <CardHeader className="pb-2 shrink-0 border-b">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Sparkles className="size-4 text-violet-500" />
+          <div className="size-6 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+            <Sparkles className="size-3.5 text-violet-600 dark:text-violet-400" />
+          </div>
           AI Resume Assistant
+          <Badge variant="secondary" className="text-[10px] ml-auto">AI</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden p-4 pt-0">
-        <ScrollArea className="flex-1" ref={scrollRef}>
+      <CardContent className="flex-1 flex flex-col gap-0 overflow-hidden p-0">
+        {/* Scrollable messages area */}
+        <ScrollArea className="flex-1 px-4 py-3" ref={scrollAreaRef}>
           <div className="space-y-3 pr-2">
             {messages.map((msg, idx) => (
               <div
@@ -372,34 +385,62 @@ function AiChatPanel({
                 className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="size-6 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="size-3.5 text-violet-600 dark:text-violet-400" />
+                  <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="size-4 text-violet-600 dark:text-violet-400" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                 </div>
               </div>
             ))}
             {isSending && (
               <div className="flex gap-2 justify-start">
-                <div className="size-6 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
-                  <Bot className="size-3.5 text-violet-600 dark:text-violet-400" />
+                <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                  <Bot className="size-4 text-violet-600 dark:text-violet-400" />
                 </div>
-                <div className="bg-muted rounded-lg px-3 py-2">
-                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                <div className="bg-muted rounded-xl px-3.5 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Thinking...</span>
+                  </div>
                 </div>
               </div>
             )}
+            {/* Invisible element to scroll to */}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        <div className="flex gap-2 shrink-0">
+
+        {/* Quick actions */}
+        {messages.length <= 1 && !isSending && (
+          <div className="px-4 pb-2 shrink-0">
+            <p className="text-[11px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Quick Actions</p>
+            <div className="flex flex-wrap gap-1.5">
+              {quickActions.map((action) => (
+                <Button
+                  key={action.label}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7 gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+                  onClick={() => handleSend(action.message)}
+                >
+                  <Sparkles className="size-3" />
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input area */}
+        <div className="flex gap-2 shrink-0 p-4 pt-2 border-t bg-card">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -413,7 +454,7 @@ function AiChatPanel({
             className="flex-1"
             disabled={isSending}
           />
-          <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
+          <Button size="icon" onClick={() => handleSend()} disabled={isSending || !input.trim()}>
             <Send className="size-4" />
           </Button>
         </div>
