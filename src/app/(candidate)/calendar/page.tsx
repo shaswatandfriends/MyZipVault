@@ -376,26 +376,20 @@ export default function CalendarPage() {
 
     try {
       const res = await fetch("/api/candidate/calendar/availability", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slots: [{
-            dayOfWeek: null,
-            specificDate: null,
-            startTime: null,
-            endTime: null,
-            isAvailable: true,
-            isRecurring: false,
-            label: null,
-          }],
           availabilityStatus: nextStatus,
         }),
       });
-      if (!res.ok) throw new Error("Failed to update status");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update status");
+      }
       setAvailabilityStatus(nextStatus);
       toast.success(`Status updated to ${STATUS_CONFIG[nextStatus].label}`);
-    } catch {
-      toast.error("Failed to update availability status");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update availability status");
     }
   };
 
@@ -441,11 +435,14 @@ export default function CalendarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      if (!res.ok) throw new Error("Failed to delete slot");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to delete slot");
+      }
       toast.success("Slot removed");
       fetchAvailability();
-    } catch {
-      toast.error("Failed to remove slot");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove slot");
     }
   };
 
@@ -519,27 +516,21 @@ export default function CalendarPage() {
     setIsSavingPrefs(true);
     try {
       const res = await fetch("/api/candidate/calendar/availability", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slots: [{
-            dayOfWeek: null,
-            specificDate: null,
-            startTime: null,
-            endTime: null,
-            isAvailable: true,
-            isRecurring: false,
-            label: null,
-          }],
           minNoticeHours,
           shiftDurationPref,
         }),
       });
-      if (!res.ok) throw new Error("Failed to save preferences");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to save preferences");
+      }
       toast.success("Preferences saved");
       fetchAvailability();
-    } catch {
-      toast.error("Failed to save preferences");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save preferences");
     } finally {
       setIsSavingPrefs(false);
     }
