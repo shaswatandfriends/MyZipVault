@@ -194,8 +194,10 @@ function NotificationBell() {
 
   const markAllRead = async () => {
     try {
-      await fetch("/api/candidate/notifications/mark-read", {
+      await fetch("/api/candidate/notifications", {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markAllRead: true }),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch {
