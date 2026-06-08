@@ -16,15 +16,19 @@ const trustPoints = [
   "100% Free for Nurses",
 ];
 
-type VerifyState = "idle" | "verifying" | "success" | "error" | "resend" | "resend_success";
+type VerifyState = "idle" | "verifying" | "success" | "error" | "resend" | "resend_success" | "signup_success";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const emailParam = searchParams.get("email");
+  const isSignup = searchParams.get("signup") === "true";
 
-  const [state, setState] = useState<VerifyState>(token ? "verifying" : "idle");
+  const [state, setState] = useState<VerifyState>(
+    token ? "verifying" : isSignup ? "signup_success" : "idle"
+  );
   const [errorMessage, setErrorMessage] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailParam || "");
   const [emailError, setEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
 
@@ -266,6 +270,43 @@ function VerifyEmailContent() {
                 Back to Sign In
               </Button>
             </Link>
+          </>
+        );
+
+      case "signup_success":
+        return (
+          <>
+            <div className="flex items-center justify-center w-16 h-16 bg-[#CCFBF1] rounded-2xl mb-6">
+              <Mail className="size-8 text-[#0D9488]" />
+            </div>
+            <h1
+              style={{ fontFamily: "'Clash Display', sans-serif" }}
+              className="text-[36px] font-bold text-[#111827] leading-tight"
+            >
+              Check your email
+            </h1>
+            <p className="text-[#6B7280] text-base mt-2 mb-4">
+              We&apos;ve sent a verification link to{emailParam ? <strong className="text-[#111827]"> {emailParam}</strong> : " your email address"}. Please check your inbox and spam folder.
+            </p>
+            <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-4 mb-8">
+              <p className="text-sm text-[#6B7280] leading-relaxed">
+                Click the link in the email to verify your account, then sign in. The link expires in 24 hours.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => setState("resend")}
+                variant="outline"
+                className="w-full py-3.5 rounded-xl font-medium border-[#E5E7EB] hover:bg-[#F3F4F6] transition-all"
+              >
+                Resend Verification Email
+              </Button>
+              <Link href="/login" className="block">
+                <Button className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all">
+                  Back to Sign In
+                </Button>
+              </Link>
+            </div>
           </>
         );
 

@@ -475,6 +475,7 @@ export default function CandidateReferencesPage() {
           {references.map((ref) => {
             const isCompleted = ref.status === "completed";
             const isPending = ref.status === "pending_request";
+            const isExpired = ref.status === "expired";
             const isExpanded = expandedRef === ref.id;
             const managerName = ref.manager_user
               ? `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email
@@ -490,6 +491,8 @@ export default function CandidateReferencesPage() {
                           ? "bg-emerald-100 dark:bg-emerald-900/30"
                           : ref.status === "cancelled"
                           ? "bg-gray-100 dark:bg-gray-800/30"
+                          : isExpired
+                          ? "bg-red-100 dark:bg-red-900/30"
                           : "bg-primary/10"
                       }`}
                     >
@@ -499,6 +502,8 @@ export default function CandidateReferencesPage() {
                             ? "text-emerald-600 dark:text-emerald-400"
                             : ref.status === "cancelled"
                             ? "text-gray-500 dark:text-gray-400"
+                            : isExpired
+                            ? "text-red-600 dark:text-red-400"
                             : "text-primary"
                         }`}
                       />
@@ -578,6 +583,26 @@ export default function CandidateReferencesPage() {
                         </div>
                       )}
 
+                      {/* Action buttons for expired references */}
+                      {isExpired && (
+                        <div className="flex items-center gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-7 text-xs"
+                            disabled={resendingId === ref.id}
+                            onClick={() => handleResend(ref.id)}
+                          >
+                            {resendingId === ref.id ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <RefreshCw className="size-3" />
+                            )}
+                            Re-request
+                          </Button>
+                        </div>
+                      )}
+
                       {/* View details button for completed references */}
                       {isCompleted && ref.reference_responses?.length > 0 && (
                         <div className="mt-3">
@@ -619,8 +644,8 @@ export default function CandidateReferencesPage() {
                         </div>
                       )}
 
-                      {/* Delete Reference Request button — for completed or cancelled references */}
-                      {(isCompleted || ref.status === "cancelled") && !isPending && (
+                      {/* Delete Reference Request button — for completed, cancelled, or expired references */}
+                      {(isCompleted || ref.status === "cancelled" || isExpired) && !isPending && (
                         <div className="mt-3 pt-3 border-t">
                           {pendingDeletionRequests.has(ref.id) ? (
                             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
@@ -680,7 +705,7 @@ export default function CandidateReferencesPage() {
                     {selectedRef.facility_name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Status: {selectedRef.status === "completed" ? "Completed" : "Cancelled"}
+                    Status: {selectedRef.status === "completed" ? "Completed" : selectedRef.status === "expired" ? "Expired" : "Cancelled"}
                   </p>
                 </div>
               );

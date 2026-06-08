@@ -41,17 +41,20 @@ export async function POST(request: Request) {
       );
     }
 
-    if (reference.status !== "pending_request") {
+    if (reference.status !== "pending_request" && reference.status !== "expired") {
       return NextResponse.json(
-        { error: "Only pending references can be resent" },
+        { error: "Only pending or expired references can be resent" },
         { status: 400 }
       );
     }
 
-    // Update the requested_at timestamp to now
+    // Update the requested_at timestamp and reset status to pending_request (for expired refs)
     const updated = await db.candidateReference.update({
       where: { id: referenceId },
-      data: { requested_at: new Date() },
+      data: {
+        requested_at: new Date(),
+        ...(reference.status === "expired" ? { status: "pending_request" } : {}),
+      },
     });
 
     // Create notification about the resend

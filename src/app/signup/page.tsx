@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Check, X } from "@/lib/icons";
@@ -88,25 +87,11 @@ export default function SignupPage() {
         return;
       }
 
-      // Auto sign in after signup
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      // Redirect to verify-email page so user knows to check their inbox
+      toast.success("Account created!", {
+        description: "Please check your email to verify your account.",
       });
-
-      if (result?.error) {
-        toast.success("Account created!", {
-          description: "Please sign in with your new credentials.",
-        });
-        router.push("/login?registered=true");
-      } else {
-        toast.success("Welcome to MyZipVault!", {
-          description: "Your account has been created successfully.",
-        });
-        router.push("/dashboard");
-        router.refresh();
-      }
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&signup=true`);
     } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
