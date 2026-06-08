@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
       orderBy: { created_at: "desc" },
       include: {
         users: {
-          select: { id: true, role: true, account_status: true },
+          select: { id: true, email: true, first_name: true, last_name: true, role: true, account_status: true },
         },
         credit_transactions: {
           orderBy: { created_at: "desc" },
@@ -44,6 +45,16 @@ export async function GET() {
           seatsUsed,
           customPricingNotes: org.custom_pricing_notes,
           createdAt: org.created_at,
+          members: org.users
+            .filter((u) => u.role === "client_recruiter" || u.role === "client_admin")
+          .map((u) => ({
+            id: u.id,
+            email: u.email,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            role: u.role,
+            accountStatus: u.account_status,
+          })),
           transactions: org.credit_transactions.map((t) => ({
             id: t.id,
             transactionType: t.transaction_type,
@@ -239,6 +250,120 @@ export async function POST(request: Request) {
           },
         });
         return NextResponse.json({ success: true });
+      }
+      case "add-recruiter": {
+        const { organizationId, email, firstName, lastName, role: memberRole } = body;
+        if (!organizationId || !email || !firstName || !lastName) {
+          return NextResponse.json(
+            { error: "Organization ID, email, first name, and last name are required" },
+            { status: 400 }
+          );
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        }
+        const targetRole = memberRole === "client_admin" ? "client_admin" : "client_recruiter";
+
+        // Check seat limit
+        const org = await db.organization.findUnique({
+          where: { id: organizationId },
+          select: { seat_limit: true, name: true },
+        });
+        if (!org) {
+          return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+        }
+        const currentMembers = await db.user.count({
+          where: {
+            organization_id: organizationId,
+            role: { in: ["client_recruiter", "client_admin"] },
+            account_status: "active",
+          },
+        });
+        if (currentMembers >= org.seat_limit) {
+          return NextResponse.json(
+            { error: `Seat limit reached (${org.seat_limit}/${org.seat_limit}). Increase the seat limit first.` },
+            { status: 400 }
+          );
+        }
+
+        // Enforce single admin rule
+        if (targetRole === "client_admin") {
+          const existingAdmin = await db.user.findFirst({
+            where: {
+              organization_id: organizationId,
+              role: "client_admin",
+              account_status: "active",
+            },
+          });
+          if (existingAdmin) {
+            return NextResponse.json(
+              { error: "This organization already has an admin. Only one admin is allowed per company." },
+              { status: 400 }
+            );
+          }
+        }
+
+        // Check duplicate email
+        const existingUser = await db.user.findUnique({ where: { email } });
+        if (existingUser) {
+          return NextResponse.json(
+            { error: "A user with this email already exists" },
+            { status: 400 }
+          );
+        }
+
+        // Generate random password
+        const bcrypt = await import("bcryptjs");
+        const rawPassword = Math.random().toString(36).slice(-10) + "Aa1!";
+        const hashedPassword = await bcrypt.hash(rawPassword, 12);
+
+        const newUser = await db.user.create({
+          data: {
+            email,
+            password_hash: hashedPassword,
+            role: targetRole,
+            organization_id: organizationId,
+            is_approved: true,
+            first_name: firstName,
+            last_name: lastName,
+            must_change_pass: true,
+            account_status: "active",
+          },
+        });
+
+        // Create invite token
+        await db.inviteToken.create({
+          data: {
+            token: uuidv4(),
+            email,
+            role: targetRole,
+            token_type: "recruiter_invite",
+            invited_by: actionerId,
+            organization_id: organizationId,
+            is_used: false,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+
+        // Audit log
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "add_recruiter",
+            entity_type: "user",
+            entity_id: newUser.id,
+            details: `Added ${targetRole === "client_admin" ? "admin" : "recruiter"} ${firstName} ${lastName} (${email}) to organization ${org.name}`,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `${targetRole === "client_admin" ? "Admin" : "Recruiter"} added successfully`,
+          userId: newUser.id,
+          password: rawPassword,
+        });
       }
       case "delete": {
         const { organizationId } = body;

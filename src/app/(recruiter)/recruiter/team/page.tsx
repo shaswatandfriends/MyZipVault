@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   CreditCard,
   Send,
+  Copy,
+  Check,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -37,6 +39,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ActivityItem {
@@ -131,10 +140,13 @@ export default function RecruiterTeamPage() {
 
   // Add recruiter dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addRole, setAddRole] = useState("client_recruiter");
   const [addFirstName, setAddFirstName] = useState("");
   const [addLastName, setAddLastName] = useState("");
   const [addEmail, setAddEmail] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [addResult, setAddResult] = useState<{ password: string; role: string } | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   // Change email dialog
   const [changeEmailDialogOpen, setChangeEmailDialogOpen] = useState(false);
@@ -182,6 +194,7 @@ export default function RecruiterTeamPage() {
           firstName: addFirstName.trim(),
           lastName: addLastName.trim(),
           email: addEmail.trim(),
+          role: addRole,
         }),
       });
 
@@ -190,19 +203,22 @@ export default function RecruiterTeamPage() {
         throw new Error(body.error || "Failed to add recruiter");
       }
 
-      toast.success("Invitation sent", {
-        description: `An invitation has been sent to ${addEmail.trim()}.`,
-      });
-      setAddFirstName("");
-      setAddLastName("");
-      setAddEmail("");
-      setAddDialogOpen(false);
+      const result = await res.json();
+      setAddResult({ password: result.password, role: addRole });
       await fetchTeam();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       toast.error("Failed to add recruiter", { description: message });
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const copyPassword = () => {
+    if (addResult?.password) {
+      navigator.clipboard.writeText(addResult.password);
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
     }
   };
 
@@ -257,89 +273,169 @@ export default function RecruiterTeamPage() {
         title="Team Management"
         description="Manage your organization's recruiter seats and team members."
         actions={
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+          <Dialog open={addDialogOpen} onOpenChange={(open) => {
+            if (!open) setAddResult(null);
+            setAddDialogOpen(open);
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
                 <UserPlus className="size-4" />
-                Add Recruiter
+                Add Member
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Recruiter</DialogTitle>
+                <DialogTitle>
+                  {addResult ? "Member Added Successfully" : "Add New Member"}
+                </DialogTitle>
                 <DialogDescription>
-                  Send an invitation to a new recruiter. They will receive an email to set up their account.
+                  {addResult
+                    ? "Share the credentials below with the new member."
+                    : "Add a recruiter or admin to your organization."}
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              {addResult ? (
+                /* ── Success Step ────────────────────────────────── */
+                <div className="space-y-4 py-2">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                    <p className="text-sm font-medium text-emerald-800">
+                      {addResult.role === "client_admin" ? "Admin" : "Recruiter"} account created
+                    </p>
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="text-sm font-mono bg-white rounded px-2 py-1 border">{addEmail}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Auto-generated Password</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-mono bg-white rounded px-2 py-1 border flex-1 break-all">
+                          {addResult.password}
+                        </p>
+                        <Button size="sm" variant="outline" className="shrink-0 gap-1" onClick={copyPassword}>
+                          {copiedPassword ? (
+                            <><Check className="size-3.5" /> Copied</>
+                          ) : (
+                            <><Copy className="size-3.5" /> Copy</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600">
+                    The member must change this password on first login.
+                  </p>
+                </div>
+              ) : (
+                /* ── Form Step ───────────────────────────────────── */
+                <div className="space-y-4 py-2">
+                  {/* Role selector */}
                   <div className="space-y-2">
-                    <Label htmlFor="addFirstName">
-                      First Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="addFirstName"
-                      placeholder="Jane"
-                      value={addFirstName}
-                      onChange={(e) => setAddFirstName(e.target.value)}
-                    />
+                    <Label>Role</Label>
+                    <Select value={addRole} onValueChange={setAddRole}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="client_recruiter">Recruiter</SelectItem>
+                        <SelectItem value="client_admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {addRole === "client_admin" && (
+                      <p className="text-xs text-amber-600">
+                        Only one admin is allowed per company.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="addFirstName">
+                        First Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="addFirstName"
+                        placeholder="Jane"
+                        value={addFirstName}
+                        onChange={(e) => setAddFirstName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addLastName">
+                        Last Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="addLastName"
+                        placeholder="Doe"
+                        value={addLastName}
+                        onChange={(e) => setAddLastName(e.target.value)}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="addLastName">
-                      Last Name <span className="text-destructive">*</span>
+                    <Label htmlFor="addEmail">
+                      Email <span className="text-destructive">*</span>
                     </Label>
-                    <Input
-                      id="addLastName"
-                      placeholder="Doe"
-                      value={addLastName}
-                      onChange={(e) => setAddLastName(e.target.value)}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="addEmail"
+                        type="email"
+                        placeholder="jane.doe@example.com"
+                        value={addEmail}
+                        onChange={(e) => setAddEmail(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="addEmail">
-                    Email <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="addEmail"
-                      type="email"
-                      placeholder="jane.doe@example.com"
-                      value={addEmail}
-                      onChange={(e) => setAddEmail(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
+
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setAddDialogOpen(false)}
-                  disabled={isAdding}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={
-                    !addFirstName.trim() || !addLastName.trim() || !addEmail.trim() || isAdding
-                  }
-                  onClick={handleAddRecruiter}
-                >
-                  {isAdding ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="size-4" />
-                      Send Invite
-                    </>
-                  )}
-                </Button>
+                {addResult ? (
+                  <Button
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => {
+                      setAddDialogOpen(false);
+                      setAddResult(null);
+                      setAddFirstName("");
+                      setAddLastName("");
+                      setAddEmail("");
+                      setAddRole("client_recruiter");
+                    }}
+                  >
+                    Done
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setAddDialogOpen(false)}
+                      disabled={isAdding}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      disabled={
+                        !addFirstName.trim() || !addLastName.trim() || !addEmail.trim() || isAdding
+                      }
+                      onClick={handleAddRecruiter}
+                    >
+                      {isAdding ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="size-4" />
+                          Add Member
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>

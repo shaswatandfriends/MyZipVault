@@ -13,6 +13,10 @@ import {
   Trash2,
   Mail,
   Settings2,
+  UserPlus,
+  ShieldCheck,
+  Copy,
+  Check,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -72,6 +76,15 @@ interface Transaction {
   createdAt: string;
 }
 
+interface Member {
+  id: number;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  accountStatus: string;
+}
+
 interface Company {
   id: number;
   name: string;
@@ -83,6 +96,7 @@ interface Company {
   seatsUsed: number;
   customPricingNotes: string | null;
   createdAt: string;
+  members: Member[];
   transactions: Transaction[];
 }
 
@@ -180,6 +194,16 @@ export default function SuperadminCompaniesPage() {
   // Swap email form
   const [swapUserId, setSwapUserId] = useState("");
   const [swapNewEmail, setSwapNewEmail] = useState("");
+
+  // Add Recruiter form
+  const [showAddRecruiterDialog, setShowAddRecruiterDialog] = useState(false);
+  const [addRecruiterCompany, setAddRecruiterCompany] = useState<Company | null>(null);
+  const [addRecruiterRole, setAddRecruiterRole] = useState("client_recruiter");
+  const [addRecruiterFirstName, setAddRecruiterFirstName] = useState("");
+  const [addRecruiterLastName, setAddRecruiterLastName] = useState("");
+  const [addRecruiterEmail, setAddRecruiterEmail] = useState("");
+  const [addRecruiterResult, setAddRecruiterResult] = useState<{ password: string; role: string } | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   const fetchCompanies = useCallback(async () => {
     try {
@@ -353,6 +377,40 @@ export default function SuperadminCompaniesPage() {
     setShowBaaDialog(true);
   };
 
+  const openAddRecruiterDialog = (company: Company) => {
+    setAddRecruiterCompany(company);
+    setAddRecruiterRole("client_recruiter");
+    setAddRecruiterFirstName("");
+    setAddRecruiterLastName("");
+    setAddRecruiterEmail("");
+    setAddRecruiterResult(null);
+    setCopiedPassword(false);
+    setShowAddRecruiterDialog(true);
+  };
+
+  const handleAddRecruiter = async () => {
+    if (!addRecruiterCompany) return;
+    const result = await postAction({
+      action: "add-recruiter",
+      organizationId: addRecruiterCompany.id,
+      email: addRecruiterEmail.trim(),
+      firstName: addRecruiterFirstName.trim(),
+      lastName: addRecruiterLastName.trim(),
+      role: addRecruiterRole,
+    });
+    if (result?.success) {
+      setAddRecruiterResult({ password: result.password, role: addRecruiterRole });
+    }
+  };
+
+  const copyPassword = () => {
+    if (addRecruiterResult?.password) {
+      navigator.clipboard.writeText(addRecruiterResult.password);
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -445,6 +503,16 @@ export default function SuperadminCompaniesPage() {
                         <Button variant="outline" size="sm" onClick={() => openSeatDialog(company)}>
                           <Users className="size-3.5" />
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
+                          onClick={() => openAddRecruiterDialog(company)}
+                          disabled={company.seatsUsed >= company.seatLimit}
+                          title={company.seatsUsed >= company.seatLimit ? "Seat limit reached" : "Add Recruiter"}
+                        >
+                          <UserPlus className="size-3.5" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => setShowSwapDialog(true)}>
                           <Mail className="size-3.5" />
                         </Button>
@@ -476,9 +544,90 @@ export default function SuperadminCompaniesPage() {
                     </div>
                   </div>
 
-                  {/* ── Expanded Transaction Ledger ──────────────────── */}
+                  {/* ── Expanded: Members + Transaction Ledger ─────────── */}
                   {expandedCompany === company.id && (
-                    <div className="pb-4 px-2">
+                    <div className="pb-4 px-2 space-y-4">
+                      {/* Members Section */}
+                      <Card className="bg-muted/30">
+                        <CardHeader className="py-3 flex-row items-center justify-between">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Users className="size-4 text-teal-600" />
+                            Team Members ({company.seatsUsed}/{company.seatLimit} seats)
+                          </CardTitle>
+                          <Button
+                            size="sm"
+                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
+                            onClick={() => openAddRecruiterDialog(company)}
+                            disabled={company.seatsUsed >= company.seatLimit}
+                          >
+                            <UserPlus className="size-3.5" />
+                            Add
+                          </Button>
+                        </CardHeader>
+                        <CardContent>
+                          {company.members.length === 0 ? (
+                            <div className="text-center py-6">
+                              <Users className="size-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">No team members yet</p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-3 gap-1.5 text-xs"
+                                onClick={() => openAddRecruiterDialog(company)}
+                              >
+                                <UserPlus className="size-3.5" />
+                                Add First Member
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {company.members.map((member) => {
+                                const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+                                const initials = (member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0];
+                                return (
+                                  <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
+                                        {initials.toUpperCase()}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium truncate">{fullName}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {member.role === "client_admin" ? (
+                                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
+                                          <ShieldCheck className="size-3" />
+                                          Admin
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">
+                                          Recruiter
+                                        </Badge>
+                                      )}
+                                      {member.accountStatus !== "active" && (
+                                        <Badge variant="outline" className="text-xs">{member.accountStatus}</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {/* Empty seat indicators */}
+                              {Array.from({ length: Math.max(0, company.seatLimit - company.members.length) }).map((_, i) => (
+                                <div key={`empty-${i}`} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-dashed opacity-50">
+                                  <div className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground shrink-0">
+                                    <Users className="size-4" />
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">Empty Seat</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Transaction Ledger */}
                       <Card className="bg-muted/30">
                         <CardHeader className="py-3">
                           <CardTitle className="text-sm">Credit Transaction Ledger</CardTitle>
@@ -703,6 +852,162 @@ export default function SuperadminCompaniesPage() {
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSwapEmail} disabled={actionLoading || !swapUserId || !swapNewEmail}>
               {actionLoading ? "Processing…" : "Swap Email"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Recruiter Dialog ─────────────────────────────────────── */}
+      <Dialog open={showAddRecruiterDialog} onOpenChange={(open) => {
+        if (!open) setAddRecruiterResult(null);
+        setShowAddRecruiterDialog(open);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {addRecruiterResult ? "Member Added Successfully" : `Add Member — ${addRecruiterCompany?.name}`}
+            </DialogTitle>
+            <DialogDescription>
+              {addRecruiterResult
+                ? "Share the credentials below with the new member."
+                : `Current: ${addRecruiterCompany?.seatsUsed ?? 0}/${addRecruiterCompany?.seatLimit ?? 5} seats used`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {addRecruiterResult ? (
+            /* ── Success Step ────────────────────────────────────── */
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                <p className="text-sm font-medium text-emerald-800">
+                  {addRecruiterResult.role === "client_admin" ? "Admin" : "Recruiter"} account created
+                </p>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm font-mono bg-white rounded px-2 py-1 border">{addRecruiterEmail}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Auto-generated Password</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono bg-white rounded px-2 py-1 border flex-1 break-all">
+                      {addRecruiterResult.password}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 gap-1"
+                      onClick={copyPassword}
+                    >
+                      {copiedPassword ? (
+                        <><Check className="size-3.5" /> Copied</>
+                      ) : (
+                        <><Copy className="size-3.5" /> Copy</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-amber-600">
+                The member must change this password on first login.
+              </p>
+            </div>
+          ) : (
+            /* ── Form Step ───────────────────────────────────────── */
+            <div className="space-y-4 py-2">
+              {/* Seat info banner */}
+              <div className="rounded-lg border bg-muted/50 px-3 py-2 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Seats</span>
+                <span className="font-medium">
+                  {addRecruiterCompany?.seatsUsed ?? 0}/{addRecruiterCompany?.seatLimit ?? 5} used
+                  <span className="text-muted-foreground ml-1.5">
+                    ({Math.max(0, (addRecruiterCompany?.seatLimit ?? 5) - (addRecruiterCompany?.seatsUsed ?? 0))} available)
+                  </span>
+                </span>
+              </div>
+
+              {/* Role selector */}
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select value={addRecruiterRole} onValueChange={setAddRecruiterRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client_recruiter">Recruiter</SelectItem>
+                    <SelectItem value="client_admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                {addRecruiterRole === "client_admin" && (
+                  <p className="text-xs text-amber-600">
+                    Only one admin is allowed per company.
+                  </p>
+                )}
+              </div>
+
+              {/* Name fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>First Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={addRecruiterFirstName}
+                    onChange={(e) => setAddRecruiterFirstName(e.target.value)}
+                    placeholder="Jane"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={addRecruiterLastName}
+                    onChange={(e) => setAddRecruiterLastName(e.target.value)}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label>Email <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={addRecruiterEmail}
+                    onChange={(e) => setAddRecruiterEmail(e.target.value)}
+                    placeholder="jane.doe@example.com"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            {addRecruiterResult ? (
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => {
+                  setShowAddRecruiterDialog(false);
+                  setAddRecruiterResult(null);
+                }}
+              >
+                Done
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setShowAddRecruiterDialog(false)}>Cancel</Button>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                  onClick={handleAddRecruiter}
+                  disabled={
+                    actionLoading ||
+                    !addRecruiterFirstName.trim() ||
+                    !addRecruiterLastName.trim() ||
+                    !addRecruiterEmail.trim()
+                  }
+                >
+                  <UserPlus className="size-3.5" />
+                  {actionLoading ? "Adding..." : "Add Member"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

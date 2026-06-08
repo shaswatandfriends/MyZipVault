@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, email, firstName, lastName, seatUserId } = body;
+    const { action, email, firstName, lastName, seatUserId, role: memberRole } = body;
 
     if (action === "add_recruiter") {
       if (!email || !firstName || !lastName) {
@@ -157,6 +157,7 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+      const targetRole = memberRole === "client_admin" ? "client_admin" : "client_recruiter";
 
       // Check seat limit
       const org = await db.organization.findUnique({
@@ -179,6 +180,23 @@ export async function POST(request: Request) {
         );
       }
 
+      // Enforce single admin rule
+      if (targetRole === "client_admin") {
+        const existingAdmin = await db.user.findFirst({
+          where: {
+            organization_id: organizationId,
+            role: "client_admin",
+            account_status: "active",
+          },
+        });
+        if (existingAdmin) {
+          return NextResponse.json(
+            { error: "This organization already has an admin. Only one admin is allowed per company." },
+            { status: 400 }
+          );
+        }
+      }
+
       // Check if email already exists
       const existingUser = await db.user.findUnique({
         where: { email },
@@ -191,15 +209,16 @@ export async function POST(request: Request) {
         );
       }
 
-      // Create recruiter user
+      // Create user with selected role
       const bcrypt = await import("bcryptjs");
-      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 12);
+      const rawPassword = Math.random().toString(36).slice(-10) + "Aa1!";
+      const tempPassword = await bcrypt.hash(rawPassword, 12);
 
       const newUser = await db.user.create({
         data: {
           email,
           password_hash: tempPassword,
-          role: "client_recruiter",
+          role: targetRole,
           organization_id: organizationId,
           is_approved: true,
           first_name: firstName,
@@ -213,7 +232,7 @@ export async function POST(request: Request) {
         data: {
           token: uuidv4(),
           email,
-          role: "client_recruiter",
+          role: targetRole,
           token_type: "recruiter_invite",
           invited_by: userId,
           organization_id: organizationId,
@@ -226,6 +245,7 @@ export async function POST(request: Request) {
         success: true,
         message: `Invitation sent to ${firstName} ${lastName} at ${email}`,
         userId: newUser.id,
+        password: rawPassword,
       }, { status: 201 });
     }
 
