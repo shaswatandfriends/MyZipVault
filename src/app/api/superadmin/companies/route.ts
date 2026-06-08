@@ -44,6 +44,7 @@ export async function GET() {
           seatLimit: org.seat_limit,
           seatsUsed,
           customPricingNotes: org.custom_pricing_notes,
+          accountStatus: org.account_status,
           createdAt: org.created_at,
           members: org.users
             .filter((u) => u.role === "client_recruiter" || u.role === "client_admin")
@@ -357,7 +358,6 @@ export async function POST(request: Request) {
             action: "add_recruiter",
             entity_type: "user",
             entity_id: newUser.id,
-            details: `Added ${targetRole === "client_admin" ? "admin" : "recruiter"} ${firstName} ${lastName} (${email}) to organization ${org.name}`,
           },
         });
 
@@ -397,7 +397,6 @@ export async function POST(request: Request) {
             action: "reset_password",
             entity_type: "user",
             entity_id: targetUserId,
-            details: `Password reset for ${targetUser.email}`,
           },
         });
         return NextResponse.json({
@@ -446,7 +445,6 @@ export async function POST(request: Request) {
             action: "change_member_role",
             entity_type: "user",
             entity_id: roleUserId,
-            details: `Changed role of ${roleUser.email} from ${roleUser.role} to ${newRole}`,
           },
         });
         return NextResponse.json({
@@ -480,7 +478,6 @@ export async function POST(request: Request) {
             action: "suspend_member",
             entity_type: "user",
             entity_id: suspendUserId,
-            details: `Suspended member ${suspendUser.email}`,
           },
         });
         return NextResponse.json({
@@ -534,13 +531,68 @@ export async function POST(request: Request) {
             action: "activate_member",
             entity_type: "user",
             entity_id: activateUserId,
-            details: `Activated member ${activateUser.email}`,
           },
         });
         return NextResponse.json({
           success: true,
           message: `Member ${activateUser.email} activated successfully`,
         });
+      }
+      case "set-company-status": {
+        const { organizationId: statusOrgId, accountStatus } = body;
+        if (!statusOrgId || !accountStatus) {
+          return NextResponse.json({ error: "Organization ID and account status are required" }, { status: 400 });
+        }
+        if (!["active", "suspended", "pending"].includes(accountStatus)) {
+          return NextResponse.json({ error: "Invalid status. Must be active, suspended, or pending" }, { status: 400 });
+        }
+        const statusOrg = await db.organization.findUnique({ where: { id: statusOrgId } });
+        if (!statusOrg) {
+          return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+        }
+        await db.organization.update({
+          where: { id: statusOrgId },
+          data: { account_status: accountStatus },
+        });
+        // If suspending company, also suspend all its active members
+        if (accountStatus === "suspended") {
+          await db.user.updateMany({
+            where: {
+              organization_id: statusOrgId,
+              role: { in: ["client_recruiter", "client_admin"] },
+              account_status: "active",
+            },
+            data: { account_status: "suspended" },
+          });
+        }
+        // If activating company, reactivate members up to seat limit
+        if (accountStatus === "active" && statusOrg.account_status === "suspended") {
+          const memberIds = await db.user.findMany({
+            where: {
+              organization_id: statusOrgId,
+              role: { in: ["client_recruiter", "client_admin"] },
+              account_status: "suspended",
+            },
+            select: { id: true },
+            take: statusOrg.seat_limit,
+          });
+          if (memberIds.length > 0) {
+            await db.user.updateMany({
+              where: { id: { in: memberIds.map((m) => m.id) } },
+              data: { account_status: "active" },
+            });
+          }
+        }
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "set_company_status",
+            entity_type: "organization",
+            entity_id: statusOrgId,
+          },
+        });
+        return NextResponse.json({ success: true, message: `Company status updated to ${accountStatus}` });
       }
       case "delete": {
         const { organizationId } = body;

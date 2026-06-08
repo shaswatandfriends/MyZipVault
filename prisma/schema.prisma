@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider  = "sqlite"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // ─── 1. Organizations ────────────────────────────────────────────────
@@ -20,6 +19,7 @@ model Organization {
   baa_signed_at       DateTime?
   seat_limit          Int                  @default(5)
   custom_pricing_notes String?
+  account_status      String               @default("active")
   created_at          DateTime             @default(now())
 
   users               User[]

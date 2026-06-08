@@ -127,6 +127,7 @@ interface Company {
   seatLimit: number;
   seatsUsed: number;
   customPricingNotes: string | null;
+  accountStatus: string;
   createdAt: string;
   members: Member[];
   transactions: Transaction[];
@@ -194,6 +195,19 @@ function getAccountStatusBadge(status: string) {
       return <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 text-[10px]">Pending</Badge>;
     default:
       return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+  }
+}
+
+function getCompanyStatusBadge(status: string) {
+  switch (status) {
+    case "active":
+      return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Active</Badge>;
+    case "suspended":
+      return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Suspended</Badge>;
+    case "pending":
+      return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Pending</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
   }
 }
 
@@ -309,10 +323,21 @@ export default function SuperadminCompaniesPage() {
   const [suspendMember, setSuspendMember] = useState<Member | null>(null);
   const [suspendAction, setSuspendAction] = useState<"suspend" | "activate">("suspend");
 
-  // ── Computed: Filtered companies ─────────────────────────────────
+  // Company Status dialog
+  const [showCompanyStatusDialog, setShowCompanyStatusDialog] = useState(false);
+  const [companyStatusNew, setCompanyStatusNew] = useState("active");
+
+  // Sort state
+  const [sortBy, setSortBy] = useState<"name" | "credits" | "seats" | "created">("created");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Filter by company status
+  const [filterCompanyStatus, setFilterCompanyStatus] = useState("all");
+
+  // ── Computed: Filtered & sorted companies ─────────────────────────
   const filteredCompanies = useMemo(() => {
     if (!data?.companies) return [];
-    return data.companies.filter((company) => {
+    const filtered = data.companies.filter((company) => {
       const matchesSearch = !searchQuery ||
         company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         company.members.some(
@@ -321,13 +346,26 @@ export default function SuperadminCompaniesPage() {
             getMemberFullName(m).toLowerCase().includes(searchQuery.toLowerCase())
         );
       const matchesBaa = filterBaaStatus === "all" || company.baaStatus === filterBaaStatus;
-      return matchesSearch && matchesBaa;
+      const matchesCompanyStatus = filterCompanyStatus === "all" || company.accountStatus === filterCompanyStatus;
+      return matchesSearch && matchesBaa && matchesCompanyStatus;
     });
-  }, [data, searchQuery, filterBaaStatus]);
+    // Sort
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortBy) {
+        case "name": cmp = a.name.localeCompare(b.name); break;
+        case "credits": cmp = a.creditsBalance - b.creditsBalance; break;
+        case "seats": cmp = a.seatsUsed - b.seatsUsed; break;
+        case "created": cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return filtered;
+  }, [data, searchQuery, filterBaaStatus, filterCompanyStatus, sortBy, sortDir]);
 
   // ── Computed: Summary stats ──────────────────────────────────────
   const stats = useMemo(() => {
-    if (!data?.companies) return { total: 0, totalCredits: 0, totalSeats: 0, totalSeatsUsed: 0, signedBaa: 0, pendingBaa: 0 };
+    if (!data?.companies) return { total: 0, totalCredits: 0, totalSeats: 0, totalSeatsUsed: 0, signedBaa: 0, pendingBaa: 0, suspendedCompanies: 0, activeCompanies: 0 };
     const companies = data.companies;
     return {
       total: companies.length,
@@ -336,6 +374,8 @@ export default function SuperadminCompaniesPage() {
       totalSeatsUsed: companies.reduce((sum, c) => sum + c.seatsUsed, 0),
       signedBaa: companies.filter((c) => c.baaStatus === "signed").length,
       pendingBaa: companies.filter((c) => c.baaStatus === "pending").length,
+      suspendedCompanies: companies.filter((c) => c.accountStatus === "suspended").length,
+      activeCompanies: companies.filter((c) => c.accountStatus === "active").length,
     };
   }, [data]);
 
@@ -673,6 +713,25 @@ export default function SuperadminCompaniesPage() {
     }
   };
 
+  // ── Company Status ─────────────────────────────────────────────
+  const openCompanyStatusDialog = (company: Company) => {
+    setSelectedCompany(company);
+    setCompanyStatusNew(company.accountStatus === "suspended" ? "active" : company.accountStatus === "pending" ? "active" : "suspended");
+    setShowCompanyStatusDialog(true);
+  };
+
+  const handleSetCompanyStatus = async () => {
+    if (!selectedCompany) return;
+    const result = await postAction({
+      action: "set-company-status",
+      organizationId: selectedCompany.id,
+      accountStatus: companyStatusNew,
+    });
+    if (result?.success) {
+      setShowCompanyStatusDialog(false);
+    }
+  };
+
   // ── Tooltip wrapper for icon buttons ────────────────────────────
   function Tip({ label, children }: { label: string; children: React.ReactNode }) {
     return (
@@ -703,11 +762,11 @@ export default function SuperadminCompaniesPage() {
 
       {/* ── Summary Stats ─────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
       ) : data?.companies.length ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="border-l-4 border-l-teal-500">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -760,6 +819,19 @@ export default function SuperadminCompaniesPage() {
               </div>
             </CardContent>
           </Card>
+          <Card className={`border-l-4 ${stats.suspendedCompanies > 0 ? "border-l-red-500" : "border-l-gray-400"}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex size-10 items-center justify-center rounded-lg shrink-0 ${stats.suspendedCompanies > 0 ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-500"}`}>
+                  <Ban className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.suspendedCompanies}</p>
+                  <p className="text-xs text-muted-foreground">Suspended</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       ) : null}
 
@@ -775,9 +847,21 @@ export default function SuperadminCompaniesPage() {
               className="pl-9"
             />
           </div>
-          <Select value={filterBaaStatus} onValueChange={setFilterBaaStatus}>
-            <SelectTrigger className="w-[180px]">
+          <Select value={filterCompanyStatus} onValueChange={setFilterCompanyStatus}>
+            <SelectTrigger className="w-[170px]">
               <Filter className="size-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterBaaStatus} onValueChange={setFilterBaaStatus}>
+            <SelectTrigger className="w-[170px]">
+              <FileCheck className="size-4 mr-2 text-muted-foreground" />
               <SelectValue placeholder="BAA Status" />
             </SelectTrigger>
             <SelectContent>
@@ -787,6 +871,26 @@ export default function SuperadminCompaniesPage() {
               <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as "name" | "credits" | "seats" | "created")}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created">Date Created</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="credits">Credits</SelectItem>
+              <SelectItem value="seats">Seats Used</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-2"
+            onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
+            title={sortDir === "asc" ? "Ascending" : "Descending"}
+          >
+            <ChevronDown className={`size-4 transition-transform ${sortDir === "asc" ? "rotate-180" : ""}`} />
+          </Button>
         </div>
       ) : null}
 
@@ -838,7 +942,7 @@ export default function SuperadminCompaniesPage() {
               <p className="text-sm text-muted-foreground max-w-sm">
                 Try adjusting your search or filter criteria.
               </p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => { setSearchQuery(""); setFilterBaaStatus("all"); }}>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => { setSearchQuery(""); setFilterBaaStatus("all"); setFilterCompanyStatus("all"); }}>
                 Clear Filters
               </Button>
             </div>
@@ -875,6 +979,7 @@ export default function SuperadminCompaniesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                      {getCompanyStatusBadge(company.accountStatus)}
                       {getBaaBadge(company.baaStatus)}
                       <span className="text-xs text-muted-foreground">{formatDate(company.createdAt)}</span>
                       {/* ── Actions Dropdown ─────────────────────────────── */}
@@ -898,6 +1003,10 @@ export default function SuperadminCompaniesPage() {
                           <DropdownMenuItem onClick={() => openBaaDialog(company)}>
                             <FileCheck className="size-4 mr-2" />
                             Set BAA Status
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openCompanyStatusDialog(company)}>
+                            <ShieldCheck className="size-4 mr-2" />
+                            Set Company Status
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openSeatDialog(company)}>
                             <Users className="size-4 mr-2" />
@@ -1818,6 +1927,58 @@ export default function SuperadminCompaniesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Company Status Dialog ──────────────────────────────────── */}
+      <Dialog open={showCompanyStatusDialog} onOpenChange={setShowCompanyStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="size-5" />
+              Set Company Status
+            </DialogTitle>
+            <DialogDescription>
+              Change the status of {selectedCompany?.name}. Suspending a company will also suspend all its active members. Activating a suspended company will reactivate members up to the seat limit.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Building2 className="size-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{selectedCompany?.name}</p>
+                <p className="text-xs text-muted-foreground">Current: {selectedCompany?.accountStatus}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>New Status</Label>
+              <Select value={companyStatusNew} onValueChange={setCompanyStatusNew}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {companyStatusNew === "suspended" && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+                Warning: Suspending this company will also suspend all {selectedCompany?.seatsUsed} active members.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCompanyStatusDialog(false)}>Cancel</Button>
+            <Button
+              onClick={handleSetCompanyStatus}
+              disabled={actionLoading || companyStatusNew === selectedCompany?.accountStatus}
+              className={companyStatusNew === "suspended" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+            >
+              {actionLoading ? "Updating..." : `Set to ${companyStatusNew}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Delete Company Confirmation ──────────────────────────────── */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
