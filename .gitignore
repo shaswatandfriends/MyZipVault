@@ -58,5 +58,11 @@ server.log
 # Uploaded files (screenshots, etc.)
 /upload/
 
+# Credential files (never push secrets)
+download/vercel-env.txt
+download/*-env*
+download/*credentials*
+download/*secret*
+
 # Skills directory
 /skills/upload/
