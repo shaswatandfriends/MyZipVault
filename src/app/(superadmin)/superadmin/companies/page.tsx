@@ -61,11 +61,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Transaction {
@@ -544,130 +544,147 @@ export default function SuperadminCompaniesPage() {
                     </div>
                   </div>
 
-                  {/* ── Expanded: Members + Transaction Ledger ─────────── */}
+                  {/* ── Expanded: Tabs — Recruiter Management + Credit Transaction Ledger ── */}
                   {expandedCompany === company.id && (
-                    <div className="pb-4 px-2 space-y-4">
-                      {/* Members Section */}
-                      <Card className="bg-muted/30">
-                        <CardHeader className="py-3 flex-row items-center justify-between">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Users className="size-4 text-teal-600" />
-                            Team Members ({company.seatsUsed}/{company.seatLimit} seats)
-                          </CardTitle>
-                          <Button
-                            size="sm"
-                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
-                            onClick={() => openAddRecruiterDialog(company)}
-                            disabled={company.seatsUsed >= company.seatLimit}
-                          >
-                            <UserPlus className="size-3.5" />
-                            Add
-                          </Button>
-                        </CardHeader>
-                        <CardContent>
-                          {company.members.length === 0 ? (
-                            <div className="text-center py-6">
-                              <Users className="size-8 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">No team members yet</p>
+                    <div className="pb-4 px-2">
+                      <Tabs defaultValue="recruiters" className="w-full">
+                        <TabsList className="w-full grid grid-cols-2 mb-3">
+                          <TabsTrigger value="recruiters" className="gap-1.5 text-xs">
+                            <Users className="size-3.5" />
+                            Recruiter Management
+                          </TabsTrigger>
+                          <TabsTrigger value="ledger" className="gap-1.5 text-xs">
+                            <CreditCard className="size-3.5" />
+                            Credit Transaction Ledger
+                          </TabsTrigger>
+                        </TabsList>
+
+                        {/* ── Recruiter Management Tab ────────────────────── */}
+                        <TabsContent value="recruiters">
+                          <Card className="bg-muted/30">
+                            <CardHeader className="py-3 flex-row items-center justify-between">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <Users className="size-4 text-teal-600" />
+                                Team Members ({company.seatsUsed}/{company.seatLimit} seats)
+                              </CardTitle>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="mt-3 gap-1.5 text-xs"
+                                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
                                 onClick={() => openAddRecruiterDialog(company)}
+                                disabled={company.seatsUsed >= company.seatLimit}
                               >
                                 <UserPlus className="size-3.5" />
-                                Add First Member
+                                Add Member
                               </Button>
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {company.members.map((member) => {
-                                const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
-                                const initials = (member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0];
-                                return (
-                                  <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
-                                        {initials.toUpperCase()}
-                                      </div>
-                                      <div className="min-w-0">
-                                        <p className="text-sm font-medium truncate">{fullName}</p>
-                                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      {member.role === "client_admin" ? (
-                                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
-                                          <ShieldCheck className="size-3" />
-                                          Admin
-                                        </Badge>
-                                      ) : (
-                                        <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">
-                                          Recruiter
-                                        </Badge>
-                                      )}
-                                      {member.accountStatus !== "active" && (
-                                        <Badge variant="outline" className="text-xs">{member.accountStatus}</Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              {/* Empty seat indicators */}
-                              {Array.from({ length: Math.max(0, company.seatLimit - company.members.length) }).map((_, i) => (
-                                <div key={`empty-${i}`} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-dashed opacity-50">
-                                  <div className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground shrink-0">
-                                    <Users className="size-4" />
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">Empty Seat</p>
+                            </CardHeader>
+                            <CardContent>
+                              {company.members.length === 0 ? (
+                                <div className="text-center py-6">
+                                  <Users className="size-8 text-muted-foreground mx-auto mb-2" />
+                                  <p className="text-sm text-muted-foreground">No team members yet</p>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-3 gap-1.5 text-xs"
+                                    onClick={() => openAddRecruiterDialog(company)}
+                                  >
+                                    <UserPlus className="size-3.5" />
+                                    Add First Member
+                                  </Button>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Transaction Ledger */}
-                      <Card className="bg-muted/30">
-                        <CardHeader className="py-3">
-                          <CardTitle className="text-sm">Credit Transaction Ledger</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {company.transactions.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">No transactions yet</p>
-                          ) : (
-                            <div className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Date</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {company.transactions.map((tx) => (
-                                    <TableRow key={tx.id}>
-                                      <TableCell>{getTransactionTypeBadge(tx.transactionType)}</TableCell>
-                                      <TableCell className="font-medium">
-                                        {tx.transactionType === "purchase" ? "+" : "-"}
-                                        {tx.creditAmount}
-                                      </TableCell>
-                                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                        {tx.description}
-                                      </TableCell>
-                                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                        {formatDate(tx.createdAt)}
-                                      </TableCell>
-                                    </TableRow>
+                              ) : (
+                                <div className="space-y-2">
+                                  {company.members.map((member) => {
+                                    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+                                    const initials = (member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0];
+                                    return (
+                                      <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
+                                            {initials.toUpperCase()}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-medium truncate">{fullName}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          {member.role === "client_admin" ? (
+                                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
+                                              <ShieldCheck className="size-3" />
+                                              Admin
+                                            </Badge>
+                                          ) : (
+                                            <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">
+                                              Recruiter
+                                            </Badge>
+                                          )}
+                                          {member.accountStatus !== "active" && (
+                                            <Badge variant="outline" className="text-xs">{member.accountStatus}</Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {/* Empty seat indicators */}
+                                  {Array.from({ length: Math.max(0, company.seatLimit - company.members.length) }).map((_, i) => (
+                                    <div key={`empty-${i}`} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-dashed opacity-50">
+                                      <div className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground shrink-0">
+                                        <Users className="size-4" />
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">Empty Seat</p>
+                                    </div>
                                   ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+
+                        {/* ── Credit Transaction Ledger Tab ──────────────── */}
+                        <TabsContent value="ledger">
+                          <Card className="bg-muted/30">
+                            <CardHeader className="py-3">
+                              <CardTitle className="text-sm">Credit Transaction Ledger</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {company.transactions.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">No transactions yet</p>
+                              ) : (
+                                <div className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Date</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {company.transactions.map((tx) => (
+                                        <TableRow key={tx.id}>
+                                          <TableCell>{getTransactionTypeBadge(tx.transactionType)}</TableCell>
+                                          <TableCell className="font-medium">
+                                            {tx.transactionType === "purchase" ? "+" : "-"}
+                                            {tx.creditAmount}
+                                          </TableCell>
+                                          <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                            {tx.description}
+                                          </TableCell>
+                                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                            {formatDate(tx.createdAt)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      </Tabs>
                     </div>
                   )}
                 </div>
