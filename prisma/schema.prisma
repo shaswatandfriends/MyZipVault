@@ -124,6 +124,7 @@ model ChecklistTemplate {
   profession    String
   specialty     String
   name          String
+  job_title     String?
   is_active     Boolean                    @default(true)
   created_at    DateTime                   @default(now())
 

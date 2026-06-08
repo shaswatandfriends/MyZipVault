@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
-  ClipboardCheck,
   ShieldCheck,
   FileText,
   Users,
@@ -37,7 +36,6 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Credentials", href: "/vault/credentials", icon: ShieldCheck },
   { title: "Resume", href: "/vault/resume", icon: FileText },

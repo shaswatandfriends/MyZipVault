@@ -22,6 +22,7 @@ export async function GET() {
           profession: true,
           specialty: true,
           name: true,
+          job_title: true,
           is_active: true,
           created_at: true,
         },
@@ -57,6 +58,7 @@ export async function GET() {
         profession: t.profession,
         specialty: t.specialty,
         name: t.name,
+        jobTitle: t.job_title,
         isActive: t.is_active,
         createdAt: t.created_at,
       })),
@@ -118,6 +120,7 @@ export async function POST(request: Request) {
                 profession: data.profession,
                 specialty: data.specialty,
                 name: data.name,
+                job_title: data.jobTitle ?? null,
                 is_active: data.isActive ?? true,
               },
             });
@@ -130,6 +133,7 @@ export async function POST(request: Request) {
                 profession: data.profession,
                 specialty: data.specialty,
                 name: data.name,
+                job_title: data.jobTitle ?? null,
                 is_active: data.isActive,
               },
             });

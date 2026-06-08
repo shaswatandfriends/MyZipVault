@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   PenSquare,
@@ -11,6 +11,15 @@ import {
   ChevronDown,
   CheckCircle2,
   XCircle,
+  Download,
+  Upload,
+  FileDown,
+  Eye,
+  FileSpreadsheet,
+  AlertTriangle,
+  Check,
+  X,
+  Loader2,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -22,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -58,6 +68,7 @@ interface ChecklistTemplateItem {
   profession: string;
   specialty: string;
   name: string;
+  jobTitle?: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -86,6 +97,33 @@ interface ContentData {
   referenceQuestions: ReferenceQuestionItem[];
 }
 
+interface PreviewCategory {
+  category: string;
+  skills: Array<{
+    id: number;
+    skillName: string;
+    questionType: string;
+    sortOrder: number;
+    hasNaOption: boolean;
+  }>;
+}
+
+interface PreviewTemplate {
+  id: number;
+  profession: string;
+  specialty: string;
+  name: string;
+  jobTitle?: string | null;
+  isActive: boolean;
+}
+
+interface PreviewRefQuestion {
+  id: number;
+  questionText: string;
+  responseType: string;
+  sortOrder: number;
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function AdminContentPage() {
   const [data, setData] = useState<ContentData | null>(null);
@@ -99,6 +137,7 @@ export default function AdminContentPage() {
     profession: "",
     specialty: "",
     name: "",
+    jobTitle: "",
     isActive: true,
   });
 
@@ -110,7 +149,7 @@ export default function AdminContentPage() {
     checklistTemplateId: 0,
     skillName: "",
     category: "",
-    questionType: "rating_5",
+    questionType: "rating_1_4",
     sortOrder: 0,
     hasNaOption: true,
   });
@@ -122,13 +161,62 @@ export default function AdminContentPage() {
   const [questionForm, setQuestionForm] = useState({
     employmentStatus: "current",
     questionText: "",
-    responseType: "rating_5",
+    responseType: "rating_1_4",
     sortOrder: 0,
   });
 
   // ── Delete confirm dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: number } | null>(null);
+
+  // ── Import modal state
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importValidating, setImportValidating] = useState(false);
+  const [importImporting, setImportImporting] = useState(false);
+  const [importValidationResult, setImportValidationResult] = useState<{
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    errors: Array<{ row: number; message: string }>;
+    preview: Array<{ profession: string; jobTitle: string; specialty: string; category: string; skillName: string; questionType: string; hasNaOption: string }>;
+  } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Delete All modal state
+  const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
+  const [deleteAllStep, setDeleteAllStep] = useState<1 | 2>(1);
+  const [deleteAllOtp, setDeleteAllOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [deleteAllSending, setDeleteAllSending] = useState(false);
+  const [deleteAllDeleting, setDeleteAllDeleting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  // ── Preview Checklist modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string>("");
+  const [previewData, setPreviewData] = useState<{
+    template: PreviewTemplate;
+    categories: PreviewCategory[];
+    totalSkills: number;
+    totalCategories: number;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // ── Reference Preview modal state
+  const [refPreviewOpen, setRefPreviewOpen] = useState(false);
+  const [refPreviewStatus, setRefPreviewStatus] = useState<string>("current");
+  const [refPreviewQuestions, setRefPreviewQuestions] = useState<PreviewRefQuestion[]>([]);
+  const [refPreviewLoading, setRefPreviewLoading] = useState(false);
+
+  // ── Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const fetchContent = useCallback(async () => {
     try {
@@ -183,11 +271,12 @@ export default function AdminContentPage() {
         profession: template.profession,
         specialty: template.specialty,
         name: template.name,
+        jobTitle: template.jobTitle || "",
         isActive: template.isActive,
       });
     } else {
       setEditingTemplate(null);
-      setTemplateForm({ profession: "", specialty: "", name: "", isActive: true });
+      setTemplateForm({ profession: "", specialty: "", name: "", jobTitle: "", isActive: true });
     }
     setTemplateDialogOpen(true);
   };
@@ -229,7 +318,7 @@ export default function AdminContentPage() {
           : firstTemplateId,
         skillName: "",
         category: "",
-        questionType: "rating_5",
+        questionType: "rating_1_4",
         sortOrder: 0,
         hasNaOption: true,
       });
@@ -265,7 +354,7 @@ export default function AdminContentPage() {
       setQuestionForm({
         employmentStatus: "current",
         questionText: "",
-        responseType: "rating_5",
+        responseType: "rating_1_4",
         sortOrder: 0,
       });
     }
@@ -293,6 +382,185 @@ export default function AdminContentPage() {
     setDeleteTarget(null);
   };
 
+  // ─── Export Template ──────────────────────────────────────────────
+  const handleExportTemplate = () => {
+    window.open("/api/admin/skills/export-template", "_blank");
+  };
+
+  // ─── Export Current Data ──────────────────────────────────────────
+  const handleExportData = () => {
+    window.open("/api/admin/skills/export-data", "_blank");
+  };
+
+  // ─── Import handlers ──────────────────────────────────────────────
+  const handleImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith(".xlsx")) {
+        toast.error("Only .xlsx files are accepted");
+        return;
+      }
+      setImportFile(file);
+      setImportValidationResult(null);
+      setImportResult(null);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!importFile) return;
+    try {
+      setImportValidating(true);
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const res = await fetch("/api/admin/skills/validate-import", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Validation failed");
+      }
+      setImportValidationResult(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Validation failed", { description: message });
+    } finally {
+      setImportValidating(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    try {
+      setImportImporting(true);
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const res = await fetch("/api/admin/skills/import", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Import failed");
+      }
+      setImportResult(result);
+      fetchContent();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Import failed", { description: message });
+    } finally {
+      setImportImporting(false);
+    }
+  };
+
+  const resetImportModal = () => {
+    setImportFile(null);
+    setImportValidationResult(null);
+    setImportResult(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // ─── Delete All handlers ──────────────────────────────────────────
+  const handleRequestOtp = async () => {
+    try {
+      setDeleteAllSending(true);
+      const res = await fetch("/api/admin/skills/request-delete-otp", { method: "POST" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to send code");
+      setDeleteAllStep(2);
+      setResendCooldown(60);
+      toast.success("Verification code sent to your email");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Failed to send code", { description: message });
+    } finally {
+      setDeleteAllSending(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+    const newOtp = [...deleteAllOtp];
+    newOtp[index] = value;
+    setDeleteAllOtp(newOtp);
+    // Auto advance
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const newOtp = [...deleteAllOtp];
+    for (let i = 0; i < 6; i++) {
+      newOtp[i] = pasted[i] || "";
+    }
+    setDeleteAllOtp(newOtp);
+  };
+
+  const handleDeleteAll = async () => {
+    const otpValue = deleteAllOtp.join("");
+    if (otpValue.length !== 6) return;
+    try {
+      setDeleteAllDeleting(true);
+      const res = await fetch("/api/admin/skills/delete-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp: otpValue }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to delete");
+      toast.success("All skills data has been permanently deleted");
+      setDeleteAllModalOpen(false);
+      setDeleteAllStep(1);
+      setDeleteAllOtp(["", "", "", "", "", ""]);
+      fetchContent();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Deletion failed", { description: message });
+    } finally {
+      setDeleteAllDeleting(false);
+    }
+  };
+
+  // ─── Preview Checklist handlers ───────────────────────────────────
+  const handlePreviewChecklist = async () => {
+    if (!previewTemplateId) return;
+    try {
+      setPreviewLoading(true);
+      setPreviewModalOpen(true);
+      const res = await fetch(`/api/admin/skills/preview/${previewTemplateId}`);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to load preview");
+      setPreviewData(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Preview failed", { description: message });
+      setPreviewModalOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // ─── Reference Preview handlers ───────────────────────────────────
+  const handleRefPreview = async () => {
+    try {
+      setRefPreviewLoading(true);
+      setRefPreviewOpen(true);
+      const res = await fetch(`/api/admin/reference-questions/preview?employment_status=${refPreviewStatus}`);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to load preview");
+      setRefPreviewQuestions(result.questions || []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Preview failed", { description: message });
+      setRefPreviewOpen(false);
+    } finally {
+      setRefPreviewLoading(false);
+    }
+  };
+
   // ─── Filtered skills ─────────────────────────────────────────────
   const filteredSkills = data?.skills.filter(
     (s) => selectedTemplateId === "all" || s.checklistTemplateId === Number(selectedTemplateId)
@@ -301,6 +569,19 @@ export default function AdminContentPage() {
   const filteredQuestions = data?.referenceQuestions.filter(
     (q) => questionEmploymentFilter === "all" || q.employmentStatus === questionEmploymentFilter
   ) ?? [];
+
+  // ─── Rating button style helper ───────────────────────────────────
+  const getRatingBtnClass = (rating: number, selected: number | null) => {
+    const isSelected = selected === rating;
+    const base = "w-10 h-10 rounded-lg font-bold text-sm border-2 transition-all ";
+    switch (rating) {
+      case 1: return base + (isSelected ? "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626]" : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]");
+      case 2: return base + (isSelected ? "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04]" : "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]");
+      case 3: return base + (isSelected ? "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB]" : "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]");
+      case 4: return base + (isSelected ? "bg-[#166534] border-[#166534] text-white" : "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]");
+      default: return base;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -351,6 +632,7 @@ export default function AdminContentPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Profession</TableHead>
+                        <TableHead>Job Title</TableHead>
                         <TableHead>Specialty</TableHead>
                         <TableHead>Template Name</TableHead>
                         <TableHead>Status</TableHead>
@@ -363,6 +645,7 @@ export default function AdminContentPage() {
                           <TableCell className="font-medium text-sm">
                             {template.profession}
                           </TableCell>
+                          <TableCell className="text-sm">{template.jobTitle || "—"}</TableCell>
                           <TableCell className="text-sm">{template.specialty}</TableCell>
                           <TableCell className="text-sm">{template.name}</TableCell>
                           <TableCell>
@@ -413,7 +696,7 @@ export default function AdminContentPage() {
         <TabsContent value="skills">
           <Card>
             <CardHeader>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <CardTitle className="text-base">Skills</CardTitle>
                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
@@ -430,13 +713,54 @@ export default function AdminContentPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => openSkillDialog()}
-                >
-                  <Plus className="size-4" />
-                  Add Skill
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => openSkillDialog()}
+                  >
+                    <Plus className="size-4" />
+                    Add Skill
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleExportTemplate}>
+                    <Download className="size-4" />
+                    Export Template
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => { resetImportModal(); setImportModalOpen(true); }}>
+                    <Upload className="size-4" />
+                    Import Data
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleExportData}>
+                    <FileDown className="size-4" />
+                    Export Current Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-[#DC2626] text-[#DC2626] hover:bg-[#FEE2E2] bg-transparent"
+                    onClick={() => { setDeleteAllStep(1); setDeleteAllOtp(["", "", "", "", "", ""]); setDeleteAllModalOpen(true); }}
+                  >
+                    <Trash2 className="size-4" />
+                    Delete All Data
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Select value={previewTemplateId} onValueChange={setPreviewTemplateId}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Select template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {data?.checklistTemplates.map((t) => (
+                          <SelectItem key={t.id} value={String(t.id)}>
+                            {t.profession} — {t.specialty}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="secondary" size="sm" onClick={handlePreviewChecklist} disabled={!previewTemplateId}>
+                      <Eye className="size-4" />
+                      Preview Checklist
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -577,13 +901,19 @@ export default function AdminContentPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => openQuestionDialog()}
-                >
-                  <Plus className="size-4" />
-                  Add Question
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleRefPreview}>
+                    <Eye className="size-4" />
+                    Preview Form
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => openQuestionDialog()}
+                  >
+                    <Plus className="size-4" />
+                    Add Question
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -690,6 +1020,14 @@ export default function AdminContentPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label>Job Title</Label>
+              <Input
+                placeholder="e.g. RN"
+                value={templateForm.jobTitle}
+                onChange={(e) => setTemplateForm((f) => ({ ...f, jobTitle: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Template Name</Label>
               <Input
                 placeholder="e.g. ICU Skills Checklist"
@@ -777,8 +1115,7 @@ export default function AdminContentPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rating_5">5-Point Rating</SelectItem>
-                    <SelectItem value="rating_3">3-Point Rating</SelectItem>
+                    <SelectItem value="rating_1_4">1-4 Rating</SelectItem>
                     <SelectItem value="yes_no">Yes/No</SelectItem>
                     <SelectItem value="text">Text</SelectItem>
                   </SelectContent>
@@ -866,8 +1203,7 @@ export default function AdminContentPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rating_5">5-Point Rating</SelectItem>
-                    <SelectItem value="rating_3">3-Point Rating</SelectItem>
+                    <SelectItem value="rating_1_4">1-4 Rating</SelectItem>
                     <SelectItem value="yes_no">Yes/No</SelectItem>
                     <SelectItem value="text">Text</SelectItem>
                   </SelectContent>
@@ -919,6 +1255,477 @@ export default function AdminContentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          Import Modal
+      ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={importModalOpen} onOpenChange={(open) => { setImportModalOpen(open); if (!open) resetImportModal(); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import Skills Data</DialogTitle>
+            <DialogDescription>Upload an Excel file to import skills into the database.</DialogDescription>
+          </DialogHeader>
+
+          {!importResult ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card 1 - Download Template */}
+                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
+                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+                    <FileSpreadsheet className="size-8 text-emerald-600" />
+                    <h3 className="font-semibold text-sm">Download Template</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the Excel template with correct column format. Fill it in and upload it back.
+                    </p>
+                    <Button variant="secondary" className="w-full" onClick={handleExportTemplate}>
+                      <Download className="size-4" />
+                      Download Excel Template
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Card 2 - Upload Data */}
+                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
+                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+                    <Upload className="size-8 text-orange-500" />
+                    <h3 className="font-semibold text-sm">Upload Data</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Upload your completed Excel file. Data will be validated before import.
+                    </p>
+                    <div className="w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        {importFile ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="size-5 text-emerald-600" />
+                            <span className="text-sm font-medium">{importFile.name}</span>
+                            <span className="text-xs text-muted-foreground">({(importFile.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            <Upload className="size-5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">.xlsx files only</span>
+                          </div>
+                        )}
+                        <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportFileSelect} />
+                      </label>
+                    </div>
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!importFile || importValidating} onClick={handleValidate}>
+                      {importValidating ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                      Upload & Validate
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Warning box */}
+              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
+                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-[#92400E]">
+                  Importing will <strong>ADD</strong> new data to existing skills. To replace all data, use Delete All Data first, then import. Duplicate skills (same Profession + Job Title + Specialty + Category + Skill Name) will be skipped.
+                </p>
+              </div>
+
+              {/* Validation Results */}
+              {importValidationResult && (
+                <div className="space-y-3">
+                  {importValidationResult.errorRows > 0 && (
+                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
+                      <p className="text-sm font-semibold text-[#991B1B]">
+                        {importValidationResult.errorRows} row(s) have errors
+                      </p>
+                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
+                        {importValidationResult.errors.slice(0, 10).map((e, i) => (
+                          <p key={i}>Row {e.row}: {e.message}</p>
+                        ))}
+                        {importValidationResult.errors.length > 10 && (
+                          <p>...and {importValidationResult.errors.length - 10} more errors</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {importValidationResult.validRows > 0 && (
+                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
+                      <p className="text-sm font-semibold text-[#166534]">
+                        {importValidationResult.validRows} valid row(s) found out of {importValidationResult.totalRows} total
+                      </p>
+                      {importValidationResult.preview.length > 0 && (
+                        <div className="mt-3 overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs">Job Title</TableHead>
+                                <TableHead className="text-xs">Specialty</TableHead>
+                                <TableHead className="text-xs">Category</TableHead>
+                                <TableHead className="text-xs">Skill Name</TableHead>
+                                <TableHead className="text-xs">Type</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {importValidationResult.preview.slice(0, 3).map((row, i) => (
+                                <TableRow key={i}>
+                                  <TableCell className="text-xs">{row.jobTitle}</TableCell>
+                                  <TableCell className="text-xs">{row.specialty}</TableCell>
+                                  <TableCell className="text-xs">{row.category}</TableCell>
+                                  <TableCell className="text-xs">{row.skillName}</TableCell>
+                                  <TableCell className="text-xs">{row.questionType}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={handleImport}
+                          disabled={importImporting}
+                        >
+                          {importImporting ? <Loader2 className="size-4 animate-spin" /> : null}
+                          Import {importValidationResult.validRows} Valid Rows
+                        </Button>
+                        <Button variant="ghost" onClick={() => { setImportModalOpen(false); resetImportModal(); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            /* Import Success */
+            <div className="flex flex-col items-center py-8 text-center gap-3">
+              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+                <Check className="size-8 text-[#166534]" />
+              </div>
+              <h3 className="text-lg font-semibold">{importResult.imported} skills imported successfully</h3>
+              {importResult.skipped > 0 && (
+                <p className="text-sm text-muted-foreground">{importResult.skipped} duplicates skipped</p>
+              )}
+              <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setImportModalOpen(false); resetImportModal(); }}>
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          Delete All Data Modal
+      ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={deleteAllModalOpen} onOpenChange={setDeleteAllModalOpen}>
+        <DialogContent>
+          {deleteAllStep === 1 ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-center">Delete All Skills Data?</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4">
+                <div className="size-16 rounded-full bg-[#FEF2F2] flex items-center justify-center">
+                  <AlertTriangle className="size-8 text-[#DC2626]" />
+                </div>
+                <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4 w-full">
+                  <p className="text-sm text-[#991B1B] font-medium">This will permanently delete:</p>
+                  <ul className="mt-2 text-sm text-[#991B1B] list-disc list-inside space-y-1">
+                    <li>All professions</li>
+                    <li>All job titles</li>
+                    <li>All specialties</li>
+                    <li>All skill categories</li>
+                    <li>All individual skills</li>
+                    <li>All reference questions</li>
+                  </ul>
+                  <p className="mt-3 text-sm text-[#991B1B] font-semibold">This action cannot be undone.</p>
+                  <p className="mt-1 text-sm text-[#991B1B]">To proceed, you will need to verify with a one-time code.</p>
+                </div>
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={() => setDeleteAllModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  onClick={handleRequestOtp}
+                  disabled={deleteAllSending}
+                >
+                  {deleteAllSending ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Continue to Verification →
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Verify Your Identity</DialogTitle>
+                <DialogDescription>
+                  A one-time verification code has been sent to your registered email.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                  {deleteAllOtp.map((digit, i) => (
+                    <Input
+                      key={i}
+                      ref={(el) => { otpInputRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(i, e.target.value.replace(/\D/g, ""))}
+                      className="w-12 h-14 text-center text-2xl font-bold"
+                      autoFocus={i === 0}
+                    />
+                  ))}
+                </div>
+                <div className="text-center">
+                  <button
+                    className="text-sm text-emerald-600 hover:underline disabled:opacity-50 disabled:no-underline"
+                    onClick={handleRequestOtp}
+                    disabled={resendCooldown > 0 || deleteAllSending}
+                  >
+                    {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : "Resend Code"}
+                  </button>
+                </div>
+                <Button
+                  className="w-full bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  onClick={handleDeleteAll}
+                  disabled={deleteAllOtp.join("").length !== 6 || deleteAllDeleting}
+                >
+                  {deleteAllDeleting ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Permanently Delete All Data
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          Preview Checklist Modal
+      ═══════════════════════════════════════════════════════════════ */}
+      {previewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setPreviewModalOpen(false)}>
+          <div className="bg-white rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold">Checklist Preview</h2>
+              <button onClick={() => setPreviewModalOpen(false)} className="size-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : previewData ? (
+                <div className="space-y-6">
+                  {/* Progress bar */}
+                  <Progress value={0} className="h-2" />
+
+                  {/* Sticky checklist name */}
+                  <div className="bg-gray-50 rounded-lg p-3 sticky top-0 z-10">
+                    <h3 className="font-semibold text-sm text-center">{previewData.template.name}</h3>
+                    <p className="text-xs text-center text-muted-foreground">
+                      {previewData.template.profession} — {previewData.template.specialty}
+                      {previewData.template.jobTitle ? ` — ${previewData.template.jobTitle}` : ""}
+                    </p>
+                  </div>
+
+                  {/* Intro card */}
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">
+                        Please rate each skill according to your level of experience. This checklist helps evaluate professional competencies.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Rating scale legend */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
+                        <span>No theory / experience</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
+                        <span>Limited Experience</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
+                        <span>Experienced</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
+                        <span>Proficient</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills grouped by category */}
+                  {previewData.categories.map((cat) => (
+                    <div key={cat.category}>
+                      <h4 className="font-semibold text-sm text-[#166534] mb-2 border-b pb-1">{cat.category}</h4>
+                      <div className="space-y-2">
+                        {cat.skills.map((skill) => (
+                          <div key={skill.id} className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-sm flex-1">{skill.skillName}</span>
+                            {skill.questionType === "rating_1_4" ? (
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4].map((r) => (
+                                  <button key={r} className={getRatingBtnClass(r, null)}>{r}</button>
+                                ))}
+                                {skill.hasNaOption && (
+                                  <button className="w-10 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-xs font-medium hover:border-gray-400">
+                                    N/A
+                                  </button>
+                                )}
+                              </div>
+                            ) : skill.questionType === "yes_no" ? (
+                              <div className="flex gap-2">
+                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-emerald-600 hover:text-emerald-600">Yes</button>
+                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-red-600 hover:text-red-600">No</button>
+                              </div>
+                            ) : (
+                              <Textarea placeholder="Enter response..." disabled className="w-48 h-10 text-sm" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Signature section */}
+                  <Card className="border-dashed">
+                    <CardContent className="p-4">
+                      <Label className="text-sm font-medium">Digital Signature</Label>
+                      <div className="mt-2 h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-muted-foreground">
+                        Signature area (disabled in preview)
+                      </div>
+                      <Input placeholder="Type your full name" disabled className="mt-2" />
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  Select a template and click Preview
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {previewData && (
+              <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-sm text-muted-foreground">
+                <span>{previewData.totalCategories} categories — {previewData.totalSkills} total skills</span>
+                <span>This is how candidates see this checklist</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          Reference Form Preview Modal
+      ═══════════════════════════════════════════════════════════════ */}
+      {refPreviewOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRefPreviewOpen(false)}>
+          <div className="bg-white rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold">Reference Form Preview</h2>
+              <button onClick={() => setRefPreviewOpen(false)} className="size-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Employment Status Tabs */}
+            <div className="px-6 pt-4">
+              <div className="flex gap-2">
+                {(["current", "ending_contract", "past"] as const).map((status) => (
+                  <button
+                    key={status}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      refPreviewStatus === status
+                        ? "bg-[#166534] text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setRefPreviewStatus(status)}
+                  >
+                    {status === "current" ? "Currently Working" : status === "ending_contract" ? "Ending Contract" : "Past Employment"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {refPreviewLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : refPreviewQuestions.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Rating scale legend */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
+                        <span>No theory / experience</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
+                        <span>Limited Experience</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
+                        <span>Experienced</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
+                        <span>Proficient</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {refPreviewQuestions.map((q, i) => (
+                    <div key={q.id} className="py-3 border-b border-gray-50">
+                      <p className="text-sm font-medium mb-2">{i + 1}. {q.questionText}</p>
+                      {q.responseType === "rating_1_4" ? (
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 4].map((r) => (
+                            <button key={r} className={getRatingBtnClass(r, null)}>{r}</button>
+                          ))}
+                        </div>
+                      ) : q.responseType === "yes_no" ? (
+                        <div className="flex gap-2">
+                          <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-emerald-600 hover:text-emerald-600">Yes</button>
+                          <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-red-600 hover:text-red-600">No</button>
+                        </div>
+                      ) : (
+                        <Textarea placeholder="Enter response..." disabled className="text-sm" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  No questions for this employment status
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-sm text-muted-foreground">
+              <span>{refPreviewQuestions.length} questions for {refPreviewStatus === "current" ? "Currently Working" : refPreviewStatus === "ending_contract" ? "Ending Contract" : "Past Employment"}</span>
+              <span>This is how managers see this form</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

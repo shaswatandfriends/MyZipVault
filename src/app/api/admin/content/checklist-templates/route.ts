@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { profession, specialty, name, is_active } = body;
+    const { profession, specialty, name, job_title, is_active } = body;
 
     if (!profession || !specialty || !name) {
       return NextResponse.json(
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         profession,
         specialty,
         name,
+        job_title: job_title ?? null,
         is_active: is_active ?? true,
       },
     });
