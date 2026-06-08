@@ -485,6 +485,39 @@ export async function POST(request: Request) {
           message: `Member ${suspendUser.email} suspended successfully`,
         });
       }
+      case "ban-member": {
+        const { userId: banUserId } = body;
+        if (!banUserId) {
+          return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const banUser = await db.user.findUnique({ where: { id: banUserId } });
+        if (!banUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        if (banUser.account_status === "banned") {
+          return NextResponse.json({ error: "User is already banned" }, { status: 400 });
+        }
+        if (banUser.role !== "client_recruiter" && banUser.role !== "client_admin") {
+          return NextResponse.json({ error: "Can only ban client users" }, { status: 400 });
+        }
+        await db.user.update({
+          where: { id: banUserId },
+          data: { account_status: "banned" },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "ban_member",
+            entity_type: "user",
+            entity_id: banUserId,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `Member ${banUser.email} banned successfully`,
+        });
+      }
       case "activate-member": {
         const { userId: activateUserId } = body;
         if (!activateUserId) {
@@ -543,8 +576,8 @@ export async function POST(request: Request) {
         if (!statusOrgId || !accountStatus) {
           return NextResponse.json({ error: "Organization ID and account status are required" }, { status: 400 });
         }
-        if (!["active", "suspended", "pending"].includes(accountStatus)) {
-          return NextResponse.json({ error: "Invalid status. Must be active, suspended, or pending" }, { status: 400 });
+        if (!["active", "suspended", "pending", "banned"].includes(accountStatus)) {
+          return NextResponse.json({ error: "Invalid status. Must be active, suspended, pending, or banned" }, { status: 400 });
         }
         const statusOrg = await db.organization.findUnique({ where: { id: statusOrgId } });
         if (!statusOrg) {
@@ -563,6 +596,17 @@ export async function POST(request: Request) {
               account_status: "active",
             },
             data: { account_status: "suspended" },
+          });
+        }
+        // If banning company, also ban all its members
+        if (accountStatus === "banned") {
+          await db.user.updateMany({
+            where: {
+              organization_id: statusOrgId,
+              role: { in: ["client_recruiter", "client_admin"] },
+              account_status: { in: ["active", "suspended", "pending"] },
+            },
+            data: { account_status: "banned" },
           });
         }
         // If activating company, reactivate members up to seat limit

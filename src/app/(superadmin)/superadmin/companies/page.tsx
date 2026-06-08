@@ -193,6 +193,8 @@ function getAccountStatusBadge(status: string) {
       return <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 text-[10px]">Suspended</Badge>;
     case "pending":
       return <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 text-[10px]">Pending</Badge>;
+    case "banned":
+      return <Badge className="bg-gray-900 text-white border-gray-900 hover:bg-gray-900 text-[10px]">Banned</Badge>;
     default:
       return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
   }
@@ -206,6 +208,8 @@ function getCompanyStatusBadge(status: string) {
       return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Suspended</Badge>;
     case "pending":
       return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Pending</Badge>;
+    case "banned":
+      return <Badge className="bg-gray-900 text-white border-gray-900 hover:bg-gray-900">Banned</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -321,7 +325,7 @@ export default function SuperadminCompaniesPage() {
   // Suspend Member dialog
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspendMember, setSuspendMember] = useState<Member | null>(null);
-  const [suspendAction, setSuspendAction] = useState<"suspend" | "activate">("suspend");
+  const [suspendAction, setSuspendAction] = useState<"suspend" | "activate" | "ban">("suspend");
 
   // Company Status dialog
   const [showCompanyStatusDialog, setShowCompanyStatusDialog] = useState(false);
@@ -704,8 +708,9 @@ export default function SuperadminCompaniesPage() {
 
   const handleSuspendMember = async () => {
     if (!suspendMember) return;
+    const action = suspendAction === "ban" ? "ban-member" : suspendAction === "suspend" ? "suspend-member" : "activate-member";
     const result = await postAction({
-      action: suspendAction === "suspend" ? "suspend-member" : "activate-member",
+      action,
       userId: suspendMember.id,
     });
     if (result?.success) {
@@ -857,6 +862,7 @@ export default function SuperadminCompaniesPage() {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="banned">Banned</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterBaaStatus} onValueChange={setFilterBaaStatus}>
@@ -979,7 +985,45 @@ export default function SuperadminCompaniesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {getCompanyStatusBadge(company.accountStatus)}
+                      {/* ── Company Status Inline Dropdown ────── */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="cursor-pointer focus:outline-none" title="Click to change company status">
+                            {getCompanyStatusBadge(company.accountStatus)}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-44">
+                          <DropdownMenuItem
+                            className={company.accountStatus === "active" ? "bg-emerald-50" : ""}
+                            onClick={() => { setSelectedCompany(company); setCompanyStatusNew("active"); setShowCompanyStatusDialog(true); }}
+                          >
+                            <ShieldCheck className="size-4 mr-2 text-emerald-600" />
+                            Active
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className={company.accountStatus === "pending" ? "bg-amber-50" : ""}
+                            onClick={() => { setSelectedCompany(company); setCompanyStatusNew("pending"); setShowCompanyStatusDialog(true); }}
+                          >
+                            <Clock className="size-4 mr-2 text-amber-600" />
+                            Pending
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className={company.accountStatus === "suspended" ? "bg-red-50" : ""}
+                            onClick={() => { setSelectedCompany(company); setCompanyStatusNew("suspended"); setShowCompanyStatusDialog(true); }}
+                          >
+                            <Ban className="size-4 mr-2 text-red-600" />
+                            Suspended
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className={company.accountStatus === "banned" ? "bg-gray-100" : "text-gray-700 focus:text-gray-900"}
+                            onClick={() => { setSelectedCompany(company); setCompanyStatusNew("banned"); setShowCompanyStatusDialog(true); }}
+                          >
+                            <Trash2 className="size-4 mr-2 text-gray-700" />
+                            Banned
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {getBaaBadge(company.baaStatus)}
                       <span className="text-xs text-muted-foreground">{formatDate(company.createdAt)}</span>
                       {/* ── Actions Dropdown ─────────────────────────────── */}
@@ -1102,10 +1146,12 @@ export default function SuperadminCompaniesPage() {
                               ) : (
                                 <div className="space-y-2">
                                   {company.members.map((member) => (
-                                    <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3">
+                                    <div key={member.id} className={`flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3 ${member.accountStatus === "banned" ? "opacity-60" : ""}`}>
                                       <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={`flex size-9 items-center justify-center rounded-full text-xs font-semibold shrink-0 ${
-                                          member.accountStatus === "suspended"
+                                          member.accountStatus === "banned"
+                                            ? "bg-gray-900 text-white"
+                                            : member.accountStatus === "suspended"
                                             ? "bg-red-100 text-red-700"
                                             : "bg-teal-100 text-teal-700"
                                         }`}>
@@ -1169,29 +1215,50 @@ export default function SuperadminCompaniesPage() {
                                             <ArrowRightLeft className="size-3.5" />
                                           </Button>
                                         </Tip>
-                                        {member.accountStatus === "active" ? (
-                                          <Tip label="Suspend Member">
+                                        {/* ── Member Status Dropdown ────────────── */}
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              className="size-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                              onClick={() => openSuspendDialog(member, "suspend")}
+                                              className="size-7 p-0 text-muted-foreground hover:text-foreground"
+                                              title="Change member status"
                                             >
-                                              <Ban className="size-3.5" />
+                                              <MoreHorizontal className="size-3.5" />
                                             </Button>
-                                          </Tip>
-                                        ) : (
-                                          <Tip label="Activate Member">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="size-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-48">
+                                            <DropdownMenuItem
+                                              className={member.accountStatus === "active" ? "bg-emerald-50" : ""}
                                               onClick={() => openSuspendDialog(member, "activate")}
+                                              disabled={member.accountStatus === "active"}
                                             >
-                                              <UserCheck className="size-3.5" />
-                                            </Button>
-                                          </Tip>
-                                        )}
+                                              <UserCheck className="size-4 mr-2 text-emerald-600" />
+                                              Active
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              className={member.accountStatus === "suspended" ? "bg-red-50" : ""}
+                                              onClick={() => openSuspendDialog(member, "suspend")}
+                                              disabled={member.accountStatus === "suspended"}
+                                            >
+                                              <Ban className="size-4 mr-2 text-red-600" />
+                                              Suspend
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              className={member.accountStatus === "banned" ? "bg-gray-100" : "text-gray-700 focus:text-gray-900"}
+                                              onClick={() => {
+                                                setSuspendMember(member);
+                                                setSuspendAction("ban");
+                                                setShowSuspendDialog(true);
+                                              }}
+                                              disabled={member.accountStatus === "banned"}
+                                            >
+                                              <Trash2 className="size-4 mr-2 text-gray-700" />
+                                              Ban
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       </div>
                                     </div>
                                   ))}
@@ -1896,19 +1963,23 @@ export default function SuperadminCompaniesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Suspend/Activate Member Dialog ─────────────────────────── */}
+      {/* ── Suspend/Activate/Ban Member Dialog ─────────────────────────── */}
       <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              {suspendAction === "suspend" ? (
+              {suspendAction === "ban" ? (
+                <><Trash2 className="size-5 text-gray-700" /> Ban Member</>
+              ) : suspendAction === "suspend" ? (
                 <><Ban className="size-5 text-red-600" /> Suspend Member</>
               ) : (
                 <><UserCheck className="size-5 text-emerald-600" /> Activate Member</>
               )}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {suspendAction === "suspend"
+              {suspendAction === "ban"
+                ? `Are you sure you want to ban "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will be permanently blocked from accessing their account. This is more severe than suspension.`
+                : suspendAction === "suspend"
                 ? `Are you sure you want to suspend "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will lose access to their account until reactivated.`
                 : `Are you sure you want to activate "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will regain access to their account.`}
             </AlertDialogDescription>
@@ -1918,11 +1989,11 @@ export default function SuperadminCompaniesPage() {
             <AlertDialogAction
               disabled={actionLoading}
               onClick={handleSuspendMember}
-              className={suspendAction === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              className={suspendAction === "ban" ? "bg-gray-800 hover:bg-gray-900 text-white" : suspendAction === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
             >
               {actionLoading
-                ? (suspendAction === "suspend" ? "Suspending..." : "Activating...")
-                : (suspendAction === "suspend" ? "Suspend Member" : "Activate Member")}
+                ? (suspendAction === "ban" ? "Banning..." : suspendAction === "suspend" ? "Suspending..." : "Activating...")
+                : (suspendAction === "ban" ? "Ban Member" : suspendAction === "suspend" ? "Suspend Member" : "Activate Member")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1958,6 +2029,7 @@ export default function SuperadminCompaniesPage() {
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="banned">Banned</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1966,13 +2038,18 @@ export default function SuperadminCompaniesPage() {
                 Warning: Suspending this company will also suspend all {selectedCompany?.seatsUsed} active members.
               </div>
             )}
+            {companyStatusNew === "banned" && (
+              <div className="p-3 rounded-lg bg-gray-100 text-gray-800 text-sm">
+                Warning: Banning this company will permanently block access. All members will be banned as well.
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCompanyStatusDialog(false)}>Cancel</Button>
             <Button
               onClick={handleSetCompanyStatus}
               disabled={actionLoading || companyStatusNew === selectedCompany?.accountStatus}
-              className={companyStatusNew === "suspended" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              className={companyStatusNew === "banned" ? "bg-gray-800 hover:bg-gray-900 text-white" : companyStatusNew === "suspended" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
             >
               {actionLoading ? "Updating..." : `Set to ${companyStatusNew}`}
             </Button>
