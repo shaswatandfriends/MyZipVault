@@ -89,3 +89,30 @@ Stage Summary:
 - Deleted: src/app/api/auth/signout/route.ts
 - Modified: src/components/layout/sidebar.tsx (removed audit fetch call)
 - Build passes, pushed to GitHub (aa61a4c), Vercel auto-deploy triggered
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Add reference deletion request system (candidate → superadmin workflow)
+
+Work Log:
+- Added ReferenceDeletionRequest model (#38) to Prisma schema with candidate_user_id, reference_id, reason, status, reviewed_by, review_notes, reviewed_at
+- Added relations on User model (reference_deletion_requests, reference_deletion_reviewed) and CandidateReference model (deletion_requests)
+- Ran prisma db push — schema in sync
+- Created /api/references/delete-request route.ts — POST (candidate submits deletion request with reason, checks for duplicates, notifies superadmins) + GET (candidate views their own requests)
+- Created /api/superadmin/reference-requests route.ts — GET (list all requests with filters, stats)
+- Created /api/superadmin/reference-requests/[id]/route.ts — PUT (approve/reject with review notes, approval permanently deletes reference + responses + consent shares, notifies candidate)
+- Updated candidate references page: Added "Delete Reference" button on completed/cancelled references, opens dialog with reference info + reason textarea + send button, shows "Deletion request pending" when already submitted
+- Created superadmin /reference-requests page: Stats cards (total/pending/approved/rejected), tabs filter, detailed request cards with candidate info + reference info + reason, approve/reject buttons with confirmation dialog
+- Added "Ref Requests" nav item to superadmin sidebar with ScrollText icon
+- Added notification type icons for reference_deletion, reference_deleted, reference_deletion_rejected
+- Fixed missing icon imports (Trash2, XCircle) in sidebar that caused build error
+- Build passes, pushed to GitHub (26230f9)
+
+Stage Summary:
+- New model: ReferenceDeletionRequest (#38)
+- New files: delete-request/route.ts, superadmin/reference-requests/route.ts, superadmin/reference-requests/[id]/route.ts, (superadmin)/reference-requests/page.tsx
+- Modified: schema.prisma, references/page.tsx, sidebar.tsx
+- Sharing page already had revoke functionality for reference shares — no changes needed
+- Social login deferred by user request
+- Sales/CRM deferred by user request
