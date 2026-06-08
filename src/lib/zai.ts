@@ -110,7 +110,7 @@ export async function zaiChatCompletion(
   console.log("[ZAI] Using SDK (no env vars)");
   const zai = await createZAI();
   const completion = await zai.chat.completions.create({
-    messages: options.messages,
+    messages: options.messages as { role: "system" | "user" | "assistant"; content: string }[],
     temperature: options.temperature,
     max_tokens: options.max_tokens,
   });
@@ -177,10 +177,10 @@ export async function zaiVisionCompletion(
   // No env vars — use SDK
   console.log("[ZAI] Using SDK for vision (no env vars)");
   const zai = await createZAI();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const completion = await zai.chat.completions.createVision({
-    messages: options.messages,
-    temperature: options.temperature,
-    max_tokens: options.max_tokens,
-  });
+    messages: options.messages as any,
+    model: "glm-4v",
+  } as any);
   return completion as ChatCompletionResponse;
 }
