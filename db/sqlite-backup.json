@@ -1,0 +1,1547 @@
+{
+  "Organization": [
+    {
+      "id": 1,
+      "name": "Acme Staffing",
+      "credits_balance": 85,
+      "baa_status": "pending",
+      "baa_document_url": null,
+      "baa_signed_by_name": null,
+      "baa_signed_by_title": null,
+      "baa_signed_at": null,
+      "seat_limit": 5,
+      "custom_pricing_notes": null,
+      "created_at": 1780527789791
+    }
+  ],
+  "User": [
+    {
+      "id": 1,
+      "email": "superadmin@myzipvault.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "super_admin",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Super",
+      "last_name": "Admin",
+      "phone": null,
+      "last_activity_at": null,
+      "created_at": 1780527789793,
+      "email_verified_at": null
+    },
+    {
+      "id": 2,
+      "email": "admin@myzipvault.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "platform_admin",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Platform",
+      "last_name": "Admin",
+      "phone": null,
+      "last_activity_at": null,
+      "created_at": 1780527789794,
+      "email_verified_at": null
+    },
+    {
+      "id": 3,
+      "email": "clientadmin@acme.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "client_admin",
+      "organization_id": 1,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Client",
+      "last_name": "Admin",
+      "phone": null,
+      "last_activity_at": 1780527789794,
+      "created_at": 1780527789795,
+      "email_verified_at": null
+    },
+    {
+      "id": 4,
+      "email": "recruiter@acme.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "client_recruiter",
+      "organization_id": 1,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Sarah",
+      "last_name": "Recruiter",
+      "phone": null,
+      "last_activity_at": 1780524189796,
+      "created_at": 1780527789796,
+      "email_verified_at": null
+    },
+    {
+      "id": 5,
+      "email": "nurse@example.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Jane",
+      "last_name": "Nurse",
+      "phone": "(555) 123-4567",
+      "last_activity_at": 1780521829455,
+      "created_at": 1780527789798,
+      "email_verified_at": null
+    },
+    {
+      "id": 6,
+      "email": "john.icu@email.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "John",
+      "last_name": "Smith",
+      "phone": "(555) 234-5678",
+      "last_activity_at": 1780161400294,
+      "created_at": 1780527789799,
+      "email_verified_at": null
+    },
+    {
+      "id": 7,
+      "email": "maria.er@email.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Maria",
+      "last_name": "Garcia",
+      "phone": "(555) 345-6789",
+      "last_activity_at": 1780265457493,
+      "created_at": 1780527789800,
+      "email_verified_at": null
+    },
+    {
+      "id": 8,
+      "email": "david.or@email.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "David",
+      "last_name": "Chen",
+      "phone": "(555) 456-7890",
+      "last_activity_at": 1780142928379,
+      "created_at": 1780527789802,
+      "email_verified_at": null
+    },
+    {
+      "id": 9,
+      "email": "lisa.peds@email.com",
+      "password_hash": "$2b$10$52DooF4.aYqAK9oGBu6mO.P8CevVIa5nHpTmEjxroKEvQTdU0KOS.",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Lisa",
+      "last_name": "Johnson",
+      "phone": "(555) 567-8901",
+      "last_activity_at": 1780002527982,
+      "created_at": 1780527789804,
+      "email_verified_at": null
+    },
+    {
+      "id": 10,
+      "email": "newuser@test.com",
+      "password_hash": "$2b$12$1A5ZXY4ZL40Bz1nnJ9t/pOIWvKlHEhAhVJgRbrDSXp6/2S4Yo/TRS",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "New",
+      "last_name": "User",
+      "phone": null,
+      "last_activity_at": null,
+      "created_at": 1780528134138,
+      "email_verified_at": null
+    },
+    {
+      "id": 11,
+      "email": "previewtest@test.com",
+      "password_hash": "$2b$12$U9lbfaQAL/UP.Ut.m8oaXuJMkpku54/X9.zymPIqmDBVC2pgRtHRu",
+      "role": "candidate",
+      "organization_id": null,
+      "must_change_pass": 0,
+      "tos_accepted_at": null,
+      "account_status": "active",
+      "deletion_requested_at": null,
+      "is_approved": 1,
+      "first_name": "Preview",
+      "last_name": "Test",
+      "phone": null,
+      "last_activity_at": null,
+      "created_at": 1780530390407,
+      "email_verified_at": null
+    }
+  ],
+  "AdminPermission": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "permission_name": "manage_users",
+      "is_allowed": 1
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "permission_name": "manage_organizations",
+      "is_allowed": 1
+    },
+    {
+      "id": 3,
+      "user_id": 2,
+      "permission_name": "manage_checklists",
+      "is_allowed": 1
+    },
+    {
+      "id": 4,
+      "user_id": 2,
+      "permission_name": "manage_billing",
+      "is_allowed": 0
+    },
+    {
+      "id": 5,
+      "user_id": 2,
+      "permission_name": "view_audit_logs",
+      "is_allowed": 1
+    },
+    {
+      "id": 6,
+      "user_id": 2,
+      "permission_name": "manage_settings",
+      "is_allowed": 0
+    },
+    {
+      "id": 7,
+      "user_id": 2,
+      "permission_name": "manage_email_templates",
+      "is_allowed": 0
+    }
+  ],
+  "CandidateProfile": [
+    {
+      "id": 1,
+      "user_id": 5,
+      "first_name": "Jane",
+      "last_name": "Nurse",
+      "phone": "(555) 123-4567",
+      "resume_id": null,
+      "profile_completion_pct": 92,
+      "notification_preferences": null
+    },
+    {
+      "id": 2,
+      "user_id": 6,
+      "first_name": "John",
+      "last_name": "Smith",
+      "phone": "(555) 234-5678",
+      "resume_id": null,
+      "profile_completion_pct": 82,
+      "notification_preferences": null
+    },
+    {
+      "id": 3,
+      "user_id": 7,
+      "first_name": "Maria",
+      "last_name": "Garcia",
+      "phone": "(555) 345-6789",
+      "resume_id": null,
+      "profile_completion_pct": 98,
+      "notification_preferences": null
+    },
+    {
+      "id": 4,
+      "user_id": 8,
+      "first_name": "David",
+      "last_name": "Chen",
+      "phone": "(555) 456-7890",
+      "resume_id": null,
+      "profile_completion_pct": 53,
+      "notification_preferences": null
+    },
+    {
+      "id": 5,
+      "user_id": 9,
+      "first_name": "Lisa",
+      "last_name": "Johnson",
+      "phone": "(555) 567-8901",
+      "resume_id": null,
+      "profile_completion_pct": 59,
+      "notification_preferences": null
+    },
+    {
+      "id": 6,
+      "user_id": 10,
+      "first_name": "New",
+      "last_name": "User",
+      "phone": "",
+      "resume_id": null,
+      "profile_completion_pct": 10,
+      "notification_preferences": null
+    },
+    {
+      "id": 7,
+      "user_id": 11,
+      "first_name": "Preview",
+      "last_name": "Test",
+      "phone": "",
+      "resume_id": null,
+      "profile_completion_pct": 10,
+      "notification_preferences": null
+    }
+  ],
+  "ChecklistTemplate": [
+    {
+      "id": 1,
+      "profession": "RN",
+      "specialty": "ICU",
+      "name": "ICU Nurse Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789806
+    },
+    {
+      "id": 2,
+      "profession": "RN",
+      "specialty": "ER",
+      "name": "Emergency Room Nurse Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789806
+    },
+    {
+      "id": 3,
+      "profession": "RN",
+      "specialty": "OR",
+      "name": "Operating Room Nurse Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789807
+    },
+    {
+      "id": 4,
+      "profession": "RN",
+      "specialty": "Pediatrics",
+      "name": "Pediatric Nurse Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789808
+    },
+    {
+      "id": 5,
+      "profession": "RN",
+      "specialty": "MedSurg",
+      "name": "Medical-Surgical Nurse Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789808
+    },
+    {
+      "id": 6,
+      "profession": "LPN",
+      "specialty": "General",
+      "name": "LPN General Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789809
+    },
+    {
+      "id": 7,
+      "profession": "CNA",
+      "specialty": "General",
+      "name": "CNA Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789809
+    },
+    {
+      "id": 8,
+      "profession": "RT",
+      "specialty": "General",
+      "name": "Respiratory Therapist Skills Checklist",
+      "is_active": 1,
+      "created_at": 1780527789810
+    }
+  ],
+  "Skill": [
+    {
+      "id": 1,
+      "checklist_template_id": 1,
+      "skill_name": "Patient Assessment",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 1,
+      "has_na_option": 1
+    },
+    {
+      "id": 2,
+      "checklist_template_id": 1,
+      "skill_name": "Vital Signs Monitoring",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 2,
+      "has_na_option": 1
+    },
+    {
+      "id": 3,
+      "checklist_template_id": 1,
+      "skill_name": "IV Line Management",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 3,
+      "has_na_option": 1
+    },
+    {
+      "id": 4,
+      "checklist_template_id": 1,
+      "skill_name": "Wound Care & Dressing",
+      "category": "Patient Care",
+      "question_type": "yes_no",
+      "sort_order": 4,
+      "has_na_option": 1
+    },
+    {
+      "id": 5,
+      "checklist_template_id": 1,
+      "skill_name": "Ventilator Management",
+      "category": "Equipment",
+      "question_type": "rating_1_5",
+      "sort_order": 5,
+      "has_na_option": 1
+    },
+    {
+      "id": 6,
+      "checklist_template_id": 1,
+      "skill_name": "Cardiac Monitor Interpretation",
+      "category": "Equipment",
+      "question_type": "rating_1_5",
+      "sort_order": 6,
+      "has_na_option": 1
+    },
+    {
+      "id": 7,
+      "checklist_template_id": 1,
+      "skill_name": "Defibrillator Operation",
+      "category": "Equipment",
+      "question_type": "yes_no",
+      "sort_order": 7,
+      "has_na_option": 1
+    },
+    {
+      "id": 8,
+      "checklist_template_id": 1,
+      "skill_name": "Medication Administration",
+      "category": "Medications",
+      "question_type": "rating_1_5",
+      "sort_order": 8,
+      "has_na_option": 1
+    },
+    {
+      "id": 9,
+      "checklist_template_id": 1,
+      "skill_name": "Dosage Calculation",
+      "category": "Medications",
+      "question_type": "rating_1_5",
+      "sort_order": 9,
+      "has_na_option": 1
+    },
+    {
+      "id": 10,
+      "checklist_template_id": 1,
+      "skill_name": "Blood Transfusion Protocol",
+      "category": "Medications",
+      "question_type": "yes_no",
+      "sort_order": 10,
+      "has_na_option": 1
+    },
+    {
+      "id": 11,
+      "checklist_template_id": 1,
+      "skill_name": "Code Blue Response",
+      "category": "Critical Care",
+      "question_type": "rating_1_5",
+      "sort_order": 11,
+      "has_na_option": 1
+    },
+    {
+      "id": 12,
+      "checklist_template_id": 1,
+      "skill_name": "Central Line Care",
+      "category": "Critical Care",
+      "question_type": "rating_1_5",
+      "sort_order": 12,
+      "has_na_option": 1
+    },
+    {
+      "id": 13,
+      "checklist_template_id": 1,
+      "skill_name": "Patient & Family Education",
+      "category": "Communication",
+      "question_type": "rating_1_5",
+      "sort_order": 13,
+      "has_na_option": 1
+    },
+    {
+      "id": 14,
+      "checklist_template_id": 1,
+      "skill_name": "Shift Handoff / SBAR",
+      "category": "Communication",
+      "question_type": "rating_1_5",
+      "sort_order": 14,
+      "has_na_option": 1
+    },
+    {
+      "id": 15,
+      "checklist_template_id": 2,
+      "skill_name": "Triage Assessment",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 1,
+      "has_na_option": 1
+    },
+    {
+      "id": 16,
+      "checklist_template_id": 2,
+      "skill_name": "Trauma Assessment",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 2,
+      "has_na_option": 1
+    },
+    {
+      "id": 17,
+      "checklist_template_id": 2,
+      "skill_name": "Wound Management",
+      "category": "Patient Care",
+      "question_type": "rating_1_5",
+      "sort_order": 3,
+      "has_na_option": 1
+    },
+    {
+      "id": 18,
+      "checklist_template_id": 2,
+      "skill_name": "Chest Tube Management",
+      "category": "Procedures",
+      "question_type": "rating_1_5",
+      "sort_order": 4,
+      "has_na_option": 1
+    },
+    {
+      "id": 19,
+      "checklist_template_id": 2,
+      "skill_name": "Intubation Assist",
+      "category": "Procedures",
+      "question_type": "yes_no",
+      "sort_order": 5,
+      "has_na_option": 1
+    },
+    {
+      "id": 20,
+      "checklist_template_id": 2,
+      "skill_name": "Conscious Sedation Monitoring",
+      "category": "Medications",
+      "question_type": "rating_1_5",
+      "sort_order": 6,
+      "has_na_option": 1
+    }
+  ],
+  "ChecklistRequest": [
+    {
+      "id": 1,
+      "client_user_id": 4,
+      "candidate_user_id": 5,
+      "checklist_template_id": 1,
+      "status": "completed",
+      "completion_pct": 100,
+      "candidate_response_id": 1,
+      "opened_at": 1779663789821,
+      "created_at": 1779490989821
+    },
+    {
+      "id": 2,
+      "client_user_id": 4,
+      "candidate_user_id": 6,
+      "checklist_template_id": 1,
+      "status": "in_progress",
+      "completion_pct": 65,
+      "candidate_response_id": null,
+      "opened_at": 1780268589821,
+      "created_at": 1780095789821
+    },
+    {
+      "id": 3,
+      "client_user_id": 4,
+      "candidate_user_id": 7,
+      "checklist_template_id": 2,
+      "status": "sent",
+      "completion_pct": 0,
+      "candidate_response_id": null,
+      "opened_at": null,
+      "created_at": 1780441389821
+    },
+    {
+      "id": 4,
+      "client_user_id": 3,
+      "candidate_user_id": 8,
+      "checklist_template_id": 4,
+      "status": "in_progress",
+      "completion_pct": 30,
+      "candidate_response_id": null,
+      "opened_at": 1780354989821,
+      "created_at": 1780182189821
+    },
+    {
+      "id": 5,
+      "client_user_id": 4,
+      "candidate_user_id": 9,
+      "checklist_template_id": 3,
+      "status": "completed",
+      "completion_pct": 100,
+      "candidate_response_id": 2,
+      "opened_at": 1779836589821,
+      "created_at": 1779318189821
+    }
+  ],
+  "CandidateChecklistResponse": [
+    {
+      "id": 1,
+      "candidate_user_id": 5,
+      "checklist_template_id": 1,
+      "status": "submitted",
+      "valid_until": 1783119789821,
+      "submitted_at": 1779750189821,
+      "digital_signature": "data:image/png;base64,signature1",
+      "candidate_name_signed": "Jane Nurse",
+      "signature_date": 1779750189821
+    },
+    {
+      "id": 2,
+      "candidate_user_id": 9,
+      "checklist_template_id": 3,
+      "status": "submitted",
+      "valid_until": 1783119789821,
+      "submitted_at": 1779922989821,
+      "digital_signature": "data:image/png;base64,signature2",
+      "candidate_name_signed": "Lisa Johnson",
+      "signature_date": 1779922989821
+    }
+  ],
+  "SkillRating": [
+    {
+      "id": 1,
+      "checklist_response_id": 1,
+      "skill_id": 1,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789829
+    },
+    {
+      "id": 2,
+      "checklist_response_id": 1,
+      "skill_id": 2,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789830
+    },
+    {
+      "id": 3,
+      "checklist_response_id": 1,
+      "skill_id": 3,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789831
+    },
+    {
+      "id": 4,
+      "checklist_response_id": 1,
+      "skill_id": 4,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789831
+    },
+    {
+      "id": 5,
+      "checklist_response_id": 1,
+      "skill_id": 5,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789832
+    },
+    {
+      "id": 6,
+      "checklist_response_id": 1,
+      "skill_id": 6,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789832
+    },
+    {
+      "id": 7,
+      "checklist_response_id": 1,
+      "skill_id": 7,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789833
+    },
+    {
+      "id": 8,
+      "checklist_response_id": 1,
+      "skill_id": 8,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789833
+    },
+    {
+      "id": 9,
+      "checklist_response_id": 1,
+      "skill_id": 9,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789834
+    },
+    {
+      "id": 10,
+      "checklist_response_id": 1,
+      "skill_id": 10,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789835
+    },
+    {
+      "id": 11,
+      "checklist_response_id": 1,
+      "skill_id": 11,
+      "rating_value": "5",
+      "is_na": 0,
+      "updated_at": 1780527789835
+    },
+    {
+      "id": 12,
+      "checklist_response_id": 1,
+      "skill_id": 12,
+      "rating_value": "4",
+      "is_na": 0,
+      "updated_at": 1780527789836
+    },
+    {
+      "id": 13,
+      "checklist_response_id": 1,
+      "skill_id": 13,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789836
+    },
+    {
+      "id": 14,
+      "checklist_response_id": 1,
+      "skill_id": 14,
+      "rating_value": "3",
+      "is_na": 0,
+      "updated_at": 1780527789836
+    }
+  ],
+  "Credential": [
+    {
+      "id": 1,
+      "candidate_user_id": 5,
+      "document_name": "BLS Certification",
+      "file_url": "/uploads/credential_1.pdf",
+      "expiration_date": 1807903337134,
+      "reminder_enabled": 1,
+      "status": "active",
+      "verification_status": "verified",
+      "reviewed_by": null,
+      "review_notes": null,
+      "uploaded_at": 1775343913392
+    },
+    {
+      "id": 2,
+      "candidate_user_id": 6,
+      "document_name": "ACLS Certification",
+      "file_url": "/uploads/credential_2.pdf",
+      "expiration_date": 1801920383851,
+      "reminder_enabled": 1,
+      "status": "active",
+      "verification_status": "verified",
+      "reviewed_by": null,
+      "review_notes": null,
+      "uploaded_at": 1773650478330
+    },
+    {
+      "id": 3,
+      "candidate_user_id": 7,
+      "document_name": "BLS Certification",
+      "file_url": "/uploads/credential_3.pdf",
+      "expiration_date": 1811529000958,
+      "reminder_enabled": 1,
+      "status": "active",
+      "verification_status": "verified",
+      "reviewed_by": null,
+      "review_notes": null,
+      "uploaded_at": 1775247808739
+    },
+    {
+      "id": 4,
+      "candidate_user_id": 8,
+      "document_name": "ACLS Certification",
+      "file_url": "/uploads/credential_4.pdf",
+      "expiration_date": 1809626996607,
+      "reminder_enabled": 1,
+      "status": "active",
+      "verification_status": "verified",
+      "reviewed_by": null,
+      "review_notes": null,
+      "uploaded_at": 1775936867257
+    },
+    {
+      "id": 5,
+      "candidate_user_id": 9,
+      "document_name": "BLS Certification",
+      "file_url": "/uploads/credential_5.pdf",
+      "expiration_date": 1801100678173,
+      "reminder_enabled": 1,
+      "status": "active",
+      "verification_status": "verified",
+      "reviewed_by": null,
+      "review_notes": null,
+      "uploaded_at": 1777230130497
+    }
+  ],
+  "Resume": [
+    {
+      "id": 1,
+      "candidate_user_id": 5,
+      "file_url": "/uploads/resume_1.pdf",
+      "parsed_data": "{\"summary\":\"Jane is an experienced healthcare professional.\"}",
+      "is_builder_resume": 1,
+      "created_at": 1780527789840
+    },
+    {
+      "id": 2,
+      "candidate_user_id": 6,
+      "file_url": "/uploads/resume_2.pdf",
+      "parsed_data": "{\"summary\":\"John is an experienced healthcare professional.\"}",
+      "is_builder_resume": 0,
+      "created_at": 1780527789840
+    },
+    {
+      "id": 3,
+      "candidate_user_id": 7,
+      "file_url": "/uploads/resume_3.pdf",
+      "parsed_data": "{\"summary\":\"Maria is an experienced healthcare professional.\"}",
+      "is_builder_resume": 1,
+      "created_at": 1780527789841
+    },
+    {
+      "id": 4,
+      "candidate_user_id": 8,
+      "file_url": "/uploads/resume_4.pdf",
+      "parsed_data": "{\"summary\":\"David is an experienced healthcare professional.\"}",
+      "is_builder_resume": 0,
+      "created_at": 1780527789841
+    },
+    {
+      "id": 5,
+      "candidate_user_id": 9,
+      "file_url": "/uploads/resume_5.pdf",
+      "parsed_data": "{\"summary\":\"Lisa is an experienced healthcare professional.\"}",
+      "is_builder_resume": 1,
+      "created_at": 1780527789842
+    }
+  ],
+  "CandidateReference": [
+    {
+      "id": 1,
+      "candidate_user_id": 5,
+      "manager_user_id": null,
+      "manager_email": "manager@hospital.com",
+      "manager_phone": "(555) 999-0000",
+      "facility_name": "City General Hospital",
+      "employment_status": "current",
+      "status": "completed",
+      "requested_at": 1778799789821
+    },
+    {
+      "id": 2,
+      "candidate_user_id": 5,
+      "manager_user_id": null,
+      "manager_email": "manager2@hospital.com",
+      "manager_phone": "(555) 888-0000",
+      "facility_name": "Metro Medical Center",
+      "employment_status": "past",
+      "status": "pending_request",
+      "requested_at": 1780354989821
+    }
+  ],
+  "ReferenceQuestion": [
+    {
+      "id": 1,
+      "employment_status": "current",
+      "question_text": "Is this candidate currently employed at your facility?",
+      "response_type": "yes_no",
+      "sort_order": 1
+    },
+    {
+      "id": 2,
+      "employment_status": "current",
+      "question_text": "How would you rate the candidate's clinical competence?",
+      "response_type": "rating_1_5",
+      "sort_order": 2
+    },
+    {
+      "id": 3,
+      "employment_status": "current",
+      "question_text": "How would you rate the candidate's professionalism and work ethic?",
+      "response_type": "rating_1_5",
+      "sort_order": 3
+    },
+    {
+      "id": 4,
+      "employment_status": "current",
+      "question_text": "Does the candidate work well within a team?",
+      "response_type": "rating_1_5",
+      "sort_order": 4
+    },
+    {
+      "id": 5,
+      "employment_status": "current",
+      "question_text": "Would you recommend this candidate for a similar position?",
+      "response_type": "yes_no",
+      "sort_order": 5
+    },
+    {
+      "id": 6,
+      "employment_status": "ending_contract",
+      "question_text": "Is this candidate's contract ending on schedule?",
+      "response_type": "yes_no",
+      "sort_order": 1
+    },
+    {
+      "id": 7,
+      "employment_status": "ending_contract",
+      "question_text": "How would you rate the candidate's overall performance during the contract?",
+      "response_type": "rating_1_5",
+      "sort_order": 2
+    },
+    {
+      "id": 8,
+      "employment_status": "ending_contract",
+      "question_text": "Did the candidate fulfill all contract obligations satisfactorily?",
+      "response_type": "yes_no",
+      "sort_order": 3
+    },
+    {
+      "id": 9,
+      "employment_status": "ending_contract",
+      "question_text": "How would you rate the candidate's adaptability to changing situations?",
+      "response_type": "rating_1_5",
+      "sort_order": 4
+    },
+    {
+      "id": 10,
+      "employment_status": "ending_contract",
+      "question_text": "Would you rehire this candidate for a future contract?",
+      "response_type": "yes_no",
+      "sort_order": 5
+    },
+    {
+      "id": 11,
+      "employment_status": "past",
+      "question_text": "How long did the candidate work at your facility?",
+      "response_type": "text",
+      "sort_order": 1
+    },
+    {
+      "id": 12,
+      "employment_status": "past",
+      "question_text": "How would you rate the candidate's clinical skills during their employment?",
+      "response_type": "rating_1_5",
+      "sort_order": 2
+    },
+    {
+      "id": 13,
+      "employment_status": "past",
+      "question_text": "Was the candidate's departure voluntary?",
+      "response_type": "yes_no",
+      "sort_order": 3
+    },
+    {
+      "id": 14,
+      "employment_status": "past",
+      "question_text": "How would you rate the candidate's reliability and attendance?",
+      "response_type": "rating_1_5",
+      "sort_order": 4
+    },
+    {
+      "id": 15,
+      "employment_status": "past",
+      "question_text": "Would you recommend this candidate for rehire?",
+      "response_type": "yes_no",
+      "sort_order": 5
+    }
+  ],
+  "ReferenceResponse": [],
+  "ConsentShare": [
+    {
+      "id": 1,
+      "candidate_user_id": 5,
+      "client_user_id": 4,
+      "checklist_response_id": 1,
+      "credential_id": null,
+      "resume_id": null,
+      "reference_id": null,
+      "is_deleted": 0,
+      "shared_at": 1779836589821,
+      "expires_at": 1782428589821
+    },
+    {
+      "id": 2,
+      "candidate_user_id": 5,
+      "client_user_id": 4,
+      "checklist_response_id": null,
+      "credential_id": null,
+      "resume_id": 1,
+      "reference_id": null,
+      "is_deleted": 0,
+      "shared_at": 1779836589821,
+      "expires_at": 1782428589821
+    },
+    {
+      "id": 3,
+      "candidate_user_id": 5,
+      "client_user_id": 4,
+      "checklist_response_id": null,
+      "credential_id": 1,
+      "resume_id": null,
+      "reference_id": null,
+      "is_deleted": 0,
+      "shared_at": 1779922989821,
+      "expires_at": 1782514989821
+    },
+    {
+      "id": 4,
+      "candidate_user_id": 9,
+      "client_user_id": 4,
+      "checklist_response_id": 2,
+      "credential_id": null,
+      "resume_id": null,
+      "reference_id": null,
+      "is_deleted": 0,
+      "shared_at": 1780009389821,
+      "expires_at": 1782601389821
+    }
+  ],
+  "UnlockedDocument": [
+    {
+      "id": 1,
+      "client_user_id": 4,
+      "consent_share_id": 1,
+      "entity_type": "checklist",
+      "entity_id": 1,
+      "credits_charged": 1,
+      "unlocked_at": 1779922989821
+    },
+    {
+      "id": 2,
+      "client_user_id": 4,
+      "consent_share_id": 2,
+      "entity_type": "resume",
+      "entity_id": 1,
+      "credits_charged": 1,
+      "unlocked_at": 1779922989821
+    }
+  ],
+  "CreditTransaction": [
+    {
+      "id": 1,
+      "organization_id": 1,
+      "transaction_type": "purchase",
+      "credit_amount": 100,
+      "description": "Initial credit purchase",
+      "created_at": 1777935789821
+    },
+    {
+      "id": 2,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -1,
+      "description": "Unlock checklist for Jane Nurse",
+      "created_at": 1779922989821
+    },
+    {
+      "id": 3,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -1,
+      "description": "Unlock resume for Jane Nurse",
+      "created_at": 1779922989821
+    },
+    {
+      "id": 4,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -1,
+      "description": "Send checklist request to Maria Garcia",
+      "created_at": 1780441389821
+    },
+    {
+      "id": 5,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -5,
+      "description": "Document bundle unlock for Lisa Johnson",
+      "created_at": 1780009389821
+    },
+    {
+      "id": 6,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -1,
+      "description": "Send checklist request to David Chen",
+      "created_at": 1780182189821
+    },
+    {
+      "id": 7,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -1,
+      "description": "Unlock credential (BLS) for Jane Nurse",
+      "created_at": 1780095789821
+    },
+    {
+      "id": 8,
+      "organization_id": 1,
+      "transaction_type": "deduction",
+      "credit_amount": -5,
+      "description": "Send checklist request to John Smith",
+      "created_at": 1780095789821
+    }
+  ],
+  "Invoice": [
+    {
+      "id": 1,
+      "organization_id": 1,
+      "credit_amount": 100,
+      "total_price": 299,
+      "pdf_url": "/invoices/INV-001.pdf",
+      "created_at": 1777935789821
+    }
+  ],
+  "Notification": [
+    {
+      "id": 1,
+      "user_id": 4,
+      "message": "Jane Nurse completed the ICU Nurse Skills Checklist",
+      "type": "checklist_completed",
+      "is_read": 1,
+      "related_entity_id": null,
+      "created_at": 1779750189821,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": null
+    },
+    {
+      "id": 2,
+      "user_id": 4,
+      "message": "Maria Garcia has not yet opened your checklist request",
+      "type": "checklist_pending",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780441389821,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": null
+    },
+    {
+      "id": 3,
+      "user_id": 3,
+      "message": "Your BAA requires signature before accessing candidate data",
+      "type": "baa_reminder",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780354989821,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": null
+    },
+    {
+      "id": 4,
+      "user_id": 3,
+      "message": "Follow-up call scheduled for today at 2:00 PM with Sarah Johnson regarding ICU RN position.",
+      "type": "call_scheduled",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780887665583,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Call Scheduled: Sarah Johnson"
+    },
+    {
+      "id": 5,
+      "user_id": 3,
+      "message": "Reminder: You have a call with Mike Chen in 30 minutes about the ER Nurse position.",
+      "type": "call_reminder",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780887665584,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Call Reminder: Mike Chen"
+    },
+    {
+      "id": 6,
+      "user_id": 3,
+      "message": "Follow up with Emily Davis about document submission for the Med-Surg position.",
+      "type": "call_follow_up",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780887665585,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Follow Up: Emily Davis"
+    },
+    {
+      "id": 7,
+      "user_id": 3,
+      "message": "John Smith has accepted the night shift at City General Hospital on March 15.",
+      "type": "shift_accepted",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780887665585,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Shift Accepted by John Smith"
+    },
+    {
+      "id": 8,
+      "user_id": 3,
+      "message": "Lisa Park has declined the day shift at Memorial Hospital on March 20.",
+      "type": "shift_declined",
+      "is_read": 1,
+      "related_entity_id": null,
+      "created_at": 1780887665586,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Shift Declined by Lisa Park"
+    },
+    {
+      "id": 9,
+      "user_id": 3,
+      "message": "Alex Rivera has moved to Interview Scheduled stage in the pipeline.",
+      "type": "lead_stage_change",
+      "is_read": 0,
+      "related_entity_id": null,
+      "created_at": 1780887665586,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Lead Update: Alex Rivera"
+    },
+    {
+      "id": 10,
+      "user_id": 3,
+      "message": "Jane Doe has requested access to your candidate checklists and credentials.",
+      "type": "share_request",
+      "is_read": 1,
+      "related_entity_id": null,
+      "created_at": 1780887665587,
+      "metadata": null,
+      "related_entity_type": null,
+      "snoozed_until": null,
+      "title": "Share Request from Jane Doe"
+    }
+  ],
+  "PendingReminder": [],
+  "PlatformSetting": [
+    {
+      "id": 1,
+      "setting_key": "checklist_validity_days",
+      "setting_value": "30",
+      "updated_by": null,
+      "updated_at": 1780527789847
+    },
+    {
+      "id": 2,
+      "setting_key": "share_expiry_options",
+      "setting_value": "7,14,30",
+      "updated_by": null,
+      "updated_at": 1780527789848
+    },
+    {
+      "id": 3,
+      "setting_key": "credit_cost_per_document",
+      "setting_value": "1",
+      "updated_by": null,
+      "updated_at": 1780527789848
+    },
+    {
+      "id": 4,
+      "setting_key": "baa_content",
+      "setting_value": "BUSINESS ASSOCIATE AGREEMENT\n\nThis Business Associate Agreement (\"Agreement\") is entered into by and between MyZipVault, Inc. (\"Business Associate\") and the undersigned healthcare organization (\"Covered Entity\").\n\n1. PURPOSE\nThis Agreement is entered into to comply with the Health Insurance Portability and Accountability Act of 1996 (\"HIPAA\"), the Health Information Technology for Economic and Clinical Health Act (\"HITECH Act\"), and their implementing regulations.\n\n2. DEFINITIONS\n2.1 \"Protected Health Information\" or \"PHI\" means individually identifiable health information held by Business Associate on behalf of Covered Entity.\n2.2 \"Breach\" means the acquisition, access, use, or disclosure of PHI in a manner not permitted by HIPAA.\n2.3 \"Designated Record Set\" means a group of records maintained by or for Covered Entity.\n\n3. OBLIGATIONS OF BUSINESS ASSOCIATE\n3.1 Business Associate shall not use or disclose PHI other than as permitted or required by this Agreement or as required by law.\n3.2 Business Associate shall implement appropriate safeguards to prevent use or disclosure of PHI other than as provided for by this Agreement.\n3.3 Business Associate shall report to Covered Entity any use or disclosure of PHI not provided for by this Agreement of which Business Associate becomes aware, including any Breach of Unsecured PHI.\n3.4 Business Associate shall ensure that any subcontractors that create, receive, maintain, or transmit PHI on behalf of Business Associate agree to the same restrictions and conditions that apply to Business Associate.\n\n4. OBLIGATIONS OF COVERED ENTITY\n4.1 Covered Entity shall not request Business Associate to use or disclose PHI in any manner that would not be permissible under HIPAA if done by Covered Entity.\n4.2 Covered Entity shall notify Business Associate of any limitation(s) in its notice of privacy practices or any changes to permission or restriction.\n\n5. TERM AND TERMINATION\n5.1 This Agreement shall be effective as of the date of execution and shall terminate upon the earlier of: (a) termination of the service agreement between the parties; or (b) mutual written agreement.\n5.2 Upon termination, Business Associate shall return or destroy all PHI received from Covered Entity.\n\n6. MISCELLANEOUS\n6.1 This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware.\n6.2 Any ambiguity in this Agreement shall be resolved in favor of a interpretation that permits compliance with HIPAA.\n6.3 This Agreement constitutes the entire agreement between the parties with respect to the subject matter hereof.\n\nIN WITNESS WHEREOF, the parties have executed this Agreement as of the date set forth below.",
+      "updated_by": null,
+      "updated_at": 1780527789848
+    },
+    {
+      "id": 5,
+      "setting_key": "baa_required",
+      "setting_value": "true",
+      "updated_by": null,
+      "updated_at": 1780527789849
+    },
+    {
+      "id": 6,
+      "setting_key": "sms_enabled",
+      "setting_value": "false",
+      "updated_by": null,
+      "updated_at": 1780527789849
+    },
+    {
+      "id": 7,
+      "setting_key": "credit_price_per_unit",
+      "setting_value": "2.99",
+      "updated_by": null,
+      "updated_at": 1780527789850
+    }
+  ],
+  "FeatureFlag": [
+    {
+      "id": 1,
+      "flag_name": "sms_notifications",
+      "is_enabled": 0,
+      "updated_by": null,
+      "updated_at": 1780527789851
+    },
+    {
+      "id": 2,
+      "flag_name": "resume_builder",
+      "is_enabled": 1,
+      "updated_by": null,
+      "updated_at": 1780527789851
+    },
+    {
+      "id": 3,
+      "flag_name": "reference_engine",
+      "is_enabled": 1,
+      "updated_by": null,
+      "updated_at": 1780527789852
+    },
+    {
+      "id": 4,
+      "flag_name": "credit_upsell",
+      "is_enabled": 1,
+      "updated_by": null,
+      "updated_at": 1780527789852
+    },
+    {
+      "id": 5,
+      "flag_name": "document_verification_queue",
+      "is_enabled": 1,
+      "updated_by": null,
+      "updated_at": 1780527789853
+    }
+  ],
+  "EmailTemplate": [
+    {
+      "id": 1,
+      "template_key": "checklist_request",
+      "subject": "Skills Checklist Request from {{client_name}}",
+      "body": "Hello {{candidate_name}},\n\n{{client_name}} has requested that you complete the {{checklist_name}} skills checklist.\n\nPlease log in to your MyZipVault account to complete this checklist at your earliest convenience.\n\nIf you have any questions, please contact {{client_name}} directly.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789853
+    },
+    {
+      "id": 2,
+      "template_key": "existing_candidate_checklist",
+      "subject": "New Checklist Request from {{client_name}}",
+      "body": "Hello {{candidate_name}},\n\n{{client_name}} has sent you a new skills checklist request.\n\nPlease log in to your MyZipVault account to view and complete this request.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789854
+    },
+    {
+      "id": 3,
+      "template_key": "candidate_invite",
+      "subject": "You're Invited to MyZipVault!",
+      "body": "Hello {{candidate_name}},\n\n{{client_name}} has invited you to join MyZipVault to complete a skills checklist.\n\nPlease click the following link to set up your account:\n{{invite_link}}\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789854
+    },
+    {
+      "id": 4,
+      "template_key": "checklist_reminder",
+      "subject": "Reminder: Complete Your Skills Checklist",
+      "body": "Hello {{candidate_name}},\n\nThis is a friendly reminder that you still have a pending skills checklist request from {{client_name}}.\n\nPlease log in to your MyZipVault account to complete the {{checklist_name}} checklist.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789855
+    },
+    {
+      "id": 5,
+      "template_key": "reference_request",
+      "subject": "Reference Request for {{candidate_name}}",
+      "body": "Hello {{manager_name}},\n\n{{candidate_name}} has listed you as a professional reference from {{facility_name}}.\n\nPlease log in to MyZipVault to complete the reference questionnaire.\n\nThank you for your time,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789855
+    },
+    {
+      "id": 6,
+      "template_key": "reference_reminder",
+      "subject": "Reminder: Reference Request for {{candidate_name}}",
+      "body": "Hello {{manager_name}},\n\nThis is a reminder that {{candidate_name}} has requested a professional reference from you.\n\nPlease log in to MyZipVault to complete the reference questionnaire.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789856
+    },
+    {
+      "id": 7,
+      "template_key": "credential_expiry_warning",
+      "subject": "Credential Expiring Soon: {{credential_name}}",
+      "body": "Hello {{candidate_name}},\n\nYour credential \"{{credential_name}}\" is set to expire on {{expiration_date}}.\n\nPlease update your credentials in MyZipVault to keep your profile current.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789856
+    },
+    {
+      "id": 8,
+      "template_key": "consent_share_notification",
+      "subject": "{{client_name}} Has Requested Access to Your Documents",
+      "body": "Hello {{candidate_name}},\n\n{{client_name}} has requested access to your documents on MyZipVault.\n\nPlease log in to review and approve or deny this request.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789857
+    },
+    {
+      "id": 9,
+      "template_key": "document_unlocked",
+      "subject": "Document Unlocked: {{document_type}}",
+      "body": "Hello {{client_name}},\n\nThe {{document_type}} for {{candidate_name}} has been unlocked and is now available for viewing.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789857
+    },
+    {
+      "id": 10,
+      "template_key": "account_approval",
+      "subject": "Your MyZipVault Account Has Been Approved",
+      "body": "Hello {{user_name}},\n\nYour MyZipVault account has been approved. You can now log in and start using the platform.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789857
+    },
+    {
+      "id": 11,
+      "template_key": "welcome_candidate",
+      "subject": "Welcome to MyZipVault!",
+      "body": "Hello {{candidate_name}},\n\nWelcome to MyZipVault! Your account has been created.\n\nPlease log in to complete your profile, upload credentials, and build your professional resume.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789858
+    },
+    {
+      "id": 12,
+      "template_key": "welcome_client",
+      "subject": "Welcome to MyZipVault!",
+      "body": "Hello {{client_name}},\n\nWelcome to MyZipVault! Your organization account has been set up.\n\nYou can now start requesting skills checklists, verifying credentials, and connecting with healthcare professionals.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789858
+    },
+    {
+      "id": 13,
+      "template_key": "password_reset",
+      "subject": "Reset Your MyZipVault Password",
+      "body": "Hello {{user_name}},\n\nWe received a request to reset your password. Please click the link below to set a new password:\n\n{{reset_link}}\n\nIf you did not request this, please ignore this email.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789858
+    },
+    {
+      "id": 14,
+      "template_key": "credit_low_warning",
+      "subject": "Low Credit Balance Alert",
+      "body": "Hello {{admin_name}},\n\nYour organization {{organization_name}} has a low credit balance of {{credits_balance}} credits remaining.\n\nPlease purchase additional credits to ensure uninterrupted access to document verification services.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780527789859
+    },
+    {
+      "id": 15,
+      "template_key": "email_verification",
+      "subject": "Verify Your Email Address — MyZipVault",
+      "body": "Hello {{candidate_name}},\n\nThank you for creating your MyZipVault account! Please verify your email address by clicking the link below:\n\n{{verification_link}}\n\nThis link will expire in 24 hours. If you did not create an account with MyZipVault, please ignore this email.\n\nThank you,\nMyZipVault Team",
+      "updated_by": null,
+      "updated_at": 1780887314148
+    }
+  ],
+  "Announcement": [
+    {
+      "id": 1,
+      "message": "Welcome to MyZipVault! Please complete your profile to get started.",
+      "target_role": "candidate",
+      "is_active": 1,
+      "created_at": 1780527789876
+    }
+  ],
+  "DocumentFlag": [],
+  "SystemErrorLog": [],
+  "AuditLog": [],
+  "AutomatedRule": [
+    {
+      "id": 1,
+      "rule_name": "reference_reminder_3_day",
+      "trigger_condition": "{\"event\":\"reference_request_sent\",\"delay_days\":3,\"condition\":\"status == pending_request\"}",
+      "action_type": "email",
+      "template_id": 6,
+      "is_active": 1
+    },
+    {
+      "id": 2,
+      "rule_name": "credential_expiry_30_day",
+      "trigger_condition": "{\"event\":\"credential_expiry_approaching\",\"days_before_expiry\":30,\"condition\":\"reminder_enabled == true\"}",
+      "action_type": "email",
+      "template_id": 7,
+      "is_active": 1
+    }
+  ],
+  "InviteToken": [],
+  "ApiKey": [],
+  "ShareRequest": [],
+  "CalendarAvailability": [],
+  "CalendarShare": [],
+  "RecruiterLead": [],
+  "CallSchedule": [],
+  "CallLog": [],
+  "RecruiterAvailability": [],
+  "ShiftRequest": [],
+  "ReferenceDeletionRequest": []
+}
