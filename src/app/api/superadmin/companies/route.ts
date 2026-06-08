@@ -32,7 +32,7 @@ export async function GET() {
     return NextResponse.json({
       companies: organizations.map((org) => {
         const seatsUsed = org.users.filter(
-          (u) => u.role === "client_recruiter" || u.role === "client_admin"
+          (u) => (u.role === "client_recruiter" || u.role === "client_admin") && u.account_status === "active"
         ).length;
         return {
           id: org.id,
@@ -454,6 +454,94 @@ export async function POST(request: Request) {
           message: `Role updated to ${newRole === "client_admin" ? "Admin" : "Recruiter"}`,
         });
       }
+      case "suspend-member": {
+        const { userId: suspendUserId } = body;
+        if (!suspendUserId) {
+          return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const suspendUser = await db.user.findUnique({ where: { id: suspendUserId } });
+        if (!suspendUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        if (suspendUser.account_status === "suspended") {
+          return NextResponse.json({ error: "User is already suspended" }, { status: 400 });
+        }
+        if (suspendUser.role !== "client_recruiter" && suspendUser.role !== "client_admin") {
+          return NextResponse.json({ error: "Can only suspend client users" }, { status: 400 });
+        }
+        await db.user.update({
+          where: { id: suspendUserId },
+          data: { account_status: "suspended" },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "suspend_member",
+            entity_type: "user",
+            entity_id: suspendUserId,
+            details: `Suspended member ${suspendUser.email}`,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `Member ${suspendUser.email} suspended successfully`,
+        });
+      }
+      case "activate-member": {
+        const { userId: activateUserId } = body;
+        if (!activateUserId) {
+          return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const activateUser = await db.user.findUnique({ where: { id: activateUserId } });
+        if (!activateUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        if (activateUser.account_status === "active") {
+          return NextResponse.json({ error: "User is already active" }, { status: 400 });
+        }
+        if (activateUser.role !== "client_recruiter" && activateUser.role !== "client_admin") {
+          return NextResponse.json({ error: "Can only activate client users" }, { status: 400 });
+        }
+        // Check seat limit before activating
+        if (activateUser.organization_id) {
+          const org = await db.organization.findUnique({ where: { id: activateUser.organization_id } });
+          if (org) {
+            const activeMembers = await db.user.count({
+              where: {
+                organization_id: activateUser.organization_id,
+                role: { in: ["client_recruiter", "client_admin"] },
+                account_status: "active",
+                id: { not: activateUserId },
+              },
+            });
+            if (activeMembers >= org.seat_limit) {
+              return NextResponse.json(
+                { error: `Cannot activate: seat limit reached (${org.seat_limit}/${org.seat_limit}). Increase seat limit first.` },
+                { status: 400 }
+              );
+            }
+          }
+        }
+        await db.user.update({
+          where: { id: activateUserId },
+          data: { account_status: "active" },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "activate_member",
+            entity_type: "user",
+            entity_id: activateUserId,
+            details: `Activated member ${activateUser.email}`,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `Member ${activateUser.email} activated successfully`,
+        });
+      }
       case "delete": {
         const { organizationId } = body;
         if (!organizationId) {
@@ -481,15 +569,17 @@ export async function POST(request: Request) {
             entity_id: organizationId,
           },
         });
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, message: "Company deleted successfully" });
       }
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
   } catch (error) {
     console.error("Superadmin Companies POST error:", error);
+    // Return more specific error messages instead of generic "Failed to perform action"
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json(
-      { error: "Failed to perform action" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -143,8 +143,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Superadmin Member Profile GET error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch member profile";
     return NextResponse.json(
-      { error: "Failed to fetch member profile" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

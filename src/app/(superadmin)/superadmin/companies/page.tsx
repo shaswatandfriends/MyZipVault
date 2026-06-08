@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Building2,
@@ -25,6 +25,14 @@ import {
   Clock,
   Send,
   FileText,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Ban,
+  UserCheck,
+  UserX,
+  TrendingUp,
+  Award,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -74,6 +82,19 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Transaction {
@@ -121,6 +142,21 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return "Never";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return formatDate(dateStr);
+}
+
 function getBaaBadge(status: string) {
   switch (status) {
     case "signed":
@@ -137,13 +173,36 @@ function getBaaBadge(status: string) {
 function getTransactionTypeBadge(type: string) {
   switch (type) {
     case "purchase":
-      return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Purchase</Badge>;
+    case "admin_adjustment_add":
+      return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">{type === "admin_adjustment_add" ? "Admin Add" : "Purchase"}</Badge>;
     case "spend":
     case "deduction":
-      return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Deduction</Badge>;
+    case "admin_adjustment_deduct":
+      return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">{type === "admin_adjustment_deduct" ? "Admin Deduct" : "Deduction"}</Badge>;
     default:
       return <Badge variant="outline">{type}</Badge>;
   }
+}
+
+function getAccountStatusBadge(status: string) {
+  switch (status) {
+    case "active":
+      return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 text-[10px]">Active</Badge>;
+    case "suspended":
+      return <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 text-[10px]">Suspended</Badge>;
+    case "pending":
+      return <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 text-[10px]">Pending</Badge>;
+    default:
+      return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+  }
+}
+
+function getMemberFullName(member: Member): string {
+  return [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+}
+
+function getMemberInitials(member: Member): string {
+  return ((member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0]).toUpperCase();
 }
 
 // ─── Skeleton ───────────────────────────────────────────────────────
@@ -161,11 +220,19 @@ function TableRowSkeleton() {
   );
 }
 
+function StatCardSkeleton() {
+  return <Card><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>;
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function SuperadminCompaniesPage() {
   const [data, setData] = useState<CompaniesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCompany, setExpandedCompany] = useState<number | null>(null);
+
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterBaaStatus, setFilterBaaStatus] = useState("all");
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -202,8 +269,8 @@ export default function SuperadminCompaniesPage() {
   const [baaSignedByName, setBaaSignedByName] = useState("");
   const [baaSignedByTitle, setBaaSignedByTitle] = useState("");
 
-  // Swap email form
-  const [swapUserId, setSwapUserId] = useState("");
+  // Swap email form — now uses member selection instead of raw User ID
+  const [swapMember, setSwapMember] = useState<Member | null>(null);
   const [swapNewEmail, setSwapNewEmail] = useState("");
 
   // Add Recruiter form
@@ -222,6 +289,7 @@ export default function SuperadminCompaniesPage() {
   const [profileCompany, setProfileCompany] = useState<Company | null>(null);
   const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   // Reset Password dialog
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
@@ -235,6 +303,41 @@ export default function SuperadminCompaniesPage() {
   const [changeRoleMember, setChangeRoleMember] = useState<Member | null>(null);
   const [changeRoleCompany, setChangeRoleCompany] = useState<Company | null>(null);
   const [changeRoleNew, setChangeRoleNew] = useState("");
+
+  // Suspend Member dialog
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspendMember, setSuspendMember] = useState<Member | null>(null);
+  const [suspendAction, setSuspendAction] = useState<"suspend" | "activate">("suspend");
+
+  // ── Computed: Filtered companies ─────────────────────────────────
+  const filteredCompanies = useMemo(() => {
+    if (!data?.companies) return [];
+    return data.companies.filter((company) => {
+      const matchesSearch = !searchQuery ||
+        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.members.some(
+          (m) =>
+            m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            getMemberFullName(m).toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      const matchesBaa = filterBaaStatus === "all" || company.baaStatus === filterBaaStatus;
+      return matchesSearch && matchesBaa;
+    });
+  }, [data, searchQuery, filterBaaStatus]);
+
+  // ── Computed: Summary stats ──────────────────────────────────────
+  const stats = useMemo(() => {
+    if (!data?.companies) return { total: 0, totalCredits: 0, totalSeats: 0, totalSeatsUsed: 0, signedBaa: 0, pendingBaa: 0 };
+    const companies = data.companies;
+    return {
+      total: companies.length,
+      totalCredits: companies.reduce((sum, c) => sum + c.creditsBalance, 0),
+      totalSeats: companies.reduce((sum, c) => sum + c.seatLimit, 0),
+      totalSeatsUsed: companies.reduce((sum, c) => sum + c.seatsUsed, 0),
+      signedBaa: companies.filter((c) => c.baaStatus === "signed").length,
+      pendingBaa: companies.filter((c) => c.baaStatus === "pending").length,
+    };
+  }, [data]);
 
   const fetchCompanies = useCallback(async () => {
     try {
@@ -332,10 +435,19 @@ export default function SuperadminCompaniesPage() {
 
   const handleSetSeatLimit = async () => {
     if (!selectedCompany) return;
+    const newLimit = parseInt(seatLimit, 10);
+    if (isNaN(newLimit) || newLimit < 1) {
+      toast.error("Seat limit must be at least 1");
+      return;
+    }
+    if (newLimit < selectedCompany.seatsUsed) {
+      toast.error(`Cannot set seat limit below current usage (${selectedCompany.seatsUsed} seats in use)`);
+      return;
+    }
     const result = await postAction({
       action: "set-seat-limit",
       organizationId: selectedCompany.id,
-      seatLimit: parseInt(seatLimit, 10) || 5,
+      seatLimit: newLimit,
     });
     if (result?.success) {
       setShowSeatDialog(false);
@@ -344,6 +456,10 @@ export default function SuperadminCompaniesPage() {
 
   const handleSetBaaStatus = async () => {
     if (!selectedCompany) return;
+    if (baaStatus === "signed" && !baaSignedByName.trim()) {
+      toast.error("Signed By Name is required when setting status to Signed");
+      return;
+    }
     const result = await postAction({
       action: "set-baa-status",
       organizationId: selectedCompany.id,
@@ -357,14 +473,20 @@ export default function SuperadminCompaniesPage() {
   };
 
   const handleSwapEmail = async () => {
+    if (!swapMember || !swapNewEmail.trim()) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(swapNewEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     const result = await postAction({
       action: "swap-email",
-      userId: parseInt(swapUserId, 10),
-      newEmail: swapNewEmail,
+      userId: swapMember.id,
+      newEmail: swapNewEmail.trim(),
     });
     if (result?.success) {
       setShowSwapDialog(false);
-      setSwapUserId("");
+      setSwapMember(null);
       setSwapNewEmail("");
     }
   };
@@ -408,6 +530,13 @@ export default function SuperadminCompaniesPage() {
     setShowBaaDialog(true);
   };
 
+  const openSwapDialog = (company: Company) => {
+    setSelectedCompany(company);
+    setSwapMember(null);
+    setSwapNewEmail("");
+    setShowSwapDialog(true);
+  };
+
   const openAddRecruiterDialog = (company: Company) => {
     setAddRecruiterCompany(company);
     setAddRecruiterRole("client_recruiter");
@@ -421,6 +550,11 @@ export default function SuperadminCompaniesPage() {
 
   const handleAddRecruiter = async () => {
     if (!addRecruiterCompany) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(addRecruiterEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     const result = await postAction({
       action: "add-recruiter",
       organizationId: addRecruiterCompany.id,
@@ -449,13 +583,19 @@ export default function SuperadminCompaniesPage() {
     setShowProfileDialog(true);
     setProfileLoading(true);
     setProfileData(null);
+    setProfileError(null);
     try {
       const res = await fetch(`/api/superadmin/companies/member?userId=${member.id}`);
-      if (!res.ok) throw new Error("Failed to fetch profile");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        throw new Error((errorBody as Record<string, string>).error || `Server returned ${res.status}`);
+      }
       const data = await res.json();
       setProfileData(data);
-    } catch {
-      toast.error("Failed to load member profile");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load member profile";
+      setProfileError(message);
+      toast.error("Failed to load member profile", { description: message });
     } finally {
       setProfileLoading(false);
     }
@@ -472,6 +612,10 @@ export default function SuperadminCompaniesPage() {
 
   const handleResetPassword = async () => {
     if (!resetPasswordMember) return;
+    if (resetPasswordNew.trim() && resetPasswordNew.trim().length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
     const result = await postAction({
       action: "reset-password",
       userId: resetPasswordMember.id,
@@ -511,6 +655,36 @@ export default function SuperadminCompaniesPage() {
     }
   };
 
+  // ── Suspend/Activate Member ─────────────────────────────────────
+  const openSuspendDialog = (member: Member, action: "suspend" | "activate") => {
+    setSuspendMember(member);
+    setSuspendAction(action);
+    setShowSuspendDialog(true);
+  };
+
+  const handleSuspendMember = async () => {
+    if (!suspendMember) return;
+    const result = await postAction({
+      action: suspendAction === "suspend" ? "suspend-member" : "activate-member",
+      userId: suspendMember.id,
+    });
+    if (result?.success) {
+      setShowSuspendDialog(false);
+    }
+  };
+
+  // ── Tooltip wrapper for icon buttons ────────────────────────────
+  function Tip({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>{children}</TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">{label}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -527,11 +701,107 @@ export default function SuperadminCompaniesPage() {
         }
       />
 
+      {/* ── Summary Stats ─────────────────────────────────────────── */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+      ) : data?.companies.length ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-l-4 border-l-teal-500">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700 shrink-0">
+                  <Building2 className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-xs text-muted-foreground">Companies</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 shrink-0">
+                  <CreditCard className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalCredits.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Total Credits</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-purple-500">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-purple-50 text-purple-700 shrink-0">
+                  <Users className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalSeatsUsed}/{stats.totalSeats}</p>
+                  <p className="text-xs text-muted-foreground">Seats Used</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-emerald-500">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 shrink-0">
+                  <Award className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.signedBaa}/{stats.total}</p>
+                  <p className="text-xs text-muted-foreground">BAA Signed</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {/* ── Search & Filter Bar ────────────────────────────────────── */}
+      {data?.companies.length ? (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search companies or members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={filterBaaStatus} onValueChange={setFilterBaaStatus}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="size-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="BAA Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All BAA Status</SelectItem>
+              <SelectItem value="signed">Signed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-5 text-teal-600" />
             Organizations
+            {data?.companies.length ? (
+              <Badge variant="outline" className="ml-1 text-xs">
+                {filteredCompanies.length === data.companies.length
+                  ? `${data.companies.length} total`
+                  : `${filteredCompanies.length} of ${data.companies.length}`}
+              </Badge>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -561,16 +831,27 @@ export default function SuperadminCompaniesPage() {
                 Add your first organization to get started.
               </p>
             </div>
+          ) : !filteredCompanies.length ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="size-10 text-muted-foreground mb-3" />
+              <h3 className="text-base font-semibold mb-1">No matches found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Try adjusting your search or filter criteria.
+              </p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => { setSearchQuery(""); setFilterBaaStatus("all"); }}>
+                Clear Filters
+              </Button>
+            </div>
           ) : (
             <div className="space-y-0">
-              {data.companies.map((company) => (
+              {filteredCompanies.map((company) => (
                 <div key={company.id} className="border-b last:border-0">
                   {/* ── Company Row ──────────────────────────────────── */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700 text-xs font-semibold shrink-0">
-                          {company.name[0]?.toUpperCase()}
+                        <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700 text-sm font-bold shrink-0">
+                          {company.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-sm">{company.name}</p>
@@ -581,8 +862,14 @@ export default function SuperadminCompaniesPage() {
                             </span>
                             <span className="flex items-center gap-1">
                               <Users className="size-3" />
-                              {company.seatsUsed}/{company.seatLimit}
+                              {company.seatsUsed}/{company.seatLimit} seats
                             </span>
+                            {company.customPricingNotes && (
+                              <span className="flex items-center gap-1 text-teal-600">
+                                <TrendingUp className="size-3" />
+                                Custom pricing
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -590,72 +877,83 @@ export default function SuperadminCompaniesPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {getBaaBadge(company.baaStatus)}
                       <span className="text-xs text-muted-foreground">{formatDate(company.createdAt)}</span>
-                      <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(company)}>
-                          <Settings2 className="size-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openCreditsDialog(company)}>
-                          <CreditCard className="size-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openBaaDialog(company)}>
-                          <FileCheck className="size-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openSeatDialog(company)}>
-                          <Users className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
-                          onClick={() => openAddRecruiterDialog(company)}
-                          disabled={company.seatsUsed >= company.seatLimit}
-                          title={company.seatsUsed >= company.seatLimit ? "Seat limit reached" : "Add Recruiter"}
-                        >
-                          <UserPlus className="size-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setShowSwapDialog(true)}>
-                          <Mail className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setExpandedCompany(expandedCompany === company.id ? null : company.id);
-                          }}
-                        >
-                          {expandedCompany === company.id ? (
-                            <ChevronUp className="size-3.5" />
-                          ) : (
-                            <ChevronDown className="size-3.5" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            setSelectedCompany(company);
-                            setShowDeleteDialog(true);
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
+                      {/* ── Actions Dropdown ─────────────────────────────── */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1">
+                            <Settings2 className="size-3.5" />
+                            <span className="hidden sm:inline text-xs">Manage</span>
+                            <ChevronDown className="size-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => openEditDialog(company)}>
+                            <Settings2 className="size-4 mr-2" />
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openCreditsDialog(company)}>
+                            <CreditCard className="size-4 mr-2" />
+                            Adjust Credits
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openBaaDialog(company)}>
+                            <FileCheck className="size-4 mr-2" />
+                            Set BAA Status
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSeatDialog(company)}>
+                            <Users className="size-4 mr-2" />
+                            Set Seat Limit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => openAddRecruiterDialog(company)} disabled={company.seatsUsed >= company.seatLimit}>
+                            <UserPlus className="size-4 mr-2" />
+                            Add Member
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSwapDialog(company)}>
+                            <Mail className="size-4 mr-2" />
+                            Swap Email
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="size-4 mr-2" />
+                            Delete Company
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setExpandedCompany(expandedCompany === company.id ? null : company.id);
+                        }}
+                        title={expandedCompany === company.id ? "Collapse" : "Expand to view members & transactions"}
+                      >
+                        {expandedCompany === company.id ? (
+                          <ChevronUp className="size-3.5" />
+                        ) : (
+                          <ChevronDown className="size-3.5" />
+                        )}
+                      </Button>
                     </div>
                   </div>
 
-                  {/* ── Expanded: Tabs — Recruiter Management + Credit Transaction Ledger ── */}
+                  {/* ── Expanded: Tabs ──────────────────────────────────── */}
                   {expandedCompany === company.id && (
                     <div className="pb-4 px-2">
                       <Tabs defaultValue="recruiters" className="w-full">
                         <TabsList className="w-full grid grid-cols-2 mb-3">
                           <TabsTrigger value="recruiters" className="gap-1.5 text-xs">
                             <Users className="size-3.5" />
-                            Recruiter Management
+                            Team Members ({company.seatsUsed}/{company.seatLimit})
                           </TabsTrigger>
                           <TabsTrigger value="ledger" className="gap-1.5 text-xs">
                             <CreditCard className="size-3.5" />
-                            Credit Transaction Ledger
+                            Credit Ledger
                           </TabsTrigger>
                         </TabsList>
 
@@ -694,68 +992,100 @@ export default function SuperadminCompaniesPage() {
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  {company.members.map((member) => {
-                                    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
-                                    const initials = (member.firstName?.[0] || "") + (member.lastName?.[0] || "") || member.email[0];
-                                    return (
-                                      <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3">
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                          <div className="flex size-9 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
-                                            {initials.toUpperCase()}
+                                  {company.members.map((member) => (
+                                    <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3">
+                                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className={`flex size-9 items-center justify-center rounded-full text-xs font-semibold shrink-0 ${
+                                          member.accountStatus === "suspended"
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-teal-100 text-teal-700"
+                                        }`}>
+                                          {getMemberInitials(member)}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium truncate">{getMemberFullName(member)}</p>
+                                            {getAccountStatusBadge(member.accountStatus)}
                                           </div>
-                                          <div className="min-w-0">
-                                            <p className="text-sm font-medium truncate">{fullName}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span className="truncate">{member.email}</span>
+                                            <span className="shrink-0">Last active: {formatRelativeTime(member.lastActivityAt)}</span>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                          {member.role === "client_admin" ? (
-                                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
-                                              <ShieldCheck className="size-3" />
-                                              Admin
-                                            </Badge>
-                                          ) : (
-                                            <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">
-                                              Recruiter
-                                            </Badge>
-                                          )}
-                                          {member.mustChangePass && (
-                                            <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">
-                                              Must Reset
-                                            </Badge>
-                                          )}
-                                          {/* Action Buttons */}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {member.role === "client_admin" ? (
+                                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs gap-1">
+                                            <ShieldCheck className="size-3" />
+                                            Admin
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">
+                                            Recruiter
+                                          </Badge>
+                                        )}
+                                        {member.mustChangePass && (
+                                          <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">
+                                            Must Reset
+                                          </Badge>
+                                        )}
+                                        {/* ── Member Action Buttons ────────────── */}
+                                        <Tip label="View Profile">
                                           <Button
                                             variant="ghost"
                                             size="sm"
                                             className="size-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                            title="View Profile & Activity"
                                             onClick={() => openProfileDialog(member, company)}
                                           >
                                             <Eye className="size-3.5" />
                                           </Button>
+                                        </Tip>
+                                        <Tip label="Reset Password">
                                           <Button
                                             variant="ghost"
                                             size="sm"
                                             className="size-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                            title="Reset Password"
                                             onClick={() => openResetPasswordDialog(member)}
                                           >
                                             <KeyRound className="size-3.5" />
                                           </Button>
+                                        </Tip>
+                                        <Tip label="Change Role">
                                           <Button
                                             variant="ghost"
                                             size="sm"
                                             className="size-7 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                                            title="Change Role"
                                             onClick={() => openChangeRoleDialog(member, company)}
                                           >
                                             <ArrowRightLeft className="size-3.5" />
                                           </Button>
-                                        </div>
+                                        </Tip>
+                                        {member.accountStatus === "active" ? (
+                                          <Tip label="Suspend Member">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="size-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                              onClick={() => openSuspendDialog(member, "suspend")}
+                                            >
+                                              <Ban className="size-3.5" />
+                                            </Button>
+                                          </Tip>
+                                        ) : (
+                                          <Tip label="Activate Member">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="size-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                              onClick={() => openSuspendDialog(member, "activate")}
+                                            >
+                                              <UserCheck className="size-3.5" />
+                                            </Button>
+                                          </Tip>
+                                        )}
                                       </div>
-                                    );
-                                  })}
+                                    </div>
+                                  ))}
                                   {/* Empty seat indicators */}
                                   {Array.from({ length: Math.max(0, company.seatLimit - company.members.length) }).map((_, i) => (
                                     <div key={`empty-${i}`} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-dashed opacity-50">
@@ -774,8 +1104,11 @@ export default function SuperadminCompaniesPage() {
                         {/* ── Credit Transaction Ledger Tab ──────────────── */}
                         <TabsContent value="ledger">
                           <Card className="bg-muted/30">
-                            <CardHeader className="py-3">
+                            <CardHeader className="py-3 flex-row items-center justify-between">
                               <CardTitle className="text-sm">Credit Transaction Ledger</CardTitle>
+                              <span className="text-xs text-muted-foreground">
+                                Balance: <span className="font-semibold text-foreground">{company.creditsBalance}</span> credits
+                              </span>
                             </CardHeader>
                             <CardContent>
                               {company.transactions.length === 0 ? (
@@ -795,8 +1128,8 @@ export default function SuperadminCompaniesPage() {
                                       {company.transactions.map((tx) => (
                                         <TableRow key={tx.id}>
                                           <TableCell>{getTransactionTypeBadge(tx.transactionType)}</TableCell>
-                                          <TableCell className="font-medium">
-                                            {tx.transactionType === "purchase" ? "+" : "-"}
+                                          <TableCell className={`font-medium ${tx.transactionType === "purchase" || tx.transactionType === "admin_adjustment_add" ? "text-emerald-700" : "text-red-700"}`}>
+                                            {tx.transactionType === "purchase" || tx.transactionType === "admin_adjustment_add" ? "+" : "-"}
                                             {tx.creditAmount}
                                           </TableCell>
                                           <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
@@ -833,7 +1166,7 @@ export default function SuperadminCompaniesPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Company Name</Label>
+              <Label>Company Name <span className="text-destructive">*</span></Label>
               <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Acme Healthcare" />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -853,8 +1186,8 @@ export default function SuperadminCompaniesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleAddCompany} disabled={actionLoading || !addName}>
-              {actionLoading ? "Creating…" : "Create Company"}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleAddCompany} disabled={actionLoading || !addName.trim()}>
+              {actionLoading ? "Creating..." : "Create Company"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -879,8 +1212,8 @@ export default function SuperadminCompaniesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditCompany} disabled={actionLoading}>
-              {actionLoading ? "Saving…" : "Save Changes"}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditCompany} disabled={actionLoading || !editName.trim()}>
+              {actionLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -892,7 +1225,7 @@ export default function SuperadminCompaniesPage() {
           <DialogHeader>
             <DialogTitle>Adjust Credits — {selectedCompany?.name}</DialogTitle>
             <DialogDescription>
-              Current balance: {selectedCompany?.creditsBalance ?? 0} credits. Use positive to add, negative to deduct.
+              Current balance: <span className="font-semibold">{selectedCompany?.creditsBalance ?? 0}</span> credits. Use positive to add, negative to deduct.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -908,7 +1241,7 @@ export default function SuperadminCompaniesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreditsDialog(false)}>Cancel</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSetCredits} disabled={actionLoading}>
-              {actionLoading ? "Processing…" : "Apply"}
+              {actionLoading ? "Processing..." : "Apply"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -924,11 +1257,16 @@ export default function SuperadminCompaniesPage() {
           <div className="space-y-2">
             <Label>Seat Limit</Label>
             <Input type="number" min="1" value={seatLimit} onChange={(e) => setSeatLimit(e.target.value)} />
+            {selectedCompany && parseInt(seatLimit, 10) < selectedCompany.seatsUsed && (
+              <p className="text-xs text-destructive">
+                Cannot set below current usage ({selectedCompany.seatsUsed} seats in use)
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSeatDialog(false)}>Cancel</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSetSeatLimit} disabled={actionLoading}>
-              {actionLoading ? "Saving…" : "Update"}
+              {actionLoading ? "Saving..." : "Update"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -958,7 +1296,7 @@ export default function SuperadminCompaniesPage() {
             {baaStatus === "signed" && (
               <>
                 <div className="space-y-2">
-                  <Label>Signed By Name</Label>
+                  <Label>Signed By Name <span className="text-destructive">*</span></Label>
                   <Input value={baaSignedByName} onChange={(e) => setBaaSignedByName(e.target.value)} placeholder="John Doe" />
                 </div>
                 <div className="space-y-2">
@@ -970,34 +1308,60 @@ export default function SuperadminCompaniesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowBaaDialog(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSetBaaStatus} disabled={actionLoading}>
-              {actionLoading ? "Saving…" : "Update BAA Status"}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSetBaaStatus} disabled={actionLoading || (baaStatus === "signed" && !baaSignedByName.trim())}>
+              {actionLoading ? "Saving..." : "Update BAA Status"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Swap Email Dialog ────────────────────────────────────────── */}
+      {/* ── Swap Email Dialog (IMPROVED - now uses member selection) ── */}
       <Dialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Swap Seat Email</DialogTitle>
-            <DialogDescription>Change the email address for a seat in an organization.</DialogDescription>
+            <DialogDescription>Change the email address for a member in {selectedCompany?.name}.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>User ID</Label>
-              <Input type="number" value={swapUserId} onChange={(e) => setSwapUserId(e.target.value)} placeholder="Enter user ID" />
+              <Label>Select Member <span className="text-destructive">*</span></Label>
+              <Select value={swapMember?.id?.toString() ?? ""} onValueChange={(val) => {
+                const member = selectedCompany?.members.find((m) => m.id.toString() === val) ?? null;
+                setSwapMember(member);
+                setSwapNewEmail("");
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedCompany?.members.map((m) => (
+                    <SelectItem key={m.id} value={m.id.toString()}>
+                      {getMemberFullName(m)} ({m.email})
+                    </SelectItem>
+                  )) ?? (
+                    <SelectItem value="none" disabled>No members found</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
+            {swapMember && (
+              <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Current email: </span>
+                <span className="font-medium">{swapMember.email}</span>
+              </div>
+            )}
             <div className="space-y-2">
-              <Label>New Email</Label>
-              <Input type="email" value={swapNewEmail} onChange={(e) => setSwapNewEmail(e.target.value)} placeholder="new.email@example.com" />
+              <Label>New Email <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input type="email" value={swapNewEmail} onChange={(e) => setSwapNewEmail(e.target.value)} placeholder="new.email@example.com" className="pl-9" />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSwapDialog(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSwapEmail} disabled={actionLoading || !swapUserId || !swapNewEmail}>
-              {actionLoading ? "Processing…" : "Swap Email"}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSwapEmail} disabled={actionLoading || !swapMember || !swapNewEmail.trim()}>
+              {actionLoading ? "Processing..." : "Swap Email"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1168,7 +1532,7 @@ export default function SuperadminCompaniesPage() {
               Member Profile
             </DialogTitle>
             <DialogDescription>
-              {profileMember ? [profileMember.firstName, profileMember.lastName].filter(Boolean).join(" ") : "Loading..."}
+              {profileMember ? getMemberFullName(profileMember) : "Loading..."}
               {profileCompany ? ` — ${profileCompany.name}` : ""}
             </DialogDescription>
           </DialogHeader>
@@ -1177,17 +1541,30 @@ export default function SuperadminCompaniesPage() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
+          ) : profileError ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-red-50 text-red-600 mb-3">
+                <Activity className="size-6" />
+              </div>
+              <p className="text-sm font-medium text-red-700">Failed to load profile</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">{profileError}</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => { if (profileMember && profileCompany) openProfileDialog(profileMember, profileCompany); }}>
+                Retry
+              </Button>
+            </div>
           ) : !profileData || !profileMember ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Failed to load profile</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-sm text-muted-foreground">No profile data available</p>
+            </div>
           ) : (
             <div className="space-y-5 py-2">
               {/* Profile Header */}
               <div className="flex items-center gap-4">
                 <div className="flex size-14 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-lg font-bold shrink-0">
-                  {((profileMember.firstName?.[0] || "") + (profileMember.lastName?.[0] || "") || profileMember.email[0]).toUpperCase()}
+                  {getMemberInitials(profileMember)}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-base">{[profileMember.firstName, profileMember.lastName].filter(Boolean).join(" ") || profileMember.email}</p>
+                  <p className="font-semibold text-base">{getMemberFullName(profileMember)}</p>
                   <p className="text-sm text-muted-foreground truncate">{profileMember.email}</p>
                   <div className="flex items-center gap-2 mt-1">
                     {profileMember.role === "client_admin" ? (
@@ -1197,6 +1574,7 @@ export default function SuperadminCompaniesPage() {
                     ) : (
                       <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">Recruiter</Badge>
                     )}
+                    {getAccountStatusBadge(profileMember.accountStatus)}
                     {profileMember.mustChangePass && (
                       <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">Must Reset Password</Badge>
                     )}
@@ -1212,7 +1590,7 @@ export default function SuperadminCompaniesPage() {
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-xs text-muted-foreground flex items-center gap-1"><Activity className="size-3" /> Last Active</p>
-                  <p className="font-medium">{profileMember.lastActivityAt ? formatDate(profileMember.lastActivityAt) : "Never"}</p>
+                  <p className="font-medium">{profileMember.lastActivityAt ? formatRelativeTime(profileMember.lastActivityAt) : "Never"}</p>
                 </div>
               </div>
 
@@ -1284,7 +1662,7 @@ export default function SuperadminCompaniesPage() {
               Reset Password
             </DialogTitle>
             <DialogDescription>
-              {resetPasswordMember ? `Reset password for ${[resetPasswordMember.firstName, resetPasswordMember.lastName].filter(Boolean).join(" ") || resetPasswordMember.email}` : ""}
+              {resetPasswordMember ? `Reset password for ${getMemberFullName(resetPasswordMember)}` : ""}
             </DialogDescription>
           </DialogHeader>
 
@@ -1363,7 +1741,7 @@ export default function SuperadminCompaniesPage() {
               Change Role
             </DialogTitle>
             <DialogDescription>
-              {changeRoleMember ? `Change role for ${[changeRoleMember.firstName, changeRoleMember.lastName].filter(Boolean).join(" ") || changeRoleMember.email}` : ""}
+              {changeRoleMember ? `Change role for ${getMemberFullName(changeRoleMember)}` : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1409,6 +1787,38 @@ export default function SuperadminCompaniesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Suspend/Activate Member Dialog ─────────────────────────── */}
+      <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {suspendAction === "suspend" ? (
+                <><Ban className="size-5 text-red-600" /> Suspend Member</>
+              ) : (
+                <><UserCheck className="size-5 text-emerald-600" /> Activate Member</>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {suspendAction === "suspend"
+                ? `Are you sure you want to suspend "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will lose access to their account until reactivated.`
+                : `Are you sure you want to activate "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will regain access to their account.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionLoading}
+              onClick={handleSuspendMember}
+              className={suspendAction === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+            >
+              {actionLoading
+                ? (suspendAction === "suspend" ? "Suspending..." : "Activating...")
+                : (suspendAction === "suspend" ? "Suspend Member" : "Activate Member")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ── Delete Company Confirmation ──────────────────────────────── */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -1426,7 +1836,7 @@ export default function SuperadminCompaniesPage() {
               onClick={handleDeleteCompany}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              {actionLoading ? "Deleting…" : "Delete Company"}
+              {actionLoading ? "Deleting..." : "Delete Company"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

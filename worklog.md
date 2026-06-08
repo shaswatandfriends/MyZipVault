@@ -20,3 +20,37 @@ Stage Summary:
 - Skill SUGGESTIONS now work on Vercel via Affinda
 - AI chat/generation (summaries, improvements, chat) requires ZAI API which is only reachable in local dev — on Vercel these features will show a clear error message
 - The AFFINDA_API_KEY must be set on Vercel for these features to work
+
+---
+Task ID: companies-improvements
+Agent: Main Agent
+Task: Fix errors and implement major improvements to the Companies section
+
+Work Log:
+- Analyzed 2 screenshots showing errors: "Action failed - Failed to perform action" and "Failed to load member profile"
+- Read all companies-related files (page.tsx, API routes, member route)
+- Identified root causes: generic catch-all error messages, Swap Email requiring raw User ID input, missing member status indicators
+- Rewrote entire companies page with comprehensive improvements
+- Added suspend/activate member API actions with seat limit checks
+- Improved API error messages (replaced generic "Failed to perform action" with specific error messages)
+- Fixed seats counting to only count active members
+- Built successfully with zero errors
+
+Stage Summary:
+- Fixed Swap Email dialog: replaced raw User ID input with member selection dropdown
+- Fixed Member Profile error: added better error handling with retry button and specific error messages
+- Fixed API error messages: replaced generic catch-all with specific error details
+- Added search/filter bar with company name + member search and BAA status filter
+- Added 4 summary stats cards (Companies, Total Credits, Seats Used, BAA Signed)
+- Consolidated 7 icon-only action buttons into a "Manage" dropdown menu
+- Added tooltips to member action buttons
+- Added account status badges (Active/Suspended) for each member
+- Added Suspend/Activate member functionality with confirmation dialog
+- Added relative time display for last activity
+- Added "Custom pricing" indicator for companies with pricing notes
+- Added validation for BAA signed-by name when status is "Signed"
+- Added seat limit validation (can't set below current usage)
+- Added credit ledger balance display in header
+- Added transaction type badges for admin_adjustment_add/deduct
+- Added no-results state with clear filters button
+- Improved company avatar: shows first 2 letters instead of just 1
