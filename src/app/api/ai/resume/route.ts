@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import ZAI from "z-ai-web-dev-sdk";
+import { createZAI } from "@/lib/zai";
 
 export async function POST(request: Request) {
   try {
@@ -24,10 +24,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
     }
 
-    // Initialize the AI SDK
+    // Initialize the AI SDK using shared helper (reads env vars or .z-ai-config)
     let zai;
     try {
-      zai = await ZAI.create();
+      zai = await createZAI();
     } catch (sdkErr) {
       console.error("[AI_RESUME] ZAI SDK init failed:", sdkErr);
       return NextResponse.json(

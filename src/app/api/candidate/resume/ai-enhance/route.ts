@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import ZAI from "z-ai-web-dev-sdk";
+import { createZAI } from "@/lib/zai";
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const zai = await ZAI.create();
+    const zai = await createZAI();
 
     const systemPrompt = `You are a professional resume writer specializing in healthcare resumes. Enhance the given resume section to be more professional, impactful, and ATS-friendly. Keep the content truthful but improve wording, add relevant healthcare terminology, and make it more compelling. Return ONLY the enhanced text, no explanations or formatting markers.`;
 

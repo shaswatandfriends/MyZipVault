@@ -4,10 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
 import { parseResume as parseResumeAffinda, isAffindaConfigured } from "@/lib/affinda";
+import { createZAI } from "@/lib/zai";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
-import ZAI from "z-ai-web-dev-sdk";
 
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -24,7 +24,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
  */
 async function parseResumeWithAI(file: File): Promise<Record<string, unknown> | null> {
   try {
-    const zai = await ZAI.create();
+    const zai = await createZAI();
 
     // Read the file as base64
     const arrayBuffer = await file.arrayBuffer();
