@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
+  Send,
+  Loader2,
 } from "@/lib/icons";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface ChecklistRequestItem {
@@ -45,6 +48,29 @@ export default function CandidateChecklistsPage() {
   const [checklists, setChecklists] = useState<ChecklistRequestItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  const handleRequestChecklist = async () => {
+    setIsRequesting(true);
+    try {
+      const res = await fetch("/api/candidate/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "checklist_request",
+          message: "A candidate has requested a skills checklist to be sent to them.",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to request checklist");
+      toast.success("Checklist request sent!", {
+        description: "An admin will review your request and send you a checklist.",
+      });
+    } catch {
+      toast.error("Failed to send checklist request");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   const fetchChecklists = useCallback(async () => {
     try {
@@ -151,6 +177,14 @@ export default function CandidateChecklistsPage() {
         </div>
       )}
 
+      {/* Request Checklist Button */}
+      <div className="flex justify-end">
+        <Button variant="outline" className="gap-2" onClick={handleRequestChecklist} disabled={isRequesting}>
+          {isRequesting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          {isRequesting ? "Requesting..." : "Request Checklist"}
+        </Button>
+      </div>
+
       {/* Checklist List */}
       {checklists.length === 0 ? (
         <Card>
@@ -163,8 +197,9 @@ export default function CandidateChecklistsPage() {
               When a recruiter sends you a checklist request, it will appear here.
               Complete it to share your verified skills with employers.
             </p>
-            <Button variant="outline" className="mt-4" disabled>
-              Waiting for requests
+            <Button className="mt-4 gap-2" onClick={handleRequestChecklist} disabled={isRequesting}>
+              {isRequesting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {isRequesting ? "Requesting..." : "Request Checklist from Admin"}
             </Button>
           </CardContent>
         </Card>

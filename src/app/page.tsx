@@ -810,13 +810,15 @@ export default function LandingPage() {
   const [content, setContent] = useState<LandingPageContent | undefined>(undefined);
 
   useEffect(() => {
-    fetch("/api/superadmin/landing-page")
+    fetch(`/api/superadmin/landing-page?t=${Date.now()}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
       })
       .then((data: LandingPageContent) => {
-        setContent(data);
+        if (data && Object.keys(data).length > 0) {
+          setContent(data);
+        }
       })
       .catch(() => {
         // Silently fail — hardcoded defaults will be used

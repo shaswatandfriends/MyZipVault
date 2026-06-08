@@ -103,12 +103,10 @@ function getStatusBadge(status: string) {
 
 function getEmploymentLabel(status: string) {
   switch (status) {
-    case "current":
-      return "Current Employment";
-    case "ending_contract":
-      return "Ending Contract";
-    case "past":
-      return "Past Employment";
+    case "current_employee":
+      return "Current Employee";
+    case "past_employee":
+      return "Past Employee";
     default:
       return status;
   }
@@ -136,7 +134,11 @@ export default function CandidateReferencesPage() {
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
   const [facilityName, setFacilityName] = useState("");
-  const [employmentStatus, setEmploymentStatus] = useState("current");
+  const [employmentStatus, setEmploymentStatus] = useState("current_employee");
+  const [employmentStartMonth, setEmploymentStartMonth] = useState("");
+  const [employmentStartYear, setEmploymentStartYear] = useState("");
+  const [employmentEndMonth, setEmploymentEndMonth] = useState("");
+  const [employmentEndYear, setEmploymentEndYear] = useState("");
 
   const fetchReferences = useCallback(async () => {
     try {
@@ -194,6 +196,8 @@ export default function CandidateReferencesPage() {
           managerPhone: managerPhone.trim(),
           facilityName: facilityName.trim(),
           employmentStatus,
+          employmentStart: employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : null,
+          employmentEnd: employmentStatus === "past_employee" && employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : null,
         }),
       });
 
@@ -213,7 +217,11 @@ export default function CandidateReferencesPage() {
       setManagerEmail("");
       setManagerPhone("");
       setFacilityName("");
-      setEmploymentStatus("current");
+      setEmploymentStatus("current_employee");
+      setEmploymentStartMonth("");
+      setEmploymentStartYear("");
+      setEmploymentEndMonth("");
+      setEmploymentEndYear("");
       fetchReferences();
     } catch {
       toast.error("Failed to send reference request");
@@ -412,25 +420,57 @@ export default function CandidateReferencesPage() {
                     <Label>Employment Status</Label>
                     <RadioGroup value={employmentStatus} onValueChange={setEmploymentStatus}>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="current" id="emp-current" />
+                        <RadioGroupItem value="current_employee" id="emp-current" />
                         <Label htmlFor="emp-current" className="font-normal text-sm">
-                          Current Employment
+                          Current Employee
                         </Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="ending_contract" id="emp-ending" />
-                        <Label htmlFor="emp-ending" className="font-normal text-sm">
-                          Ending Contract
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="past" id="emp-past" />
+                        <RadioGroupItem value="past_employee" id="emp-past" />
                         <Label htmlFor="emp-past" className="font-normal text-sm">
-                          Past Employment
+                          Past Employee
                         </Label>
                       </div>
                     </RadioGroup>
                   </div>
+                  <div className="space-y-3">
+                    <Label>Employment Start</Label>
+                    <Input
+                      type="month"
+                      value={employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                          const [y, m] = val.split("-");
+                          setEmploymentStartYear(y);
+                          setEmploymentStartMonth(m);
+                        } else {
+                          setEmploymentStartYear("");
+                          setEmploymentStartMonth("");
+                        }
+                      }}
+                    />
+                  </div>
+                  {employmentStatus === "past_employee" && (
+                    <div className="space-y-3">
+                      <Label>Employment End</Label>
+                      <Input
+                        type="month"
+                        value={employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) {
+                            const [y, m] = val.split("-");
+                            setEmploymentEndYear(y);
+                            setEmploymentEndMonth(m);
+                          } else {
+                            setEmploymentEndYear("");
+                            setEmploymentEndMonth("");
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={isSubmitting} className="gap-2">

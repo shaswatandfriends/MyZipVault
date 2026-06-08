@@ -34,6 +34,8 @@ import {
   GraduationCap,
   Award,
   Wrench,
+  Eye,
+  Sparkles,
 } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -84,6 +86,8 @@ export default function CandidateResumePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Builder state
@@ -272,6 +276,31 @@ export default function CandidateResumePage() {
     }
   };
 
+  const handleAiEnhanceSummary = async () => {
+    setIsAiEnhancing(true);
+    try {
+      const res = await fetch("/api/candidate/resume/ai-enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "summary", content: summary }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error("AI enhancement failed", { description: data.error });
+        return;
+      }
+      const data = await res.json();
+      if (data.enhancedContent) {
+        setSummary(data.enhancedContent);
+        toast.success("Summary enhanced with AI!");
+      }
+    } catch {
+      toast.error("Failed to enhance summary");
+    } finally {
+      setIsAiEnhancing(false);
+    }
+  };
+
   // Calculate completeness
   const calcCompleteness = (data: ResumeParsedData | null) => {
     if (!data) return 0;
@@ -404,31 +433,41 @@ export default function CandidateResumePage() {
                 {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
                 {isExporting ? "Exporting..." : "Export as PDF"}
               </Button>
+              <Button
+                variant={showPreview ? "default" : "outline"}
+                className="gap-2"
+                onClick={() => setShowPreview(!showPreview)}
+              >
+                <Eye className="size-4" />
+                {showPreview ? "Hide Preview" : "Live Preview"}
+              </Button>
             </div>
           }
         />
 
-        <Tabs defaultValue="contact" className="space-y-4">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="contact" className="gap-1.5">
-              <User className="size-3.5" /> Contact
-            </TabsTrigger>
-            <TabsTrigger value="summary" className="gap-1.5">
-              <FileText className="size-3.5" /> Summary
-            </TabsTrigger>
-            <TabsTrigger value="experience" className="gap-1.5">
-              <Briefcase className="size-3.5" /> Experience
-            </TabsTrigger>
-            <TabsTrigger value="education" className="gap-1.5">
-              <GraduationCap className="size-3.5" /> Education
-            </TabsTrigger>
-            <TabsTrigger value="certifications" className="gap-1.5">
-              <Award className="size-3.5" /> Certifications
-            </TabsTrigger>
-            <TabsTrigger value="skills" className="gap-1.5">
-              <Wrench className="size-3.5" /> Skills
-            </TabsTrigger>
-          </TabsList>
+        <div className={showPreview ? "grid grid-cols-1 lg:grid-cols-5 gap-6" : ""}>
+          <div className={showPreview ? "lg:col-span-3" : ""}>
+            <Tabs defaultValue="contact" className="space-y-4">
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="contact" className="gap-1.5">
+                  <User className="size-3.5" /> Contact
+                </TabsTrigger>
+                <TabsTrigger value="summary" className="gap-1.5">
+                  <FileText className="size-3.5" /> Summary
+                </TabsTrigger>
+                <TabsTrigger value="experience" className="gap-1.5">
+                  <Briefcase className="size-3.5" /> Experience
+                </TabsTrigger>
+                <TabsTrigger value="education" className="gap-1.5">
+                  <GraduationCap className="size-3.5" /> Education
+                </TabsTrigger>
+                <TabsTrigger value="certifications" className="gap-1.5">
+                  <Award className="size-3.5" /> Certifications
+                </TabsTrigger>
+                <TabsTrigger value="skills" className="gap-1.5">
+                  <Wrench className="size-3.5" /> Skills
+                </TabsTrigger>
+              </TabsList>
 
           {/* Contact Tab */}
           <TabsContent value="contact">
@@ -492,7 +531,19 @@ export default function CandidateResumePage() {
           <TabsContent value="summary">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Professional Summary</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Professional Summary</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={isAiEnhancing || !summary.trim()}
+                    onClick={handleAiEnhanceSummary}
+                  >
+                    {isAiEnhancing ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                    {isAiEnhancing ? "Enhancing..." : "AI Enhance"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -861,7 +912,119 @@ export default function CandidateResumePage() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+          {showPreview && (
+            <div className="lg:col-span-2">
+              <div className="sticky top-6">
+                <Card className="border-2 border-dashed">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Eye className="size-4" /> Live Preview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 max-h-[80vh] overflow-y-auto">
+                    {/* Contact Preview */}
+                    {(contact.fullName || contact.phone || contact.email || contact.address) && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Contact</h4>
+                        {contact.fullName && <p className="font-bold text-lg">{contact.fullName}</p>}
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                          {contact.phone && <span>{contact.phone}</span>}
+                          {contact.email && <span>{contact.email}</span>}
+                          {contact.address && <span>{contact.address}</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Summary Preview */}
+                    {summary.trim() && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Professional Summary</h4>
+                        <p className="text-sm whitespace-pre-wrap">{summary}</p>
+                      </div>
+                    )}
+
+                    {/* Experience Preview */}
+                    {experiences.length > 0 && experiences.some(e => e.facility || e.unit) && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Experience</h4>
+                        <div className="space-y-2">
+                          {experiences.filter(e => e.facility || e.unit).map((exp, idx) => (
+                            <div key={idx} className="border-l-2 border-primary/20 pl-3">
+                              <p className="font-medium text-sm">{exp.facility || "Untitled"}</p>
+                              {exp.unit && <p className="text-xs text-muted-foreground">{exp.unit}</p>}
+                              {(exp.startDate || exp.endDate) && (
+                                <p className="text-xs text-muted-foreground">
+                                  {exp.startDate}{exp.endDate ? ` — ${exp.endDate}` : " — Present"}
+                                </p>
+                              )}
+                              {exp.description && <p className="text-xs mt-1 text-muted-foreground">{exp.description}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Education Preview */}
+                    {education.length > 0 && education.some(e => e.school || e.degree) && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Education</h4>
+                        <div className="space-y-1">
+                          {education.filter(e => e.school || e.degree).map((edu, idx) => (
+                            <div key={idx} className="flex items-baseline justify-between text-sm">
+                              <span className="font-medium">{edu.school || "Untitled"}</span>
+                              <span className="text-muted-foreground text-xs">{edu.degree}{edu.year ? ` · ${edu.year}` : ""}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certifications Preview */}
+                    {certifications.length > 0 && certifications.some(c => c.name) && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Certifications</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {certifications.filter(c => c.name).map((cert, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs gap-1">
+                              {cert.name}
+                              {cert.issuingOrg && <span className="text-muted-foreground">· {cert.issuingOrg}</span>}
+                              {cert.year && <span className="text-muted-foreground">· {cert.year}</span>}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Skills Preview */}
+                    {skills.length > 0 && skills.some(s => s.skill) && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Skills</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {skills.filter(s => s.skill).map((s, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs gap-1">
+                              {s.skill}
+                              <span className="text-muted-foreground">· {s.proficiency}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty Preview */}
+                    {!contact.fullName && !summary.trim() && experiences.length === 0 && education.length === 0 && certifications.length === 0 && skills.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="size-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Start filling in your details to see a live preview</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -881,19 +1044,17 @@ export default function CandidateResumePage() {
         description="Your professional resume on file"
         actions={
           <div className="flex items-center gap-2">
-            {resume?.isBuilderResume && (
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
-                  setMode("builder");
-                }}
-              >
-                <Pencil className="size-4" />
-                Edit in Builder
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+                setMode("builder");
+              }}
+            >
+              <Pencil className="size-4" />
+              Edit in Builder
+            </Button>
             <Button
               variant="outline"
               className="gap-2"

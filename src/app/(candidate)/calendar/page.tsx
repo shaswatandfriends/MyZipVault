@@ -1100,7 +1100,7 @@ export default function CalendarPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="max-h-72">
+                    <div className="max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
                       <div className="space-y-2">
                         {slots.map((slot) => {
                           const dayLabel = slot.day_of_week !== null
@@ -1155,7 +1155,7 @@ export default function CalendarPage() {
                           );
                         })}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </CardContent>
                 </Card>
               )}

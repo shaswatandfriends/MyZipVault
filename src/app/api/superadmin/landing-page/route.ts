@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 const SETTING_KEY = "landing_page_content";
 
 export async function GET() {
@@ -12,7 +14,7 @@ export async function GET() {
     });
 
     if (!setting) {
-      // Return default content
+      // Return default content with no-cache headers
       return NextResponse.json({
         hero: {
           candidateHeadline: "Stop Filling Out the Same Checklists.",
@@ -96,11 +98,19 @@ export async function GET() {
           copyrightText: "\u00A9 2025 MyZipVault. All rights reserved.",
           hipaaBadgeText: "HIPAA-Aligned Security",
         },
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
       });
     }
 
     const content = JSON.parse(setting.setting_value);
-    return NextResponse.json(content);
+    return NextResponse.json(content, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    });
   } catch (error) {
     console.error("Landing page GET error:", error);
     return NextResponse.json(
