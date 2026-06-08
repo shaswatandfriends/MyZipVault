@@ -50,5 +50,13 @@ test
 prompt
 
 server.log
+
+# Local SQLite database (never push to production)
+/db/*.db
+/db/*.db-journal
+
+# Uploaded files (screenshots, etc.)
+/upload/
+
 # Skills directory
 /skills/upload/
