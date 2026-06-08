@@ -1038,7 +1038,17 @@ export default function SuperadminCompaniesPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      {getBaaBadge(company.baaStatus)}
+                      <TooltipProvider delayDuration={300}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1">
+                              <FileCheck className="size-3 text-muted-foreground" />
+                              {getBaaBadge(company.baaStatus)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">BAA Status</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <span className="text-xs text-muted-foreground">{formatDate(company.createdAt)}</span>
                       {/* ── Actions Dropdown ─────────────────────────────── */}
                       <DropdownMenu>
