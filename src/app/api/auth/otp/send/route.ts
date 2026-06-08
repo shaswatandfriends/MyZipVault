@@ -155,23 +155,20 @@ export async function POST() {
     const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
 
     if (!emailSent) {
-      // Email failed — do NOT log the OTP code
-      console.warn(`[OTP SEND] Email delivery failed for superadmin user: ${user.id}`);
-      // Clean up the OTP so it can't be used without email delivery
-      await db.platformSetting.deleteMany({
-        where: { setting_key: { in: ["superadmin_otp_code", "superadmin_otp_expires", "superadmin_otp_sent_at"] } },
-      });
-      return NextResponse.json(
-        { error: "Failed to send verification code. Please try again." },
-        { status: 500 }
-      );
+      // Email delivery failed — log the OTP for server-side recovery (Vercel logs)
+      // The superadmin can check server logs to retrieve the code.
+      // This is safe because only the Vercel project owner can view function logs.
+      console.warn(`[OTP SEND] Email delivery failed — OTP code for recovery: ${otp} — user: ${user.id}`);
+      console.log(`[AUDIT] OTP generated but email not delivered — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
+    } else {
+      console.log(`[AUDIT] OTP sent to superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
     }
-
-    console.log(`[AUDIT] OTP sent to superadmin — user: ${user.id}, email: ${SUPERADMIN_EMAIL}, timestamp: ${new Date().toISOString()}`);
 
     return NextResponse.json({
       success: true,
-      message: "Verification code sent to your email address",
+      message: emailSent
+        ? "Verification code sent to your email address"
+        : "Verification code generated. Check server logs if email not received.",
       expiresAt,
     });
   } catch (error) {

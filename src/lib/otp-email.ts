@@ -49,8 +49,14 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
       console.log(`[OTP EMAIL] Sent OTP to ${toEmail}`);
       return true;
     } else {
-      const error = await response.text();
-      console.error(`[OTP EMAIL] Brevo error: ${error}`);
+      const errorText = await response.text();
+      console.error(`[OTP EMAIL] Brevo error (${response.status}): ${errorText}`);
+
+      // If Brevo returns IP authorization error, log a helpful message
+      if (errorText.includes("unrecognised IP") || errorText.includes("authorised_ips")) {
+        console.error("[OTP EMAIL] Brevo IP restriction detected. Add the server IP to Brevo authorized IPs at: https://app.brevo.com/security/authorised_ips");
+      }
+
       return false;
     }
   } catch (error) {
