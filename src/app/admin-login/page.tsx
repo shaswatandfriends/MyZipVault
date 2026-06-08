@@ -32,6 +32,9 @@ export default function AdminLoginPage() {
 
     setIsLoading(true);
     try {
+      // Sign out any existing session first to allow role switching
+      await signOut({ redirect: false });
+
       const result = await signIn("credentials", {
         email: email.trim(),
         password,

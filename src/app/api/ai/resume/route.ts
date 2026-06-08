@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createZAI } from "@/lib/zai";
+import { zaiChatCompletion } from "@/lib/zai";
 
 export async function POST(request: Request) {
   try {
@@ -22,18 +22,6 @@ export async function POST(request: Request) {
 
     if (!action) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
-    }
-
-    // Initialize the AI SDK using shared helper (reads env vars or .z-ai-config)
-    let zai;
-    try {
-      zai = await createZAI();
-    } catch (sdkErr) {
-      console.error("[AI_RESUME] ZAI SDK init failed:", sdkErr);
-      return NextResponse.json(
-        { error: "AI service initialization failed. Please try again later.", details: String(sdkErr) },
-        { status: 500 }
-      );
     }
 
     let systemPrompt = "";
@@ -107,7 +95,7 @@ Return ONLY valid JSON, no additional text or markdown.`;
 
     let completion;
     try {
-      completion = await zai.chat.completions.create({
+      completion = await zaiChatCompletion({
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -117,8 +105,16 @@ Return ONLY valid JSON, no additional text or markdown.`;
       });
     } catch (apiErr) {
       console.error("[AI_RESUME] AI API call failed:", apiErr);
+      const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
+      // Provide more specific error messages
+      if (errMsg.includes("fetch failed")) {
+        return NextResponse.json(
+          { error: "AI service is unreachable from the server. This may be a network/DNS issue on the hosting platform.", details: errMsg },
+          { status: 502 }
+        );
+      }
       return NextResponse.json(
-        { error: "AI service call failed. Please try again.", details: String(apiErr) },
+        { error: "AI service call failed. Please try again.", details: errMsg },
         { status: 502 }
       );
     }

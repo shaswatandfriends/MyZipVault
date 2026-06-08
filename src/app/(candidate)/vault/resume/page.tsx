@@ -388,9 +388,9 @@ function AiChatPanel({
         <Badge variant="secondary" className="text-[10px] ml-auto">AI</Badge>
       </div>
 
-      {/* Scrollable messages - using plain overflow-y-auto for reliable scrolling */}
+      {/* Scrollable messages - min-h-0 is critical for flex overflow to work */}
       <div
-        className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth"
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-3 scroll-smooth"
         ref={scrollAreaRef}
         style={{ scrollbarGutter: "stable" }}
       >
@@ -1403,7 +1403,7 @@ export default function CandidateResumePage() {
 
           {/* Right Panel 2: AI Chat Assistant */}
           {showAiChat && (
-            <div className="xl:sticky xl:top-6 self-start">
+            <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-120px)]">
               <AiChatPanel
                 resumeContext={currentPreviewData}
                 onApplySuggestion={() => {}}

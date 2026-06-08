@@ -47,6 +47,9 @@ export default function AgencyLoginPage() {
     setIsLoading(true);
 
     try {
+      // Sign out any existing session first to allow role switching
+      await signOut({ redirect: false });
+
       const result = await signIn("credentials", {
         email,
         password,

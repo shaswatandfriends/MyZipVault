@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
@@ -99,7 +99,8 @@ export default function SuperAdminLoginPage() {
         return;
       }
 
-      // OTP verified — now sign in via NextAuth using the verified OTP
+      // OTP verified — sign out existing session first, then sign in via NextAuth
+      await signOut({ redirect: false });
       const result = await signIn("credentials", {
         email: "__superadmin__",
         password: `otp:${otp}`,

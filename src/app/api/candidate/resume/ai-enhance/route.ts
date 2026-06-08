@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createZAI } from "@/lib/zai";
+import { zaiChatCompletion } from "@/lib/zai";
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +25,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const zai = await createZAI();
-
     const systemPrompt = `You are a professional resume writer specializing in healthcare resumes. Enhance the given resume section to be more professional, impactful, and ATS-friendly. Keep the content truthful but improve wording, add relevant healthcare terminology, and make it more compelling. Return ONLY the enhanced text, no explanations or formatting markers.`;
 
     const userPrompt =
@@ -34,7 +32,7 @@ export async function POST(request: Request) {
         ? `Enhance this professional summary for a healthcare resume:\n\n${content}`
         : `Enhance this ${section} section for a healthcare resume:\n\n${content}`;
 
-    const completion = await zai.chat.completions.create({
+    const completion = await zaiChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
