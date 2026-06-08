@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       select: {
         id: true,
         entity_type: true,
-        credit_cost: true,
+        credits_charged: true,
         unlocked_at: true,
       },
     });
@@ -129,7 +129,7 @@ export async function GET(request: Request) {
           id: d.id,
           type: "document_unlock",
           description: `Unlocked ${d.entity_type} document`,
-          creditCost: d.credit_cost,
+          creditCost: d.credits_charged,
           date: d.unlocked_at,
         })),
         auditLogs: auditLogs.map((a) => ({
