@@ -115,6 +115,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Account is not active. Please contact support.");
         }
 
+        // Block pending client accounts (agency/recruiter) — admin must activate from admin panel
+        if (user.account_status === "pending" && (user.role === "client_admin" || user.role === "client_recruiter")) {
+          throw new Error("Your account is pending admin activation. You will be notified once activated.");
+        }
+
         // Super Admin gate: only the env-configured email can be super_admin
         if (user.role === "super_admin") {
           if (!SUPERADMIN_EMAIL || user.email.toLowerCase() !== SUPERADMIN_EMAIL.toLowerCase()) {

@@ -20,7 +20,7 @@ model Organization {
   baa_signed_at       DateTime?
   seat_limit          Int                  @default(5)
   custom_pricing_notes String?
-  account_status      String               @default("active")
+  account_status      String               @default("pending")
   created_at          DateTime             @default(now())
 
   users               User[]

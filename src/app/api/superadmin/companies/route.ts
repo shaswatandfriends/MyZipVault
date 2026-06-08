@@ -106,6 +106,7 @@ export async function POST(request: Request) {
             credits_balance: initialCredits ?? 0,
             seat_limit: seatLimit ?? 5,
             custom_pricing_notes: customPricingNotes ?? null,
+            account_status: "active", // Created by admin, set active immediately
           },
         });
         if (initialCredits && initialCredits > 0) {
@@ -332,7 +333,7 @@ export async function POST(request: Request) {
             first_name: firstName,
             last_name: lastName,
             must_change_pass: true,
-            account_status: "active",
+            account_status: "active", // Created by admin, set active immediately
           },
         });
 
@@ -518,6 +519,39 @@ export async function POST(request: Request) {
           message: `Member ${banUser.email} banned successfully`,
         });
       }
+      case "pending-member": {
+        const { userId: pendingUserId } = body;
+        if (!pendingUserId) {
+          return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const pendingUser = await db.user.findUnique({ where: { id: pendingUserId } });
+        if (!pendingUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        if (pendingUser.account_status === "pending") {
+          return NextResponse.json({ error: "User is already pending" }, { status: 400 });
+        }
+        if (pendingUser.role !== "client_recruiter" && pendingUser.role !== "client_admin") {
+          return NextResponse.json({ error: "Can only set pending status for client users" }, { status: 400 });
+        }
+        await db.user.update({
+          where: { id: pendingUserId },
+          data: { account_status: "pending" },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "pending_member",
+            entity_type: "user",
+            entity_id: pendingUserId,
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `Member ${pendingUser.email} set to pending successfully`,
+        });
+      }
       case "activate-member": {
         const { userId: activateUserId } = body;
         if (!activateUserId) {
@@ -609,7 +643,8 @@ export async function POST(request: Request) {
             data: { account_status: "banned" },
           });
         }
-        // If activating company, reactivate members up to seat limit
+        // If activating company from suspended, reactivate members up to seat limit
+        // Note: If activating from pending, members stay pending — admin activates them individually
         if (accountStatus === "active" && statusOrg.account_status === "suspended") {
           const memberIds = await db.user.findMany({
             where: {

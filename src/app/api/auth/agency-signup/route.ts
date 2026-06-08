@@ -77,12 +77,13 @@ export async function POST(request: Request) {
           credits_balance: 0,
           baa_status: "pending",
           seat_limit: 5,
+          account_status: "pending", // Admin must activate from admin panel
         },
       });
       organizationId = organization.id;
     }
 
-    // ── Create User (unapproved by default) ──
+    // ── Create User (unapproved by default, pending admin activation) ──
     const user = await db.user.create({
       data: {
         email,
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
         last_name: lastName.trim(),
         organization_id: organizationId,
         is_approved: false, // Requires admin approval
-        account_status: "active",
+        account_status: "pending", // Admin must activate from admin panel
         tos_accepted_at: new Date(),
       },
     });

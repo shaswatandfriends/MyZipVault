@@ -325,7 +325,7 @@ export default function SuperadminCompaniesPage() {
   // Suspend Member dialog
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspendMember, setSuspendMember] = useState<Member | null>(null);
-  const [suspendAction, setSuspendAction] = useState<"suspend" | "activate" | "ban">("suspend");
+  const [suspendAction, setSuspendAction] = useState<"suspend" | "activate" | "ban" | "pending">("suspend");
 
   // Company Status dialog
   const [showCompanyStatusDialog, setShowCompanyStatusDialog] = useState(false);
@@ -369,7 +369,7 @@ export default function SuperadminCompaniesPage() {
 
   // ── Computed: Summary stats ──────────────────────────────────────
   const stats = useMemo(() => {
-    if (!data?.companies) return { total: 0, totalCredits: 0, totalSeats: 0, totalSeatsUsed: 0, signedBaa: 0, pendingBaa: 0, suspendedCompanies: 0, activeCompanies: 0 };
+    if (!data?.companies) return { total: 0, totalCredits: 0, totalSeats: 0, totalSeatsUsed: 0, signedBaa: 0, pendingBaa: 0, suspendedCompanies: 0, activeCompanies: 0, pendingCompanies: 0 };
     const companies = data.companies;
     return {
       total: companies.length,
@@ -380,6 +380,7 @@ export default function SuperadminCompaniesPage() {
       pendingBaa: companies.filter((c) => c.baaStatus === "pending").length,
       suspendedCompanies: companies.filter((c) => c.accountStatus === "suspended").length,
       activeCompanies: companies.filter((c) => c.accountStatus === "active").length,
+      pendingCompanies: companies.filter((c) => c.accountStatus === "pending").length,
     };
   }, [data]);
 
@@ -700,7 +701,7 @@ export default function SuperadminCompaniesPage() {
   };
 
   // ── Suspend/Activate Member ─────────────────────────────────────
-  const openSuspendDialog = (member: Member, action: "suspend" | "activate") => {
+  const openSuspendDialog = (member: Member, action: "suspend" | "activate" | "pending") => {
     setSuspendMember(member);
     setSuspendAction(action);
     setShowSuspendDialog(true);
@@ -708,7 +709,7 @@ export default function SuperadminCompaniesPage() {
 
   const handleSuspendMember = async () => {
     if (!suspendMember) return;
-    const action = suspendAction === "ban" ? "ban-member" : suspendAction === "suspend" ? "suspend-member" : "activate-member";
+    const action = suspendAction === "ban" ? "ban-member" : suspendAction === "suspend" ? "suspend-member" : suspendAction === "pending" ? "pending-member" : "activate-member";
     const result = await postAction({
       action,
       userId: suspendMember.id,
@@ -767,11 +768,11 @@ export default function SuperadminCompaniesPage() {
 
       {/* ── Summary Stats ─────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
       ) : data?.companies.length ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Card className="border-l-4 border-l-teal-500">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -820,6 +821,19 @@ export default function SuperadminCompaniesPage() {
                 <div>
                   <p className="text-2xl font-bold">{stats.signedBaa}/{stats.total}</p>
                   <p className="text-xs text-muted-foreground">BAA Signed</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={`border-l-4 ${stats.pendingCompanies > 0 ? "border-l-amber-500" : "border-l-gray-400"}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex size-10 items-center justify-center rounded-lg shrink-0 ${stats.pendingCompanies > 0 ? "bg-amber-50 text-amber-700" : "bg-gray-50 text-gray-500"}`}>
+                  <Clock className="size-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.pendingCompanies}</p>
+                  <p className="text-xs text-muted-foreground">Pending</p>
                 </div>
               </div>
             </CardContent>
@@ -1146,13 +1160,15 @@ export default function SuperadminCompaniesPage() {
                               ) : (
                                 <div className="space-y-2">
                                   {company.members.map((member) => (
-                                    <div key={member.id} className={`flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3 ${member.accountStatus === "banned" ? "opacity-60" : ""}`}>
+                                    <div key={member.id} className={`flex items-center justify-between py-2.5 px-3 rounded-lg bg-background gap-3 ${member.accountStatus === "banned" ? "opacity-60" : member.accountStatus === "pending" ? "opacity-75" : ""}`}>
                                       <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={`flex size-9 items-center justify-center rounded-full text-xs font-semibold shrink-0 ${
                                           member.accountStatus === "banned"
                                             ? "bg-gray-900 text-white"
                                             : member.accountStatus === "suspended"
                                             ? "bg-red-100 text-red-700"
+                                            : member.accountStatus === "pending"
+                                            ? "bg-amber-100 text-amber-700"
                                             : "bg-teal-100 text-teal-700"
                                         }`}>
                                           {getMemberInitials(member)}
@@ -1179,11 +1195,7 @@ export default function SuperadminCompaniesPage() {
                                             Recruiter
                                           </Badge>
                                         )}
-                                        {member.mustChangePass && (
-                                          <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">
-                                            Must Reset
-                                          </Badge>
-                                        )}
+
                                         {/* ── Member Action Buttons ────────────── */}
                                         <Tip label="View Profile">
                                           <Button
@@ -1235,6 +1247,14 @@ export default function SuperadminCompaniesPage() {
                                             >
                                               <UserCheck className="size-4 mr-2 text-emerald-600" />
                                               Active
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              className={member.accountStatus === "pending" ? "bg-amber-50" : ""}
+                                              onClick={() => openSuspendDialog(member, "pending")}
+                                              disabled={member.accountStatus === "pending"}
+                                            >
+                                              <Clock className="size-4 mr-2 text-amber-600" />
+                                              Pending
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                               className={member.accountStatus === "suspended" ? "bg-red-50" : ""}
@@ -1751,9 +1771,6 @@ export default function SuperadminCompaniesPage() {
                       <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100 text-xs">Recruiter</Badge>
                     )}
                     {getAccountStatusBadge(profileMember.accountStatus)}
-                    {profileMember.mustChangePass && (
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs">Must Reset Password</Badge>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1972,6 +1989,8 @@ export default function SuperadminCompaniesPage() {
                 <><Trash2 className="size-5 text-gray-700" /> Ban Member</>
               ) : suspendAction === "suspend" ? (
                 <><Ban className="size-5 text-red-600" /> Suspend Member</>
+              ) : suspendAction === "pending" ? (
+                <><Clock className="size-5 text-amber-600" /> Set Member Pending</>
               ) : (
                 <><UserCheck className="size-5 text-emerald-600" /> Activate Member</>
               )}
@@ -1981,6 +2000,8 @@ export default function SuperadminCompaniesPage() {
                 ? `Are you sure you want to ban "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will be permanently blocked from accessing their account. This is more severe than suspension.`
                 : suspendAction === "suspend"
                 ? `Are you sure you want to suspend "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will lose access to their account until reactivated.`
+                : suspendAction === "pending"
+                ? `Are you sure you want to set "${suspendMember ? getMemberFullName(suspendMember) : ""}" to pending? They will not be able to access their account until activated.`
                 : `Are you sure you want to activate "${suspendMember ? getMemberFullName(suspendMember) : ""}"? They will regain access to their account.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1989,11 +2010,11 @@ export default function SuperadminCompaniesPage() {
             <AlertDialogAction
               disabled={actionLoading}
               onClick={handleSuspendMember}
-              className={suspendAction === "ban" ? "bg-gray-800 hover:bg-gray-900 text-white" : suspendAction === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              className={suspendAction === "ban" ? "bg-gray-800 hover:bg-gray-900 text-white" : suspendAction === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : suspendAction === "pending" ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
             >
               {actionLoading
-                ? (suspendAction === "ban" ? "Banning..." : suspendAction === "suspend" ? "Suspending..." : "Activating...")
-                : (suspendAction === "ban" ? "Ban Member" : suspendAction === "suspend" ? "Suspend Member" : "Activate Member")}
+                ? (suspendAction === "ban" ? "Banning..." : suspendAction === "suspend" ? "Suspending..." : suspendAction === "pending" ? "Setting Pending..." : "Activating...")
+                : (suspendAction === "ban" ? "Ban Member" : suspendAction === "suspend" ? "Suspend Member" : suspendAction === "pending" ? "Set Pending" : "Activate Member")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
