@@ -9,6 +9,7 @@ import {
   Shield,
   LayoutDashboard,
   ClipboardCheck,
+  CalendarDays,
   FileText,
   FileUser,
   Users,
@@ -78,6 +79,7 @@ const roleLabels: Record<UserRole, string> = {
 const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
+  { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Credentials", href: "/vault/credentials", icon: FileText },
   { title: "Resume", href: "/vault/resume", icon: FileUser },
   { title: "References", href: "/references", icon: Users },

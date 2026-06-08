@@ -116,7 +116,7 @@ export async function PUT(
     const totalSkills = allSkills.length;
     const ratedSkills = allSkills.filter((s) => {
       const r = allRatings.find((rt) => rt.skill_id === s.id);
-      return r && (r.rating_value !== null || r.is_na);
+      return r && (r.rating_value !== null && r.rating_value !== "") || (r && r.is_na);
     }).length;
     const completionPct = totalSkills > 0 ? Math.round((ratedSkills / totalSkills) * 100) : 0;
 

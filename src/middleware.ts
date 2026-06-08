@@ -30,6 +30,7 @@ export default withAuth({
       if (
         pathname.startsWith("/dashboard") ||
         pathname.startsWith("/checklists") ||
+        pathname.startsWith("/calendar") ||
         pathname.startsWith("/vault") ||
         pathname.startsWith("/references") ||
         pathname.startsWith("/sharing") ||

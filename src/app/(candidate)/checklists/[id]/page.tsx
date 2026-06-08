@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   ChevronRight,
-  Save,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -61,7 +60,7 @@ interface ChecklistData {
     status: string;
     submittedAt: string | null;
     digitalSignature: string | null;
-    personalInfoCollected: boolean;
+    candidateNameSigned: string | null;
     validUntil: string | null;
   } | null;
   skills: SkillItem[];
@@ -97,6 +96,13 @@ const RATING_LABELS: Record<number, string> = {
   5: "Expert",
 };
 
+/* ─── Helper: check if a rating is effectively rated ─────────────────── */
+function isRatingDone(rating: RatingItem | undefined): boolean {
+  if (!rating) return false;
+  if (rating.isNa) return true;
+  return rating.ratingValue !== null && rating.ratingValue !== "";
+}
+
 /* ─── Component ─────────────────────────────────────────────────────── */
 export default function ChecklistDetailPage({
   params,
@@ -112,19 +118,6 @@ export default function ChecklistDetailPage({
   const [candidateNameSigned, setCandidateNameSigned] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-
-  // Personal info state
-  const [personalInfoCollected, setPersonalInfoCollected] = useState(false);
-  const [showPersonalInfo, setShowPersonalInfo] = useState(true);
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [ssnLast4, setSsnLast4] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [addressLine1, setAddressLine1] = useState("");
-  const [addressLine2, setAddressLine2] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [isSavingPersonalInfo, setIsSavingPersonalInfo] = useState(false);
 
   // Signature pad
   const sigCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,9 +140,10 @@ export default function ChecklistDetailPage({
       setData(checklistData);
       setRatings(checklistData.ratings || {});
 
-      const pic = checklistData.candidateResponse?.personalInfoCollected ?? false;
-      setPersonalInfoCollected(pic);
-      setShowPersonalInfo(!pic);
+      // Restore previously signed name if re-visiting
+      if (checklistData.candidateResponse?.candidateNameSigned) {
+        setCandidateNameSigned(checklistData.candidateResponse.candidateNameSigned);
+      }
     } catch {
       toast.error("Failed to load checklist. Please try again.");
     } finally {
@@ -168,6 +162,11 @@ export default function ChecklistDetailPage({
       router.push("/dashboard");
     }
   }, [sessionStatus, router]);
+
+  /* ─── Derived: allSkillsRated ────────────────────────────────────── */
+  const allSkillsRated =
+    (data?.skills.length ?? 0) > 0 &&
+    data!.skills.every((s) => isRatingDone(ratings[s.id]));
 
   // Initialize signature pad – only once when canvas becomes available
   useEffect(() => {
@@ -287,54 +286,11 @@ export default function ChecklistDetailPage({
     [id, ratings] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  /* ─── Save personal info ─────────────────────────────────────────── */
-  const handleSavePersonalInfo = async () => {
-    if (!dateOfBirth || !ssnLast4 || !phoneNumber || !addressLine1 || !city || !state || !zipCode) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-    if (ssnLast4.length !== 4 || !/^\d{4}$/.test(ssnLast4)) {
-      toast.error("SSN last 4 digits must be exactly 4 numbers.");
-      return;
-    }
-
-    setIsSavingPersonalInfo(true);
-    try {
-      const res = await fetch(`/api/checklists/personal-info`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          checklistRequestId: id,
-          dateOfBirth,
-          ssnLastFour: ssnLast4,
-          phone: phoneNumber,
-          addressLine1,
-          addressLine2,
-          city,
-          state,
-          zipCode,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save personal info");
-
-      setPersonalInfoCollected(true);
-      setShowPersonalInfo(false);
-      toast.success("Personal information saved");
-    } catch {
-      toast.error("Failed to save personal information");
-    } finally {
-      setIsSavingPersonalInfo(false);
-    }
-  };
-
   /* ─── Submit handler ─────────────────────────────────────────────── */
   const handleSubmit = async () => {
     if (!id || !data) return;
 
-    const unrated = data.skills.filter((s) => {
-      const rating = ratings[s.id];
-      return !rating || ((rating.ratingValue === null || rating.ratingValue === "") && !rating.isNa);
-    });
+    const unrated = data.skills.filter((s) => !isRatingDone(ratings[s.id]));
 
     if (unrated.length > 0) {
       toast.error("Please rate all skills before submitting", {
@@ -389,13 +345,6 @@ export default function ChecklistDetailPage({
       return acc;
     }, {}) ?? {};
 
-  const allSkillsRated =
-    (data?.skills.length ?? 0) > 0 &&
-    data!.skills.every((s) => {
-      const rating = ratings[s.id];
-      return rating && ((rating.ratingValue !== null && rating.ratingValue !== "") || rating.isNa);
-    });
-
   const totalSkills = data?.totalSkills ?? 0;
   const ratedSkills = data?.ratedSkills ?? 0;
   const completionPct = data?.completionPct ?? 0;
@@ -424,11 +373,11 @@ export default function ChecklistDetailPage({
       <div className="max-w-[820px] mx-auto p-6">
         <Card>
           <CardContent className="p-8 text-center">
-            <div className="size-14 rounded-full bg-[var(--primary-light)] flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="size-7 text-[var(--primary)]" />
+            <div className="size-14 rounded-full bg-[#DCFCE7] flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="size-7 text-[#166534]" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Checklist Already Submitted</h3>
-            <p className="text-sm text-[var(--text-secondary)]">
+            <p className="text-sm text-[#6B7280]">
               You have already completed this checklist. Thank you!
             </p>
             <Link href="/checklists">
@@ -445,11 +394,11 @@ export default function ChecklistDetailPage({
   return (
     <div className="max-w-[820px] mx-auto pb-28">
       {/* ── Sticky Top Bar ──────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50 bg-[var(--surface)] border-b border-[var(--border)]">
+      <div className="sticky top-0 z-50 bg-white border-b border-[#E5E7EB]">
         {/* Progress bar (very top) */}
-        <div className="h-[5px] bg-[var(--surface-2)]">
+        <div className="h-[5px] bg-[#F3F4F6]">
           <div
-            className="h-full bg-[var(--primary)] transition-all duration-500 ease-out"
+            className="h-full bg-[#166534] transition-all duration-500 ease-out"
             style={{ width: `${completionPct}%` }}
           />
         </div>
@@ -463,7 +412,7 @@ export default function ChecklistDetailPage({
             </Link>
             <div className="min-w-0">
               <h1 className="text-sm font-semibold truncate">{data.template.name}</h1>
-              <p className="text-xs text-[var(--text-muted)] truncate">
+              <p className="text-xs text-[#6B7280] truncate">
                 {data.template.profession}
                 {data.template.specialty ? ` — ${data.template.specialty}` : ""}
                 {data.client.organizationName ? ` · ${data.client.organizationName}` : ""}
@@ -472,12 +421,12 @@ export default function ChecklistDetailPage({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {autoSaveStatus === "saving" && (
-              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+              <span className="text-xs text-[#6B7280] flex items-center gap-1">
                 <Loader2 className="size-3 animate-spin" /> Saving...
               </span>
             )}
             {autoSaveStatus === "saved" && (
-              <span className="text-xs text-[var(--primary)] font-medium">Saved ✓</span>
+              <span className="text-xs text-[#166534] font-medium">Saved ✓</span>
             )}
             <Badge
               variant={completionPct === 100 ? "default" : "secondary"}
@@ -490,147 +439,30 @@ export default function ChecklistDetailPage({
       </div>
 
       <div className="p-6 space-y-6">
-        {/* ── Step Indicator ──────────────────────────────────────── */}
+        {/* ── Step Indicator (2 steps) ─────────────────────────────── */}
         <div className="flex items-center gap-2 text-xs font-medium">
-          <div className={`flex items-center gap-1.5 ${showPersonalInfo ? "text-[var(--primary)]" : personalInfoCollected ? "text-[var(--primary)]" : "text-[var(--text-muted)]"}`}>
-            <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${personalInfoCollected ? "bg-[var(--primary)] text-white" : "border-2 border-[var(--primary)] text-[var(--primary)]"}`}>
-              {personalInfoCollected ? "✓" : "1"}
-            </div>
-            Personal Info
-          </div>
-          <ChevronRight className="size-3 text-[var(--text-muted)]" />
-          <div className={`flex items-center gap-1.5 ${!personalInfoCollected ? "text-[var(--text-muted)]" : allSkillsRated ? "text-[var(--primary)]" : "text-[var(--primary)]"}`}>
-            <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${allSkillsRated ? "bg-[var(--primary)] text-white" : personalInfoCollected ? "border-2 border-[var(--primary)] text-[var(--primary)]" : "border-2 border-[var(--border)] text-[var(--text-muted)]"}`}>
-              {allSkillsRated ? "✓" : "2"}
+          <div className={`flex items-center gap-1.5 ${allSkillsRated ? "text-[#166534]" : "text-[#166534]"}`}>
+            <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${allSkillsRated ? "bg-[#166534] text-white" : "border-2 border-[#166534] text-[#166534]"}`}>
+              {allSkillsRated ? "✓" : "1"}
             </div>
             Skills Assessment
           </div>
-          <ChevronRight className="size-3 text-[var(--text-muted)]" />
-          <div className={`flex items-center gap-1.5 ${allSkillsRated ? "text-[var(--primary)]" : "text-[var(--text-muted)]"}`}>
-            <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${allSkillsRated ? "border-2 border-[var(--primary)] text-[var(--primary)]" : "border-2 border-[var(--border)] text-[var(--text-muted)]"}`}>
-              3
+          <ChevronRight className="size-3 text-[#9CA3AF]" />
+          <div className={`flex items-center gap-1.5 ${allSkillsRated ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
+            <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${allSkillsRated ? "border-2 border-[#166534] text-[#166534]" : "border-2 border-[#E5E7EB] text-[#9CA3AF]"}`}>
+              2
             </div>
             Sign & Submit
           </div>
         </div>
 
-        {/* ── Section 1: Personal Info ────────────────────────────── */}
-        {showPersonalInfo && !personalInfoCollected && (
-          <Card className="border-[var(--border)] mb-6 overflow-hidden animate-fade-up">
-            <CardContent className="p-8 space-y-5">
-              <div>
-                <p className="text-xs font-semibold tracking-wider text-[var(--accent-teal)] uppercase mb-1">
-                  Step 1 of 3
-                </p>
-                <h3 className="text-lg font-semibold">Personal Information</h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  This information is used for credential verification and will be kept confidential.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dob">Date of Birth *</Label>
-                  <Input
-                    id="dob"
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ssn">SSN (Last 4 Digits) *</Label>
-                  <Input
-                    id="ssn"
-                    placeholder="e.g. 1234"
-                    maxLength={4}
-                    value={ssnLast4}
-                    onChange={(e) => setSsnLast4(e.target.value.replace(/\D/g, ""))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    placeholder="(555) 123-4567"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="addr1">Address Line 1 *</Label>
-                  <Input
-                    id="addr1"
-                    placeholder="123 Main St"
-                    value={addressLine1}
-                    onChange={(e) => setAddressLine1(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="addr2">Address Line 2</Label>
-                  <Input
-                    id="addr2"
-                    placeholder="Apt, Suite, etc."
-                    value={addressLine2}
-                    onChange={(e) => setAddressLine2(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    placeholder="City"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State *</Label>
-                  <Input
-                    id="state"
-                    placeholder="State"
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="zip">Zip Code *</Label>
-                  <Input
-                    id="zip"
-                    placeholder="12345"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Button
-                className="w-full gap-2"
-                size="lg"
-                onClick={handleSavePersonalInfo}
-                disabled={isSavingPersonalInfo}
-              >
-                {isSavingPersonalInfo ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4" /> Save & Continue to Skills Assessment
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ── Section 2: Skills Assessment ────────────────────────── */}
+        {/* ── Section 1: Skills Assessment ────────────────────────── */}
         {data.skills.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Lock className="size-12 text-[var(--text-muted)] mx-auto mb-4" />
+              <Lock className="size-12 text-[#9CA3AF] mx-auto mb-4" />
               <h3 className="text-lg font-medium">No skills found</h3>
-              <p className="text-sm text-[var(--text-secondary)] mt-1">
+              <p className="text-sm text-[#6B7280] mt-1">
                 This checklist template has no skills configured yet.
               </p>
             </CardContent>
@@ -638,17 +470,14 @@ export default function ChecklistDetailPage({
         ) : (
           <div className="space-y-6">
             {Object.entries(groupedSkills).map(([category, categorySkills]) => {
-              const ratedInCat = categorySkills.filter((s) => {
-                const rating = ratings[s.id];
-                return rating && ((rating.ratingValue !== null && rating.ratingValue !== "") || rating.isNa);
-              }).length;
+              const ratedInCat = categorySkills.filter((s) => isRatingDone(ratings[s.id])).length;
 
               return (
                 <div key={category}>
                   {/* Category header */}
-                  <div className="bg-[var(--surface)] border border-[var(--border)] border-l-4 border-l-[var(--primary)] rounded-r-xl py-3.5 px-5 flex items-center justify-between mb-3">
+                  <div className="bg-white border border-[#E5E7EB] border-l-4 border-l-[#166534] rounded-r-xl py-3.5 px-5 flex items-center justify-between mb-3">
                     <span className="font-semibold text-sm">{category}</span>
-                    <span className="text-xs text-[var(--text-muted)]">
+                    <span className="text-xs text-[#9CA3AF]">
                       {ratedInCat}/{categorySkills.length} rated
                     </span>
                   </div>
@@ -659,17 +488,15 @@ export default function ChecklistDetailPage({
                       const rating = ratings[skill.id];
                       const currentValue = rating?.ratingValue ?? null;
                       const isNa = rating?.isNa ?? false;
-                      const isRated =
-                        rating &&
-                        ((rating.ratingValue !== null && rating.ratingValue !== "") || rating.isNa);
+                      const isRated = isRatingDone(rating);
 
                       return (
                         <div
                           key={skill.id}
-                          className={`bg-[var(--surface)] border rounded-xl p-4 sm:p-5 transition-all ${
+                          className={`bg-white border rounded-xl p-4 sm:p-5 transition-all ${
                             isRated
-                              ? "border-[var(--primary)]/20 shadow-sm"
-                              : "border-[var(--border)] hover:border-[var(--border-strong)]"
+                              ? "border-[#166534]/20 shadow-sm"
+                              : "border-[#E5E7EB] hover:border-[#D1D5DB]"
                           }`}
                         >
                           <div className="flex flex-col gap-3">
@@ -682,8 +509,8 @@ export default function ChecklistDetailPage({
                                   onClick={() => saveRating(skill.id, null, !isNa)}
                                   className={`text-xs px-2.5 py-1 rounded-full border transition-all shrink-0 ${
                                     isNa
-                                      ? "bg-[var(--accent-teal)]/10 border-[var(--accent-teal)] text-[var(--accent-teal)] font-medium"
-                                      : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent-teal)]"
+                                      ? "bg-[#0D9488]/10 border-[#0D9488] text-[#0D9488] font-medium"
+                                      : "border-[#E5E7EB] text-[#9CA3AF] hover:border-[#0D9488]"
                                   }`}
                                 >
                                   N/A
@@ -705,7 +532,7 @@ export default function ChecklistDetailPage({
                                       className={`flex flex-col items-center px-3 py-2 rounded-lg border text-sm transition-all ${
                                         isSelected
                                           ? "border-2 font-semibold scale-105"
-                                          : "border-[var(--border)] hover:border-[var(--border-strong)]"
+                                          : "border-[#E5E7EB] hover:border-[#D1D5DB]"
                                       }`}
                                       style={
                                         isSelected
@@ -729,8 +556,8 @@ export default function ChecklistDetailPage({
                                   onClick={() => saveRating(skill.id, "yes", false)}
                                   className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
                                     currentValue === "yes"
-                                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
-                                      : "border-[var(--border)] hover:border-[var(--primary)]"
+                                      ? "bg-[#166534] text-white border-[#166534]"
+                                      : "border-[#E5E7EB] hover:border-[#166534]"
                                   }`}
                                 >
                                   ✓ Yes
@@ -740,8 +567,8 @@ export default function ChecklistDetailPage({
                                   onClick={() => saveRating(skill.id, "no", false)}
                                   className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
                                     currentValue === "no"
-                                      ? "bg-[var(--badge-red)] text-white border-[var(--badge-red)]"
-                                      : "border-[var(--border)] hover:border-[var(--badge-red)]"
+                                      ? "bg-[#DC2626] text-white border-[#DC2626]"
+                                      : "border-[#E5E7EB] hover:border-[#DC2626]"
                                   }`}
                                 >
                                   ✕ No
@@ -763,8 +590,8 @@ export default function ChecklistDetailPage({
                             {/* Rated indicator */}
                             {isRated && !isNa && (
                               <div className="flex items-center gap-1.5 mt-1">
-                                <CheckCircle2 className="size-3.5 text-[var(--primary)]" />
-                                <span className="text-xs text-[var(--primary)] font-medium">
+                                <CheckCircle2 className="size-3.5 text-[#166534]" />
+                                <span className="text-xs text-[#166534] font-medium">
                                   {skill.questionType === "rating_1_5"
                                     ? RATING_LABELS[Number(currentValue) as keyof typeof RATING_LABELS]
                                     : skill.questionType === "yes_no"
@@ -777,7 +604,7 @@ export default function ChecklistDetailPage({
                             {/* N/A indicator */}
                             {isNa && (
                               <div className="flex items-center gap-1.5 mt-1">
-                                <span className="text-xs text-[var(--accent-teal)] font-medium">
+                                <span className="text-xs text-[#0D9488] font-medium">
                                   Marked as N/A
                                 </span>
                               </div>
@@ -793,19 +620,19 @@ export default function ChecklistDetailPage({
           </div>
         )}
 
-        {/* ── Section 3: Signature ──────────────────────────────────── */}
+        {/* ── Section 2: Signature ──────────────────────────────────── */}
         {allSkillsRated && (
-          <Card className="border-[var(--border)] mb-6 overflow-hidden animate-fade-up">
+          <Card className="border-[#E5E7EB] mb-6 overflow-hidden">
             <CardContent className="p-8 space-y-5">
               <div>
-                <p className="text-xs font-semibold tracking-wider text-[var(--accent-teal)] uppercase mb-1">
-                  Step 3 of 3
+                <p className="text-xs font-semibold tracking-wider text-[#0D9488] uppercase mb-1">
+                  Step 2 of 2
                 </p>
                 <h3 className="text-lg font-semibold">Attestation & Signature</h3>
               </div>
 
-              <div className="bg-[var(--surface-2)] rounded-lg p-4">
-                <p className="text-sm leading-relaxed">
+              <div className="bg-[#F8F7F4] rounded-lg p-4">
+                <p className="text-sm leading-relaxed text-[#374151]">
                   I hereby certify that the skills self-assessment provided above
                   is true and accurate to the best of my knowledge. I understand
                   that this information will be shared with requesting healthcare
@@ -830,7 +657,7 @@ export default function ChecklistDetailPage({
                   <Input
                     value={new Date().toLocaleDateString()}
                     disabled
-                    className="bg-[var(--surface-2)]"
+                    className="bg-[#F8F7F4]"
                   />
                 </div>
               </div>
@@ -841,12 +668,12 @@ export default function ChecklistDetailPage({
                 <div className="relative">
                   <canvas
                     ref={sigCanvasRef}
-                    className="w-full border-[1.5px] border-[var(--border)] rounded-lg bg-white cursor-crosshair"
+                    className="w-full border-[1.5px] border-[#E5E7EB] rounded-lg bg-white cursor-crosshair"
                     style={{ height: "180px" }}
                   />
                   {!hasSigned && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="text-[var(--text-muted)] text-sm select-none">
+                      <span className="text-[#9CA3AF] text-sm select-none">
                         Sign here
                       </span>
                     </div>
@@ -855,7 +682,7 @@ export default function ChecklistDetailPage({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[var(--text-muted)] text-xs"
+                  className="text-[#9CA3AF] text-xs"
                   onClick={() => {
                     sigPadRef.current?.clear();
                     setHasSigned(false);
@@ -891,7 +718,7 @@ export default function ChecklistDetailPage({
                 !candidateNameSigned.trim() ||
                 !hasSigned) &&
                 !isSubmitting && (
-                  <p className="text-xs text-[var(--text-muted)] text-center">
+                  <p className="text-xs text-[#9CA3AF] text-center">
                     {!allSkillsRated
                       ? "Please rate all skills before submitting"
                       : !candidateNameSigned.trim()
@@ -905,9 +732,9 @@ export default function ChecklistDetailPage({
       </div>
 
       {/* ── Floating Bottom Bar ──────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface)] border-t border-[var(--border)] px-6 py-3">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E7EB] px-6 py-3">
         <div className="max-w-[820px] mx-auto flex items-center justify-between gap-4">
-          <span className="text-sm text-[var(--text-secondary)] whitespace-nowrap">
+          <span className="text-sm text-[#6B7280] whitespace-nowrap">
             {ratedSkills} of {totalSkills} skills rated
           </span>
           <Progress

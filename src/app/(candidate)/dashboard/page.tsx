@@ -19,6 +19,7 @@ import {
   PartyPopper,
   CheckCircle2,
   Sparkles,
+  CalendarDays,
 } from "@/lib/icons";
 import Link from "next/link";
 
@@ -238,7 +239,7 @@ export default function CandidateDashboardPage() {
       </Card>
 
       {/* Quick Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="group hover:shadow-md transition-shadow">
           <Link href="/vault/resume">
             <CardContent className="p-4">
@@ -274,6 +275,25 @@ export default function CandidateDashboardPage() {
               <p className="text-sm font-medium">Checklists</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {data?.checklists?.completed ?? 0} of {data?.checklists?.total ?? 0} completed
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="group hover:shadow-md transition-shadow">
+          <Link href="/calendar">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <CalendarDays className="size-4 text-primary" />
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  Schedule
+                </Badge>
+              </div>
+              <p className="text-sm font-medium">Calendar</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Track deadlines & expirations
               </p>
             </CardContent>
           </Link>

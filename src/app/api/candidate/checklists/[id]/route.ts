@@ -110,6 +110,8 @@ export async function GET(
             status: checklistRequest.candidate_response.status,
             submittedAt: checklistRequest.candidate_response.submitted_at,
             digitalSignature: checklistRequest.candidate_response.digital_signature,
+            candidateNameSigned: checklistRequest.candidate_response.candidate_name_signed,
+            validUntil: checklistRequest.candidate_response.valid_until,
           }
         : null,
       skills,

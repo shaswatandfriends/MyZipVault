@@ -22,11 +22,15 @@ export async function POST(
     const { id } = await params;
     const requestId = Number(id);
     const body = await request.json();
-    const { signature } = body;
+    const { candidateNameSigned, signatureBase64, signature } = body;
 
-    if (!signature || !signature.trim()) {
+    // Support both old (signature string) and new (candidateNameSigned + signatureBase64) format
+    const finalSignature = signatureBase64 || signature || "";
+    const finalNameSigned = candidateNameSigned || "";
+
+    if (!finalSignature.trim() && !finalNameSigned.trim()) {
       return NextResponse.json(
-        { error: "Digital signature is required" },
+        { error: "Digital signature and name are required" },
         { status: 400 }
       );
     }
@@ -65,7 +69,7 @@ export async function POST(
       );
     }
 
-    // Verify all skills are rated
+    // Verify all skills are rated (also reject empty string ratings)
     const templateSkills = await db.skill.findMany({
       where: { checklist_template_id: checklistRequest.checklist_template_id },
     });
@@ -74,7 +78,7 @@ export async function POST(
       const r = checklistRequest.candidate_response!.skill_ratings.find(
         (rt) => rt.skill_id === s.id
       );
-      return !r || (r.rating_value === null && !r.is_na);
+      return !r || (r.rating_value === null && !r.is_na) || (r.rating_value === "" && !r.is_na);
     });
 
     if (unrated.length > 0) {
@@ -87,13 +91,14 @@ export async function POST(
       );
     }
 
-    // Update the response
+    // Update the response with signature data
     await db.candidateChecklistResponse.update({
       where: { id: checklistRequest.candidate_response.id },
       data: {
         status: "submitted",
         submitted_at: new Date(),
-        digital_signature: signature.trim(),
+        digital_signature: finalSignature.trim(),
+        candidate_name_signed: finalNameSigned.trim() || null,
         signature_date: new Date(),
       },
     });
