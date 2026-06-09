@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutTemplate, Upload, ArrowRight, ArrowLeft, GripVertical,
   Plus, X, Loader2, FileSignature, Search as SearchIcon, Check,
@@ -215,9 +215,11 @@ function DraggableField({
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-export default function NewVaultSignDocument() {
+function NewVaultSignDocumentContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateIdFromUrl = searchParams.get("template");
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -262,9 +264,26 @@ export default function NewVaultSignDocument() {
   // Created document id (for upload after creation)
   const [createdDocId, setCreatedDocId] = useState<number | null>(null);
 
+  // ─── Auto-select template from URL on mount ─────────────────────────
+  useEffect(() => {
+    if (templateIdFromUrl) {
+      setMode("template");
+    }
+  }, [templateIdFromUrl]);
+
+  // ─── When templates are loaded and we have a URL template ID, auto-select ──
+  useEffect(() => {
+    if (templateIdFromUrl && templates.length > 0 && !selectedTemplate) {
+      const match = templates.find((t) => t.id === parseInt(templateIdFromUrl));
+      if (match) {
+        setSelectedTemplate(match);
+      }
+    }
+  }, [templateIdFromUrl, templates]);
+
   // ─── Fetch templates ────────────────────────────────────────────────
   useEffect(() => {
-    if (mode === "template") {
+    if (mode === "template" && templates.length === 0) {
       fetch("/api/vaultsign/templates")
         .then((r) => r.json())
         .then((d) => setTemplates(d.templates || []))
@@ -600,7 +619,20 @@ export default function NewVaultSignDocument() {
       {/* ── STEP 1 ────────────────────────────────────────────────── */}
       {step === 1 && (
         <div className="space-y-6">
-          {/* Mode Selection */}
+          {/* Template indicator if pre-selected from URL */}
+          {templateIdFromUrl && selectedTemplate && (
+            <div className="flex items-center gap-2 p-4 bg-[#DCFCE7]/20 rounded-xl border border-[#166534]/20">
+              <LayoutTemplate className="size-5 text-[#166534]" />
+              <span className="text-sm font-medium text-[#166534]">Using template:</span>
+              <Badge className="bg-[#166534] text-white border-0">{selectedTemplate.name}</Badge>
+              <button onClick={() => { setMode(null); setSelectedTemplate(null); setDocumentName(""); }} className="ml-auto text-xs text-[#9CA3AF] hover:text-[#DC2626]">
+                Change
+              </button>
+            </div>
+          )}
+
+          {/* Mode Selection - only show when NOT pre-selected from URL */}
+          {!templateIdFromUrl && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => { setMode("template"); setSelectedTemplate(null); }}
@@ -623,9 +655,10 @@ export default function NewVaultSignDocument() {
               <p className="text-sm text-[#6B7280] mt-1">Upload any PDF document. You can edit it before sending.</p>
             </button>
           </div>
+          )}
 
-          {/* Template Grid */}
-          {mode === "template" && (
+          {/* Template Grid - show when mode is template AND not pre-selected from URL */}
+          {mode === "template" && !templateIdFromUrl && (
             <div>
               <h3 className="text-sm font-medium text-[#111827] mb-3">Select a Template</h3>
               {templates.length === 0 ? (
@@ -653,8 +686,8 @@ export default function NewVaultSignDocument() {
             </div>
           )}
 
-          {/* File Upload */}
-          {mode === "upload" && (
+          {/* File Upload - keep as is */}
+          {mode === "upload" && !templateIdFromUrl && (
             <div>
               <label className={`flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${
                 uploadedFile ? "border-[#166534] bg-[#DCFCE7]/20" : "border-[#E5E7EB] hover:border-[#166534]/50"
@@ -1133,5 +1166,13 @@ export default function NewVaultSignDocument() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function NewVaultSignDocument() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin text-[#166534]" /></div>}>
+      <NewVaultSignDocumentContent />
+    </Suspense>
   );
 }
