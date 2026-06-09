@@ -80,23 +80,26 @@ export async function POST(request: Request) {
     }
 
     // OTP verified — proceed with deletion
-    // IMPORTANT: Must delete dependent records first to respect foreign key constraints:
-    // 1. ReferenceResponse (references ReferenceQuestion via question_id)
-    // 2. ReferenceDeletionRequest (references CandidateReference)
-    // 3. CandidateReference (independent but related)
-    // 4. ReferenceQuestion
+    // Use a transaction to delete all dependent records in correct FK order
+    await db.$transaction(async (tx) => {
+      // 1. UnlockedDocuments (references ConsentShare which may reference CandidateReference)
+      await tx.unlockedDocument.deleteMany({});
 
-    // Step 1: Delete all reference responses (references questions)
-    await db.referenceResponse.deleteMany({});
+      // 2. ConsentShares (references CandidateReference)
+      await tx.consentShare.deleteMany({});
 
-    // Step 2: Delete all reference deletion requests
-    await db.referenceDeletionRequest.deleteMany({});
+      // 3. ReferenceResponses (references ReferenceQuestion via question_id)
+      await tx.referenceResponse.deleteMany({});
 
-    // Step 3: Delete all candidate references
-    await db.candidateReference.deleteMany({});
+      // 4. ReferenceDeletionRequests (references CandidateReference)
+      await tx.referenceDeletionRequest.deleteMany({});
 
-    // Step 4: Delete all reference questions
-    await db.referenceQuestion.deleteMany({});
+      // 5. CandidateReferences (now safe, no more dependents)
+      await tx.candidateReference.deleteMany({});
+
+      // 6. ReferenceQuestions (top-level, now safe to delete)
+      await tx.referenceQuestion.deleteMany({});
+    });
 
     // Delete stored OTP
     await db.platformSetting.delete({ where: { setting_key: "delete_ref_questions_otp" } }).catch(() => {});
@@ -112,8 +115,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE_ALL_REF_QUESTIONS_ERROR]", error);
+    const message = error instanceof Error ? error.message : "Failed to delete reference questions";
     return NextResponse.json(
-      { error: "Failed to delete reference questions" },
+      { error: "Failed to delete reference questions", details: message },
       { status: 500 }
     );
   }

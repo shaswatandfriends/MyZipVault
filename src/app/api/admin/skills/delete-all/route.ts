@@ -80,35 +80,32 @@ export async function POST(request: Request) {
     }
 
     // OTP verified — proceed with deletion
-    // IMPORTANT: Must delete in correct order to respect foreign key constraints:
-    // 1. SkillRating (references Skill)
-    // 2. ConsentShare (references CandidateChecklistResponse)
-    // 3. ChecklistRequest (references ChecklistTemplate + CandidateChecklistResponse)
-    // 4. CandidateChecklistResponse (references ChecklistTemplate)
-    // 5. Skill (references ChecklistTemplate)
-    // 6. ChecklistTemplate
-    // 7. ReferenceQuestion (independent)
+    // Use a transaction to delete all dependent records in correct FK order
+    await db.$transaction(async (tx) => {
+      // 1. UnlockedDocuments (references ConsentShare)
+      await tx.unlockedDocument.deleteMany({});
 
-    // Step 1: Delete all skill ratings (references skills)
-    await db.skillRating.deleteMany({});
+      // 2. SkillRatings (references Skill + CandidateChecklistResponse)
+      await tx.skillRating.deleteMany({});
 
-    // Step 2: Delete all consent shares (references candidate responses)
-    await db.consentShare.deleteMany({});
+      // 3. ConsentShares (references CandidateChecklistResponse, Credential, Resume, CandidateReference)
+      await tx.consentShare.deleteMany({});
 
-    // Step 3: Delete all checklist requests (references templates + responses)
-    await db.checklistRequest.deleteMany({});
+      // 4. ChecklistRequests (references ChecklistTemplate + CandidateChecklistResponse + Users)
+      await tx.checklistRequest.deleteMany({});
 
-    // Step 4: Delete all candidate checklist responses (references templates)
-    await db.candidateChecklistResponse.deleteMany({});
+      // 5. CandidateChecklistResponses (references ChecklistTemplate + Users)
+      await tx.candidateChecklistResponse.deleteMany({});
 
-    // Step 5: Delete all skills (references templates)
-    await db.skill.deleteMany({});
+      // 6. Skills (references ChecklistTemplate)
+      await tx.skill.deleteMany({});
 
-    // Step 6: Delete all checklist templates
-    await db.checklistTemplate.deleteMany({});
+      // 7. ChecklistTemplates (top-level, now safe to delete)
+      await tx.checklistTemplate.deleteMany({});
 
-    // Step 7: Delete all reference questions
-    await db.referenceQuestion.deleteMany({});
+      // 8. ReferenceQuestions (independent of skills/templates)
+      await tx.referenceQuestion.deleteMany({});
+    });
 
     // Delete stored OTP
     await db.platformSetting.delete({ where: { setting_key: "delete_skills_otp" } }).catch(() => {});
@@ -124,8 +121,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE_ALL_SKILLS_ERROR]", error);
+    const message = error instanceof Error ? error.message : "Failed to delete skills data";
     return NextResponse.json(
-      { error: "Failed to delete skills data" },
+      { error: "Failed to delete skills data", details: message },
       { status: 500 }
     );
   }
