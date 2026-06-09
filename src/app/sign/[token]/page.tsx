@@ -254,6 +254,10 @@ export default function VaultSignSigningPage() {
 
   // Ref for the PDF canvas wrapper (used for accurate field positioning)
   const pdfWrapperRef = useRef<HTMLDivElement | null>(null);
+  // Ref for the PDF canvas element (replaces getElementById)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Ref for the container div to measure available width
+  const containerRef = useRef<HTMLDivElement | null>(null);
   // Store the rendered canvas dimensions for accurate overlay sizing
   const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
 
@@ -305,7 +309,7 @@ export default function VaultSignSigningPage() {
     if (!data?.document_url) return;
     let cancelled = false;
 
-    const renderPdf = async () => {
+    const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -318,14 +322,21 @@ export default function VaultSignSigningPage() {
         const page = await pdf.getPage(pdfPage);
         if (cancelled) return;
 
-        // Calculate scale to fit within a max-width container (800px) while maintaining aspect ratio
+        // Calculate scale based on actual container width for auto-fit
         const baseViewport = page.getViewport({ scale: 1 });
-        const containerMaxWidth = 800;
-        const scale = Math.min(containerMaxWidth / baseViewport.width, 1.5);
+        const containerEl = containerRef.current;
+        const containerWidth = containerEl ? containerEl.clientWidth - 2 : 800; // subtract border
+        const scale = Math.min(containerWidth / baseViewport.width, 2);
         const viewport = page.getViewport({ scale });
 
-        const canvas = document.getElementById("sign-pdf-canvas") as HTMLCanvasElement;
-        if (!canvas) return;
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          // Retry once if canvas ref isn't available yet
+          if (attempt < 3) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 100);
+          }
+          return;
+        }
 
         const context = canvas.getContext("2d");
         if (!context) return;
@@ -516,7 +527,7 @@ export default function VaultSignSigningPage() {
           {/* PDF Viewer with Fields Overlay */}
           {data.document_url && (
             <div className="space-y-2">
-              <div className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
+              <div ref={containerRef} className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
                 {/* 
                   The wrapper div is sized exactly to the canvas dimensions.
                   Fields use percentage-based positioning relative to this wrapper.
@@ -524,13 +535,13 @@ export default function VaultSignSigningPage() {
                 */}
                 <div
                   ref={pdfWrapperRef}
-                  className="relative"
+                  className="relative inline-block"
                   style={{
-                    width: canvasDims.width ? `${canvasDims.width}px` : "auto",
+                    width: canvasDims.width ? `${canvasDims.width}px` : "100%",
                     height: canvasDims.height ? `${canvasDims.height}px` : "auto",
                   }}
                 >
-                  <canvas id="sign-pdf-canvas" className="block" style={{ width: "100%", height: "100%" }} />
+                  <canvas ref={canvasRef} className="block" />
                   {/* Overlay sign fields at their positions */}
                   {data.sign_fields.filter((f) => f.page === pdfPage).map((field) => {
                     const isFilled = field.type === "signature"

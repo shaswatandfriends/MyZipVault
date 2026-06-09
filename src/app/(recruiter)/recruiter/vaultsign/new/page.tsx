@@ -75,7 +75,7 @@ const fieldTypes = [
 
 const partyColors = ["#166534", "#0D9488", "#7C3AED", "#D97706"];
 const roleOptions = ["Candidate", "Client Employer", "Witness", "Recruiter"];
-const zoomLevels = [50, 75, 100, 125, 150];
+const zoomLevels = [50, 75, 100, 125, 150, 200];
 
 // ─── Draggable Field Component ──────────────────────────────────────
 function DraggableField({
@@ -249,6 +249,7 @@ export default function NewVaultSignDocument() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
 
   // Step 4
@@ -307,7 +308,7 @@ export default function NewVaultSignDocument() {
 
     let cancelled = false;
 
-    const renderPdf = async () => {
+    const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -324,11 +325,23 @@ export default function NewVaultSignDocument() {
         const page = await pdf.getPage(pageNum);
         if (cancelled) return;
 
-        const scale = zoomLevel / 100;
-        const viewport = page.getViewport({ scale });
+        // Auto-fit to container width, then apply zoom multiplier
+        const baseViewport = page.getViewport({ scale: 1 });
+        const containerEl = pdfContainerRef.current;
+        const containerWidth = containerEl ? containerEl.clientWidth - 2 : 800; // subtract border
+        const baseScale = Math.min(containerWidth / baseViewport.width, 2);
+        const scale = baseScale * (zoomLevel / 100);
+        const finalScale = Math.max(0.3, Math.min(scale, 3));
+        const viewport = page.getViewport({ scale: finalScale });
 
-        const canvas = document.getElementById("pdf-canvas") as HTMLCanvasElement;
-        if (!canvas) return;
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          // Retry if canvas ref isn't available yet
+          if (attempt < 3) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 100);
+          }
+          return;
+        }
 
         const context = canvas.getContext("2d");
         if (!context) return;
@@ -909,7 +922,7 @@ export default function NewVaultSignDocument() {
                     <MinusIcon className="size-4" />
                   </Button>
                   <span className="text-xs text-[#6B7280] w-10 text-center">{zoomLevel}%</span>
-                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setZoomLevel((z) => zoomLevels[Math.min(zoomLevels.length - 1, zoomLevels.indexOf(z) + 1)])} disabled={zoomLevel >= 150}>
+                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setZoomLevel((z) => zoomLevels[Math.min(zoomLevels.length - 1, zoomLevels.indexOf(z) + 1)])} disabled={zoomLevel >= 200}>
                     +
                   </Button>
                 </div>
@@ -926,13 +939,13 @@ export default function NewVaultSignDocument() {
                   <div
                     ref={pdfPageWrapperRef}
                     id="pdf-page-wrapper"
-                    className="relative"
+                    className="relative inline-block"
                     style={{
-                      width: canvasDims.width ? `${canvasDims.width}px` : "auto",
+                      width: canvasDims.width ? `${canvasDims.width}px` : "100%",
                       height: canvasDims.height ? `${canvasDims.height}px` : "auto",
                     }}
                   >
-                    <canvas id="pdf-canvas" className="block" style={{ width: "100%", height: "100%" }} />
+                    <canvas ref={canvasRef} className="block" />
                     {/* Placed Fields Overlay */}
                     {signFields.filter((f) => f.page === currentPage).map((f) => {
                       const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);
