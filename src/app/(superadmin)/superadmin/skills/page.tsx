@@ -241,6 +241,10 @@ export default function SuperadminSkillsPage() {
   const [renameProfession, setRenameProfession] = useState("");
   const [renameNewName, setRenameNewName] = useState("");
 
+  // ── Add Profession dialog state
+  const [professionDialogOpen, setProfessionDialogOpen] = useState(false);
+  const [professionName, setProfessionName] = useState("");
+
   // ── Resend cooldown timer
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -684,6 +688,24 @@ export default function SuperadminSkillsPage() {
     setRenameDialogOpen(false);
   };
 
+  // ─── Add Profession handler ──────────────────────────────────────
+  const addProfession = async () => {
+    const name = professionName.trim();
+    if (!name) {
+      toast.error("Please enter a profession name");
+      return;
+    }
+    await performAction("checklist_template", "create", {
+      profession: name,
+      specialty: "General",
+      name: `${name} - General Checklist`,
+      jobTitle: "General",
+      isActive: true,
+    });
+    setProfessionDialogOpen(false);
+    setProfessionName("");
+  };
+
   // ─── Category toggle ──────────────────────────────────────────────
   const toggleCategory = (categoryKey: string) => {
     setExpandedCategories((prev) => {
@@ -796,15 +818,26 @@ export default function SuperadminSkillsPage() {
         <Card className="w-full md:w-1/3 shrink-0">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Job Titles</CardTitle>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white size-8"
-                size="icon"
-                onClick={() => openTemplateDialog()}
-                title="Add Job Title"
-              >
-                <Plus className="size-4" />
-              </Button>
+              <CardTitle className="text-base">Professions</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white size-8"
+                  size="icon"
+                  onClick={() => { setProfessionName(""); setProfessionDialogOpen(true); }}
+                  title="Add Profession"
+                >
+                  <Plus className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-8"
+                  onClick={() => openTemplateDialog()}
+                  title="Add Specialty"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             </div>
             <div className="relative mt-2">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -827,15 +860,15 @@ export default function SuperadminSkillsPage() {
               <div className="flex flex-col items-center justify-center py-12 text-center p-4">
                 <Database className="size-10 text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery ? "No matching titles" : "No job titles yet"}
+                  {searchQuery ? "No matching professions" : "No professions yet"}
                 </p>
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-700 text-white mt-3"
                   size="sm"
-                  onClick={() => openTemplateDialog()}
+                  onClick={() => { setProfessionName(""); setProfessionDialogOpen(true); }}
                 >
                   <Plus className="size-4" />
-                  Add Job Title
+                  Add First Profession
                 </Button>
               </div>
             ) : (
@@ -1519,6 +1552,41 @@ export default function SuperadminSkillsPage() {
               disabled={actionLoading}
             >
               Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Profession Dialog ──────────────────────────────────── */}
+      <Dialog open={professionDialogOpen} onOpenChange={setProfessionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Profession</DialogTitle>
+            <DialogDescription>
+              Create a new profession. A &quot;General&quot; job title and specialty will be automatically created.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Profession Name</Label>
+              <Input
+                placeholder="e.g. Nursing, Allied, Pharma"
+                value={professionName}
+                onChange={(e) => setProfessionName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") addProfession(); }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfessionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={addProfession}
+              disabled={actionLoading || !professionName.trim()}
+            >
+              Create Profession
             </Button>
           </DialogFooter>
         </DialogContent>

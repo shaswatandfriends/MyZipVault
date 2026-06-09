@@ -500,7 +500,7 @@ export function AppSidebar() {
         <div className="mx-3 h-px shrink-0 bg-[#E5E7EB]" />
 
         {/* ── Navigation Section ── */}
-        <ScrollArea className="flex-1 px-3 py-3">
+        <ScrollArea className="flex-1 overflow-hidden px-3 py-3">
           <nav className="flex flex-col gap-1">
             {/* Flat nav items (Dashboard for superadmin, all items for other roles) */}
             {navItems.map((item) => {
