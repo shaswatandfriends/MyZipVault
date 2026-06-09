@@ -1,0 +1,814 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  LayoutTemplate, Upload, ArrowRight, ArrowLeft, GripVertical,
+  Plus, X, Loader2, FileSignature, Search as SearchIcon, Check
+} from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/components/providers/auth-provider";
+import { toast } from "sonner";
+
+// ─── Types ──────────────────────────────────────────────────────────
+interface Template {
+  id: number;
+  name: string;
+  description: string | null;
+  document_type: string;
+  placeholder_fields: string;
+  predefined_sign_fields: string;
+  preview_url?: string;
+}
+
+interface SignerForm {
+  name: string;
+  email: string;
+  role: string;
+  party_number: number;
+  signing_order_position: number;
+}
+
+interface SignField {
+  id: string;
+  type: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  assigned_to_signer_id: string;
+  label: string;
+  required: boolean;
+  value: string | null;
+}
+
+const typeLabels: Record<string, string> = {
+  right_to_represent: "Right to Represent",
+  pre_offer_acceptance: "Pre-Offer Acceptance",
+  offer_letter: "Offer Letter",
+  nda: "NDA",
+  background_check_authorization: "Background Check Auth",
+  employment_contract: "Employment Contract",
+  onboarding_form: "Onboarding Form",
+  custom: "Custom",
+};
+
+const fieldTypes = [
+  { type: "signature", label: "Signature", icon: "✍️" },
+  { type: "date", label: "Date Signed", icon: "📅" },
+  { type: "full_name", label: "Full Name", icon: "🔤" },
+  { type: "initials", label: "Initials", icon: "📝" },
+  { type: "email", label: "Email", icon: "✉️" },
+  { type: "text", label: "Text Field", icon: "📋" },
+  { type: "checkbox", label: "Checkbox", icon: "☑️" },
+];
+
+const partyColors = ["#166534", "#0D9488", "#7C3AED", "#D97706"];
+
+const roleOptions = ["Candidate", "Client Employer", "Witness", "Recruiter"];
+
+// ─── Component ──────────────────────────────────────────────────────
+export default function NewVaultSignDocument() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  // Step 1
+  const [mode, setMode] = useState<"template" | "upload" | null>(null);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [documentName, setDocumentName] = useState("");
+  const [documentType, setDocumentType] = useState("custom");
+  const [personalMessage, setPersonalMessage] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [signingOrder, setSigningOrder] = useState("sequential");
+  const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // Step 2
+  const [signers, setSigners] = useState<SignerForm[]>([
+    { name: "", email: "", role: "Candidate", party_number: 2, signing_order_position: 2 },
+  ]);
+
+  // Step 3
+  const [signFields, setSignFields] = useState<SignField[]>([]);
+  const [activeSignerTab, setActiveSignerTab] = useState(0);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Step 4
+  const [legalConsent, setLegalConsent] = useState(false);
+
+  // Created document id
+  const [createdDocId, setCreatedDocId] = useState<number | null>(null);
+
+  // Fetch templates
+  useEffect(() => {
+    if (mode === "template") {
+      fetch("/api/vaultsign/templates")
+        .then((r) => r.json())
+        .then((d) => setTemplates(d.templates || []))
+        .catch(() => {});
+    }
+  }, [mode]);
+
+  // When template selected, pre-fill
+  useEffect(() => {
+    if (selectedTemplate) {
+      setDocumentName(selectedTemplate.name);
+      setDocumentType(selectedTemplate.document_type);
+      try {
+        const fields = JSON.parse(selectedTemplate.placeholder_fields || "[]");
+        const vals: Record<string, string> = {};
+        fields.forEach((f: any) => { vals[f.key] = ""; });
+        setPlaceholderValues(vals);
+      } catch {}
+
+      // Pre-populate sign fields from template
+      try {
+        const predefined = JSON.parse(selectedTemplate.predefined_sign_fields || "[]");
+        if (predefined.length > 0) {
+          setSignFields(predefined.map((f: any) => ({
+            id: f.id || `field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: f.type || "signature",
+            page: f.page || 1,
+            x: f.x || 10,
+            y: f.y || 20,
+            width: f.width || 25,
+            height: f.height || 6,
+            assigned_to_signer_id: f.assigned_to_party || "party_2",
+            label: f.label || "Signature",
+            required: true,
+            value: null,
+          })));
+        }
+      } catch {}
+    }
+  }, [selectedTemplate]);
+
+  // Get all signers including Party 1
+  const allSigners: { id: string; name: string; party: number }[] = [
+    { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
+    ...signers.map((s, i) => ({ id: `party_${s.party_number}`, name: s.name || `Signer ${i + 1}`, party: s.party_number })),
+  ];
+
+  // ─── Step Handlers ────────────────────────────────────────────────
+  const handleNext = () => {
+    if (step === 1) {
+      if (!documentName.trim()) return toast.error("Document name is required");
+      if (!expiryDate) return toast.error("Expiry date is required");
+      if (new Date(expiryDate) <= new Date()) return toast.error("Expiry must be in the future");
+      if (!uploadedFile && !selectedTemplate) return toast.error("Please select a template or upload a PDF");
+    }
+    if (step === 2) {
+      const invalid = signers.find((s) => !s.name.trim() || !s.email.trim());
+      if (invalid) return toast.error("All signers must have a name and email");
+    }
+    if (step === 3) {
+      const signerFieldCounts = allSigners.map((s) => ({
+        ...s,
+        count: signFields.filter((f) => f.assigned_to_signer_id === s.id).length,
+      }));
+      const missing = signerFieldCounts.filter((s) => s.count === 0);
+      if (missing.length > 0) return toast.error(`Each signer needs at least 1 field. Missing: ${missing.map((m) => m.name).join(", ")}`);
+    }
+    setStep((s) => Math.min(s + 1, 4));
+  };
+
+  const handleAddField = (type: string) => {
+    const activeSigner = allSigners[activeSignerTab];
+    if (!activeSigner) return;
+    const field: SignField = {
+      id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      page: currentPage,
+      x: 10 + Math.random() * 30,
+      y: 15 + signFields.filter((f) => f.page === currentPage).length * 8,
+      width: type === "checkbox" ? 8 : 25,
+      height: type === "checkbox" ? 5 : 6,
+      assigned_to_signer_id: activeSigner.id,
+      label: fieldTypes.find((ft) => ft.type === type)?.label || type,
+      required: true,
+      value: null,
+    };
+    setSignFields((prev) => [...prev, field]);
+  };
+
+  const handleRemoveField = (fieldId: string) => {
+    setSignFields((prev) => prev.filter((f) => f.id !== fieldId));
+    if (selectedField === fieldId) setSelectedField(null);
+  };
+
+  const handleUpdateField = (fieldId: string, updates: Partial<SignField>) => {
+    setSignFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, ...updates } : f));
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!legalConsent) return toast.error("You must agree to the legal consent");
+    setLoading(true);
+
+    try {
+      // 1. Create document
+      const createRes = await fetch("/api/vaultsign/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_id: selectedTemplate?.id || null,
+          document_name: documentName,
+          document_type: documentType,
+          signing_order: signingOrder,
+          expiry_date: expiryDate,
+          personal_message: personalMessage || null,
+          placeholder_values: placeholderValues,
+          signers: signers.map((s, i) => ({
+            name: s.name,
+            email: s.email,
+            role: s.role,
+            party_number: s.party_number,
+            signing_order_position: signingOrder === "sequential" ? i + 2 : 2,
+          })),
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err.error || "Failed to create document");
+      }
+
+      const { document } = await createRes.json();
+      setCreatedDocId(document.id);
+
+      // 2. Upload PDF if custom upload
+      if (uploadedFile) {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        formData.append("document_id", document.id.toString());
+        const uploadRes = await fetch("/api/vaultsign/documents/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error("Failed to upload PDF");
+      }
+
+      // 3. Save sign fields
+      await fetch(`/api/vaultsign/documents/${document.id}/fields`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sign_fields: signFields }),
+      });
+
+      // 4. Send for signature
+      const sendRes = await fetch(`/api/vaultsign/documents/${document.id}/send`, {
+        method: "POST",
+      });
+
+      if (!sendRes.ok) {
+        const err = await sendRes.json();
+        throw new Error(err.error || "Failed to send document");
+      }
+
+      toast.success("Document sent for signature ✓");
+      router.push(`/recruiter/vaultsign/${document.id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send document");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Step Indicator */}
+      <div className="flex items-center justify-center gap-2 mb-8">
+        {[1, 2, 3, 4].map((s) => (
+          <div key={s} className="flex items-center">
+            <div className={`flex items-center justify-center size-8 rounded-full text-sm font-medium ${
+              s === step ? "bg-[#166534] text-white" : s < step ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#F3F4F6] text-[#9CA3AF]"
+            }`}>
+              {s < step ? <Check className="size-4" /> : s}
+            </div>
+            {s < 4 && <div className={`w-12 h-0.5 ${s < step ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />}
+          </div>
+        ))}
+      </div>
+      <div className="text-center mb-6">
+        <p className="text-sm text-[#6B7280]">
+          {step === 1 && "Step 1: Choose Document"}
+          {step === 2 && "Step 2: Add Signers"}
+          {step === 3 && "Step 3: Place Fields"}
+          {step === 4 && "Step 4: Review & Send"}
+        </p>
+      </div>
+
+      {/* ── STEP 1 ────────────────────────────────────────────────── */}
+      {step === 1 && (
+        <div className="space-y-6">
+          {/* Mode Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => { setMode("template"); setSelectedTemplate(null); }}
+              className={`p-6 rounded-2xl border-2 text-left transition-all ${
+                mode === "template" ? "border-[#166534] bg-[#DCFCE7]/30" : "border-[#E5E7EB] bg-white hover:border-[#166534]/50"
+              }`}
+            >
+              <LayoutTemplate className="size-8 text-[#166534] mb-3" />
+              <h3 className="font-semibold text-[#111827]">Use a Template</h3>
+              <p className="text-sm text-[#6B7280] mt-1">Start from a pre-built template with placeholder fields already set up.</p>
+            </button>
+            <button
+              onClick={() => { setMode("upload"); setSelectedTemplate(null); }}
+              className={`p-6 rounded-2xl border-2 text-left transition-all ${
+                mode === "upload" ? "border-[#0D9488] bg-[#CCFBF1]/30" : "border-[#E5E7EB] bg-white hover:border-[#0D9488]/50"
+              }`}
+            >
+              <Upload className="size-8 text-[#0D9488] mb-3" />
+              <h3 className="font-semibold text-[#111827]">Upload Custom PDF</h3>
+              <p className="text-sm text-[#6B7280] mt-1">Upload any PDF document. You can edit it before sending.</p>
+            </button>
+          </div>
+
+          {/* Template Grid */}
+          {mode === "template" && (
+            <div>
+              <h3 className="text-sm font-medium text-[#111827] mb-3">Select a Template</h3>
+              {templates.length === 0 ? (
+                <p className="text-sm text-[#9CA3AF]">No templates available. Contact your admin to create templates.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {templates.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTemplate(t)}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedTemplate?.id === t.id ? "border-[#166534] bg-[#DCFCE7]/30" : "border-[#E5E7EB] bg-white hover:border-[#166534]/50"
+                      }`}
+                    >
+                      <FileSignature className="size-6 text-[#166534] mb-2" />
+                      <h4 className="font-medium text-[#111827] text-sm">{t.name}</h4>
+                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2">{t.description || "No description"}</p>
+                      <Badge className="mt-2 text-[10px] bg-[#F3F4F6] text-[#6B7280] border-0">
+                        {typeLabels[t.document_type] || t.document_type}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* File Upload */}
+          {mode === "upload" && (
+            <div>
+              <label className={`flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${
+                uploadedFile ? "border-[#166534] bg-[#DCFCE7]/20" : "border-[#E5E7EB] hover:border-[#166534]/50"
+              }`}>
+                <Upload className="size-8 text-[#9CA3AF] mb-2" />
+                <p className="text-sm font-medium text-[#111827]">
+                  {uploadedFile ? uploadedFile.name : "Click to upload PDF"}
+                </p>
+                <p className="text-xs text-[#9CA3AF] mt-1">PDF only, max 25MB</p>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && f.size > 25 * 1024 * 1024) { toast.error("File too large (max 25MB)"); return; }
+                    setUploadedFile(f || null);
+                  }}
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Form Fields */}
+          {(selectedTemplate || uploadedFile) && (
+            <div className="space-y-4 bg-white rounded-2xl border border-[#E5E7EB] p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-[#111827]">Document Name</Label>
+                  <Input value={documentName} onChange={(e) => setDocumentName(e.target.value)} className="mt-1 border-[#E5E7EB]" />
+                </div>
+                <div>
+                  <Label className="text-sm text-[#111827]">Document Type</Label>
+                  <Select value={documentType} onValueChange={setDocumentType}>
+                    <SelectTrigger className="mt-1 border-[#E5E7EB]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm text-[#111827]">Personal Message (Optional)</Label>
+                <Textarea
+                  value={personalMessage}
+                  onChange={(e) => setPersonalMessage(e.target.value.slice(0, 500))}
+                  placeholder="Add a message to your recipients..."
+                  className="mt-1 border-[#E5E7EB]"
+                  rows={3}
+                />
+                <p className="text-xs text-[#9CA3AF] mt-1">{personalMessage.length}/500</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-[#111827]">Document Expires On</Label>
+                  <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} min={new Date(Date.now() + 86400000).toISOString().split("T")[0]} className="mt-1 border-[#E5E7EB]" />
+                </div>
+                <div>
+                  <Label className="text-sm text-[#111827]">Signing Order</Label>
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      onClick={() => setSigningOrder("sequential")}
+                      className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 text-sm transition-all ${
+                        signingOrder === "sequential" ? "border-[#166534] bg-[#DCFCE7]/30" : "border-[#E5E7EB]"
+                      }`}
+                    >
+                      <ArrowRight className="size-4" />
+                      <div className="text-left">
+                        <div className="font-medium text-[#111827]">Sequential</div>
+                        <div className="text-[10px] text-[#6B7280]">Signers sign one after another</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setSigningOrder("parallel")}
+                      className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 text-sm transition-all ${
+                        signingOrder === "parallel" ? "border-[#0D9488] bg-[#CCFBF1]/30" : "border-[#E5E7EB]"
+                      }`}
+                    >
+                      <LayoutTemplate className="size-4" />
+                      <div className="text-left">
+                        <div className="font-medium text-[#111827]">Parallel</div>
+                        <div className="text-[10px] text-[#6B7280]">All signers receive at once</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Placeholder Variables */}
+              {selectedTemplate && Object.keys(placeholderValues).length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-[#111827]">Fill in Template Variables</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                    {Object.entries(placeholderValues).map(([key, value]) => (
+                      <div key={key}>
+                        <Label className="text-xs text-[#6B7280]">{key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</Label>
+                        <Input
+                          value={value}
+                          onChange={(e) => setPlaceholderValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={`Enter ${key.replace(/_/g, " ")}`}
+                          className="mt-1 border-[#E5E7EB]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── STEP 2 ────────────────────────────────────────────────── */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>Who needs to sign?</h2>
+
+          {/* Party 1 - Sender */}
+          <div className="p-5 rounded-2xl border border-[#166534] bg-[#DCFCE7]/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-[#166534] text-white border-0 text-xs">Party 1</Badge>
+              <span className="text-sm font-medium text-[#111827]">You (Sender)</span>
+              <Badge variant="secondary" className="text-xs bg-[#DCFCE7] text-[#166534]">Signs first</Badge>
+            </div>
+            <p className="text-sm text-[#6B7280]">{user?.firstName} {user?.lastName} &middot; {user?.email}</p>
+          </div>
+
+          {/* Other Signers */}
+          {signers.map((signer, i) => (
+            <div key={i} className="p-5 rounded-2xl border border-[#E5E7EB] bg-white relative">
+              <button
+                onClick={() => setSigners((prev) => prev.filter((_, idx) => idx !== i))}
+                className="absolute top-3 right-3 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
+                disabled={signers.length <= 1}
+              >
+                <X className="size-4" />
+              </button>
+              <div className="flex items-center gap-2 mb-3">
+                <GripVertical className="size-4 text-[#9CA3AF]" />
+                <Badge className="border-0 text-xs" style={{ backgroundColor: `${partyColors[Math.min(i + 1, 3)]}20`, color: partyColors[Math.min(i + 1, 3)] }}>
+                  Party {i + 2}
+                </Badge>
+                {signingOrder === "sequential" && (
+                  <Badge variant="secondary" className="text-xs">Signs #{i + 2}</Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-[#6B7280]">Full Name</Label>
+                  <Input value={signer.name} onChange={(e) => {
+                    const updated = [...signers]; updated[i] = { ...updated[i], name: e.target.value }; setSigners(updated);
+                  }} className="mt-1 border-[#E5E7EB]" placeholder="Signer name" />
+                </div>
+                <div>
+                  <Label className="text-xs text-[#6B7280]">Email</Label>
+                  <Input type="email" value={signer.email} onChange={(e) => {
+                    const updated = [...signers]; updated[i] = { ...updated[i], email: e.target.value }; setSigners(updated);
+                  }} className="mt-1 border-[#E5E7EB]" placeholder="signer@email.com" />
+                </div>
+              </div>
+              <div className="mt-3">
+                <Label className="text-xs text-[#6B7280]">Role</Label>
+                <Select value={signer.role} onValueChange={(v) => {
+                  const updated = [...signers]; updated[i] = { ...updated[i], role: v }; setSigners(updated);
+                }}>
+                  <SelectTrigger className="mt-1 border-[#E5E7EB]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ))}
+
+          <Button variant="ghost" onClick={() => setSigners((prev) => [...prev, { name: "", email: "", role: "Candidate", party_number: prev.length + 2, signing_order_position: prev.length + 2 }])} className="text-[#166534]">
+            <Plus className="size-4 mr-2" /> Add Signer
+          </Button>
+        </div>
+      )}
+
+      {/* ── STEP 3 ────────────────────────────────────────────────── */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>Place Fields on Document</h2>
+
+          <div className="flex gap-4">
+            {/* Left Panel */}
+            <div className="w-[280px] shrink-0 space-y-4">
+              {/* Signer Tabs */}
+              <div>
+                <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Signer</p>
+                <div className="flex flex-col gap-1">
+                  {allSigners.map((s, i) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setActiveSignerTab(i)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        activeSignerTab === i ? "text-white" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]"
+                      }`}
+                      style={activeSignerTab === i ? { backgroundColor: partyColors[Math.min(i, 3)] } : {}}
+                    >
+                      <span className="truncate">{s.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-[#9CA3AF] mt-2">Placing fields for: <strong>{allSigners[activeSignerTab]?.name}</strong></p>
+              </div>
+
+              {/* Field Types */}
+              <div>
+                <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Field Types</p>
+                {fieldTypes.map((ft) => (
+                  <button
+                    key={ft.type}
+                    onClick={() => handleAddField(ft.type)}
+                    className="w-full flex items-center gap-2 px-3 py-2 mb-1 rounded-lg border border-[#E5E7EB] bg-white text-sm font-medium text-[#111827] hover:border-[#166534]/50 transition-all cursor-pointer"
+                  >
+                    <span>{ft.icon}</span>
+                    <span>{ft.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Selected Field Properties */}
+              {selectedField && (() => {
+                const field = signFields.find((f) => f.id === selectedField);
+                if (!field) return null;
+                return (
+                  <div className="p-3 rounded-xl border border-[#E5E7EB] bg-[#F8F7F4] space-y-2">
+                    <p className="text-xs font-medium text-[#9CA3AF] uppercase">Selected Field</p>
+                    <p className="text-sm text-[#111827] capitalize">{field.type.replace(/_/g, " ")}</p>
+                    <p className="text-xs text-[#6B7280]">Assigned to: {allSigners.find((s) => s.id === field.assigned_to_signer_id)?.name || field.assigned_to_signer_id}</p>
+                    <div>
+                      <Label className="text-xs text-[#6B7280]">Label</Label>
+                      <Input value={field.label} onChange={(e) => handleUpdateField(field.id, { label: e.target.value })} className="mt-1 border-[#E5E7EB] text-sm" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-[#6B7280]">Required</Label>
+                      <Switch checked={field.required} onCheckedChange={(v) => handleUpdateField(field.id, { required: v })} />
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleRemoveField(field.id)} className="text-[#DC2626] w-full">
+                      <X className="size-3 mr-1" /> Remove Field
+                    </Button>
+                  </div>
+                );
+              })()}
+
+              {/* Placed Fields List */}
+              <div>
+                <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Placed Fields ({signFields.length})</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {signFields.map((f) => {
+                    const signerColor = partyColors[Math.min(allSigners.findIndex((s) => s.id === f.assigned_to_signer_id), 3)];
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setSelectedField(f.id)}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left transition-all ${
+                          selectedField === f.id ? "bg-[#F3F4F6]" : "hover:bg-[#F8F7F4]"
+                        }`}
+                      >
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: signerColor }} />
+                        <span className="truncate flex-1">{f.label}</span>
+                        <span className="text-[#9CA3AF]">P{f.page}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveField(f.id); }} className="text-[#9CA3AF] hover:text-[#DC2626]">
+                          <X className="size-3" />
+                        </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel - PDF Area */}
+            <div className="flex-1 space-y-3">
+              {/* Page Nav */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
+                    ◀
+                  </Button>
+                  <span className="text-sm text-[#6B7280]">Page {currentPage} of {totalPages}</span>
+                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+                    ▶
+                  </Button>
+                </div>
+              </div>
+
+              {/* PDF Canvas Placeholder */}
+              <div
+                className="relative bg-white border border-[#E5E7EB] rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07)]"
+                style={{ minHeight: "600px" }}
+                onClick={() => setSelectedField(null)}
+              >
+                {/* PDF representation */}
+                <div className="p-8 text-center">
+                  <FileSignature className="size-16 mx-auto text-[#9CA3AF] mb-4" />
+                  <p className="text-sm text-[#9CA3AF]">
+                    {uploadedFile ? uploadedFile.name : selectedTemplate ? selectedTemplate.name : "Document Preview"}
+                  </p>
+                  <p className="text-xs text-[#9CA3AF] mt-1">Field positions are shown below</p>
+                </div>
+
+                {/* Placed Fields Overlay */}
+                {signFields.filter((f) => f.page === currentPage).map((f) => {
+                  const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);
+                  const signerColor = partyColors[Math.min(signerIdx, 3)];
+                  const isSelected = selectedField === f.id;
+                  return (
+                    <div
+                      key={f.id}
+                      onClick={(e) => { e.stopPropagation(); setSelectedField(f.id); }}
+                      className={`absolute cursor-move rounded border-2 transition-all ${
+                        isSelected ? "shadow-md" : ""
+                      }`}
+                      style={{
+                        left: `${f.x}%`,
+                        top: `${f.y}%`,
+                        width: `${f.width}%`,
+                        height: `${f.height}%`,
+                        borderColor: signerColor,
+                        backgroundColor: `${signerColor}15`,
+                        borderWidth: isSelected ? "2.5px" : "1.5px",
+                      }}
+                    >
+                      <p className="text-[9px] px-1 truncate" style={{ color: signerColor }}>{allSigners[signerIdx]?.name}</p>
+                      <p className="text-[10px] font-medium text-[#111827] px-1 truncate capitalize">{f.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4 ────────────────────────────────────────────────── */}
+      {step === 4 && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 space-y-6">
+            {/* Document */}
+            <div>
+              <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Document</p>
+              <h3 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>{documentName}</h3>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge className="bg-[#F3F4F6] text-[#6B7280] border-0">{typeLabels[documentType]}</Badge>
+                {personalMessage && <span className="text-sm text-[#6B7280]">Message included</span>}
+              </div>
+            </div>
+
+            {/* Signers */}
+            <div>
+              <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">Signers</p>
+              <div className="space-y-2">
+                {/* Party 1 */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#DCFCE7]/20">
+                  <span className="size-3 rounded-full" style={{ backgroundColor: partyColors[0] }} />
+                  <div>
+                    <span className="text-sm font-medium text-[#111827]">{user?.firstName} {user?.lastName}</span>
+                    <span className="text-xs text-[#6B7280] ml-2">Sender</span>
+                  </div>
+                  <span className="ml-auto text-xs text-[#6B7280]">
+                    {signingOrder === "sequential" ? "Signs #1" : "Signs simultaneously"}
+                  </span>
+                </div>
+                {/* Other signers */}
+                {signers.map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-[#F8F7F4]">
+                    <span className="size-3 rounded-full" style={{ backgroundColor: partyColors[Math.min(i + 1, 3)] }} />
+                    <div>
+                      <span className="text-sm font-medium text-[#111827]">{s.name || "Unnamed"}</span>
+                      <span className="text-xs text-[#6B7280] ml-2">{s.role}</span>
+                    </div>
+                    <span className="ml-auto text-xs text-[#6B7280]">
+                      {signingOrder === "sequential" ? `Signs #${i + 2}` : "Signs simultaneously"}
+                    </span>
+                    <span className="text-xs text-[#9CA3AF]">
+                      {signFields.filter((f) => f.assigned_to_signer_id === `party_${s.party_number}`).length} fields
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Settings */}
+            <div>
+              <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">Settings</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-[#6B7280]">Signing Order:</span> <span className="text-[#111827] capitalize">{signingOrder}</span></div>
+                <div><span className="text-[#6B7280]">Expires:</span> <span className="text-[#111827]">{new Date(expiryDate).toLocaleDateString()}</span></div>
+              </div>
+            </div>
+
+            {/* Legal Consent */}
+            <div className="pt-4 border-t border-[#E5E7EB]">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={legalConsent} onChange={(e) => setLegalConsent(e.target.checked)} className="mt-1 accent-[#166534]" />
+                <span className="text-sm text-[#6B7280]">
+                  I confirm that I have the right to request signatures on this document and all parties have agreed to use electronic signatures.
+                </span>
+              </label>
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleSubmit}
+              disabled={!legalConsent || loading}
+              className="w-full bg-[#166534] hover:bg-[#14532D] py-4 text-base font-semibold"
+            >
+              {loading ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" /> Sending...</>
+              ) : (
+                "Send for Signature"
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex justify-between pt-4">
+        {step > 1 ? (
+          <Button variant="ghost" onClick={() => setStep((s) => s - 1)} className="text-[#6B7280]">
+            <ArrowLeft className="size-4 mr-2" /> Back
+          </Button>
+        ) : <div />}
+        {step < 4 && (
+          <Button onClick={handleNext} className="bg-[#166534] hover:bg-[#14532D]">
+            {step === 1 && "Next: Add Signers →"}
+            {step === 2 && "Next: Place Fields →"}
+            {step === 3 && "Next: Review & Send →"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -43,6 +43,10 @@ export default function RootLayout({
           href="https://api.fontshare.com/v1/css?f[]=clash-display@200,300,400,500,600,700&display=swap"
           rel="stylesheet"
         />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Sacramento&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body
         className={`${inter.variable} antialiased bg-background text-foreground font-sans`}

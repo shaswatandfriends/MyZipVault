@@ -28,6 +28,7 @@ model Organization {
   invoices            Invoice[]
   invite_tokens       InviteToken[]
   recruiter_leads     RecruiterLead[]
+  vault_sign_documents VaultSignDocument[]
 }
 
 // ─── 2. Users ────────────────────────────────────────────────────────
@@ -89,6 +90,11 @@ model User {
   call_logs              CallLog[]
   reference_deletion_requests ReferenceDeletionRequest[] @relation("CandidateDeletionRequests")
   reference_deletion_reviewed ReferenceDeletionRequest[] @relation("AdminDeletionReviews")
+
+  // VaultSign relations
+  vault_sign_templates_created VaultSignTemplate[] @relation("VaultSignTemplateCreator")
+  vault_sign_documents_created VaultSignDocument[] @relation("VaultSignDocumentCreator")
+  vault_sign_signers VaultSignSigner[] @relation("VaultSignSignerUser")
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -662,4 +668,93 @@ model ShiftRequest {
 
   recruiter_user    User      @relation("RecruiterShiftRequests", fields: [recruiter_user_id], references: [id])
   candidate_user    User      @relation("CandidateShiftRequests", fields: [candidate_user_id], references: [id])
+}
+
+// ─── 40. VaultSign Templates ────────────────────────────────────────
+model VaultSignTemplate {
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  description           String?
+  document_url          String
+  document_type         String    @default("custom") // right_to_represent, pre_offer_acceptance, offer_letter, nda, background_check_authorization, employment_contract, onboarding_form, custom
+  placeholder_fields    String    @default("[]") // JSON array of {key, label, description}
+  predefined_sign_fields String   @default("[]") // JSON array of {id, type, page, x, y, width, height, assigned_to_party, label}
+  is_active             Boolean   @default(true)
+  created_by            Int
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now())
+
+  creator               User      @relation("VaultSignTemplateCreator", fields: [created_by], references: [id])
+  vault_sign_documents  VaultSignDocument[]
+}
+
+// ─── 41. VaultSign Documents ────────────────────────────────────────
+model VaultSignDocument {
+  id                       Int       @id @default(autoincrement())
+  organization_id          Int
+  created_by_user_id       Int
+  template_id              Int?
+  document_name            String
+  document_type            String    @default("custom")
+  original_document_url    String?
+  final_document_url       String?
+  signing_order            String    @default("sequential") // sequential, parallel
+  expiry_date              DateTime
+  personal_message         String?
+  status                   String    @default("draft") // draft, sent, partially_signed, completed, declined, expired, voided
+  placeholder_values       String    @default("{}") // JSON object {key: value}
+  sign_fields              String    @default("[]") // JSON array of {id, type, page, x, y, width, height, assigned_to_signer_id, label, required, value}
+  audit_trail              String    @default("[]") // JSON array of {event, user_id, name, ip_address, timestamp}
+  document_hash            String?
+  revised_from_document_id Int?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @default(now())
+
+  organization             Organization      @relation(fields: [organization_id], references: [id])
+  creator                  User              @relation("VaultSignDocumentCreator", fields: [created_by_user_id], references: [id])
+  template                 VaultSignTemplate? @relation(fields: [template_id], references: [id])
+  revised_from_document    VaultSignDocument? @relation("VaultSignDocumentRevision", fields: [revised_from_document_id], references: [id])
+  revised_documents        VaultSignDocument[] @relation("VaultSignDocumentRevision")
+  signers                  VaultSignSigner[]
+  reminders                VaultSignReminder[]
+}
+
+// ─── 42. VaultSign Signers ──────────────────────────────────────────
+model VaultSignSigner {
+  id                   Int       @id @default(autoincrement())
+  document_id          Int
+  user_id              Int?
+  name                 String
+  email                String
+  role                 String    // Candidate, Recruiter, Client Employer, Witness, etc.
+  party_number         Int       // 1 = sender, 2+ = other parties
+  signing_order_position Int     @default(1)
+  status               String    @default("pending") // pending, sent, viewed, signed, declined
+  signed_at            DateTime?
+  declined_at          DateTime?
+  decline_reason       String?
+  sign_token           String    @unique
+  token_used           Boolean   @default(false)
+  ip_address           String?
+  device_info          String?
+  signature_data       String?   // JSON {type, font, text, image_base64}
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now())
+
+  document             VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user                 User?     @relation("VaultSignSignerUser", fields: [user_id], references: [id])
+  reminders            VaultSignReminder[]
+}
+
+// ─── 43. VaultSign Reminders ────────────────────────────────────────
+model VaultSignReminder {
+  id            Int       @id @default(autoincrement())
+  document_id   Int
+  signer_id     Int
+  reminder_type String    @default("auto") // auto, manual
+  sent_at       DateTime  @default(now())
+  created_at    DateTime  @default(now())
+
+  document      VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  signer        VaultSignSigner   @relation(fields: [signer_id], references: [id], onDelete: Cascade)
 }

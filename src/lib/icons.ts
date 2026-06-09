@@ -153,6 +153,10 @@ import {
   X,
   XCircle,
   Zap,
+  LayoutTemplate,
+  RotateCw,
+  SquareCheck,
+  FilePlus,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -300,6 +304,10 @@ export {
   X,
   XCircle,
   Zap,
+  LayoutTemplate,
+  RotateCw,
+  SquareCheck,
+  FilePlus,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────

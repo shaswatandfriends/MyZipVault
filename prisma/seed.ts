@@ -541,6 +541,7 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
     { setting_key: 'baa_required', setting_value: 'true' },
     { setting_key: 'sms_enabled', setting_value: 'false' },
     { setting_key: 'credit_price_per_unit', setting_value: '2.99' },
+    { setting_key: 'vaultsign_reminder_days', setting_value: '3' },
   ];
 
   for (const setting of platformSettings) {
@@ -663,6 +664,37 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
       template_key: 'email_verification',
       subject: 'Verify Your Email Address — MyZipVault',
       body: 'Hello {{candidate_name}},\n\nThank you for creating your MyZipVault account! Please verify your email address by clicking the link below:\n\n{{verification_link}}\n\nThis link will expire in 24 hours. If you did not create an account with MyZipVault, please ignore this email.\n\nThank you,\nMyZipVault Team',
+    },
+    // VaultSign Email Templates
+    {
+      template_key: 'vaultsign_invitation',
+      subject: '{{sender_name}} requests your signature on {{document_name}}',
+      body: '<p>Hello,</p><p>{{sender_name}} from {{agency_name}} has sent you a document to sign: <strong>{{document_name}}</strong></p>{{personal_message}}<p>Please review and sign by {{expiry_date}}.</p><p><a href="{{signing_url}}" style="background-color:#166534;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;">Sign Document</a></p><p>This link is unique to you and expires on {{expiry_date}}.</p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
+    {
+      template_key: 'vaultsign_reminder',
+      subject: 'Reminder: Your signature is needed on {{document_name}}',
+      body: '<p>Hello,</p><p>This is a reminder that your signature is still needed on <strong>{{document_name}}</strong> from {{agency_name}}.</p><p>This document expires on {{expiry_date}}.</p><p><a href="{{signing_url}}" style="background-color:#166534;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;">Sign Now</a></p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
+    {
+      template_key: 'vaultsign_completed',
+      subject: 'All signatures collected — {{document_name}} is complete',
+      body: '<p>Great news!</p><p>All parties have signed <strong>{{document_name}}</strong>.</p><p>A completed copy is attached to this email. You can also access it anytime in your MyZipVault account.</p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
+    {
+      template_key: 'vaultsign_declined',
+      subject: '{{signer_name}} declined to sign {{document_name}}',
+      body: '<p>{{signer_name}} has declined to sign <strong>{{document_name}}</strong>.</p><p>Reason: {{decline_reason}}</p><p>You can revise and resend the document from your VaultSign dashboard.</p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
+    {
+      template_key: 'vaultsign_voided',
+      subject: '{{document_name}} has been voided',
+      body: '<p>The document <strong>{{document_name}}</strong> has been voided by {{sender_name}} and is no longer valid for signing.</p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
+    {
+      template_key: 'vaultsign_expired',
+      subject: '{{document_name}} has expired',
+      body: '<p>The document <strong>{{document_name}}</strong> has expired and is no longer available for signing.</p><p>Thank you,<br/>MyZipVault Team</p>',
     },
   ];
 

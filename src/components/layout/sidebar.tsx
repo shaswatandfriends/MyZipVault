@@ -113,8 +113,9 @@ const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
+  { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
-  { title: "BAA", href: "/recruiter/baa", icon: FileSignature },
+  { title: "BAA", href: "/recruiter/baa", icon: FileCheck },
   { title: "Team", href: "/recruiter/team", icon: Users, adminOnly: true },
 ];
 
@@ -193,6 +194,8 @@ const superAdminFlatNav: NavItem[] = [
 
 const superAdminBottomNav: NavItem[] = [
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
+  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
+  { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
