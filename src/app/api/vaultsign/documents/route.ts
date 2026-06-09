@@ -28,6 +28,7 @@ export async function GET(request: Request) {
     const dateTo = searchParams.get("date_to");
     const candidateName = searchParams.get("candidate_name");
     const documentType = searchParams.get("document_type");
+    const searchQuery = searchParams.get("search");
 
     const where: Prisma.VaultSignDocumentWhereInput = {
       organization_id: organizationId,
@@ -44,12 +45,13 @@ export async function GET(request: Request) {
     if (documentType) {
       where.document_type = documentType;
     }
-    if (candidateName) {
-      where.signers = {
-        some: {
-          name: { contains: candidateName },
-        },
-      };
+    // Support both "candidate_name" and "search" params for filtering by signer name
+    const nameFilter = candidateName || searchQuery;
+    if (nameFilter) {
+      where.OR = [
+        { signers: { some: { name: { contains: nameFilter, mode: "insensitive" } } } },
+        { document_name: { contains: nameFilter, mode: "insensitive" } },
+      ];
     }
 
     const documents = await db.vaultSignDocument.findMany({
@@ -68,7 +70,19 @@ export async function GET(request: Request) {
       orderBy: { created_at: "desc" },
     });
 
-    return NextResponse.json({ documents });
+    // Compute stats
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 86400000);
+
+    const stats = {
+      pending: documents.filter((d) => ["draft", "sent", "partially_signed"].includes(d.status)).length,
+      completed_this_month: documents.filter((d) => d.status === "completed" && new Date(d.updated_at) >= startOfMonth).length,
+      declined: documents.filter((d) => d.status === "declined").length,
+      expiring_soon: documents.filter((d) => ["sent", "partially_signed"].includes(d.status) && new Date(d.expiry_date) <= sevenDaysFromNow && new Date(d.expiry_date) > now).length,
+    };
+
+    return NextResponse.json({ documents, stats });
   } catch (error) {
     console.error("[VAULTSIGN_DOCUMENTS_GET]", error);
     return NextResponse.json(
@@ -139,6 +153,27 @@ export async function POST(request: Request) {
       }
     }
 
+    // If template_id provided, fetch the template to copy its PDF URL
+    let templatePdfUrl: string | null = null;
+    let templateSignFields: string = "[]";
+    if (template_id) {
+      const template = await db.vaultSignTemplate.findUnique({
+        where: { id: template_id },
+      });
+      if (template) {
+        templatePdfUrl = template.document_url;
+        // Also copy template's predefined sign fields if they exist
+        if (template.predefined_sign_fields) {
+          try {
+            const predefined = JSON.parse(template.predefined_sign_fields);
+            if (Array.isArray(predefined) && predefined.length > 0) {
+              templateSignFields = template.predefined_sign_fields;
+            }
+          } catch {}
+        }
+      }
+    }
+
     // Create the document with signers
     const document = await db.vaultSignDocument.create({
       data: {
@@ -147,11 +182,12 @@ export async function POST(request: Request) {
         template_id: template_id || null,
         document_name,
         document_type: document_type || "custom",
+        original_document_url: templatePdfUrl,
         signing_order: signing_order || "sequential",
         expiry_date: new Date(expiry_date),
         personal_message: personal_message || null,
         placeholder_values: placeholder_values ? JSON.stringify(placeholder_values) : "{}",
-        sign_fields: "[]",
+        sign_fields: templateSignFields,
         audit_trail: JSON.stringify([
           {
             event: "document_created",

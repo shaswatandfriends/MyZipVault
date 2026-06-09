@@ -115,6 +115,20 @@ function DraggableField({
     };
   };
 
+  // Touch support for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onSelect();
+    setDragging(true);
+    const touch = e.touches[0];
+    dragStart.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      fieldX: field.x,
+      fieldY: field.y,
+    };
+  };
+
   useEffect(() => {
     if (!dragging) return;
 
@@ -131,16 +145,34 @@ function DraggableField({
       onMove(field.id, Math.round(newX * 10) / 10, Math.round(newY * 10) / 10);
     };
 
-    const handleMouseUp = () => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!dragStart.current || !containerRef.current) return;
+      const container = containerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStart.current.startX;
+      const dy = touch.clientY - dragStart.current.startY;
+      const dxPercent = (dx / containerRect.width) * 100;
+      const dyPercent = (dy / containerRect.height) * 100;
+      const newX = Math.max(0, Math.min(100 - field.width, dragStart.current.fieldX + dxPercent));
+      const newY = Math.max(0, Math.min(100 - field.height, dragStart.current.fieldY + dyPercent));
+      onMove(field.id, Math.round(newX * 10) / 10, Math.round(newY * 10) / 10);
+    };
+
+    const handleEnd = () => {
       setDragging(false);
       dragStart.current = null;
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleEnd);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [dragging, field.id, field.width, field.height, containerRef, onMove]);
 
@@ -160,6 +192,7 @@ function DraggableField({
         borderStyle: "solid",
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
     >
       <p className="text-[8px] px-1 truncate leading-tight" style={{ color: signerColor }}>
@@ -170,8 +203,9 @@ function DraggableField({
       </p>
       {isSelected && (
         <button
-          className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity"
+          className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center transition-opacity"
           onClick={(e) => { e.stopPropagation(); onRemove(field.id); }}
+          onTouchEnd={(e) => { e.stopPropagation(); onRemove(field.id); }}
         >
           <X className="size-3" />
         </button>
@@ -215,6 +249,7 @@ export default function NewVaultSignDocument() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
 
   // Step 4
   const [legalConsent, setLegalConsent] = useState(false);
@@ -301,6 +336,9 @@ export default function NewVaultSignDocument() {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
+        // Store canvas dimensions for accurate overlay sizing
+        setCanvasDims({ width: viewport.width, height: viewport.height });
+
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
@@ -319,7 +357,7 @@ export default function NewVaultSignDocument() {
   // ─── Get all signers including Party 1 ────────────────────────────
   const allSigners: { id: string; name: string; party: number }[] = [
     { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
-    ...signers.map((s, i) => ({ id: `party_${s.party_number}`, name: s.name || `Signer ${i + 1}`, party: s.party_number })),
+    ...signers.map((s) => ({ id: `party_${s.party_number}`, name: s.name || `Party ${s.party_number}`, party: s.party_number })),
   ];
 
   // ─── Step Handlers ────────────────────────────────────────────────
@@ -400,6 +438,16 @@ export default function NewVaultSignDocument() {
   const handleUpdateField = (fieldId: string, updates: Partial<SignField>) => {
     setSignFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, ...updates } : f));
   };
+
+  // ─── Cleanup object URLs on unmount ─────────────────────────────────
+  useEffect(() => {
+    return () => {
+      // Revoke object URL to prevent memory leak
+      if (pdfUrl && pdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Submit ───────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -734,7 +782,12 @@ export default function NewVaultSignDocument() {
             </div>
           ))}
 
-          <Button variant="ghost" onClick={() => setSigners((prev) => [...prev, { name: "", email: "", role: "Candidate", party_number: prev.length + 2, signing_order_position: prev.length + 2 }])} className="text-[#166534]">
+          <Button variant="ghost" onClick={() => setSigners((prev) => {
+            // Calculate next party_number to avoid duplicates
+            const existingParties = prev.map((s) => s.party_number);
+            const maxParty = Math.max(2, ...existingParties);
+            return [...prev, { name: "", email: "", role: "Candidate", party_number: maxParty + 1, signing_order_position: maxParty + 1 }];
+          })} className="text-[#166534]">
             <Plus className="size-4 mr-2" /> Add Signer
           </Button>
         </div>
@@ -870,8 +923,16 @@ export default function NewVaultSignDocument() {
                 onClick={() => setSelectedField(null)}
               >
                 {pdfUrl ? (
-                  <div ref={pdfPageWrapperRef} id="pdf-page-wrapper" className="relative inline-block">
-                    <canvas id="pdf-canvas" className="block" />
+                  <div
+                    ref={pdfPageWrapperRef}
+                    id="pdf-page-wrapper"
+                    className="relative"
+                    style={{
+                      width: canvasDims.width ? `${canvasDims.width}px` : "auto",
+                      height: canvasDims.height ? `${canvasDims.height}px` : "auto",
+                    }}
+                  >
+                    <canvas id="pdf-canvas" className="block" style={{ width: "100%", height: "100%" }} />
                     {/* Placed Fields Overlay */}
                     {signFields.filter((f) => f.page === currentPage).map((f) => {
                       const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);

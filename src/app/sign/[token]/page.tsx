@@ -237,12 +237,13 @@ export default function VaultSignSigningPage() {
   const [submitting, setSubmitting] = useState(false);
   const [signatureModalField, setSignatureModalField] = useState<string | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const [signatureData, setSignatureData] = useState<{
+  // Per-field signature data: keyed by field ID
+  const [fieldSignatures, setFieldSignatures] = useState<Record<string, {
     type: string;
     font: string;
     text: string;
     image_base64: string;
-  } | null>(null);
+  }>>({});
   const [consent1, setConsent1] = useState(false);
   const [consent2, setConsent2] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
@@ -250,6 +251,11 @@ export default function VaultSignSigningPage() {
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfTotalPages, setPdfTotalPages] = useState(1);
   const [activeFieldInput, setActiveFieldInput] = useState<SignField | null>(null);
+
+  // Ref for the PDF canvas wrapper (used for accurate field positioning)
+  const pdfWrapperRef = useRef<HTMLDivElement | null>(null);
+  // Store the rendered canvas dimensions for accurate overlay sizing
+  const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
 
   const fetchSigningData = useCallback(async () => {
     try {
@@ -312,7 +318,12 @@ export default function VaultSignSigningPage() {
         const page = await pdf.getPage(pdfPage);
         if (cancelled) return;
 
-        const viewport = page.getViewport({ scale: 1.2 });
+        // Calculate scale to fit within a max-width container (800px) while maintaining aspect ratio
+        const baseViewport = page.getViewport({ scale: 1 });
+        const containerMaxWidth = 800;
+        const scale = Math.min(containerMaxWidth / baseViewport.width, 1.5);
+        const viewport = page.getViewport({ scale });
+
         const canvas = document.getElementById("sign-pdf-canvas") as HTMLCanvasElement;
         if (!canvas) return;
 
@@ -321,6 +332,9 @@ export default function VaultSignSigningPage() {
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
+
+        // Store canvas dimensions for overlay sizing
+        setCanvasDims({ width: viewport.width, height: viewport.height });
 
         await page.render({ canvasContext: context, viewport }).promise;
       } catch (err) {
@@ -332,28 +346,42 @@ export default function VaultSignSigningPage() {
     return () => { cancelled = true; };
   }, [data?.document_url, pdfPage]);
 
+  // Check all required fields filled
   const requiredFields = data?.sign_fields.filter((f) => f.required) || [];
   const filledRequired = requiredFields.filter((f) => {
-    if (f.type === "signature") return !!signatureData;
+    if (f.type === "signature") return !!fieldSignatures[f.id];
     return !!fieldValues[f.id]?.trim();
   });
   const progress = requiredFields.length > 0 ? filledRequired.length / requiredFields.length : 1;
-  const canSign = progress === 1 && consent1 && consent2 && !!signatureData;
+  const allSignatureFieldsFilled = data?.sign_fields
+    .filter((f) => f.type === "signature")
+    .every((f) => !!fieldSignatures[f.id]) ?? true;
+  const canSign = progress === 1 && consent1 && consent2 && allSignatureFieldsFilled;
 
   const handleSubmit = async () => {
-    if (!canSign || !signatureData) return;
+    if (!canSign || !data) return;
     setSubmitting(true);
     try {
-      const field_values = data!.sign_fields.map((f) => ({
+      const field_values = data.sign_fields.map((f) => ({
         field_id: f.id,
         value: f.type === "signature" ? "signed" : (fieldValues[f.id] || ""),
       }));
+
+      // Send all per-field signature data
+      const allSignatures = Object.fromEntries(
+        Object.entries(fieldSignatures).map(([fieldId, sigData]) => [fieldId, sigData])
+      );
+
+      // Use the first signature as the primary signature_data for backward compat
+      const primarySignature = Object.values(fieldSignatures)[0] || null;
+
       const res = await fetch(`/api/vaultsign/sign/${token}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           field_values,
-          signature_data: signatureData,
+          signature_data: primarySignature,
+          all_signatures: allSignatures,
           consent_agreed: true,
         }),
       });
@@ -489,59 +517,77 @@ export default function VaultSignSigningPage() {
           {data.document_url && (
             <div className="space-y-2">
               <div className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
-                <div className="relative inline-block">
-                  <canvas id="sign-pdf-canvas" className="block" />
+                {/* 
+                  The wrapper div is sized exactly to the canvas dimensions.
+                  Fields use percentage-based positioning relative to this wrapper.
+                  This ensures signature fields appear at the correct position on the PDF.
+                */}
+                <div
+                  ref={pdfWrapperRef}
+                  className="relative"
+                  style={{
+                    width: canvasDims.width ? `${canvasDims.width}px` : "auto",
+                    height: canvasDims.height ? `${canvasDims.height}px` : "auto",
+                  }}
+                >
+                  <canvas id="sign-pdf-canvas" className="block" style={{ width: "100%", height: "100%" }} />
                   {/* Overlay sign fields at their positions */}
-                  {data.sign_fields.filter((f) => f.page === pdfPage).map((field) => (
-                    <div
-                      key={field.id}
-                      className="absolute rounded cursor-pointer group hover:shadow-md transition-shadow"
-                      style={{
-                        left: `${field.x}%`,
-                        top: `${field.y}%`,
-                        width: `${field.width}%`,
-                        height: `${field.height}%`,
-                        backgroundColor: field.type === "signature" && signatureData
-                          ? "rgba(22, 101, 52, 0.06)"
-                          : field.type === "checkbox" && fieldValues[field.id] === "checked"
-                          ? "rgba(22, 101, 52, 0.06)"
-                          : fieldValues[field.id]
-                          ? "rgba(22, 101, 52, 0.06)"
-                          : "rgba(22, 101, 52, 0.08)",
-                        border: field.type === "signature" && signatureData
-                          ? "1.5px solid #166534"
-                          : fieldValues[field.id] || (field.type === "checkbox" && fieldValues[field.id] === "checked")
-                          ? "1.5px solid #166534"
-                          : "1.5px dashed #166534",
-                      }}
-                      onClick={() => handleFieldClick(field)}
-                    >
-                      <p className="text-[8px] px-1 truncate leading-tight text-[#166534]">{field.label}</p>
-                      {field.type === "signature" && signatureData && (
-                        <img src={signatureData.image_base64} alt="Signature" className="w-full h-[60%] object-contain" />
-                      )}
-                      {field.type !== "signature" && field.type !== "checkbox" && fieldValues[field.id] && (
-                        <p className="text-[9px] px-1 truncate text-[#111827]">{fieldValues[field.id]}</p>
-                      )}
-                      {field.type === "checkbox" && (
-                        <div className="flex items-center justify-center h-full">
-                          {fieldValues[field.id] === "checked" ? (
-                            <Check className="size-4 text-[#166534]" />
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {data.sign_fields.filter((f) => f.page === pdfPage).map((field) => {
+                    const isFilled = field.type === "signature"
+                      ? !!fieldSignatures[field.id]
+                      : !!(fieldValues[field.id]?.trim());
+                    const sigData = fieldSignatures[field.id];
+
+                    return (
+                      <div
+                        key={field.id}
+                        className="absolute rounded cursor-pointer hover:shadow-md transition-shadow"
+                        style={{
+                          left: `${field.x}%`,
+                          top: `${field.y}%`,
+                          width: `${field.width}%`,
+                          height: `${field.height}%`,
+                          backgroundColor: isFilled
+                            ? "rgba(22, 101, 52, 0.06)"
+                            : "rgba(22, 101, 52, 0.08)",
+                          border: isFilled
+                            ? "1.5px solid #166534"
+                            : "1.5px dashed #166534",
+                        }}
+                        onClick={() => handleFieldClick(field)}
+                      >
+                        <p className="text-[8px] px-1 truncate leading-tight text-[#166534]">{field.label}</p>
+                        {field.type === "signature" && sigData && (
+                          <img
+                            src={sigData.image_base64}
+                            alt="Signature"
+                            className="w-full h-[60%] object-contain pointer-events-none"
+                            style={{ imageRendering: "auto" }}
+                          />
+                        )}
+                        {field.type !== "signature" && field.type !== "checkbox" && fieldValues[field.id] && (
+                          <p className="text-[9px] px-1 truncate text-[#111827]">{fieldValues[field.id]}</p>
+                        )}
+                        {field.type === "checkbox" && (
+                          <div className="flex items-center justify-center h-full">
+                            {fieldValues[field.id] === "checked" ? (
+                              <Check className="size-4 text-[#166534]" />
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               {pdfTotalPages > 1 && (
                 <div className="flex items-center justify-center gap-2">
                   <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={() => setPdfPage((p) => Math.max(1, p - 1))} disabled={pdfPage <= 1}>
-                    ◀
+                    &#9664;
                   </Button>
                   <span className="text-xs text-[#6B7280]">Page {pdfPage} of {pdfTotalPages}</span>
                   <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={() => setPdfPage((p) => Math.min(pdfTotalPages, p + 1))} disabled={pdfPage >= pdfTotalPages}>
-                    ▶
+                    &#9654;
                   </Button>
                 </div>
               )}
@@ -553,6 +599,7 @@ export default function VaultSignSigningPage() {
             <div className="bg-[#F8F7F4] rounded-xl border border-[#E5E7EB] min-h-[200px] p-8 text-center">
               <FileSignature className="size-16 mx-auto text-[#9CA3AF] mb-2" />
               <p className="text-sm text-[#9CA3AF]">{data.document_name}</p>
+              <p className="text-xs text-[#9CA3AF] mt-1">Document preview not available</p>
             </div>
           )}
 
@@ -562,7 +609,7 @@ export default function VaultSignSigningPage() {
               <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider">Fields to Complete</h3>
               <div className="flex flex-wrap gap-2">
                 {data.sign_fields.map((field) => {
-                  const isFilled = field.type === "signature" ? !!signatureData : !!(fieldValues[field.id]?.trim());
+                  const isFilled = field.type === "signature" ? !!fieldSignatures[field.id] : !!(fieldValues[field.id]?.trim());
                   return (
                     <button
                       key={field.id}
@@ -643,12 +690,15 @@ export default function VaultSignSigningPage() {
         </div>
       </div>
 
-      {/* Signature Modal */}
+      {/* Signature Modal - opens for specific field */}
       {signatureModalField && (
         <SignatureModal
           signerName={data.signer_name}
           onConfirm={(sigData) => {
-            setSignatureData(sigData);
+            setFieldSignatures((prev) => ({
+              ...prev,
+              [signatureModalField]: sigData,
+            }));
             setSignatureModalField(null);
           }}
           onCancel={() => setSignatureModalField(null)}

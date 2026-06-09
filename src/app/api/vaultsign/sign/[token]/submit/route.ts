@@ -81,7 +81,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { field_values, signature_data, consent_agreed } = body;
+    const { field_values, signature_data, all_signatures, consent_agreed } = body;
 
     // Validate required fields
     if (!consent_agreed) {
@@ -91,11 +91,28 @@ export async function POST(
       );
     }
 
-    if (!signature_data || (!signature_data.font && !signature_data.text && !signature_data.image_base64)) {
+    // Support both single signature_data and per-field all_signatures
+    const hasSignature = signature_data || (all_signatures && Object.keys(all_signatures).length > 0);
+    if (!hasSignature) {
       return NextResponse.json(
         { error: "Signature data is required" },
         { status: 400 }
       );
+    }
+
+    // Merge per-field signatures into field values for proper PDF generation
+    // If all_signatures is provided, use it; otherwise fall back to single signature_data
+    const perFieldSignatures: Record<string, any> = all_signatures || {};
+    if (signature_data && Object.keys(perFieldSignatures).length === 0) {
+      // Legacy: single signature for all signature fields
+      const sigFields = allSignFields.filter(
+        (f: Record<string, unknown>) =>
+          f.assigned_to_signer_id === signerPartyId &&
+          f.type === "signature"
+      );
+      sigFields.forEach((f: Record<string, unknown>) => {
+        perFieldSignatures[f.id as string] = signature_data;
+      });
     }
 
     if (!field_values || !Array.isArray(field_values)) {
@@ -137,7 +154,7 @@ export async function POST(
       null;
     const device_info = request.headers.get("user-agent") || null;
 
-    // Update signer with signature data
+    // Update signer with signature data (store per-field signatures for accurate PDF generation)
     await db.vaultSignSigner.update({
       where: { id: signer.id },
       data: {
@@ -145,7 +162,10 @@ export async function POST(
         signed_at: new Date(),
         ip_address,
         device_info,
-        signature_data: JSON.stringify(signature_data),
+        signature_data: JSON.stringify({
+          primary: signature_data,
+          per_field: perFieldSignatures,
+        }),
         token_used: true,
         updated_at: new Date(),
       },

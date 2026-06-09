@@ -67,10 +67,23 @@ export async function generateSignedPdf(
 
       if (signer?.signature_data) {
         try {
-          let sigData: SignatureData;
+          let parsedSigData: any;
           try {
-            sigData = JSON.parse(signer.signature_data);
+            parsedSigData = JSON.parse(signer.signature_data);
           } catch {
+            continue;
+          }
+
+          // Support per-field signatures (new format) or single signature (legacy)
+          let sigData: SignatureData;
+          if (parsedSigData.per_field && parsedSigData.per_field[field.id]) {
+            sigData = parsedSigData.per_field[field.id];
+          } else if (parsedSigData.primary) {
+            sigData = parsedSigData.primary;
+          } else if (parsedSigData.image_base64) {
+            // Legacy format: signature_data was the SignatureData object directly
+            sigData = parsedSigData;
+          } else {
             continue;
           }
 
