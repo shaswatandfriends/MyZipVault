@@ -62,9 +62,15 @@ export async function GET(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Verify this candidate is a signer on this document
+    // Block access to draft documents — candidates cannot view or act on documents
+    // that haven't been sent for signing yet
+    if (doc.status === "draft") {
+      return NextResponse.json({ error: "Document not available" }, { status: 404 });
+    }
+
+    // Verify this candidate is a signer on this document (exclude party_1/sender)
     const mySigner = doc.signers.find(
-      (s) => s.user_id === userId || s.email === user.email
+      (s) => s.party_number > 1 && (s.user_id === userId || s.email === user.email)
     );
 
     if (!mySigner) {

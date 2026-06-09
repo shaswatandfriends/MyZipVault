@@ -68,36 +68,52 @@ export async function POST(
       request.headers.get("x-real-ip") ||
       null;
 
-    // Update signer status
-    await db.vaultSignSigner.update({
-      where: { id: signer.id },
-      data: {
-        status: "declined",
-        declined_at: new Date(),
-        decline_reason: reason || null,
-        token_used: true,
-        updated_at: new Date(),
-      },
-    });
+    // Use a transaction to prevent race conditions — re-check signer status inside
+    // to ensure a concurrent sign or decline request hasn't already acted on this signer.
+    await db.$transaction(async (tx) => {
+      const currentSigner = await tx.vaultSignSigner.findUnique({
+        where: { id: signer.id },
+      });
+      if (!currentSigner) {
+        throw new Error("Signer not found");
+      }
+      if (currentSigner.status === "signed") {
+        throw new Error("Signer has already signed this document");
+      }
+      if (currentSigner.status === "declined") {
+        throw new Error("Signer has already declined this document");
+      }
 
-    // Add audit trail event and update document status in a single atomic update
-    const auditTrail = JSON.parse(doc.audit_trail || "[]");
-    auditTrail.push({
-      event: "document_declined",
-      signer_id: signer.id,
-      signer_name: signer.name,
-      signer_email: signer.email,
-      reason: reason || null,
-      ip_address,
-      timestamp: new Date().toISOString(),
-    });
-    await db.vaultSignDocument.update({
-      where: { id: doc.id },
-      data: {
-        status: "declined",
-        audit_trail: JSON.stringify(auditTrail),
-        updated_at: new Date(),
-      },
+      await tx.vaultSignSigner.update({
+        where: { id: signer.id },
+        data: {
+          status: "declined",
+          declined_at: new Date(),
+          decline_reason: reason || null,
+          token_used: true,
+          updated_at: new Date(),
+        },
+      });
+
+      // Add audit trail event and update document status
+      const auditTrail = JSON.parse(doc.audit_trail || "[]");
+      auditTrail.push({
+        event: "document_declined",
+        signer_id: signer.id,
+        signer_name: signer.name,
+        signer_email: signer.email,
+        reason: reason || null,
+        ip_address,
+        timestamp: new Date().toISOString(),
+      });
+      await tx.vaultSignDocument.update({
+        where: { id: doc.id },
+        data: {
+          status: "declined",
+          audit_trail: JSON.stringify(auditTrail),
+          updated_at: new Date(),
+        },
+      });
     });
 
     const recruiterName = `${doc.creator.first_name || ""} ${doc.creator.last_name || ""}`.trim() || doc.creator.email;

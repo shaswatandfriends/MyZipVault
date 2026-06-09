@@ -225,7 +225,7 @@ export default function UploadCustomPdfPage() {
     { name: "", email: "", role: "Candidate", party_number: 2, signing_order_position: 2 },
   ]);
   const [signFields, setSignFields] = useState<SignField[]>([]);
-  const [activeSignerTab, setActiveSignerTab] = useState(0);
+  const [activeSignerTab, setActiveSignerTab] = useState(1); // Default to first recipient (Party 1 is sender at index 0)
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -371,7 +371,12 @@ export default function UploadCustomPdfPage() {
   }, []);
 
   // ─── Get signers for field placement ──────────────────────────────
+  // Party 1 is the sender/recruiter — they auto-sign at document creation.
+  // They are stored as a VaultSignSigner with status "signed" and signing_order_position: 0,
+  // so fields can be assigned to party_1 and are properly tracked.
+  // Party 2+ are the actual recipients who need to sign through VaultSign.
   const allSigners: { id: string; name: string; party: number }[] = [
+    { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
     ...signers.map((s) => ({ id: `party_${s.party_number}`, name: s.name || `Party ${s.party_number}`, party: s.party_number })),
   ];
 

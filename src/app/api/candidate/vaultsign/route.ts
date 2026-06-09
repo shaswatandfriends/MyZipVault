@@ -109,8 +109,10 @@ export async function GET(request: Request) {
 
     // Enrich documents with candidate's signer-specific info
     const enrichedDocs = documents.map((doc) => {
+      // Find the candidate's signer record — exclude party_1 (sender) to avoid
+      // matching if the recruiter happens to have the same email as the candidate
       const mySigner = doc.signers.find(
-        (s) => s.user_id === userId || s.email === user.email
+        (s) => s.party_number > 1 && (s.user_id === userId || s.email === user.email)
       );
       return {
         id: doc.id,

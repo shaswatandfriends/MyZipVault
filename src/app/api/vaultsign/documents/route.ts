@@ -181,7 +181,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create the document with signers
+    // Sender info for Party 1 (the recruiter/creator)
+    const senderName = `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim();
+    const senderEmail = (session.user as Record<string, unknown>).email as string;
+
+    // Create the document with signers — includes Party 1 (sender) as an auto-signed signer
+    // so that fields assigned to party_1 are properly tracked and the signing progress
+    // includes the sender. The sender implicitly signs by creating and sending the document.
     const document = await db.vaultSignDocument.create({
       data: {
         organization_id: organizationId,
@@ -199,25 +205,41 @@ export async function POST(request: Request) {
           {
             event: "document_created",
             user_id: userId,
-            name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim(),
+            name: senderName,
             timestamp: new Date().toISOString(),
           },
         ]),
         status: "draft",
         signers: {
-          create: signers.map((s: { name: string; email: string; role: string; party_number: number; signing_order_position: number }) => ({
-            name: s.name,
-            email: s.email,
-            role: s.role || "Signer",
-            // party_number: identity (1 = sender, 2 = first recipient, 3+ = additional recipients)
-            // Used for field assignment (sign_fields.assigned_to_signer_id = "party_N")
-            party_number: s.party_number || 2,
-            // signing_order_position: determines signing order for sequential signing
-            // Lower numbers sign first. For parallel signing, order doesn't matter.
-            signing_order_position: s.signing_order_position || 1,
-            status: "pending",
-            sign_token: randomUUID(),
-          })),
+          create: [
+            // Party 1: Sender (auto-signed — they sign by creating & sending the document)
+            {
+              name: senderName,
+              email: senderEmail,
+              role: "Sender",
+              party_number: 1,
+              signing_order_position: 0,
+              status: "signed",
+              signed_at: new Date(),
+              sign_token: randomUUID(),
+              token_used: true,
+              user_id: userId,
+            },
+            // Party 2+: Recipients who need to sign
+            ...signers.map((s: { name: string; email: string; role: string; party_number: number; signing_order_position: number }) => ({
+              name: s.name,
+              email: s.email,
+              role: s.role || "Signer",
+              // party_number: identity (2 = first recipient, 3+ = additional recipients)
+              // Used for field assignment (sign_fields.assigned_to_signer_id = "party_N")
+              party_number: s.party_number || 2,
+              // signing_order_position: determines signing order for sequential signing
+              // Lower numbers sign first. For parallel signing, order doesn't matter.
+              signing_order_position: s.signing_order_position || 1,
+              status: "pending",
+              sign_token: randomUUID(),
+            })),
+          ],
         },
       },
       include: {

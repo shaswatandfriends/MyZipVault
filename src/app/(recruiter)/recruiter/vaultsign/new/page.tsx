@@ -243,7 +243,7 @@ function NewVaultSignDocumentContent() {
 
   // Step 3
   const [signFields, setSignFields] = useState<SignField[]>([]);
-  const [activeSignerTab, setActiveSignerTab] = useState(0);
+  const [activeSignerTab, setActiveSignerTab] = useState(1); // Default to first recipient (Party 1 is sender at index 0)
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -404,11 +404,13 @@ function NewVaultSignDocumentContent() {
     };
   }, [step, pdfUrl, currentPage, zoomLevel]);
 
-  // ─── Get signers for field placement (Party 1 / sender does NOT sign through VaultSign) ──
-  // Party 1 is the sender/recruiter. They are NOT stored as a VaultSignSigner record,
-  // so they have no sign_token and cannot sign through the /sign/[token] flow.
-  // Only actual recipients (Party 2+) are included in field placement.
+  // ─── Get signers for field placement ──
+  // Party 1 is the sender/recruiter — they auto-sign at document creation.
+  // They are stored as a VaultSignSigner with status "signed" and signing_order_position: 0,
+  // so fields can be assigned to party_1 and are properly tracked.
+  // Party 2+ are the actual recipients who need to sign through VaultSign.
   const allSigners: { id: string; name: string; party: number }[] = [
+    { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
     ...signers.map((s) => ({ id: `party_${s.party_number}`, name: s.name || `Party ${s.party_number}`, party: s.party_number })),
   ];
 
@@ -463,12 +465,15 @@ function NewVaultSignDocumentContent() {
   };
 
   const handleStep3Next = () => {
-    const signerFieldCounts = allSigners.map((s) => ({
+    // Only require fields for recipients (party 2+). Party 1 (sender) auto-signs
+    // and doesn't necessarily need placed fields — their info is auto-filled.
+    const recipients = allSigners.filter((s) => s.party > 1);
+    const recipientFieldCounts = recipients.map((s) => ({
       ...s,
       count: signFields.filter((f) => f.assigned_to_signer_id === s.id).length,
     }));
-    const missing = signerFieldCounts.filter((s) => s.count === 0);
-    if (missing.length > 0) return toast.error(`Each signer needs at least 1 field. Missing: ${missing.map((m) => m.name).join(", ")}`);
+    const missing = recipientFieldCounts.filter((s) => s.count === 0);
+    if (missing.length > 0) return toast.error(`Each recipient needs at least 1 field. Missing: ${missing.map((m) => m.name).join(", ")}`);
     setStep(4);
   };
 

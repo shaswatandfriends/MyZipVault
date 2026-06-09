@@ -76,25 +76,27 @@ export async function POST(
       },
     });
 
-    // Update all signers to 'sent' status
+    // Update only recipient signers (party_number > 1) to 'sent' status.
+    // Party 1 (sender) is auto-signed and should retain their "signed" status.
     await db.vaultSignSigner.updateMany({
-      where: { document_id: documentId },
+      where: { document_id: documentId, party_number: { gt: 1 } },
       data: { status: "sent", updated_at: new Date() },
     });
 
-    // Determine which signers to email based on signing order
-    let signersToEmail: typeof document.signers;
+    // Determine which signers to email based on signing order.
+    // Only consider recipients (party_number > 1) — the sender doesn't need an email.
+    const recipientSigners = document.signers.filter((s: any) => s.party_number > 1);
+    let signersToEmail: typeof recipientSigners;
 
     if (document.signing_order === "sequential") {
-      // Only send to the signer with the lowest signing_order_position
-      // (signers start at position 2 since Party 1 is the sender, not stored as a signer)
-      const minPosition = Math.min(...document.signers.map((s: any) => s.signing_order_position));
-      signersToEmail = document.signers.filter(
+      // Only send to the recipient with the lowest signing_order_position
+      const minPosition = Math.min(...recipientSigners.map((s: any) => s.signing_order_position));
+      signersToEmail = recipientSigners.filter(
         (s: any) => s.signing_order_position === minPosition
       );
     } else {
-      // Parallel: send to all signers
-      signersToEmail = document.signers;
+      // Parallel: send to all recipients
+      signersToEmail = recipientSigners;
     }
 
     // Send invitation emails
