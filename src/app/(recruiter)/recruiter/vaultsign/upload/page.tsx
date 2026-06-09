@@ -281,7 +281,7 @@ export default function UploadCustomPdfPage() {
 
   // ─── PDF rendering with pdfjs-dist ────────────────────────────────
   useEffect(() => {
-    if ((step !== 2 && step !== 3) || !pdfUrl) return;
+    if (!pdfUrl) return;
 
     let cancelled = false;
     setPdfRenderError(false);
@@ -317,8 +317,8 @@ export default function UploadCustomPdfPage() {
 
         const canvas = canvasRef.current;
         if (!canvas) {
-          if (attempt < 3) {
-            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 100);
+          if (attempt < 10) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 200);
           }
           return;
         }
@@ -351,7 +351,7 @@ export default function UploadCustomPdfPage() {
       cancelled = true;
       if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
     };
-  }, [step, pdfUrl, currentPage, zoomLevel]);
+  }, [pdfUrl, currentPage, zoomLevel]);
 
   // ─── Create PDF preview URL when file is uploaded ─────────────────
   useEffect(() => {

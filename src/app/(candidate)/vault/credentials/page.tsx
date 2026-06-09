@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -126,6 +126,94 @@ function getFileType(fileUrl: string): "pdf" | "image" | "other" {
     lower.startsWith("data:image/png")
   ) return "image";
   return "other";
+}
+
+// ─── PDF Canvas Preview Component ──────────────────────────────────
+// Renders PDF pages on a <canvas> using pdfjs-dist, avoiding iframe CORS issues.
+function PdfCanvasPreview({ url }: { url: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [renderError, setRenderError] = useState(false);
+
+  useEffect(() => {
+    if (!url) return;
+    let cancelled = false;
+    setRenderError(false);
+
+    const renderPdf = async (attempt = 0) => {
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        } catch {
+          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
+        }
+
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        if (cancelled) return;
+        setTotalPages(pdf.numPages);
+
+        const pageNum = Math.min(currentPage, pdf.numPages);
+        if (pageNum < 1) return;
+        const page = await pdf.getPage(pageNum);
+        if (cancelled) return;
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const maxWidth = 700;
+        const scale = Math.min(maxWidth / baseViewport.width, 2);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          if (attempt < 10) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 200);
+          }
+          return;
+        }
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport }).promise;
+      } catch (err) {
+        console.error("PDF render error:", err);
+        if (!cancelled) setRenderError(true);
+      }
+    };
+
+    renderPdf();
+    return () => { cancelled = true; };
+  }, [url, currentPage]);
+
+  if (renderError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] gap-3">
+        <FileText className="size-12 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Failed to render PDF preview.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-center gap-2">
+        <Button variant="ghost" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
+          ← Prev
+        </Button>
+        <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
+        <Button variant="ghost" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+          Next →
+        </Button>
+      </div>
+      <div className="flex justify-center overflow-auto max-h-[55vh]">
+        <canvas ref={canvasRef} className="block max-w-full" />
+      </div>
+    </div>
+  );
 }
 
 export default function CandidateCredentialsPage() {
@@ -750,13 +838,7 @@ export default function CandidateCredentialsPage() {
               (() => {
                 const fileType = getFileType(previewCredential?.file_url || "");
                 if (fileType === "pdf") {
-                  return (
-                    <iframe
-                      src={previewUrl}
-                      className="w-full h-[60vh] border-0"
-                      title="PDF Preview"
-                    />
-                  );
+                  return <PdfCanvasPreview url={previewUrl} />;
                 }
                 if (fileType === "image") {
                   return (

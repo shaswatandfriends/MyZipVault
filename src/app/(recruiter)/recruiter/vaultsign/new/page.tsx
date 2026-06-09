@@ -367,8 +367,8 @@ function NewVaultSignDocumentContent() {
         const canvas = canvasRef.current;
         if (!canvas) {
           // Retry if canvas ref isn't available yet
-          if (attempt < 3) {
-            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 100);
+          if (attempt < 10) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 200);
           }
           return;
         }

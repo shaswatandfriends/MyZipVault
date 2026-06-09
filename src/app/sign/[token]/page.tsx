@@ -367,9 +367,9 @@ export default function VaultSignSigningPage() {
 
         const canvas = canvasRef.current;
         if (!canvas) {
-          // Retry once if canvas ref isn't available yet
-          if (attempt < 3) {
-            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 100);
+          // Retry if canvas ref isn't available yet
+          if (attempt < 10) {
+            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 200);
           }
           return;
         }
