@@ -41,6 +41,7 @@ interface SigningData {
   personal_message: string | null;
   other_signers: OtherSigner[];
   waiting_for?: string;
+  waitingFor?: string; // API returns camelCase
 }
 
 type ErrorType = "expired" | "voided" | "already_signed" | "not_your_turn" | "invalid" | null;
@@ -208,6 +209,8 @@ function SignatureModal({
               height={120}
               className="w-full border border-[#E5E7EB] rounded-lg bg-white cursor-crosshair"
               style={{ touchAction: "none" }}
+              aria-label="Signature drawing pad - draw your signature here"
+              role="img"
               onMouseDown={startDraw}
               onMouseMove={draw}
               onMouseUp={endDraw}
@@ -266,6 +269,11 @@ export default function VaultSignSigningPage() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Store the rendered canvas dimensions for accurate overlay sizing
   const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
+  // PDF loading and error states
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfRenderError, setPdfRenderError] = useState(false);
+  // Presigned URL refresh timer ref
+  const presignedUrlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchSigningData = useCallback(async () => {
     try {
@@ -302,6 +310,18 @@ export default function VaultSignSigningPage() {
 
   useEffect(() => { fetchSigningData(); }, [fetchSigningData]);
 
+  // ─── Presigned URL refresh timer (every 5 minutes) ───────────────
+  // Pre-signed URLs expire in 15 min. Refresh every 5 min to keep PDF preview alive.
+  useEffect(() => {
+    if (!data?.document_url) return;
+    presignedUrlTimerRef.current = setInterval(() => {
+      fetchSigningData();
+    }, 5 * 60 * 1000);
+    return () => {
+      if (presignedUrlTimerRef.current) clearInterval(presignedUrlTimerRef.current);
+    };
+  }, [data?.document_url, fetchSigningData]);
+
   // Load Google Fonts
   useEffect(() => {
     const link = document.createElement("link");
@@ -314,11 +334,18 @@ export default function VaultSignSigningPage() {
   useEffect(() => {
     if (!data?.document_url) return;
     let cancelled = false;
+    setPdfRenderError(false);
+    setPdfLoading(true);
 
     const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        } catch {
+          // Fallback: try alternate worker paths
+          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
+        }
 
         const loadingTask = pdfjsLib.getDocument(data.document_url!);
         const pdf = await loadingTask.promise;
@@ -329,9 +356,10 @@ export default function VaultSignSigningPage() {
         if (cancelled) return;
 
         // Calculate scale based on actual container width for auto-fit
+        // Use offsetWidth instead of clientWidth to avoid scrollbar width issues
         const baseViewport = page.getViewport({ scale: 1 });
         const containerEl = containerRef.current;
-        const containerWidth = containerEl ? containerEl.clientWidth - 2 : 800; // subtract border
+        const containerWidth = containerEl ? containerEl.offsetWidth - 2 : 800; // subtract border
         const scale = Math.min(containerWidth / baseViewport.width, 2);
         const viewport = page.getViewport({ scale });
 
@@ -354,8 +382,13 @@ export default function VaultSignSigningPage() {
         setCanvasDims({ width: viewport.width, height: viewport.height });
 
         await page.render({ canvasContext: context, viewport }).promise;
+        if (!cancelled) setPdfLoading(false);
       } catch (err) {
         console.error("PDF render error on signing page:", err);
+        if (!cancelled) {
+          setPdfRenderError(true);
+          setPdfLoading(false);
+        }
       }
     };
 
@@ -377,6 +410,16 @@ export default function VaultSignSigningPage() {
 
   const handleSubmit = async () => {
     if (!canSign || !data) return;
+
+    // Validate that all signature field positions are within page bounds
+    const outOfBounds = data.sign_fields.filter(
+      (f) => f.y + f.height > 95 || f.x + f.width > 98
+    );
+    if (outOfBounds.length > 0) {
+      toast.error(`${outOfBounds.length} field(s) are positioned too close to the page edge. Please contact the sender.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const field_values = data.sign_fields.map((f) => ({
@@ -535,7 +578,22 @@ export default function VaultSignSigningPage() {
           {/* PDF Viewer with Fields Overlay */}
           {data.document_url && (
             <div className="space-y-2">
-              <div ref={containerRef} className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
+              {/* PDF Loading Skeleton */}
+              {pdfLoading && (
+                <div className="border border-[#E5E7EB] rounded-xl bg-[#F8F7F4] p-8 flex flex-col items-center justify-center min-h-[300px]">
+                  <Loader2 className="size-8 animate-spin text-[#166534] mb-3" />
+                  <p className="text-sm text-[#6B7280]">Loading document preview...</p>
+                </div>
+              )}
+              {/* PDF Render Error */}
+              {pdfRenderError && !pdfLoading && (
+                <div className="border border-[#DC2626]/30 rounded-xl bg-[#FEF2F2] p-6 text-center">
+                  <AlertCircle className="size-8 text-[#DC2626] mx-auto mb-2" />
+                  <p className="text-sm text-[#DC2626] font-medium">Failed to load document preview</p>
+                  <p className="text-xs text-[#6B7280] mt-1">You can still sign the document. The preview will be available in the final signed copy.</p>
+                </div>
+              )}
+              <div ref={containerRef} className={`overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4] ${pdfLoading || pdfRenderError ? 'hidden' : ''}`}>
                 {/* 
                   The wrapper div is sized exactly to the canvas dimensions.
                   Fields use percentage-based positioning relative to this wrapper.

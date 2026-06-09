@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutTemplate, Upload, ArrowRight, ArrowLeft, GripVertical,
   Plus, X, Loader2, FileSignature, Search as SearchIcon, Check,
-  ChevronLeft, ChevronRight, Trash2, MinusIcon,
+  ChevronLeft, ChevronRight, Trash2, MinusIcon, AlertCircle,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,6 +251,10 @@ export default function NewVaultSignDocument() {
   const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
+  // Debounce timer for canvas dimension updates to prevent field flickering during zoom
+  const canvasDimsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // PDF render error state
+  const [pdfRenderError, setPdfRenderError] = useState(false);
 
   // Step 4
   const [legalConsent, setLegalConsent] = useState(false);
@@ -307,11 +311,17 @@ export default function NewVaultSignDocument() {
     if (step !== 3 || !pdfUrl) return;
 
     let cancelled = false;
+    setPdfRenderError(false);
 
     const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        } catch {
+          // Fallback: try alternate worker paths
+          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
+        }
 
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
@@ -326,9 +336,10 @@ export default function NewVaultSignDocument() {
         if (cancelled) return;
 
         // Auto-fit to container width, then apply zoom multiplier
+        // Use offsetWidth instead of clientWidth to avoid scrollbar width issues
         const baseViewport = page.getViewport({ scale: 1 });
         const containerEl = pdfContainerRef.current;
-        const containerWidth = containerEl ? containerEl.clientWidth - 2 : 800; // subtract border
+        const containerWidth = containerEl ? containerEl.offsetWidth - 2 : 800; // subtract border
         const baseScale = Math.min(containerWidth / baseViewport.width, 2);
         const scale = baseScale * (zoomLevel / 100);
         const finalScale = Math.max(0.3, Math.min(scale, 3));
@@ -349,8 +360,11 @@ export default function NewVaultSignDocument() {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        // Store canvas dimensions for accurate overlay sizing
-        setCanvasDims({ width: viewport.width, height: viewport.height });
+        // Debounce canvas dimension updates to prevent field flickering during zoom
+        if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
+        canvasDimsDebounceRef.current = setTimeout(() => {
+          if (!cancelled) setCanvasDims({ width: viewport.width, height: viewport.height });
+        }, 50);
 
         const renderContext = {
           canvasContext: context,
@@ -360,11 +374,15 @@ export default function NewVaultSignDocument() {
         await page.render(renderContext).promise;
       } catch (err) {
         console.error("PDF render error:", err);
+        if (!cancelled) setPdfRenderError(true);
       }
     };
 
     renderPdf();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
+    };
   }, [step, pdfUrl, currentPage, zoomLevel]);
 
   // ─── Get all signers including Party 1 ────────────────────────────
@@ -411,6 +429,15 @@ export default function NewVaultSignDocument() {
   const handleStep2Next = () => {
     const invalid = signers.find((s) => !s.name.trim() || !s.email.trim());
     if (invalid) return toast.error("All signers must have a name and email");
+
+    // Check for duplicate emails
+    const emails = signers.map((s) => s.email.trim().toLowerCase());
+    const duplicateEmails = emails.filter((e, i) => emails.indexOf(e) !== i);
+    if (duplicateEmails.length > 0) {
+      toast.error(`Duplicate email found: ${[...new Set(duplicateEmails)].join(", ")}. Each signer must have a unique email.`);
+      return;
+    }
+
     setStep(3);
   };
 
@@ -933,13 +960,21 @@ export default function NewVaultSignDocument() {
               </div>
 
               {/* PDF Canvas with Fields Overlay */}
+              {/* PDF Render Error */}
+              {pdfRenderError && (
+                <div className="border border-[#DC2626]/30 rounded-xl bg-[#FEF2F2] p-6 text-center mb-3">
+                  <AlertCircle className="size-8 text-[#DC2626] mx-auto mb-2" />
+                  <p className="text-sm text-[#DC2626] font-medium">Failed to load document preview</p>
+                  <p className="text-xs text-[#6B7280] mt-1">Try refreshing the page or re-uploading the PDF.</p>
+                </div>
+              )}
               <div
                 ref={pdfContainerRef}
                 className="relative bg-white border border-[#E5E7EB] rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07)] overflow-auto"
                 style={{ minHeight: "500px" }}
                 onClick={() => setSelectedField(null)}
               >
-                {pdfUrl ? (
+                {pdfUrl && !pdfRenderError ? (
                   <div
                     ref={pdfPageWrapperRef}
                     id="pdf-page-wrapper"
