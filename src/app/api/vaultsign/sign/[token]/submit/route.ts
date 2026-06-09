@@ -154,21 +154,43 @@ export async function POST(
       null;
     const device_info = request.headers.get("user-agent") || null;
 
-    // Update signer with signature data (store per-field signatures for accurate PDF generation)
-    await db.vaultSignSigner.update({
-      where: { id: signer.id },
-      data: {
-        status: "signed",
-        signed_at: new Date(),
-        ip_address,
-        device_info,
-        signature_data: JSON.stringify({
-          primary: signature_data,
-          per_field: perFieldSignatures,
-        }),
-        token_used: true,
-        updated_at: new Date(),
-      },
+    // Look up user account by email to link signer to user (for candidate vault integration)
+    const currentUserAccount = await db.user.findFirst({
+      where: { email: signer.email, role: "candidate" },
+      select: { id: true },
+    });
+
+    // Update signer with signature data using a transaction to prevent race conditions.
+    // Re-check status inside the transaction to ensure the signer hasn't already signed
+    // in a concurrent request between the initial check and this update.
+    await db.$transaction(async (tx) => {
+      const currentSigner = await tx.vaultSignSigner.findUnique({
+        where: { id: signer.id },
+      });
+      if (!currentSigner || currentSigner.status === "signed") {
+        throw new Error("Signer has already signed or is invalid");
+      }
+      if (currentSigner.status === "declined") {
+        throw new Error("Signer has already declined this document");
+      }
+
+      await tx.vaultSignSigner.update({
+        where: { id: signer.id },
+        data: {
+          status: "signed",
+          signed_at: new Date(),
+          ip_address,
+          device_info,
+          signature_data: JSON.stringify({
+            primary: signature_data,
+            per_field: perFieldSignatures,
+          }),
+          token_used: true,
+          // Link to user account if found — enables user_id-based lookup in candidate API
+          ...(currentUserAccount ? { user_id: currentUserAccount.id } : {}),
+          updated_at: new Date(),
+        },
+      });
     });
 
     // Update sign_fields values in the document

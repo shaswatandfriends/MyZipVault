@@ -35,39 +35,27 @@ export async function GET(
 
     const doc = signer.document;
 
-    // Check if token has already been used and signer has signed
-    if (signer.token_used && signer.status === "signed") {
+    // Check if token has already been used (signer has already signed or declined)
+    if (signer.token_used && (signer.status === "signed" || signer.status === "declined")) {
       return NextResponse.json(
-        { error: "This signing link has already been used" },
+        { error: signer.status === "signed" ? "This signing link has already been used" : "This signing link is no longer valid" },
         { status: 410 }
       );
     }
 
-    // Check document status
-    if (doc.status === "expired") {
+    // Check document status — only sent/partially_signed documents can be signed
+    // Draft documents have not been sent yet, so signers cannot act on them
+    const blockedStatuses = ["draft", "expired", "voided", "declined", "completed"];
+    if (blockedStatuses.includes(doc.status)) {
+      const messages: Record<string, string> = {
+        draft: "This document has not been sent for signing yet",
+        expired: "This document has expired",
+        voided: "This document has been voided",
+        declined: "This document has been declined",
+        completed: "This document has already been completed",
+      };
       return NextResponse.json(
-        { error: "This document has expired" },
-        { status: 410 }
-      );
-    }
-
-    if (doc.status === "voided") {
-      return NextResponse.json(
-        { error: "This document has been voided" },
-        { status: 410 }
-      );
-    }
-
-    if (doc.status === "declined") {
-      return NextResponse.json(
-        { error: "This document has been declined" },
-        { status: 410 }
-      );
-    }
-
-    if (doc.status === "completed") {
-      return NextResponse.json(
-        { error: "This document has already been completed" },
+        { error: messages[doc.status] || "This document is no longer available for signing" },
         { status: 410 }
       );
     }

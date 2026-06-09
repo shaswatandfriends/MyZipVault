@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { CheckCircle2 } from "@/lib/icons";
+import { useParams, useSearchParams } from "next/navigation";
+import { CheckCircle2, Clock } from "@/lib/icons";
 
 export default function SigningCompletePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const token = params.token as string;
+  const allSigned = searchParams.get("allSigned") === "true";
   const [showCheck, setShowCheck] = useState(false);
 
   useEffect(() => {
@@ -34,9 +36,16 @@ export default function SigningCompletePage() {
           <p className="text-[#6B7280]">
             Thank you. Your signature has been recorded.
           </p>
-          <p className="text-[#6B7280]">
-            You will receive a copy once everyone has signed.
-          </p>
+          {allSigned ? (
+            <p className="text-[#6B7280]">
+              All parties have signed. You will receive a copy of the completed document shortly.
+            </p>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-[#6B7280]">
+              <Clock className="size-4" />
+              <p>Other parties still need to sign. You will receive a copy once everyone has signed.</p>
+            </div>
+          )}
         </div>
 
         {/* Close */}

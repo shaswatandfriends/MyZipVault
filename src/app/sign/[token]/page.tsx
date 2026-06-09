@@ -296,9 +296,11 @@ export default function VaultSignSigningPage() {
         }
       } else {
         const d = await res.json();
-        if (d.error?.includes("expired")) setError("expired");
+        if (d.error?.includes("not been sent")) setError("invalid");
+        else if (d.error?.includes("expired")) setError("expired");
         else if (d.error?.includes("voided")) setError("voided");
         else if (d.error?.includes("already signed")) setError("already_signed");
+        else if (d.error?.includes("declined")) setError("invalid");
         else setError("invalid");
       }
     } catch {
@@ -446,7 +448,8 @@ export default function VaultSignSigningPage() {
         }),
       });
       if (res.ok) {
-        router.push(`/sign/${token}/complete`);
+        const d = await res.json();
+        router.push(`/sign/${token}/complete?allSigned=${d.allSigned ? "true" : "false"}`);
       } else {
         const d = await res.json();
         toast.error(d.error || "Failed to submit signature");

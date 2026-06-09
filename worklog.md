@@ -28,3 +28,38 @@ Stage Summary:
 - Search functionality in recruiter dashboard works
 - Touch support added for mobile field dragging
 - Build compiles successfully with no errors
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix all 12 VaultSign audit issues (recruiter/agency vs candidate side mismatches)
+
+Work Log:
+- Read all VaultSign files: schema, 10+ API routes, 5 frontend pages, pdf-sign.ts lib
+- Identified 12 bugs/mismatches across 4 severity levels
+- Applied all 12 fixes across 8 files
+
+Stage Summary:
+- Fix #1 (Critical): Removed Party 1 from field placement UI in new/page.tsx — Party 1 has no sign_token and cannot sign through VaultSign. Updated allSigners array, Step 2 UI badge, and color mapping.
+- Fix #2 (Critical): Fixed signing_order_position calculation in submit to use form data (s.signing_order_position) instead of hardcoded array index (i + 2).
+- Fix #3 (Critical): Added "draft" to blocked document statuses in sign/[token] GET route, and filtered drafts from candidate list API (status: { not: "draft" }).
+- Fix #4 (Critical): Extended token_used check in sign/[token] GET to also block declined signers, not just signed ones.
+- Fix #5 (Moderate): Normalized assigned_to_party → assigned_to_signer_id in backend document creation route when copying template fields.
+- Fix #6 (Moderate): Added clarifying comments about party_number vs signing_order_position in document creation route.
+- Fix #7 (Moderate): Fixed audit trail "undefined" name display on candidate detail page by adding signer_name support to AuditEvent interface, eventLabels, and rendering.
+- Fix #8 (Moderate): Added JSON parsing of sign_fields, audit_trail, placeholder_values in recruiter detail API to match candidate API format.
+- Fix #9 (Minor): Populated user_id on VaultSignSigner when signer submits signature, linking signer to candidate user account.
+- Fix #10 (Minor): Updated completion page to distinguish partial vs full signing using allSigned query param, with appropriate messaging.
+- Fix #11 (Minor): Changed declined-by-signer notification email from vaultsign_voided to vaultsign_declined template with correct variables.
+- Fix #12 (Minor): Added Prisma interactive transaction with status re-check in submit route to prevent race conditions during parallel signing.
+
+Files modified:
+- src/app/(recruiter)/recruiter/vaultsign/new/page.tsx (Fixes #1, #2)
+- src/app/api/vaultsign/sign/[token]/route.ts (Fixes #3, #4)
+- src/app/api/candidate/vaultsign/route.ts (Fix #3)
+- src/app/sign/[token]/page.tsx (Fixes #3, #10)
+- src/app/api/vaultsign/documents/route.ts (Fixes #5, #6)
+- src/app/(candidate)/vaultsign/[id]/page.tsx (Fix #7)
+- src/app/api/vaultsign/documents/[id]/route.ts (Fix #8)
+- src/app/api/vaultsign/sign/[token]/submit/route.ts (Fixes #9, #12)
+- src/app/sign/[token]/complete/page.tsx (Fix #10)
+- src/app/api/vaultsign/sign/[token]/decline/route.ts (Fix #11)

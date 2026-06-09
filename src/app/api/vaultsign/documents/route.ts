@@ -163,11 +163,18 @@ export async function POST(request: Request) {
       if (template) {
         templatePdfUrl = template.document_url;
         // Also copy template's predefined sign fields if they exist
+        // Normalize field names: template uses "assigned_to_party" but documents
+        // use "assigned_to_signer_id" — convert for consistency across the system
         if (template.predefined_sign_fields) {
           try {
             const predefined = JSON.parse(template.predefined_sign_fields);
             if (Array.isArray(predefined) && predefined.length > 0) {
-              templateSignFields = template.predefined_sign_fields;
+              const normalized = predefined.map((f: Record<string, unknown>) => ({
+                ...f,
+                // Convert assigned_to_party → assigned_to_signer_id if present
+                assigned_to_signer_id: f.assigned_to_signer_id || f.assigned_to_party || "party_2",
+              }));
+              templateSignFields = JSON.stringify(normalized);
             }
           } catch {}
         }
@@ -202,7 +209,11 @@ export async function POST(request: Request) {
             name: s.name,
             email: s.email,
             role: s.role || "Signer",
+            // party_number: identity (1 = sender, 2 = first recipient, 3+ = additional recipients)
+            // Used for field assignment (sign_fields.assigned_to_signer_id = "party_N")
             party_number: s.party_number || 2,
+            // signing_order_position: determines signing order for sequential signing
+            // Lower numbers sign first. For parallel signing, order doesn't matter.
             signing_order_position: s.signing_order_position || 1,
             status: "pending",
             sign_token: randomUUID(),

@@ -34,7 +34,9 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for documents this candidate is a signer on
+    // Only show documents that have been sent (not draft — signers cannot act on drafts)
     const where: Prisma.VaultSignDocumentWhereInput = {
+      status: { not: "draft" },
       signers: {
         some: {
           OR: [

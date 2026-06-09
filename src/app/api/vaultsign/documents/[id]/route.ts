@@ -80,6 +80,10 @@ export async function GET(
         ...document,
         original_document_url: documentUrl,
         final_document_url: finalUrl,
+        // Parse JSON fields for consistent API response format (matches candidate API)
+        sign_fields: (() => { try { return JSON.parse(document.sign_fields || "[]"); } catch { return []; } })(),
+        audit_trail: (() => { try { return JSON.parse(document.audit_trail || "[]"); } catch { return []; } })(),
+        placeholder_values: (() => { try { return JSON.parse(document.placeholder_values || "{}"); } catch { return {}; } })(),
       },
     });
   } catch (error) {

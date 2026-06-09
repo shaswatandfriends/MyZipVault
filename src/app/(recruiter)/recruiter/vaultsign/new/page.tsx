@@ -385,9 +385,11 @@ export default function NewVaultSignDocument() {
     };
   }, [step, pdfUrl, currentPage, zoomLevel]);
 
-  // ─── Get all signers including Party 1 ────────────────────────────
+  // ─── Get signers for field placement (Party 1 / sender does NOT sign through VaultSign) ──
+  // Party 1 is the sender/recruiter. They are NOT stored as a VaultSignSigner record,
+  // so they have no sign_token and cannot sign through the /sign/[token] flow.
+  // Only actual recipients (Party 2+) are included in field placement.
   const allSigners: { id: string; name: string; party: number }[] = [
-    { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
     ...signers.map((s) => ({ id: `party_${s.party_number}`, name: s.name || `Party ${s.party_number}`, party: s.party_number })),
   ];
 
@@ -511,12 +513,15 @@ export default function NewVaultSignDocument() {
           expiry_date: expiryDate,
           personal_message: personalMessage || null,
           placeholder_values: placeholderValues,
-          signers: signers.map((s, i) => ({
+          signers: signers.map((s) => ({
             name: s.name,
             email: s.email,
             role: s.role,
             party_number: s.party_number,
-            signing_order_position: signingOrder === "sequential" ? i + 2 : 2,
+            // Use the signing_order_position from the form, which tracks the
+            // actual signing order. For parallel signing, all signers get the
+            // same position since order doesn't matter.
+            signing_order_position: signingOrder === "sequential" ? s.signing_order_position : s.party_number,
           })),
         }),
       });
@@ -769,14 +774,15 @@ export default function NewVaultSignDocument() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>Who needs to sign?</h2>
 
-          {/* Party 1 - Sender */}
+          {/* Party 1 - Sender (info only, does NOT sign through VaultSign) */}
           <div className="p-5 rounded-2xl border border-[#166534] bg-[#DCFCE7]/20">
             <div className="flex items-center gap-2 mb-2">
               <Badge className="bg-[#166534] text-white border-0 text-xs">Party 1</Badge>
               <span className="text-sm font-medium text-[#111827]">You (Sender)</span>
-              <Badge variant="secondary" className="text-xs bg-[#DCFCE7] text-[#166534]">Signs first</Badge>
+              <Badge variant="secondary" className="text-xs bg-[#DCFCE7] text-[#166534]">Document Creator</Badge>
             </div>
             <p className="text-sm text-[#6B7280]">{user?.firstName} {user?.lastName} &middot; {user?.email}</p>
+            <p className="text-xs text-[#9CA3AF] mt-1">You are the sender. Only recipients need to sign through VaultSign.</p>
           </div>
 
           {/* Other Signers */}
@@ -791,11 +797,11 @@ export default function NewVaultSignDocument() {
               </button>
               <div className="flex items-center gap-2 mb-3">
                 <GripVertical className="size-4 text-[#9CA3AF]" />
-                <Badge className="border-0 text-xs" style={{ backgroundColor: `${partyColors[Math.min(i + 1, 3)]}20`, color: partyColors[Math.min(i + 1, 3)] }}>
-                  Party {i + 2}
+                <Badge className="border-0 text-xs" style={{ backgroundColor: `${partyColors[Math.min(signer.party_number - 1, 3)]}20`, color: partyColors[Math.min(signer.party_number - 1, 3)] }}>
+                  Party {signer.party_number}
                 </Badge>
                 {signingOrder === "sequential" && (
-                  <Badge variant="secondary" className="text-xs">Signs #{i + 2}</Badge>
+                  <Badge variant="secondary" className="text-xs">Signs #{signer.signing_order_position}</Badge>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -859,7 +865,7 @@ export default function NewVaultSignDocument() {
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         activeSignerTab === i ? "text-white" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]"
                       }`}
-                      style={activeSignerTab === i ? { backgroundColor: partyColors[Math.min(i, 3)] } : {}}
+                      style={activeSignerTab === i ? { backgroundColor: partyColors[Math.min(s.party - 1, 3)] } : {}}
                     >
                       <span className="truncate">{s.name}</span>
                     </button>

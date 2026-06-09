@@ -40,7 +40,10 @@ interface AuditEvent {
   event: string;
   user_id?: number;
   name?: string;
+  signer_name?: string;
+  signer_email?: string;
   ip_address?: string;
+  reason?: string;
   timestamp: string;
 }
 
@@ -92,12 +95,16 @@ const eventLabels: Record<string, string> = {
   document_sent: "Document sent to signers",
   document_viewed: "Document viewed",
   viewed: "Document viewed",
+  document_signed: "Document signed",
   signed: "Document signed",
   declined: "Signature declined",
+  document_declined: "Signature declined",
   reminder_sent: "Reminder sent",
   document_expired: "Document expired",
   document_voided: "Document voided",
+  sign_fields_saved: "Sign fields saved",
   document_completed: "All signatures collected",
+  document_revised: "Document revised",
 };
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -407,9 +414,9 @@ export default function CandidateVaultSignDetailPage() {
               return (
                 <div key={i} className="flex gap-4 py-3 border-b border-[#E5E7EB] last:border-b-0">
                   <div className="size-8 rounded-full bg-[#F3F4F6] flex items-center justify-center shrink-0">
-                    {event.event === "signed" || event.event === "document_completed" ? (
+                    {event.event === "signed" || event.event === "document_signed" || event.event === "document_completed" ? (
                       <CheckCircle2 className="size-4 text-[#166534]" />
-                    ) : event.event === "declined" ? (
+                    ) : event.event === "declined" || event.event === "document_declined" ? (
                       <XCircle className="size-4 text-[#DC2626]" />
                     ) : event.event === "viewed" || event.event === "document_viewed" ? (
                       <Eye className="size-4 text-[#0D9488]" />
@@ -421,6 +428,8 @@ export default function CandidateVaultSignDetailPage() {
                     <p className="text-sm text-[#111827]">
                       {label}
                       {event.name && <span className="text-[#6B7280]"> — {event.name}</span>}
+                      {/* signer_name is used in document_signed/document_viewed/document_declined events */}
+                      {!event.name && event.signer_name && <span className="text-[#6B7280]"> — {event.signer_name}</span>}
                     </p>
                     <div className="flex items-center gap-3 mt-0.5">
                       <span className="text-xs text-[#9CA3AF]">

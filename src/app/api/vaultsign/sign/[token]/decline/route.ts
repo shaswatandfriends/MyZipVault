@@ -117,6 +117,7 @@ export async function POST(
     });
 
     // Notify other pending signers that the document has been declined
+    // Use the declined template (not voided) since the document was declined, not voided
     const otherPendingSigners = doc.signers.filter(
       (s) => s.id !== signer.id && (s.status === "sent" || s.status === "viewed" || s.status === "pending")
     );
@@ -124,10 +125,12 @@ export async function POST(
     for (const otherSigner of otherPendingSigners) {
       await sendEmail({
         to: otherSigner.email,
-        templateKey: "vaultsign_voided",
+        templateKey: "vaultsign_declined",
         variables: {
           document_name: doc.document_name,
-          sender_name: recruiterName,
+          signer_name: signer.name,
+          signer_email: signer.email,
+          decline_reason: reason || "No reason provided",
           agency_name: orgName,
         },
       });
