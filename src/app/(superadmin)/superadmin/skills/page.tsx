@@ -9,6 +9,7 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   CheckCircle2,
   XCircle,
   Download,
@@ -121,9 +122,43 @@ interface SpecialtyGroup {
   categories: Map<string, SkillItem[]>;
 }
 
+interface JobTitleGroup {
+  jobTitle: string; // e.g. "RN", "LPN", "General"
+  templates: SpecialtyGroup[]; // specialties under this job title
+  totalSkills: number;
+}
+
 interface ProfessionGroup {
-  profession: string;
-  specialties: SpecialtyGroup[];
+  profession: string; // e.g. "Nursing", "Allied"
+  jobTitles: JobTitleGroup[];
+}
+
+// ─── Profession Color Map ───────────────────────────────────────────
+const PROFESSION_COLORS: Record<string, string> = {
+  Nursing: "bg-emerald-500",
+  Allied: "bg-amber-500",
+  Pharma: "bg-violet-500",
+  Locums: "bg-sky-500",
+};
+
+function getProfessionColor(profession: string): string {
+  if (PROFESSION_COLORS[profession]) return PROFESSION_COLORS[profession];
+  // Generate a consistent color based on the string
+  const colors = [
+    "bg-emerald-500",
+    "bg-amber-500",
+    "bg-violet-500",
+    "bg-sky-500",
+    "bg-rose-500",
+    "bg-teal-500",
+    "bg-orange-500",
+    "bg-indigo-500",
+  ];
+  let hash = 0;
+  for (let i = 0; i < profession.length; i++) {
+    hash = profession.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -134,9 +169,11 @@ export default function SuperadminSkillsPage() {
 
   // ── Master-detail state
   const [selectedProfession, setSelectedProfession] = useState<string | null>(null);
+  const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedProfessions, setExpandedProfessions] = useState<Set<string>>(new Set());
 
   // ── Template dialog state
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
@@ -234,11 +271,12 @@ export default function SuperadminSkillsPage() {
     fetchContent();
   }, [fetchContent]);
 
-  // ─── Grouped data ─────────────────────────────────────────────────
+  // ─── Grouped data: Profession → Job Title → Specialty ────────────
   const professionGroups = useMemo<ProfessionGroup[]>(() => {
     if (!data) return [];
-    const map = new Map<string, SpecialtyGroup[]>();
 
+    // Step 1: Build SpecialtyGroups for each template
+    const specialtyMap = new Map<number, SpecialtyGroup>();
     for (const template of data.checklistTemplates) {
       const skills = data.skills.filter((s) => s.checklistTemplateId === template.id);
       const categoryMap = new Map<string, SkillItem[]>();
@@ -251,7 +289,7 @@ export default function SuperadminSkillsPage() {
         catSkills.sort((a, b) => a.sortOrder - b.sortOrder);
       }
 
-      const group: SpecialtyGroup = {
+      specialtyMap.set(template.id, {
         templateId: template.id,
         specialty: template.specialty,
         templateName: template.name,
@@ -259,15 +297,33 @@ export default function SuperadminSkillsPage() {
         isActive: template.isActive,
         skills,
         categories: categoryMap,
-      };
-
-      if (!map.has(template.profession)) map.set(template.profession, []);
-      map.get(template.profession)!.push(group);
+      });
     }
 
-    return Array.from(map.entries()).map(([profession, specialties]) => ({
+    // Step 2: Group by profession
+    const professionMap = new Map<string, Map<string, SpecialtyGroup[]>>();
+
+    for (const template of data.checklistTemplates) {
+      const spec = specialtyMap.get(template.id)!;
+      if (!professionMap.has(template.profession)) {
+        professionMap.set(template.profession, new Map());
+      }
+      const jobTitleMap = professionMap.get(template.profession)!;
+      const jtKey = template.jobTitle || "General";
+      if (!jobTitleMap.has(jtKey)) {
+        jobTitleMap.set(jtKey, []);
+      }
+      jobTitleMap.get(jtKey)!.push(spec);
+    }
+
+    // Step 3: Build ProfessionGroup array
+    return Array.from(professionMap.entries()).map(([profession, jobTitleMap]) => ({
       profession,
-      specialties,
+      jobTitles: Array.from(jobTitleMap.entries()).map(([jobTitle, templates]) => ({
+        jobTitle,
+        templates,
+        totalSkills: templates.reduce((sum, t) => sum + t.skills.length, 0),
+      })),
     }));
   }, [data]);
 
@@ -278,14 +334,44 @@ export default function SuperadminSkillsPage() {
     return professionGroups
       .map((pg) => ({
         ...pg,
-        specialties: pg.specialties.filter(
-          (s) =>
-            pg.profession.toLowerCase().includes(q) ||
-            s.specialty.toLowerCase().includes(q) ||
-            s.templateName.toLowerCase().includes(q)
-        ),
+        jobTitles: pg.jobTitles
+          .map((jt) => ({
+            ...jt,
+            templates: jt.templates.filter(
+              (s) =>
+                pg.profession.toLowerCase().includes(q) ||
+                jt.jobTitle.toLowerCase().includes(q) ||
+                s.specialty.toLowerCase().includes(q) ||
+                s.templateName.toLowerCase().includes(q)
+            ),
+          }))
+          .filter((jt) => {
+            // keep job title if it matches, or any of its templates match
+            return (
+              jt.jobTitle.toLowerCase().includes(q) ||
+              jt.templates.length > 0
+            );
+          })
+          .map((jt) => ({
+            ...jt,
+            // If jobTitle itself matches, include all original templates
+            templates: jt.jobTitle.toLowerCase().includes(q)
+              ? (pg.jobTitles.find((j) => j.jobTitle === jt.jobTitle)?.templates || jt.templates)
+              : jt.templates,
+          })),
       }))
-      .filter((pg) => pg.specialties.length > 0 || pg.profession.toLowerCase().includes(q));
+      .filter((pg) => {
+        const professionMatches = pg.profession.toLowerCase().includes(q);
+        const hasJobTitles = pg.jobTitles.length > 0;
+        return professionMatches || hasJobTitles;
+      })
+      .map((pg) => ({
+        ...pg,
+        // If profession itself matches, include all original job titles
+        jobTitles: pg.profession.toLowerCase().includes(q)
+          ? (professionGroups.find((p) => p.profession === pg.profession)?.jobTitles || pg.jobTitles)
+          : pg.jobTitles,
+      }));
   }, [professionGroups, searchQuery]);
 
   // ── Selected profession data ──────────────────────────────────────
@@ -294,10 +380,15 @@ export default function SuperadminSkillsPage() {
     return professionGroups.find((pg) => pg.profession === selectedProfession) || null;
   }, [selectedProfession, professionGroups]);
 
+  const selectedJobTitleData = useMemo(() => {
+    if (!selectedJobTitle || !selectedProfessionData) return null;
+    return selectedProfessionData.jobTitles.find((jt) => jt.jobTitle === selectedJobTitle) || null;
+  }, [selectedJobTitle, selectedProfessionData]);
+
   const selectedSpecialtyData = useMemo(() => {
-    if (!selectedSpecialtyId || !selectedProfessionData) return null;
-    return selectedProfessionData.specialties.find((s) => s.templateId === selectedSpecialtyId) || null;
-  }, [selectedSpecialtyId, selectedProfessionData]);
+    if (!selectedSpecialtyId || !selectedJobTitleData) return null;
+    return selectedJobTitleData.templates.find((s) => s.templateId === selectedSpecialtyId) || null;
+  }, [selectedSpecialtyId, selectedJobTitleData]);
 
   // ─── CRUD helper ──────────────────────────────────────────────────
   const performAction = async (type: string, action: string, data: Record<string, unknown>) => {
@@ -336,7 +427,8 @@ export default function SuperadminSkillsPage() {
     } else {
       setEditingTemplate(null);
       const profession = selectedProfession || "";
-      setTemplateForm({ profession, specialty: "", name: "", jobTitle: "", isActive: true });
+      const jobTitle = selectedJobTitle && selectedJobTitle !== "General" ? selectedJobTitle : "";
+      setTemplateForm({ profession, specialty: "", name: "", jobTitle, isActive: true });
     }
     setTemplateDialogOpen(true);
   };
@@ -542,6 +634,7 @@ export default function SuperadminSkillsPage() {
       setDeleteAllStep(1);
       setDeleteAllOtp(["", "", "", "", "", ""]);
       setSelectedProfession(null);
+      setSelectedJobTitle(null);
       setSelectedSpecialtyId(null);
       fetchContent();
     } catch (err) {
@@ -601,19 +694,34 @@ export default function SuperadminSkillsPage() {
     });
   };
 
-  // ─── Auto-select first profession ─────────────────────────────────
+  // ─── Profession expand/collapse toggle ─────────────────────────────
+  const toggleProfession = (profession: string) => {
+    setExpandedProfessions((prev) => {
+      const next = new Set(prev);
+      if (next.has(profession)) next.delete(profession);
+      else next.add(profession);
+      return next;
+    });
+  };
+
+  // ─── Auto-select first profession and job title ───────────────────
   useEffect(() => {
     if (!isLoading && professionGroups.length > 0 && !selectedProfession) {
-      setSelectedProfession(professionGroups[0].profession);
+      const firstProf = professionGroups[0];
+      setSelectedProfession(firstProf.profession);
+      setExpandedProfessions(new Set([firstProf.profession]));
+      if (firstProf.jobTitles.length > 0 && !selectedJobTitle) {
+        setSelectedJobTitle(firstProf.jobTitles[0].jobTitle);
+      }
     }
-  }, [isLoading, professionGroups, selectedProfession]);
+  }, [isLoading, professionGroups, selectedProfession, selectedJobTitle]);
 
-  // ─── Auto-select first specialty ──────────────────────────────────
+  // ─── Auto-select first specialty when job title changes ────────────
   useEffect(() => {
-    if (selectedProfessionData && selectedProfessionData.specialties.length > 0 && !selectedSpecialtyId) {
-      setSelectedSpecialtyId(selectedProfessionData.specialties[0].templateId);
+    if (selectedJobTitleData && selectedJobTitleData.templates.length > 0 && !selectedSpecialtyId) {
+      setSelectedSpecialtyId(selectedJobTitleData.templates[0].templateId);
     }
-  }, [selectedProfessionData, selectedSpecialtyId]);
+  }, [selectedJobTitleData, selectedSpecialtyId]);
 
   // ─── Auto-expand all categories when specialty changes ────────────
   useEffect(() => {
@@ -626,11 +734,35 @@ export default function SuperadminSkillsPage() {
     }
   }, [selectedSpecialtyId]);
 
+  // ─── Handle job title selection ───────────────────────────────────
+  const handleJobTitleSelect = (profession: string, jobTitle: string) => {
+    setSelectedProfession(profession);
+    setSelectedJobTitle(jobTitle);
+    setSelectedSpecialtyId(null);
+    // Expand the profession if not already
+    setExpandedProfessions((prev) => {
+      const next = new Set(prev);
+      next.add(profession);
+      return next;
+    });
+  };
+
+  // ─── Delete job title (all templates under it) ────────────────────
+  const handleDeleteJobTitle = (pg: ProfessionGroup, jt: JobTitleGroup) => {
+    jt.templates.forEach((s) => {
+      performAction("checklist_template", "delete", { id: s.templateId });
+    });
+    if (selectedProfession === pg.profession && selectedJobTitle === jt.jobTitle) {
+      setSelectedJobTitle(null);
+      setSelectedSpecialtyId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Skills Database"
-        description="Manage professions, specialties, and skills"
+        description="Manage professions, job titles, specialties, and skills"
         actions={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleExportTemplate}>
@@ -660,7 +792,7 @@ export default function SuperadminSkillsPage() {
 
       {/* ─── Master-Detail Panel ────────────────────────────────────── */}
       <div className="flex gap-4 min-h-[calc(100vh-220px)]">
-        {/* ─── Left Panel (1/3): Job Titles List ─────────────────────── */}
+        {/* ─── Left Panel (1/3): Profession → Job Titles ──────────────── */}
         <Card className="w-full md:w-1/3 shrink-0">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -708,62 +840,147 @@ export default function SuperadminSkillsPage() {
               </div>
             ) : (
               <div className="max-h-[calc(100vh-340px)] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                {filteredProfessions.map((pg) => (
-                  <div
-                    key={pg.profession}
-                    className={`border-b cursor-pointer transition-colors ${
-                      selectedProfession === pg.profession
-                        ? "bg-emerald-50 border-l-4 border-l-emerald-600"
-                        : "hover:bg-gray-50 border-l-4 border-l-transparent"
-                    }`}
-                    onClick={() => {
-                      setSelectedProfession(pg.profession);
-                      setSelectedSpecialtyId(null);
-                    }}
-                  >
-                    <div className="flex items-center justify-between p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{pg.profession}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {pg.specialties.length} {pg.specialties.length === 1 ? "specialty" : "specialties"}
-                        </p>
+                {filteredProfessions.map((pg) => {
+                  const isExpanded = expandedProfessions.has(pg.profession);
+                  const isProfessionSelected = selectedProfession === pg.profession;
+                  const colorDot = getProfessionColor(pg.profession);
+                  const totalSpecialties = pg.jobTitles.reduce((sum, jt) => sum + jt.templates.length, 0);
+                  const totalSkills = pg.jobTitles.reduce((sum, jt) => sum + jt.totalSkills, 0);
+
+                  return (
+                    <div key={pg.profession} className="border-b last:border-b-0">
+                      {/* ── Profession Header (collapsible) ── */}
+                      <div
+                        className={`flex items-center gap-2 p-3 cursor-pointer transition-colors ${
+                          isProfessionSelected
+                            ? "bg-emerald-50/60"
+                            : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => toggleProfession(pg.profession)}
+                      >
+                        <ChevronRight
+                          className={`size-4 text-muted-foreground shrink-0 transition-transform ${
+                            isExpanded ? "rotate-90" : ""
+                          }`}
+                        />
+                        <span className={`size-2.5 rounded-full shrink-0 ${colorDot}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm truncate">{pg.profession}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {pg.jobTitles.length} {pg.jobTitles.length === 1 ? "title" : "titles"} • {totalSpecialties} {totalSpecialties === 1 ? "specialty" : "specialties"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6"
+                            title="Rename Profession"
+                            onClick={() => {
+                              setRenameProfession(pg.profession);
+                              setRenameNewName(pg.profession);
+                              setRenameDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="size-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            title="Delete Profession"
+                            onClick={() => {
+                              pg.jobTitles.forEach((jt) => {
+                                jt.templates.forEach((s) => {
+                                  performAction("checklist_template", "delete", { id: s.templateId });
+                                });
+                              });
+                              if (selectedProfession === pg.profession) {
+                                setSelectedProfession(null);
+                                setSelectedJobTitle(null);
+                                setSelectedSpecialtyId(null);
+                              }
+                            }}
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          title="Rename"
-                          onClick={() => {
-                            setRenameProfession(pg.profession);
-                            setRenameNewName(pg.profession);
-                            setRenameDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          title="Delete profession"
-                          onClick={() => {
-                            // Delete all templates in this profession
-                            pg.specialties.forEach((s) => {
-                              performAction("checklist_template", "delete", { id: s.templateId });
-                            });
-                            if (selectedProfession === pg.profession) {
-                              setSelectedProfession(null);
-                              setSelectedSpecialtyId(null);
-                            }
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
+
+                      {/* ── Job Title Items (under profession) ── */}
+                      {isExpanded && (
+                        <div className="pb-1">
+                          {pg.jobTitles.map((jt) => {
+                            const isSelected =
+                              selectedProfession === pg.profession &&
+                              selectedJobTitle === jt.jobTitle;
+                            const specCount = jt.templates.length;
+
+                            return (
+                              <div
+                                key={jt.jobTitle}
+                                className={`flex items-center justify-between pl-10 pr-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+                                  isSelected
+                                    ? "bg-emerald-50 border-l-emerald-600"
+                                    : "hover:bg-gray-50 border-l-transparent"
+                                }`}
+                                onClick={() => handleJobTitleSelect(pg.profession, jt.jobTitle)}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-sm truncate">{jt.jobTitle}</p>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    {specCount} {specCount === 1 ? "specialty" : "specialties"} • {jt.totalSkills} skills
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-6"
+                                    title="Rename Job Title"
+                                    onClick={() => {
+                                      // Rename job title by updating all templates under it
+                                      const newName = prompt("Enter new job title name:", jt.jobTitle);
+                                      if (newName && newName.trim() && newName.trim() !== jt.jobTitle) {
+                                        jt.templates.forEach((s) => {
+                                          const template = data?.checklistTemplates.find((t) => t.id === s.templateId);
+                                          if (template) {
+                                            performAction("checklist_template", "update", {
+                                              id: template.id,
+                                              profession: template.profession,
+                                              specialty: template.specialty,
+                                              name: template.name,
+                                              jobTitle: jt.jobTitle === "General" ? null : newName.trim(),
+                                              isActive: template.isActive,
+                                            });
+                                          }
+                                        });
+                                        if (selectedProfession === pg.profession && selectedJobTitle === jt.jobTitle) {
+                                          setSelectedJobTitle(newName.trim());
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Pencil className="size-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                    title="Delete Job Title"
+                                    onClick={() => handleDeleteJobTitle(pg, jt)}
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -780,12 +997,12 @@ export default function SuperadminSkillsPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             </CardContent>
-          ) : !selectedProfessionData ? (
+          ) : !selectedProfessionData || !selectedJobTitleData ? (
             <CardContent className="flex flex-col items-center justify-center py-20 text-center">
               <Database className="size-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-1">Select a Job Title</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Choose a profession from the left panel to view its specialties and skills.
+                Choose a profession and job title from the left panel to view specialties and skills.
               </p>
             </CardContent>
           ) : (
@@ -794,9 +1011,13 @@ export default function SuperadminSkillsPage() {
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-bold">{selectedProfessionData.profession}</h2>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-0.5">
+                      <span>{selectedProfessionData.profession}</span>
+                      <ChevronRight className="size-3.5" />
+                      <span className="font-medium text-foreground">{selectedJobTitleData.jobTitle}</span>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectedProfessionData.specialties.length} {selectedProfessionData.specialties.length === 1 ? "specialty" : "specialties"} • {selectedProfessionData.specialties.reduce((s, sp) => s + sp.skills.length, 0)} skills
+                      {selectedJobTitleData.templates.length} {selectedJobTitleData.templates.length === 1 ? "specialty" : "specialties"} • {selectedJobTitleData.totalSkills} skills
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -817,15 +1038,21 @@ export default function SuperadminSkillsPage() {
                       size="sm"
                       className="border-red-300 text-red-600 hover:bg-red-50"
                       onClick={() => {
-                        selectedProfessionData.specialties.forEach((s) => {
-                          performAction("checklist_template", "delete", { id: s.templateId });
-                        });
-                        setSelectedProfession(null);
+                        handleDeleteJobTitle(selectedProfessionData, selectedJobTitleData);
+                        setSelectedJobTitle(null);
                         setSelectedSpecialtyId(null);
                       }}
                     >
                       <Trash2 className="size-3.5" />
                       Delete
+                    </Button>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+                      size="sm"
+                      onClick={() => openTemplateDialog()}
+                    >
+                      <Plus className="size-3.5" />
+                      Add Specialty
                     </Button>
                   </div>
                 </div>
@@ -836,17 +1063,9 @@ export default function SuperadminSkillsPage() {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Specialties</h3>
-                    <Button
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs"
-                      size="sm"
-                      onClick={() => openTemplateDialog()}
-                    >
-                      <Plus className="size-3" />
-                      Add Specialty
-                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {selectedProfessionData.specialties.map((sp) => (
+                    {selectedJobTitleData.templates.map((sp) => (
                       <div
                         key={sp.templateId}
                         className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all ${
@@ -1109,19 +1328,19 @@ export default function SuperadminSkillsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Specialty</Label>
-              <Input
-                placeholder="e.g. ICU"
-                value={templateForm.specialty}
-                onChange={(e) => setTemplateForm((f) => ({ ...f, specialty: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Job Title</Label>
               <Input
                 placeholder="e.g. RN"
                 value={templateForm.jobTitle}
                 onChange={(e) => setTemplateForm((f) => ({ ...f, jobTitle: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Specialty</Label>
+              <Input
+                placeholder="e.g. ICU"
+                value={templateForm.specialty}
+                onChange={(e) => setTemplateForm((f) => ({ ...f, specialty: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -1179,7 +1398,7 @@ export default function SuperadminSkillsPage() {
                 <SelectContent>
                   {data?.checklistTemplates.map((t) => (
                     <SelectItem key={t.id} value={String(t.id)}>
-                      {t.profession} — {t.specialty}
+                      {t.profession} {t.jobTitle ? `› ${t.jobTitle}` : ""} — {t.specialty}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1525,7 +1744,7 @@ export default function SuperadminSkillsPage() {
             <DialogTitle>Checklist Preview</DialogTitle>
             <DialogDescription>
               {previewData
-                ? `${previewData.template.profession} — ${previewData.template.specialty}`
+                ? `${previewData.template.profession}${previewData.template.jobTitle ? ` › ${previewData.template.jobTitle}` : ""} — ${previewData.template.specialty}`
                 : "Loading preview..."}
             </DialogDescription>
           </DialogHeader>
@@ -1555,6 +1774,29 @@ export default function SuperadminSkillsPage() {
                 </div>
               </div>
 
+              {/* Rating Scale Legend */}
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Rating Scale</p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-red-200 border border-red-400" />
+                    <span className="text-xs">1 — No Experience</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-yellow-200 border border-yellow-500" />
+                    <span className="text-xs">2 — Minimal</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-blue-200 border border-blue-400" />
+                    <span className="text-xs">3 — Competent</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-emerald-700 border border-emerald-800" />
+                    <span className="text-xs">4 — Expert</span>
+                  </div>
+                </div>
+              </div>
+
               {previewData.categories.map((cat) => (
                 <div key={cat.category} className="space-y-2">
                   <h4 className="text-sm font-semibold text-emerald-800 border-b pb-1">{cat.category}</h4>
@@ -1563,9 +1805,18 @@ export default function SuperadminSkillsPage() {
                       <div key={skill.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50">
                         <span className="text-sm">{skill.skillName}</span>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px]">
-                            {skill.questionType === "rating_1_4" ? "1-4" : skill.questionType === "yes_no" ? "Y/N" : "Text"}
-                          </Badge>
+                          {skill.questionType === "rating_1_4" ? (
+                            <div className="flex items-center gap-0.5">
+                              <span className="inline-flex items-center justify-center size-5 text-[10px] font-bold rounded bg-red-100 text-red-700 border border-red-200">1</span>
+                              <span className="inline-flex items-center justify-center size-5 text-[10px] font-bold rounded bg-yellow-100 text-yellow-700 border border-yellow-300">2</span>
+                              <span className="inline-flex items-center justify-center size-5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 border border-blue-200">3</span>
+                              <span className="inline-flex items-center justify-center size-5 text-[10px] font-bold rounded bg-emerald-700 text-white border border-emerald-800">4</span>
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">
+                              {skill.questionType === "yes_no" ? "Y/N" : "Text"}
+                            </Badge>
+                          )}
                           {skill.hasNaOption && <Badge variant="outline" className="text-[10px]">N/A</Badge>}
                         </div>
                       </div>

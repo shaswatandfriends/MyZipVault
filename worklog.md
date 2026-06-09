@@ -41,3 +41,28 @@ Created 5 new pages and redesigned 1 existing page for the MyZipVault superadmin
 - All API routes include super_admin role verification
 - Audit logging for all destructive operations
 - The Skills Database redesign groups data by: Profession → Specialty → Category → Skills
+
+## Task ID: 2-a (Skills Database Hierarchy Redesign)
+
+## Summary
+Redesigned the Skills Database page to implement the new 5-level hierarchy: **Profession → Job Title → Specialty → Category → Skill Name**. The left panel now shows collapsible profession sections with job title items under them, and the right panel shows a breadcrumb header with specialties and skill categories.
+
+## Files Modified
+1. `src/app/(superadmin)/superadmin/skills/page.tsx` — **COMPLETE REWRITE** with new hierarchy:
+   - Left panel: Collapsible profession sections with colored dot indicators, job title items under each profession with counts, rename/delete actions
+   - Right panel: "Profession > Job Title" breadcrumb header, specialty pills, collapsible skill categories with table view
+   - New grouped types: `JobTitleGroup` (jobTitle → templates → totalSkills), updated `ProfessionGroup` (profession → jobTitles)
+   - New state: `selectedJobTitle`, `expandedProfessions`
+   - Templates without job_title grouped under "General"
+   - `PROFESSION_COLORS` map for colored profession indicators (Nursing=emerald, Allied=amber, Pharma=violet, Locums=sky)
+   - Preview modal enhanced with Rating Scale Legend (1=No Experience red, 2=Minimal yellow, 3=Competent blue, 4=Expert green)
+   - Skill dialog template selector shows "Profession › JobTitle — Specialty" format
+   - All existing functionality preserved: CRUD, import/export, delete-all with OTP, preview, rename profession
+
+## Key Design Decisions
+- Job titles without a `job_title` field fall back to "General" as the group name
+- Profession sections use collapsible chevrons (expand/collapse) instead of flat list
+- Auto-select first profession and first job title on load
+- Auto-expand first profession on load
+- Rating scale colors in preview: 1=red (#FEE2E2/#DC2626), 2=yellow (#FEF9C3/#CA8A04), 3=blue (#DBEAFE/#2563EB), 4=green (#166534/white)
+- Consistent emerald green (#166534) for primary actions and selection highlighting

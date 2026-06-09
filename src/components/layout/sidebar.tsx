@@ -481,7 +481,7 @@ export function AppSidebar() {
     <Sidebar collapsible="offcanvas">
       <div className="flex h-full w-full flex-col overflow-hidden bg-white border-r border-[#E5E7EB]">
         {/* ── Top Section: Logo + Brand ── */}
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex shrink-0 items-center gap-3 px-4 py-4">
           <div className="flex size-7 items-center justify-center rounded-lg bg-[#166534] text-xs font-bold text-white">
             ZV
           </div>
@@ -497,7 +497,7 @@ export function AppSidebar() {
             </span>
           </div>
         </div>
-        <div className="mx-3 h-px bg-[#E5E7EB]" />
+        <div className="mx-3 h-px shrink-0 bg-[#E5E7EB]" />
 
         {/* ── Navigation Section ── */}
         <ScrollArea className="flex-1 px-3 py-3">
@@ -564,7 +564,7 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="space-y-2 border-t border-[#E5E7EB] p-3">
+        <div className="shrink-0 space-y-2 border-t border-[#E5E7EB] p-3">
           {/* Notification Bell (candidates & recruiters) */}
           {(role === "candidate" || role === "client_admin" || role === "client_recruiter") && (
             <NotificationBell role={role} />
