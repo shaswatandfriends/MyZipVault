@@ -80,16 +80,7 @@ export async function POST(
       },
     });
 
-    // Update document status to declined
-    await db.vaultSignDocument.update({
-      where: { id: doc.id },
-      data: {
-        status: "declined",
-        updated_at: new Date(),
-      },
-    });
-
-    // Add audit trail event
+    // Add audit trail event and update document status in a single atomic update
     const auditTrail = JSON.parse(doc.audit_trail || "[]");
     auditTrail.push({
       event: "document_declined",
@@ -102,7 +93,11 @@ export async function POST(
     });
     await db.vaultSignDocument.update({
       where: { id: doc.id },
-      data: { audit_trail: JSON.stringify(auditTrail) },
+      data: {
+        status: "declined",
+        audit_trail: JSON.stringify(auditTrail),
+        updated_at: new Date(),
+      },
     });
 
     const recruiterName = `${doc.creator.first_name || ""} ${doc.creator.last_name || ""}`.trim() || doc.creator.email;

@@ -108,8 +108,11 @@ function SignatureModal({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const x = ("touches" in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX;
-    const y = ("touches" in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY;
+    // Scale from CSS display coordinates to canvas pixel coordinates
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (("touches" in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX) * scaleX;
+    const y = (("touches" in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY) * scaleY;
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
@@ -121,8 +124,11 @@ function SignatureModal({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const x = ("touches" in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX;
-    const y = ("touches" in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY;
+    // Scale from CSS display coordinates to canvas pixel coordinates
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (("touches" in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX) * scaleX;
+    const y = (("touches" in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY) * scaleY;
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.strokeStyle = "#111827";
@@ -440,8 +446,10 @@ export default function VaultSignSigningPage() {
         ...prev,
         [field.id]: prev[field.id] === "checked" ? "" : "checked",
       }));
-    } else if (field.type === "date" || field.type === "email") {
-      // Read-only fields — nothing to edit
+    } else if (field.type === "date") {
+      // Read-only date field — nothing to edit (auto-filled with current date)
+    } else if (field.type === "email") {
+      // Read-only email field — nothing to edit (auto-filled from signer email)
     } else {
       setActiveFieldInput(field);
     }

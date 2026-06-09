@@ -41,20 +41,12 @@ export async function PUT(
     }
 
     // Verify the user is the creator (admins can bypass)
-    const userId = (session.user as Record<string, unknown>).id as number;
+    const userId = parseInt(String((session.user as Record<string, unknown>).id), 10);
     if (document.created_by_user_id !== userId && userRole !== "platform_admin" && userRole !== "super_admin") {
       return NextResponse.json({ error: "You can only edit your own documents" }, { status: 403 });
     }
 
-    await db.vaultSignDocument.update({
-      where: { id: documentId },
-      data: {
-        sign_fields: JSON.stringify(sign_fields),
-        updated_at: new Date(),
-      },
-    });
-
-    // Add audit trail event
+    // Add audit trail event and update sign_fields in a single atomic operation
     const auditTrail = JSON.parse(document.audit_trail || "[]");
     auditTrail.push({
       event: "sign_fields_saved",
@@ -63,7 +55,11 @@ export async function PUT(
     });
     await db.vaultSignDocument.update({
       where: { id: documentId },
-      data: { audit_trail: JSON.stringify(auditTrail) },
+      data: {
+        sign_fields: JSON.stringify(sign_fields),
+        audit_trail: JSON.stringify(auditTrail),
+        updated_at: new Date(),
+      },
     });
 
     return NextResponse.json({ success: true });

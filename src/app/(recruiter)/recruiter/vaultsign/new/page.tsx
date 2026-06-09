@@ -395,6 +395,10 @@ export default function NewVaultSignDocument() {
       }
       setStep(2);
     } else if (uploadedFile) {
+      // Revoke previous blob URL to prevent memory leak
+      if (pdfUrl && pdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pdfUrl);
+      }
       // Create object URL from uploaded file for preview
       const objUrl = URL.createObjectURL(uploadedFile);
       setPdfUrl(objUrl);

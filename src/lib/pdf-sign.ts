@@ -211,15 +211,21 @@ export async function generateSignedPdf(
       });
 
     } else if (field.type === "checkbox" && field.value === "checked") {
-      // Draw a checkmark
+      // Draw a checkmark using lines (Helvetica doesn't support ✓ character)
       const checkSize = Math.min(fieldWidth, fieldHeight) * 0.6;
       const checkX = x + (fieldWidth - checkSize) / 2;
       const checkY = y - fieldHeight + (fieldHeight - checkSize) / 2;
-      page.drawText("✓", {
-        x: checkX,
-        y: checkY,
-        size: checkSize,
-        font: helveticaBold,
+      // Draw checkmark using simple lines
+      page.drawLine({
+        start: { x: checkX, y: checkY + checkSize * 0.3 },
+        end: { x: checkX + checkSize * 0.35, y: checkY },
+        thickness: 1.5,
+        color: rgb(0.09, 0.4, 0.2),
+      });
+      page.drawLine({
+        start: { x: checkX + checkSize * 0.35, y: checkY },
+        end: { x: checkX + checkSize, y: checkY + checkSize * 0.7 },
+        thickness: 1.5,
         color: rgb(0.09, 0.4, 0.2),
       });
     }

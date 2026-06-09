@@ -91,6 +91,18 @@ export async function POST(
       );
     }
 
+    // Validate field_values before processing
+    if (!field_values || !Array.isArray(field_values)) {
+      return NextResponse.json(
+        { error: "Field values are required" },
+        { status: 400 }
+      );
+    }
+
+    // Parse all sign fields and determine signer's party ID
+    const allSignFields = JSON.parse(doc.sign_fields || "[]");
+    const signerPartyId = `party_${signer.party_number}`;
+
     // Support both single signature_data and per-field all_signatures
     const hasSignature = signature_data || (all_signatures && Object.keys(all_signatures).length > 0);
     if (!hasSignature) {
@@ -114,18 +126,6 @@ export async function POST(
         perFieldSignatures[f.id as string] = signature_data;
       });
     }
-
-    if (!field_values || !Array.isArray(field_values)) {
-      return NextResponse.json(
-        { error: "Field values are required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate all required fields are filled
-    const allSignFields = JSON.parse(doc.sign_fields || "[]");
-    // Fields are assigned using party-based IDs (e.g. "party_2") or numeric signer IDs
-    const signerPartyId = `party_${signer.party_number}`;
     const signerFields = allSignFields.filter(
       (f: Record<string, unknown>) =>
         f.assigned_to_signer_id === signerPartyId ||
