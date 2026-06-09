@@ -32,6 +32,7 @@ export default withAuth({
         pathname.startsWith("/checklists") ||
         pathname.startsWith("/calendar") ||
         pathname.startsWith("/vault") ||
+        pathname.startsWith("/vaultsign") ||
         pathname.startsWith("/references") ||
         pathname.startsWith("/sharing") ||
         pathname.startsWith("/settings")

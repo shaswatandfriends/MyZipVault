@@ -18,7 +18,7 @@ export async function GET() {
 
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { email_verified_at: true },
+      select: { email_verified_at: true, email: true },
     });
 
     const profile = await db.candidateProfile.findUnique({
@@ -70,6 +70,23 @@ export async function GET() {
 
     const profileCompletion = profile?.profile_completion_pct ?? 0;
 
+    // VaultSign stats - find signer records for this candidate
+    const vaultSignSigners = await db.vaultSignSigner.findMany({
+      where: {
+        OR: [
+          { user_id: userId },
+          { email: user?.email },
+        ],
+      },
+      select: { status: true },
+    });
+    const vaultSignPending = vaultSignSigners.filter(
+      (s) => s.status === "sent" || s.status === "viewed" || s.status === "pending"
+    ).length;
+    const vaultSignSigned = vaultSignSigners.filter(
+      (s) => s.status === "signed"
+    ).length;
+
     return NextResponse.json({
       profile: profile
         ? {
@@ -92,6 +109,11 @@ export async function GET() {
       references: {
         total: references.length,
         completed: completedReferences.length,
+      },
+      vaultsign: {
+        pending: vaultSignPending,
+        signed: vaultSignSigned,
+        total: vaultSignSigners.length,
       },
       pendingChecklistRequests: pendingChecklists.map((c) => ({
         id: c.id,

@@ -116,3 +116,36 @@ Stage Summary:
 - No existing pages broken
 - Follows existing design system (Clash Display, Inter, green color scheme, Shadcn components)
 - Public signing page works without authentication (token-based)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Add VaultSign feature to Candidate login - receive RTR and other documents for signature, view history, etc.
+
+Work Log:
+- Created API route GET /api/candidate/vaultsign - fetches all VaultSign documents where the candidate is a signer (matched by user_id or email), includes stats, document status, signer info, creator/org info
+- Created API route GET /api/candidate/vaultsign/[id] - fetches specific document detail for candidate with signed URLs for document preview/download, audit trail, all signer statuses
+- Added VaultSign nav item to candidate sidebar (src/components/layout/sidebar.tsx) using FileSignature icon
+- Added /vaultsign route to middleware (src/middleware.ts) for candidate role access
+- Built candidate VaultSign dashboard page (src/app/(candidate)/vaultsign/page.tsx) with:
+  - Stats row: Awaiting Your Signature, Signed by You, Declined, Expiring Soon
+  - Pending action banner with quick sign links for documents awaiting signature
+  - Filter bar with search, status filter, document type filter
+  - Document list cards showing document name, type, status, creator org, expiry, signer progress, action buttons (Sign Now, Download, View)
+- Built candidate VaultSign document detail page (src/app/(candidate)/vaultsign/[id]/page.tsx) with:
+  - Document header with name, type, status badges, expiry, creator info
+  - Personal message from sender
+  - Your Status card (signed/declined/awaiting) with Sign Now button
+  - Signing Progress section with progress bar and signer list (highlighted "You" badge)
+  - Document preview/download section
+  - Audit Trail with event icons and timestamps
+- Added VaultSign quick-status card to candidate dashboard (6 cards total in 3-col grid)
+- Added VaultSign pending signature banner to candidate dashboard (blue themed, similar to checklist banner)
+- Updated candidate dashboard API (GET /api/candidate/dashboard) to include vaultsign stats (pending, signed, total)
+- Fixed missing Textarea import in sign/[token]/page.tsx
+
+Stage Summary:
+- Candidates can now access /vaultsign to view all documents sent for their signature
+- Dashboard shows VaultSign stats and a banner when documents are pending signature
+- Document detail page shows signing progress, audit trail, and download options
+- Sign Now buttons link directly to the public signing flow (/sign/[token])
+- All existing pages continue to work - build compiles cleanly

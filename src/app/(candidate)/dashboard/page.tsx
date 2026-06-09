@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Mail,
   Loader2,
+  FileSignature,
 } from "@/lib/icons";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ interface DashboardData {
   credentials: { total: number; active: number };
   checklists: { total: number; completed: number; pending: number };
   references: { total: number; completed: number };
+  vaultsign: { pending: number; signed: number; total: number };
   pendingChecklistRequests: {
     id: number;
     checklistName: string;
@@ -300,6 +302,30 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
+      {/* VaultSign Pending Signature Banner */}
+      {(data?.vaultsign?.pending ?? 0) > 0 && (
+        <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+          <CardContent className="p-4 flex items-center gap-3">
+            <FileSignature className="size-5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                You have {data.vaultsign.pending} document{data.vaultsign.pending > 1 ? "s" : ""} awaiting your signature
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                Review and sign documents from recruiters and agencies
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/vaultsign">
+                <Button size="sm" variant="outline" className="gap-1 border-blue-300 text-blue-800 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-200 dark:hover:bg-blue-900">
+                  View <ArrowRight className="size-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Profile Completion */}
       <Card>
         <CardContent className="p-4">
@@ -321,7 +347,7 @@ export default function CandidateDashboardPage() {
       </Card>
 
       {/* Quick Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="group hover:shadow-md transition-shadow">
           <Link href="/vault/resume">
             <CardContent className="p-4">
@@ -414,6 +440,33 @@ export default function CandidateDashboardPage() {
               <p className="text-sm font-medium">References</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {data?.references?.total ?? 0} total references
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="group hover:shadow-md transition-shadow">
+          <Link href="/vaultsign">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileSignature className="size-4 text-primary" />
+                </div>
+                {(data?.vaultsign?.pending ?? 0) > 0 ? (
+                  <Badge variant="destructive" className="text-xs">
+                    {data.vaultsign.pending} pending
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    {data?.vaultsign?.signed ?? 0} signed
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm font-medium">VaultSign</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {(data?.vaultsign?.pending ?? 0) > 0
+                  ? `${data.vaultsign.pending} document${data.vaultsign.pending > 1 ? "s" : ""} to sign`
+                  : `${data?.vaultsign?.total ?? 0} total documents`}
               </p>
             </CardContent>
           </Link>

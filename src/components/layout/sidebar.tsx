@@ -101,6 +101,7 @@ const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
+  { title: "VaultSign", href: "/vaultsign", icon: FileSignature },
   { title: "Credentials", href: "/vault/credentials", icon: FileText },
   { title: "Resume", href: "/vault/resume", icon: FileUser },
   { title: "References", href: "/references", icon: Users },
