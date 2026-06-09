@@ -80,8 +80,22 @@ export async function POST(request: Request) {
     }
 
     // OTP verified — proceed with deletion
+    // IMPORTANT: Must delete dependent records first to respect foreign key constraints:
+    // 1. ReferenceResponse (references ReferenceQuestion via question_id)
+    // 2. ReferenceDeletionRequest (references CandidateReference)
+    // 3. CandidateReference (independent but related)
+    // 4. ReferenceQuestion
 
-    // Delete all reference questions only (NOT skills or templates)
+    // Step 1: Delete all reference responses (references questions)
+    await db.referenceResponse.deleteMany({});
+
+    // Step 2: Delete all reference deletion requests
+    await db.referenceDeletionRequest.deleteMany({});
+
+    // Step 3: Delete all candidate references
+    await db.candidateReference.deleteMany({});
+
+    // Step 4: Delete all reference questions
     await db.referenceQuestion.deleteMany({});
 
     // Delete stored OTP
