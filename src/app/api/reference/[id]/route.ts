@@ -60,9 +60,16 @@ export async function GET(
       });
     }
 
+    // Map legacy employment_status values to the canonical ones used by questions
+    const legacyStatusMap: Record<string, string> = {
+      current_employee: "current",
+      past_employee: "past",
+    };
+    const mappedEmploymentStatus = legacyStatusMap[reference.employment_status] || reference.employment_status;
+
     // Fetch questions for this employment status
     const questions = await db.referenceQuestion.findMany({
-      where: { employment_status: reference.employment_status },
+      where: { employment_status: mappedEmploymentStatus },
       orderBy: { sort_order: "asc" },
     });
 
@@ -81,6 +88,8 @@ export async function GET(
         status: reference.status,
         managerEmail: reference.manager_email,
         managerPhone: reference.manager_phone,
+        managerFirstName: reference.manager_first_name,
+        managerLastName: reference.manager_last_name,
       },
       questions: questions.map((q) => ({
         id: q.id,
@@ -149,7 +158,10 @@ export async function POST(
       for (const answer of answers) {
         await db.referenceResponse.upsert({
           where: {
-            id: answer.existingId || -1,
+            candidate_reference_id_question_id: {
+              candidate_reference_id: referenceId,
+              question_id: answer.questionId,
+            },
           },
           update: {
             answer_text: answer.answerText,
@@ -207,8 +219,8 @@ export async function POST(
             password_hash: tempPassword,
             role: "candidate",
             is_approved: true,
-            first_name: "",
-            last_name: "",
+            first_name: reference.manager_first_name || "",
+            last_name: reference.manager_last_name || "",
             phone: reference.manager_phone || "",
             must_change_pass: true,
             account_status: "active",
@@ -218,8 +230,8 @@ export async function POST(
         await db.candidateProfile.create({
           data: {
             user_id: newManagerUser.id,
-            first_name: "",
-            last_name: "",
+            first_name: reference.manager_first_name || "",
+            last_name: reference.manager_last_name || "",
             phone: reference.manager_phone || "",
             profile_completion_pct: 0,
           },

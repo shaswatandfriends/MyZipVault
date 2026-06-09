@@ -51,6 +51,8 @@ interface ReferenceItem {
   id: number;
   manager_email: string;
   manager_phone: string;
+  manager_first_name: string | null;
+  manager_last_name: string | null;
   facility_name: string;
   employment_status: string;
   status: string;
@@ -103,8 +105,12 @@ function getStatusBadge(status: string) {
 
 function getEmploymentLabel(status: string) {
   switch (status) {
+    case "current":
     case "current_employee":
       return "Current Employee";
+    case "ending_contract":
+      return "Ending Contract";
+    case "past":
     case "past_employee":
       return "Past Employee";
     default:
@@ -134,7 +140,7 @@ export default function CandidateReferencesPage() {
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
   const [facilityName, setFacilityName] = useState("");
-  const [employmentStatus, setEmploymentStatus] = useState("current_employee");
+  const [employmentStatus, setEmploymentStatus] = useState("current");
   const [employmentStartMonth, setEmploymentStartMonth] = useState("");
   const [employmentStartYear, setEmploymentStartYear] = useState("");
   const [employmentEndMonth, setEmploymentEndMonth] = useState("");
@@ -197,7 +203,7 @@ export default function CandidateReferencesPage() {
           facilityName: facilityName.trim(),
           employmentStatus,
           employmentStart: employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : null,
-          employmentEnd: employmentStatus === "past_employee" && employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : null,
+          employmentEnd: (employmentStatus === "past" || employmentStatus === "ending_contract") && employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : null,
         }),
       });
 
@@ -217,7 +223,7 @@ export default function CandidateReferencesPage() {
       setManagerEmail("");
       setManagerPhone("");
       setFacilityName("");
-      setEmploymentStatus("current_employee");
+      setEmploymentStatus("current");
       setEmploymentStartMonth("");
       setEmploymentStartYear("");
       setEmploymentEndMonth("");
@@ -420,13 +426,19 @@ export default function CandidateReferencesPage() {
                     <Label>Employment Status</Label>
                     <RadioGroup value={employmentStatus} onValueChange={setEmploymentStatus}>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="current_employee" id="emp-current" />
+                        <RadioGroupItem value="current" id="emp-current" />
                         <Label htmlFor="emp-current" className="font-normal text-sm">
                           Current Employee
                         </Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="past_employee" id="emp-past" />
+                        <RadioGroupItem value="ending_contract" id="emp-ending" />
+                        <Label htmlFor="emp-ending" className="font-normal text-sm">
+                          Ending Contract
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="past" id="emp-past" />
                         <Label htmlFor="emp-past" className="font-normal text-sm">
                           Past Employee
                         </Label>
@@ -451,7 +463,7 @@ export default function CandidateReferencesPage() {
                       }}
                     />
                   </div>
-                  {employmentStatus === "past_employee" && (
+                  {(employmentStatus === "past" || employmentStatus === "ending_contract") && (
                     <div className="space-y-3">
                       <Label>Employment End</Label>
                       <Input
@@ -517,9 +529,18 @@ export default function CandidateReferencesPage() {
             const isPending = ref.status === "pending_request";
             const isExpired = ref.status === "expired";
             const isExpanded = expandedRef === ref.id;
-            const managerName = ref.manager_user
-              ? `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email
-              : ref.manager_email;
+            const managerName = (() => {
+              // Prefer manager_user relation if it has names
+              if (ref.manager_user?.first_name || ref.manager_user?.last_name) {
+                return `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim();
+              }
+              // Fall back to the stored manager_first_name/manager_last_name from the reference request
+              if (ref.manager_first_name || ref.manager_last_name) {
+                return `${ref.manager_first_name || ""} ${ref.manager_last_name || ""}`.trim();
+              }
+              // Last resort: show email
+              return ref.manager_email;
+            })();
 
             return (
               <Card key={ref.id} className="group hover:shadow-md transition-shadow">
@@ -734,9 +755,17 @@ export default function CandidateReferencesPage() {
             {selectedRefForDeletion && (() => {
               const selectedRef = references.find((r) => r.id === selectedRefForDeletion);
               if (!selectedRef) return null;
-              const managerName = selectedRef.manager_user
-                ? `${selectedRef.manager_user.first_name || ""} ${selectedRef.manager_user.last_name || ""}`.trim() || selectedRef.manager_email
-                : selectedRef.manager_email;
+              const managerName = (() => {
+                // Prefer manager_user relation if it has names
+                if (selectedRef.manager_user?.first_name || selectedRef.manager_user?.last_name) {
+                  return `${selectedRef.manager_user.first_name || ""} ${selectedRef.manager_user.last_name || ""}`.trim();
+                }
+                // Fall back to the stored manager_first_name/manager_last_name
+                if (selectedRef.manager_first_name || selectedRef.manager_last_name) {
+                  return `${selectedRef.manager_first_name || ""} ${selectedRef.manager_last_name || ""}`.trim();
+                }
+                return selectedRef.manager_email;
+              })();
               return (
                 <div className="bg-muted/50 p-3 rounded-lg space-y-1">
                   <p className="text-sm font-medium">{managerName}</p>

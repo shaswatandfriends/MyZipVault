@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
     const reference = await db.candidateReference.create({
       data: {
         candidate_user_id: userId,
+        manager_first_name: managerFirstName,
+        manager_last_name: managerLastName,
         manager_email: managerEmail,
         manager_phone: managerPhone || "",
         facility_name: facilityName,
@@ -45,6 +48,27 @@ export async function POST(request: Request) {
         type: "reference_requested",
         related_entity_id: reference.id,
       },
+    });
+
+    // Send email notification to manager (non-blocking)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
+    const referenceFormLink = `${appUrl}/reference/${reference.id}`;
+    const candidateFirstName = (session.user as Record<string, unknown>).firstName as string || "";
+    const candidateLastName = (session.user as Record<string, unknown>).lastName as string || "";
+    const candidateName = `${candidateFirstName} ${candidateLastName}`.trim() || "A candidate";
+
+    sendEmail({
+      to: managerEmail,
+      templateKey: "reference_request",
+      variables: {
+        manager_name: managerFirstName,
+        candidate_name: candidateName,
+        facility_name: facilityName,
+        reference_form_link: referenceFormLink,
+      },
+      phone: managerPhone || undefined,
+    }).catch((err) => {
+      console.error("[EMAIL] Failed to send reference request email:", err);
     });
 
     return NextResponse.json(

@@ -138,10 +138,18 @@ export async function GET(request: Request) {
             ? `${ref.candidate_user.candidate_profile.first_name || ""} ${ref.candidate_user.candidate_profile.last_name || ""}`.trim() || ref.candidate_user.email
             : `${ref.candidate_user.first_name || ""} ${ref.candidate_user.last_name || ""}`.trim() || ref.candidate_user.email,
           candidateEmail: ref.candidate_user.email,
-          managerName: ref.manager_user
-            ? `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email
-            : ref.manager_email,
+          managerName: (() => {
+            if (ref.manager_user?.first_name || ref.manager_user?.last_name) {
+              return `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim() || ref.manager_email;
+            }
+            if (ref.manager_first_name || ref.manager_last_name) {
+              return `${ref.manager_first_name || ""} ${ref.manager_last_name || ""}`.trim() || ref.manager_email;
+            }
+            return ref.manager_email;
+          })(),
           managerEmail: ref.manager_email,
+          managerFirstName: ref.manager_first_name,
+          managerLastName: ref.manager_last_name,
           facility: ref.facility_name,
           employmentStatus: ref.employment_status,
           submittedDate: lastSubmitted,

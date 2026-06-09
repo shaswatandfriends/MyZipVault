@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { logCreditsDeducted } from "@/lib/audit";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
 
     let candidateUserId: number;
     let isNewCandidate = false;
+    let inviteTokenValue: string | null = null;
 
     if (existingUser) {
       // Candidate already exists
@@ -93,9 +95,10 @@ export async function POST(request: Request) {
       isNewCandidate = true;
 
       // Create invite token
+      inviteTokenValue = uuidv4();
       await db.inviteToken.create({
         data: {
-          token: uuidv4(),
+          token: inviteTokenValue,
           email,
           role: "candidate",
           token_type: "candidate_invite",
@@ -224,6 +227,46 @@ export async function POST(request: Request) {
       where: { id: userId },
       data: { last_activity_at: new Date() },
     });
+
+    // Send email notification to candidate (non-blocking)
+    const companyName = org?.name || "MyZipVault";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
+    const candidateName = `${firstName} ${lastName}`;
+    const checklistDisplayName = checklistTemplateName;
+
+    if (isNewCandidate && inviteTokenValue) {
+      // New candidate: send invite email with link to set up account
+      const inviteLink = `${appUrl}/onboard?token=${inviteTokenValue}`;
+      sendEmail({
+        to: email,
+        templateKey: "candidate_invite",
+        variables: {
+          candidate_name: candidateName,
+          client_name: companyName,
+          invite_link: inviteLink,
+          checklist_name: checklistDisplayName,
+        },
+        phone: phone || undefined,
+      }).catch((err) => {
+        console.error("[EMAIL] Failed to send candidate invite email:", err);
+      });
+    } else {
+      // Existing candidate: send checklist request email with login link
+      const loginLink = `${appUrl}/login`;
+      sendEmail({
+        to: email,
+        templateKey: "checklist_request",
+        variables: {
+          candidate_name: candidateName,
+          client_name: companyName,
+          checklist_name: checklistDisplayName,
+          login_link: loginLink,
+        },
+        phone: phone || undefined,
+      }).catch((err) => {
+        console.error("[EMAIL] Failed to send checklist request email:", err);
+      });
+    }
 
     return NextResponse.json({
       success: true,

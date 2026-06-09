@@ -567,7 +567,7 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
     {
       template_key: 'checklist_request',
       subject: 'Skills Checklist Request from {{client_name}}',
-      body: 'Hello {{candidate_name}},\n\n{{client_name}} has requested that you complete the {{checklist_name}} skills checklist.\n\nPlease log in to your MyZipVault account to complete this checklist at your earliest convenience.\n\nIf you have any questions, please contact {{client_name}} directly.\n\nThank you,\nMyZipVault Team',
+      body: 'Hello {{candidate_name}},\n\n{{client_name}} has requested that you complete the {{checklist_name}} skills checklist.\n\nPlease log in to your MyZipVault account to complete this checklist at your earliest convenience: {{login_link}}\n\nIf you have any questions, please contact {{client_name}} directly.\n\nThank you,\nMyZipVault Team',
     },
     {
       template_key: 'existing_candidate_checklist',
@@ -587,7 +587,7 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
     {
       template_key: 'reference_request',
       subject: 'Reference Request for {{candidate_name}}',
-      body: 'Hello {{manager_name}},\n\n{{candidate_name}} has listed you as a professional reference from {{facility_name}}.\n\nPlease log in to MyZipVault to complete the reference questionnaire.\n\nThank you for your time,\nMyZipVault Team',
+      body: 'Hello {{manager_name}},\n\n{{candidate_name}} has listed you as a professional reference from {{facility_name}}.\n\nPlease complete the reference form at: {{reference_form_link}}\n\nThank you for your time,\nMyZipVault Team',
     },
     {
       template_key: 'reference_reminder',

@@ -117,10 +117,16 @@ export async function GET(request: Request) {
         const totalRefs = refs.length;
         const completedRefs = refs.filter((r: Record<string, unknown>) => r.status === "completed").length;
         const pendingRefs = totalRefs - completedRefs;
-        const managers = [...new Set(refs.map((r: Record<string, unknown>) =>
-          r.manager_user
-            ? `${(r.manager_user as Record<string, unknown>).first_name || ""} ${(r.manager_user as Record<string, unknown>).last_name || ""}`.trim() || r.manager_email
-            : r.manager_email
+        const managers = [...new Set(refs.map((r: Record<string, unknown>) => {
+            const mu = r.manager_user as Record<string, unknown> | null;
+            if (mu?.first_name || mu?.last_name) {
+              return `${mu.first_name || ""} ${mu.last_name || ""}`.trim();
+            }
+            if (r.manager_first_name || r.manager_last_name) {
+              return `${r.manager_first_name || ""} ${r.manager_last_name || ""}`.trim();
+            }
+            return r.manager_email as string;
+          }
         ))];
 
         return {
@@ -138,9 +144,18 @@ export async function GET(request: Request) {
           references: refs.map((r: Record<string, unknown>) => ({
             id: r.id,
             managerEmail: r.manager_email,
-            managerName: r.manager_user
-              ? `${(r.manager_user as Record<string, unknown>).first_name || ""} ${(r.manager_user as Record<string, unknown>).last_name || ""}`.trim() || (r.manager_email as string)
-              : r.manager_email,
+            managerFirstName: r.manager_first_name,
+            managerLastName: r.manager_last_name,
+            managerName: (() => {
+              const mu = r.manager_user as Record<string, unknown> | null;
+              if (mu?.first_name || mu?.last_name) {
+                return `${mu.first_name || ""} ${mu.last_name || ""}`.trim() || (r.manager_email as string);
+              }
+              if (r.manager_first_name || r.manager_last_name) {
+                return `${r.manager_first_name || ""} ${r.manager_last_name || ""}`.trim() || (r.manager_email as string);
+              }
+              return r.manager_email as string;
+            })(),
             facilityName: r.facility_name,
             employmentStatus: r.employment_status,
             status: r.status,

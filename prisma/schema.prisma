@@ -238,6 +238,8 @@ model CandidateReference {
   id                  Int                @id @default(autoincrement())
   candidate_user_id   Int
   manager_user_id     Int?
+  manager_first_name  String?
+  manager_last_name   String?
   manager_email       String
   manager_phone       String
   facility_name       String
@@ -276,6 +278,8 @@ model ReferenceResponse {
 
   candidate_reference   CandidateReference @relation(fields: [candidate_reference_id], references: [id])
   question              ReferenceQuestion  @relation(fields: [question_id], references: [id])
+
+  @@unique([candidate_reference_id, question_id])
 }
 
 // ─── 15. Consent Shares ─────────────────────────────────────────────
