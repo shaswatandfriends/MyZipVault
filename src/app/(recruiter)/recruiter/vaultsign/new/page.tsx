@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutTemplate, Upload, ArrowRight, ArrowLeft, GripVertical,
-  Plus, X, Loader2, FileSignature, Search as SearchIcon, Check
+  Plus, X, Loader2, FileSignature, Search as SearchIcon, Check,
+  ChevronLeft, ChevronRight, Trash2, MinusIcon,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,10 +42,10 @@ interface SignField {
   id: string;
   type: string;
   page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number; // percentage
+  y: number; // percentage
+  width: number; // percentage
+  height: number; // percentage
   assigned_to_signer_id: string;
   label: string;
   required: boolean;
@@ -73,10 +74,113 @@ const fieldTypes = [
 ];
 
 const partyColors = ["#166534", "#0D9488", "#7C3AED", "#D97706"];
-
 const roleOptions = ["Candidate", "Client Employer", "Witness", "Recruiter"];
+const zoomLevels = [50, 75, 100, 125, 150];
 
-// ─── Component ──────────────────────────────────────────────────────
+// ─── Draggable Field Component ──────────────────────────────────────
+function DraggableField({
+  field,
+  signerName,
+  signerColor,
+  signerIdx,
+  isSelected,
+  containerRef,
+  onSelect,
+  onMove,
+  onRemove,
+}: {
+  field: SignField;
+  signerName: string;
+  signerColor: string;
+  signerIdx: number;
+  isSelected: boolean;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onSelect: () => void;
+  onMove: (id: string, x: number, y: number) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef<{ startX: number; startY: number; fieldX: number; fieldY: number } | null>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onSelect();
+    setDragging(true);
+    dragStart.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      fieldX: field.x,
+      fieldY: field.y,
+    };
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStart.current || !containerRef.current) return;
+      const container = containerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const dx = e.clientX - dragStart.current.startX;
+      const dy = e.clientY - dragStart.current.startY;
+      const dxPercent = (dx / containerRect.width) * 100;
+      const dyPercent = (dy / containerRect.height) * 100;
+      const newX = Math.max(0, Math.min(100 - field.width, dragStart.current.fieldX + dxPercent));
+      const newY = Math.max(0, Math.min(100 - field.height, dragStart.current.fieldY + dyPercent));
+      onMove(field.id, Math.round(newX * 10) / 10, Math.round(newY * 10) / 10);
+    };
+
+    const handleMouseUp = () => {
+      setDragging(false);
+      dragStart.current = null;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging, field.id, field.width, field.height, containerRef, onMove]);
+
+  return (
+    <div
+      className={`absolute rounded cursor-move select-none group/field ${
+        isSelected ? "shadow-lg z-20" : "z-10"
+      }`}
+      style={{
+        left: `${field.x}%`,
+        top: `${field.y}%`,
+        width: `${field.width}%`,
+        height: `${field.height}%`,
+        borderColor: signerColor,
+        backgroundColor: dragging ? `${signerColor}25` : `${signerColor}12`,
+        borderWidth: isSelected ? "2.5px" : "1.5px",
+        borderStyle: "solid",
+      }}
+      onMouseDown={handleMouseDown}
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+    >
+      <p className="text-[8px] px-1 truncate leading-tight" style={{ color: signerColor }}>
+        {signerName}
+      </p>
+      <p className="text-[10px] font-medium text-[#111827] px-1 truncate capitalize leading-tight">
+        {field.icon || ""} {field.label}
+      </p>
+      {isSelected && (
+        <button
+          className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity"
+          onClick={(e) => { e.stopPropagation(); onRemove(field.id); }}
+        >
+          <X className="size-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────
 export default function NewVaultSignDocument() {
   const { user } = useAuth();
   const router = useRouter();
@@ -107,14 +211,17 @@ export default function NewVaultSignDocument() {
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const pdfContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Step 4
   const [legalConsent, setLegalConsent] = useState(false);
 
-  // Created document id
+  // Created document id (for upload after creation)
   const [createdDocId, setCreatedDocId] = useState<number | null>(null);
 
-  // Fetch templates
+  // ─── Fetch templates ────────────────────────────────────────────────
   useEffect(() => {
     if (mode === "template") {
       fetch("/api/vaultsign/templates")
@@ -124,7 +231,7 @@ export default function NewVaultSignDocument() {
     }
   }, [mode]);
 
-  // When template selected, pre-fill
+  // ─── When template selected ─────────────────────────────────────────
   useEffect(() => {
     if (selectedTemplate) {
       setDocumentName(selectedTemplate.name);
@@ -158,33 +265,107 @@ export default function NewVaultSignDocument() {
     }
   }, [selectedTemplate]);
 
-  // Get all signers including Party 1
+  // ─── PDF rendering with pdfjs-dist ────────────────────────────────
+  useEffect(() => {
+    if (step !== 3 || !pdfUrl) return;
+
+    let cancelled = false;
+
+    const renderPdf = async () => {
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        const pdf = await loadingTask.promise;
+
+        if (cancelled) return;
+        setTotalPages(pdf.numPages);
+
+        const pageNum = currentPage;
+        if (pageNum < 1 || pageNum > pdf.numPages) return;
+
+        const page = await pdf.getPage(pageNum);
+        if (cancelled) return;
+
+        const scale = zoomLevel / 100;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.getElementById("pdf-canvas") as HTMLCanvasElement;
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+
+        await page.render(renderContext).promise;
+      } catch (err) {
+        console.error("PDF render error:", err);
+      }
+    };
+
+    renderPdf();
+    return () => { cancelled = true; };
+  }, [step, pdfUrl, currentPage, zoomLevel]);
+
+  // ─── Get all signers including Party 1 ────────────────────────────
   const allSigners: { id: string; name: string; party: number }[] = [
     { id: "party_1", name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "You (Sender)", party: 1 },
     ...signers.map((s, i) => ({ id: `party_${s.party_number}`, name: s.name || `Signer ${i + 1}`, party: s.party_number })),
   ];
 
   // ─── Step Handlers ────────────────────────────────────────────────
-  const handleNext = () => {
-    if (step === 1) {
-      if (!documentName.trim()) return toast.error("Document name is required");
-      if (!expiryDate) return toast.error("Expiry date is required");
-      if (new Date(expiryDate) <= new Date()) return toast.error("Expiry must be in the future");
-      if (!uploadedFile && !selectedTemplate) return toast.error("Please select a template or upload a PDF");
+  const handleStep1Next = async () => {
+    if (!documentName.trim()) return toast.error("Document name is required");
+    if (!expiryDate) return toast.error("Expiry date is required");
+    if (new Date(expiryDate) <= new Date()) return toast.error("Expiry must be in the future");
+
+    // We need a PDF URL for Step 3
+    if (selectedTemplate) {
+      // Get template preview URL
+      try {
+        const res = await fetch(`/api/superadmin/vaultsign/templates/${selectedTemplate.id}/preview`);
+        if (res.ok) {
+          const data = await res.json();
+          setPdfUrl(data.url);
+        } else {
+          toast.error("Could not load template PDF preview");
+        }
+      } catch {
+        toast.error("Could not load template PDF preview");
+      }
+      setStep(2);
+    } else if (uploadedFile) {
+      // Create object URL from uploaded file for preview
+      const objUrl = URL.createObjectURL(uploadedFile);
+      setPdfUrl(objUrl);
+      setStep(2);
+    } else {
+      return toast.error("Please select a template or upload a PDF");
     }
-    if (step === 2) {
-      const invalid = signers.find((s) => !s.name.trim() || !s.email.trim());
-      if (invalid) return toast.error("All signers must have a name and email");
-    }
-    if (step === 3) {
-      const signerFieldCounts = allSigners.map((s) => ({
-        ...s,
-        count: signFields.filter((f) => f.assigned_to_signer_id === s.id).length,
-      }));
-      const missing = signerFieldCounts.filter((s) => s.count === 0);
-      if (missing.length > 0) return toast.error(`Each signer needs at least 1 field. Missing: ${missing.map((m) => m.name).join(", ")}`);
-    }
-    setStep((s) => Math.min(s + 1, 4));
+  };
+
+  const handleStep2Next = () => {
+    const invalid = signers.find((s) => !s.name.trim() || !s.email.trim());
+    if (invalid) return toast.error("All signers must have a name and email");
+    setStep(3);
+  };
+
+  const handleStep3Next = () => {
+    const signerFieldCounts = allSigners.map((s) => ({
+      ...s,
+      count: signFields.filter((f) => f.assigned_to_signer_id === s.id).length,
+    }));
+    const missing = signerFieldCounts.filter((s) => s.count === 0);
+    if (missing.length > 0) return toast.error(`Each signer needs at least 1 field. Missing: ${missing.map((m) => m.name).join(", ")}`);
+    setStep(4);
   };
 
   const handleAddField = (type: string) => {
@@ -195,7 +376,7 @@ export default function NewVaultSignDocument() {
       type,
       page: currentPage,
       x: 10 + Math.random() * 30,
-      y: 15 + signFields.filter((f) => f.page === currentPage).length * 8,
+      y: 20 + signFields.filter((f) => f.page === currentPage).length * 10,
       width: type === "checkbox" ? 8 : 25,
       height: type === "checkbox" ? 5 : 6,
       assigned_to_signer_id: activeSigner.id,
@@ -210,6 +391,10 @@ export default function NewVaultSignDocument() {
     setSignFields((prev) => prev.filter((f) => f.id !== fieldId));
     if (selectedField === fieldId) setSelectedField(null);
   };
+
+  const handleMoveField = useCallback((fieldId: string, x: number, y: number) => {
+    setSignFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, x, y } : f));
+  }, []);
 
   const handleUpdateField = (fieldId: string, updates: Partial<SignField>) => {
     setSignFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, ...updates } : f));
@@ -291,7 +476,7 @@ export default function NewVaultSignDocument() {
 
   // ─── Render ───────────────────────────────────────────────────────
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Step Indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {[1, 2, 3, 4].map((s) => (
@@ -309,7 +494,7 @@ export default function NewVaultSignDocument() {
         <p className="text-sm text-[#6B7280]">
           {step === 1 && "Step 1: Choose Document"}
           {step === 2 && "Step 2: Add Signers"}
-          {step === 3 && "Step 3: Place Fields"}
+          {step === 3 && "Step 3: Place Fields on Document"}
           {step === 4 && "Step 4: Review & Send"}
         </p>
       </div>
@@ -554,14 +739,17 @@ export default function NewVaultSignDocument() {
         </div>
       )}
 
-      {/* ── STEP 3 ────────────────────────────────────────────────── */}
+      {/* ── STEP 3 — PDF Field Placement ──────────────────────────── */}
       {step === 3 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>Place Fields on Document</h2>
+          <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            Place Fields on Document
+          </h2>
+          <p className="text-sm text-[#6B7280]">Click a field type, then it will be placed on the document for the selected signer. Drag fields to reposition them.</p>
 
           <div className="flex gap-4">
             {/* Left Panel */}
-            <div className="w-[280px] shrink-0 space-y-4">
+            <div className="w-[260px] shrink-0 space-y-4">
               {/* Signer Tabs */}
               <div>
                 <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Signer</p>
@@ -615,7 +803,7 @@ export default function NewVaultSignDocument() {
                       <Switch checked={field.required} onCheckedChange={(v) => handleUpdateField(field.id, { required: v })} />
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => handleRemoveField(field.id)} className="text-[#DC2626] w-full">
-                      <X className="size-3 mr-1" /> Remove Field
+                      <Trash2 className="size-3 mr-1" /> Remove Field
                     </Button>
                   </div>
                 );
@@ -626,11 +814,12 @@ export default function NewVaultSignDocument() {
                 <p className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Placed Fields ({signFields.length})</p>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {signFields.map((f) => {
-                    const signerColor = partyColors[Math.min(allSigners.findIndex((s) => s.id === f.assigned_to_signer_id), 3)];
+                    const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);
+                    const signerColor = partyColors[Math.min(Math.max(signerIdx, 0), 3)];
                     return (
                       <button
                         key={f.id}
-                        onClick={() => setSelectedField(f.id)}
+                        onClick={() => { setSelectedField(f.id); setCurrentPage(f.page); }}
                         className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left transition-all ${
                           selectedField === f.id ? "bg-[#F3F4F6]" : "hover:bg-[#F8F7F4]"
                         }`}
@@ -648,63 +837,66 @@ export default function NewVaultSignDocument() {
               </div>
             </div>
 
-            {/* Right Panel - PDF Area */}
+            {/* Right Panel - PDF Viewer */}
             <div className="flex-1 space-y-3">
-              {/* Page Nav */}
+              {/* PDF Controls */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
-                    ◀
+                    <ChevronLeft className="size-4" />
                   </Button>
                   <span className="text-sm text-[#6B7280]">Page {currentPage} of {totalPages}</span>
                   <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
-                    ▶
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setZoomLevel((z) => zoomLevels[Math.max(0, zoomLevels.indexOf(z) - 1)])} disabled={zoomLevel <= 50}>
+                    <MinusIcon className="size-4" />
+                  </Button>
+                  <span className="text-xs text-[#6B7280] w-10 text-center">{zoomLevel}%</span>
+                  <Button variant="outline" size="icon" className="size-8 border-[#E5E7EB]" onClick={() => setZoomLevel((z) => zoomLevels[Math.min(zoomLevels.length - 1, zoomLevels.indexOf(z) + 1)])} disabled={zoomLevel >= 150}>
+                    +
                   </Button>
                 </div>
               </div>
 
-              {/* PDF Canvas Placeholder */}
+              {/* PDF Canvas with Fields Overlay */}
               <div
-                className="relative bg-white border border-[#E5E7EB] rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07)]"
-                style={{ minHeight: "600px" }}
+                ref={pdfContainerRef}
+                className="relative bg-white border border-[#E5E7EB] rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07)] overflow-auto"
+                style={{ minHeight: "500px" }}
                 onClick={() => setSelectedField(null)}
               >
-                {/* PDF representation */}
-                <div className="p-8 text-center">
-                  <FileSignature className="size-16 mx-auto text-[#9CA3AF] mb-4" />
-                  <p className="text-sm text-[#9CA3AF]">
-                    {uploadedFile ? uploadedFile.name : selectedTemplate ? selectedTemplate.name : "Document Preview"}
-                  </p>
-                  <p className="text-xs text-[#9CA3AF] mt-1">Field positions are shown below</p>
-                </div>
-
-                {/* Placed Fields Overlay */}
-                {signFields.filter((f) => f.page === currentPage).map((f) => {
-                  const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);
-                  const signerColor = partyColors[Math.min(signerIdx, 3)];
-                  const isSelected = selectedField === f.id;
-                  return (
-                    <div
-                      key={f.id}
-                      onClick={(e) => { e.stopPropagation(); setSelectedField(f.id); }}
-                      className={`absolute cursor-move rounded border-2 transition-all ${
-                        isSelected ? "shadow-md" : ""
-                      }`}
-                      style={{
-                        left: `${f.x}%`,
-                        top: `${f.y}%`,
-                        width: `${f.width}%`,
-                        height: `${f.height}%`,
-                        borderColor: signerColor,
-                        backgroundColor: `${signerColor}15`,
-                        borderWidth: isSelected ? "2.5px" : "1.5px",
-                      }}
-                    >
-                      <p className="text-[9px] px-1 truncate" style={{ color: signerColor }}>{allSigners[signerIdx]?.name}</p>
-                      <p className="text-[10px] font-medium text-[#111827] px-1 truncate capitalize">{f.label}</p>
-                    </div>
-                  );
-                })}
+                {pdfUrl ? (
+                  <div className="relative inline-block min-w-full">
+                    <canvas id="pdf-canvas" className="block" />
+                    {/* Placed Fields Overlay */}
+                    {signFields.filter((f) => f.page === currentPage).map((f) => {
+                      const signerIdx = allSigners.findIndex((s) => s.id === f.assigned_to_signer_id);
+                      const signerColor = partyColors[Math.min(Math.max(signerIdx, 0), 3)];
+                      return (
+                        <DraggableField
+                          key={f.id}
+                          field={f}
+                          signerName={allSigners[signerIdx]?.name || "Unknown"}
+                          signerColor={signerColor}
+                          signerIdx={signerIdx}
+                          isSelected={selectedField === f.id}
+                          containerRef={pdfContainerRef}
+                          onSelect={() => setSelectedField(f.id)}
+                          onMove={handleMoveField}
+                          onRemove={handleRemoveField}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <FileSignature className="size-16 mx-auto text-[#9CA3AF] mb-4" />
+                    <p className="text-sm text-[#9CA3AF]">No document loaded. Go back and select a template or upload a PDF.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -738,6 +930,9 @@ export default function NewVaultSignDocument() {
                   </div>
                   <span className="ml-auto text-xs text-[#6B7280]">
                     {signingOrder === "sequential" ? "Signs #1" : "Signs simultaneously"}
+                  </span>
+                  <span className="text-xs text-[#9CA3AF]">
+                    {signFields.filter((f) => f.assigned_to_signer_id === "party_1").length} fields
                   </span>
                 </div>
                 {/* Other signers */}
@@ -801,11 +996,19 @@ export default function NewVaultSignDocument() {
             <ArrowLeft className="size-4 mr-2" /> Back
           </Button>
         ) : <div />}
-        {step < 4 && (
-          <Button onClick={handleNext} className="bg-[#166534] hover:bg-[#14532D]">
-            {step === 1 && "Next: Add Signers →"}
-            {step === 2 && "Next: Place Fields →"}
-            {step === 3 && "Next: Review & Send →"}
+        {step === 1 && (
+          <Button onClick={handleStep1Next} className="bg-[#166534] hover:bg-[#14532D]">
+            Next: Add Signers →
+          </Button>
+        )}
+        {step === 2 && (
+          <Button onClick={handleStep2Next} className="bg-[#166534] hover:bg-[#14532D]">
+            Next: Place Fields →
+          </Button>
+        )}
+        {step === 3 && (
+          <Button onClick={handleStep3Next} className="bg-[#166534] hover:bg-[#14532D]">
+            Next: Review & Send →
           </Button>
         )}
       </div>

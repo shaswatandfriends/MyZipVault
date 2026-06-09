@@ -102,9 +102,14 @@ export async function GET(
     }
 
     // Filter sign_fields to only include this signer's fields
+    // Fields are assigned using party-based IDs (e.g. "party_2") or numeric signer IDs
     const allSignFields = JSON.parse(doc.sign_fields || "[]");
+    const signerPartyId = `party_${signer.party_number}`;
     const signerFields = allSignFields.filter(
-      (f: Record<string, unknown>) => f.assigned_to_signer_id === signer.id
+      (f: Record<string, unknown>) =>
+        f.assigned_to_signer_id === signerPartyId ||
+        f.assigned_to_signer_id === String(signer.id) ||
+        f.assigned_to_signer_id === signer.id
     );
 
     // Build other signers info (name + status only)
@@ -145,6 +150,7 @@ export async function GET(
       document_name: doc.document_name,
       document_url: documentUrl,
       signer_name: signer.name,
+      signer_email: signer.email,
       signer_role: signer.role,
       sign_fields: signerFields,
       personal_message: doc.personal_message,

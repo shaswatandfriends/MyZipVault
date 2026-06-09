@@ -35,6 +35,7 @@ interface SigningData {
   document_name: string;
   document_url: string | null;
   signer_name: string;
+  signer_email: string;
   signer_role: string;
   sign_fields: SignField[];
   personal_message: string | null;
@@ -246,6 +247,8 @@ export default function VaultSignSigningPage() {
   const [consent2, setConsent2] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
+  const [pdfPage, setPdfPage] = useState(1);
+  const [pdfTotalPages, setPdfTotalPages] = useState(1);
 
   const fetchSigningData = useCallback(async () => {
     try {
@@ -289,6 +292,44 @@ export default function VaultSignSigningPage() {
     link.rel = "stylesheet";
     document.head.appendChild(link);
   }, []);
+
+  // Render PDF when document_url is available
+  useEffect(() => {
+    if (!data?.document_url) return;
+    let cancelled = false;
+
+    const renderPdf = async () => {
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+        const loadingTask = pdfjsLib.getDocument(data.document_url!);
+        const pdf = await loadingTask.promise;
+        if (cancelled) return;
+        setPdfTotalPages(pdf.numPages);
+
+        const page = await pdf.getPage(pdfPage);
+        if (cancelled) return;
+
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.getElementById("sign-pdf-canvas") as HTMLCanvasElement;
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+      } catch (err) {
+        console.error("PDF render error on signing page:", err);
+      }
+    };
+
+    renderPdf();
+    return () => { cancelled = true; };
+  }, [data?.document_url, pdfPage]);
 
   const requiredFields = data?.sign_fields.filter((f) => f.required) || [];
   const filledRequired = requiredFields.filter((f) => {
@@ -427,15 +468,39 @@ export default function VaultSignSigningPage() {
         {/* Document Preview with Fields */}
         <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4">
           <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider">Document</h3>
-          <div className="bg-[#F8F7F4] rounded-xl border border-[#E5E7EB] min-h-[400px] p-8">
-            {/* PDF Placeholder */}
-            <div className="text-center mb-8">
+
+          {/* PDF Viewer */}
+          {data.document_url && (
+            <div className="space-y-2">
+              <div className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
+                <canvas id="sign-pdf-canvas" className="block mx-auto" />
+              </div>
+              {pdfTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-2">
+                  <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={() => setPdfPage((p) => Math.max(1, p - 1))} disabled={pdfPage <= 1}>
+                    ◀
+                  </Button>
+                  <span className="text-xs text-[#6B7280]">Page {pdfPage} of {pdfTotalPages}</span>
+                  <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={() => setPdfPage((p) => Math.min(pdfTotalPages, p + 1))} disabled={pdfPage >= pdfTotalPages}>
+                    ▶
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fallback when no PDF */}
+          {!data.document_url && (
+            <div className="bg-[#F8F7F4] rounded-xl border border-[#E5E7EB] min-h-[200px] p-8 text-center">
               <FileSignature className="size-16 mx-auto text-[#9CA3AF] mb-2" />
               <p className="text-sm text-[#9CA3AF]">{data.document_name}</p>
             </div>
+          )}
 
-            {/* Interactive Fields */}
+          {/* Interactive Fields */}
+          {data.sign_fields.length > 0 && (
             <div className="space-y-4 max-w-lg mx-auto">
+              <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider text-center">Fill in Your Fields</h3>
               {data.sign_fields.map((field) => (
                 <div key={field.id} className="space-y-1">
                   <label className="text-sm font-medium text-[#111827]">
@@ -516,7 +581,7 @@ export default function VaultSignSigningPage() {
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Progress + Consent + Submit */}

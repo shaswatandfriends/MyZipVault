@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { generateSignedPdf, computeDocumentHash } from "@/lib/pdf-sign";
+import { uploadFile } from "@/lib/storage";
+import { getSignedUrl } from "@/lib/storage";
 
 export async function POST(
   request: Request,
@@ -104,8 +107,13 @@ export async function POST(
 
     // Validate all required fields are filled
     const allSignFields = JSON.parse(doc.sign_fields || "[]");
+    // Fields are assigned using party-based IDs (e.g. "party_2") or numeric signer IDs
+    const signerPartyId = `party_${signer.party_number}`;
     const signerFields = allSignFields.filter(
-      (f: Record<string, unknown>) => f.assigned_to_signer_id === signer.id
+      (f: Record<string, unknown>) =>
+        f.assigned_to_signer_id === signerPartyId ||
+        f.assigned_to_signer_id === String(signer.id) ||
+        f.assigned_to_signer_id === signer.id
     );
 
     for (const field of signerFields) {
@@ -176,10 +184,63 @@ export async function POST(
 
     if (allSigned) {
       // All signers signed - document is completed
+      // Generate final PDF with signatures baked in
+      let finalDocumentUrl = doc.final_document_url;
+      let documentHash = doc.document_hash;
+
+      try {
+        // Fetch original PDF
+        let originalPdfBuffer: Buffer | null = null;
+        if (doc.original_document_url) {
+          try {
+            const signedUrl = await getSignedUrl("vaultsign-documents", doc.original_document_url, 300);
+            const pdfResponse = await fetch(signedUrl);
+            if (pdfResponse.ok) {
+              const arrayBuf = await pdfResponse.arrayBuffer();
+              originalPdfBuffer = Buffer.from(arrayBuf);
+            }
+          } catch (e) {
+            console.error("[VAULTSIGN_SIGN_SUBMIT] Failed to fetch original PDF:", e);
+          }
+        }
+
+        if (originalPdfBuffer) {
+          // Get all signers with their signature data
+          const allSignersWithData = await db.vaultSignSigner.findMany({
+            where: { document_id: doc.id },
+          });
+
+          // Generate the signed PDF
+          const finalPdfBuffer = await generateSignedPdf(
+            originalPdfBuffer,
+            allSignFields,
+            allSignersWithData
+          );
+
+          // Compute document hash for tamper detection
+          documentHash = computeDocumentHash(finalPdfBuffer);
+
+          // Upload final PDF
+          const uploadResult = await uploadFile(
+            "vaultsign-documents",
+            `${doc.id}`,
+            finalPdfBuffer,
+            "final.pdf",
+            "application/pdf"
+          );
+          finalDocumentUrl = uploadResult.url;
+        }
+      } catch (e) {
+        console.error("[VAULTSIGN_SIGN_SUBMIT] Failed to generate final PDF:", e);
+        // Continue without final PDF - the document is still completed
+      }
+
       await db.vaultSignDocument.update({
         where: { id: doc.id },
         data: {
           status: "completed",
+          final_document_url: finalDocumentUrl,
+          document_hash: documentHash,
           sign_fields: JSON.stringify(allSignFields),
           audit_trail: JSON.stringify(auditTrail),
           updated_at: new Date(),
@@ -220,7 +281,7 @@ export async function POST(
             data: {
               candidate_user_id: signerUser.id,
               document_name: doc.document_name,
-              file_url: doc.original_document_url || "",
+              file_url: finalDocumentUrl || doc.original_document_url || "",
               verification_status: "verified",
               status: "active",
             },
