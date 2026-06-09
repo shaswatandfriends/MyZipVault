@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
   PenSquare,
@@ -20,6 +20,8 @@ import {
   Check,
   X,
   Loader2,
+  Search,
+  Database,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -32,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -39,12 +42,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -61,6 +58,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ChecklistTemplateItem {
@@ -83,18 +85,9 @@ interface SkillItem {
   hasNaOption: boolean;
 }
 
-interface ReferenceQuestionItem {
-  id: number;
-  employmentStatus: string;
-  questionText: string;
-  responseType: string;
-  sortOrder: number;
-}
-
 interface ContentData {
   checklistTemplates: ChecklistTemplateItem[];
   skills: SkillItem[];
-  referenceQuestions: ReferenceQuestionItem[];
 }
 
 interface PreviewCategory {
@@ -117,11 +110,33 @@ interface PreviewTemplate {
   isActive: boolean;
 }
 
+// ─── Grouped Types ──────────────────────────────────────────────────
+interface SpecialtyGroup {
+  templateId: number;
+  specialty: string;
+  templateName: string;
+  jobTitle: string | null;
+  isActive: boolean;
+  skills: SkillItem[];
+  categories: Map<string, SkillItem[]>;
+}
+
+interface ProfessionGroup {
+  profession: string;
+  specialties: SpecialtyGroup[];
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function SuperadminSkillsPage() {
   const [data, setData] = useState<ContentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // ── Master-detail state
+  const [selectedProfession, setSelectedProfession] = useState<string | null>(null);
+  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // ── Template dialog state
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
@@ -137,7 +152,6 @@ export default function SuperadminSkillsPage() {
   // ── Skill dialog state
   const [skillDialogOpen, setSkillDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<SkillItem | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("all");
   const [skillForm, setSkillForm] = useState({
     checklistTemplateId: 0,
     skillName: "",
@@ -177,7 +191,6 @@ export default function SuperadminSkillsPage() {
 
   // ── Preview Checklist modal state
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [previewTemplateId, setPreviewTemplateId] = useState<string>("");
   const [previewData, setPreviewData] = useState<{
     template: PreviewTemplate;
     categories: PreviewCategory[];
@@ -185,6 +198,11 @@ export default function SuperadminSkillsPage() {
     totalCategories: number;
   } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // ── Rename dialog state
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameProfession, setRenameProfession] = useState("");
+  const [renameNewName, setRenameNewName] = useState("");
 
   // ── Resend cooldown timer
   useEffect(() => {
@@ -202,7 +220,7 @@ export default function SuperadminSkillsPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Failed to fetch content");
       }
-      const json = (await res.json()) as ContentData;
+      const json = await res.json() as ContentData;
       setData(json);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -215,6 +233,71 @@ export default function SuperadminSkillsPage() {
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  // ─── Grouped data ─────────────────────────────────────────────────
+  const professionGroups = useMemo<ProfessionGroup[]>(() => {
+    if (!data) return [];
+    const map = new Map<string, SpecialtyGroup[]>();
+
+    for (const template of data.checklistTemplates) {
+      const skills = data.skills.filter((s) => s.checklistTemplateId === template.id);
+      const categoryMap = new Map<string, SkillItem[]>();
+      for (const skill of skills) {
+        if (!categoryMap.has(skill.category)) categoryMap.set(skill.category, []);
+        categoryMap.get(skill.category)!.push(skill);
+      }
+      // Sort skills within each category
+      for (const [, catSkills] of categoryMap) {
+        catSkills.sort((a, b) => a.sortOrder - b.sortOrder);
+      }
+
+      const group: SpecialtyGroup = {
+        templateId: template.id,
+        specialty: template.specialty,
+        templateName: template.name,
+        jobTitle: template.jobTitle || null,
+        isActive: template.isActive,
+        skills,
+        categories: categoryMap,
+      };
+
+      if (!map.has(template.profession)) map.set(template.profession, []);
+      map.get(template.profession)!.push(group);
+    }
+
+    return Array.from(map.entries()).map(([profession, specialties]) => ({
+      profession,
+      specialties,
+    }));
+  }, [data]);
+
+  // ── Filter by search ──────────────────────────────────────────────
+  const filteredProfessions = useMemo(() => {
+    if (!searchQuery) return professionGroups;
+    const q = searchQuery.toLowerCase();
+    return professionGroups
+      .map((pg) => ({
+        ...pg,
+        specialties: pg.specialties.filter(
+          (s) =>
+            pg.profession.toLowerCase().includes(q) ||
+            s.specialty.toLowerCase().includes(q) ||
+            s.templateName.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((pg) => pg.specialties.length > 0 || pg.profession.toLowerCase().includes(q));
+  }, [professionGroups, searchQuery]);
+
+  // ── Selected profession data ──────────────────────────────────────
+  const selectedProfessionData = useMemo(() => {
+    if (!selectedProfession) return null;
+    return professionGroups.find((pg) => pg.profession === selectedProfession) || null;
+  }, [selectedProfession, professionGroups]);
+
+  const selectedSpecialtyData = useMemo(() => {
+    if (!selectedSpecialtyId || !selectedProfessionData) return null;
+    return selectedProfessionData.specialties.find((s) => s.templateId === selectedSpecialtyId) || null;
+  }, [selectedSpecialtyId, selectedProfessionData]);
 
   // ─── CRUD helper ──────────────────────────────────────────────────
   const performAction = async (type: string, action: string, data: Record<string, unknown>) => {
@@ -252,7 +335,8 @@ export default function SuperadminSkillsPage() {
       });
     } else {
       setEditingTemplate(null);
-      setTemplateForm({ profession: "", specialty: "", name: "", jobTitle: "", isActive: true });
+      const profession = selectedProfession || "";
+      setTemplateForm({ profession, specialty: "", name: "", jobTitle: "", isActive: true });
     }
     setTemplateDialogOpen(true);
   };
@@ -274,7 +358,7 @@ export default function SuperadminSkillsPage() {
   };
 
   // ─── Skill handlers ──────────────────────────────────────────────
-  const openSkillDialog = (skill?: SkillItem) => {
+  const openSkillDialog = (skill?: SkillItem, templateId?: number) => {
     if (skill) {
       setEditingSkill(skill);
       setSkillForm({
@@ -287,11 +371,9 @@ export default function SuperadminSkillsPage() {
       });
     } else {
       setEditingSkill(null);
-      const firstTemplateId = data?.checklistTemplates[0]?.id ?? 0;
+      const tid = templateId || selectedSpecialtyId || data?.checklistTemplates[0]?.id || 0;
       setSkillForm({
-        checklistTemplateId: selectedTemplateId !== "all"
-          ? Number(selectedTemplateId)
-          : firstTemplateId,
+        checklistTemplateId: tid,
         skillName: "",
         category: "",
         questionType: "rating_1_4",
@@ -321,6 +403,10 @@ export default function SuperadminSkillsPage() {
     await performAction(deleteTarget.type, "delete", { id: deleteTarget.id });
     setDeleteDialogOpen(false);
     setDeleteTarget(null);
+    // Reset selection if we deleted the selected template
+    if (deleteTarget.type === "checklist_template" && deleteTarget.id === selectedSpecialtyId) {
+      setSelectedSpecialtyId(null);
+    }
   };
 
   // ─── Export Template ──────────────────────────────────────────────
@@ -424,7 +510,6 @@ export default function SuperadminSkillsPage() {
     const newOtp = [...deleteAllOtp];
     newOtp[index] = value;
     setDeleteAllOtp(newOtp);
-    // Auto advance
     if (value && index < 5) {
       otpInputRefs.current[index + 1]?.focus();
     }
@@ -456,6 +541,8 @@ export default function SuperadminSkillsPage() {
       setDeleteAllModalOpen(false);
       setDeleteAllStep(1);
       setDeleteAllOtp(["", "", "", "", "", ""]);
+      setSelectedProfession(null);
+      setSelectedSpecialtyId(null);
       fetchContent();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -466,12 +553,11 @@ export default function SuperadminSkillsPage() {
   };
 
   // ─── Preview Checklist handlers ───────────────────────────────────
-  const handlePreviewChecklist = async () => {
-    if (!previewTemplateId) return;
+  const handlePreviewChecklist = async (templateId: number) => {
     try {
       setPreviewLoading(true);
       setPreviewModalOpen(true);
-      const res = await fetch(`/api/admin/skills/preview/${previewTemplateId}`);
+      const res = await fetch(`/api/admin/skills/preview/${templateId}`);
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to load preview");
       setPreviewData(result);
@@ -484,329 +570,533 @@ export default function SuperadminSkillsPage() {
     }
   };
 
-  // ─── Filtered skills ─────────────────────────────────────────────
-  const filteredSkills = data?.skills.filter(
-    (s) => selectedTemplateId === "all" || s.checklistTemplateId === Number(selectedTemplateId)
-  ) ?? [];
-
-  // ─── Rating button style helper ───────────────────────────────────
-  const getRatingBtnClass = (rating: number, selected: number | null) => {
-    const isSelected = selected === rating;
-    const base = "w-10 h-10 rounded-lg font-bold text-sm border-2 transition-all ";
-    switch (rating) {
-      case 1: return base + (isSelected ? "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626]" : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]");
-      case 2: return base + (isSelected ? "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04]" : "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]");
-      case 3: return base + (isSelected ? "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB]" : "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]");
-      case 4: return base + (isSelected ? "bg-[#166534] border-[#166534] text-white" : "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]");
-      default: return base;
+  // ─── Rename handlers ──────────────────────────────────────────────
+  const handleRenameProfession = async () => {
+    if (!renameProfession || !renameNewName.trim()) return;
+    // Update all templates with the old profession name
+    const templates = data?.checklistTemplates.filter((t) => t.profession === renameProfession) || [];
+    for (const template of templates) {
+      await performAction("checklist_template", "update", {
+        id: template.id,
+        profession: renameNewName.trim(),
+        specialty: template.specialty,
+        name: template.name,
+        jobTitle: template.jobTitle,
+        isActive: template.isActive,
+      });
     }
+    if (selectedProfession === renameProfession) {
+      setSelectedProfession(renameNewName.trim());
+    }
+    setRenameDialogOpen(false);
   };
 
+  // ─── Category toggle ──────────────────────────────────────────────
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryKey)) next.delete(categoryKey);
+      else next.add(categoryKey);
+      return next;
+    });
+  };
+
+  // ─── Auto-select first profession ─────────────────────────────────
+  useEffect(() => {
+    if (!isLoading && professionGroups.length > 0 && !selectedProfession) {
+      setSelectedProfession(professionGroups[0].profession);
+    }
+  }, [isLoading, professionGroups, selectedProfession]);
+
+  // ─── Auto-select first specialty ──────────────────────────────────
+  useEffect(() => {
+    if (selectedProfessionData && selectedProfessionData.specialties.length > 0 && !selectedSpecialtyId) {
+      setSelectedSpecialtyId(selectedProfessionData.specialties[0].templateId);
+    }
+  }, [selectedProfessionData, selectedSpecialtyId]);
+
+  // ─── Auto-expand all categories when specialty changes ────────────
+  useEffect(() => {
+    if (selectedSpecialtyData) {
+      const allKeys = new Set<string>();
+      for (const [cat] of selectedSpecialtyData.categories) {
+        allKeys.add(`${selectedSpecialtyData.templateId}-${cat}`);
+      }
+      setExpandedCategories(allKeys);
+    }
+  }, [selectedSpecialtyId]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Skills Database"
-        description="Manage professions, specialties, skills, import/export, and preview checklists."
+        description="Manage professions, specialties, and skills"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleExportTemplate}>
+              <Download className="size-4" />
+              <span className="hidden sm:inline">Export Template</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleExportData}>
+              <FileDown className="size-4" />
+              <span className="hidden sm:inline">Export Data</span>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => { resetImportModal(); setImportModalOpen(true); }}>
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">Import</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-600 hover:bg-red-50 bg-transparent"
+              onClick={() => { setDeleteAllStep(1); setDeleteAllOtp(["", "", "", "", "", ""]); setDeleteAllModalOpen(true); }}
+            >
+              <Trash2 className="size-4" />
+              <span className="hidden sm:inline">Delete All</span>
+            </Button>
+          </div>
+        }
       />
 
-      <Tabs defaultValue="templates" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="templates">Professions &amp; Specialties</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-        </TabsList>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            Tab 1 — Professions & Specialties
-        ═══════════════════════════════════════════════════════════════ */}
-        <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Checklist Templates</CardTitle>
+      {/* ─── Master-Detail Panel ────────────────────────────────────── */}
+      <div className="flex gap-4 min-h-[calc(100vh-220px)]">
+        {/* ─── Left Panel (1/3): Job Titles List ─────────────────────── */}
+        <Card className="w-full md:w-1/3 shrink-0">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Job Titles</CardTitle>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white size-8"
+                size="icon"
+                onClick={() => openTemplateDialog()}
+                title="Add Job Title"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search titles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded" />
+                ))}
+              </div>
+            ) : filteredProfessions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center p-4">
+                <Database className="size-10 text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? "No matching titles" : "No job titles yet"}
+                </p>
                 <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white mt-3"
+                  size="sm"
                   onClick={() => openTemplateDialog()}
                 >
                   <Plus className="size-4" />
-                  Add Template
+                  Add Job Title
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded" />
-                  ))}
-                </div>
-              ) : data?.checklistTemplates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <PenSquare className="size-10 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No templates yet</p>
-                </div>
-              ) : (
-                <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Profession</TableHead>
-                        <TableHead>Job Title</TableHead>
-                        <TableHead>Specialty</TableHead>
-                        <TableHead>Template Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-24">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data?.checklistTemplates.map((template) => (
-                        <TableRow key={template.id}>
-                          <TableCell className="font-medium text-sm">
-                            {template.profession}
-                          </TableCell>
-                          <TableCell className="text-sm">{template.jobTitle || "—"}</TableCell>
-                          <TableCell className="text-sm">{template.specialty}</TableCell>
-                          <TableCell className="text-sm">{template.name}</TableCell>
-                          <TableCell>
-                            {template.isActive ? (
-                              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Inactive</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7"
-                                onClick={() => openTemplateDialog(template)}
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  setDeleteTarget({ type: "checklist_template", id: template.id });
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            ) : (
+              <div className="max-h-[calc(100vh-340px)] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                {filteredProfessions.map((pg) => (
+                  <div
+                    key={pg.profession}
+                    className={`border-b cursor-pointer transition-colors ${
+                      selectedProfession === pg.profession
+                        ? "bg-emerald-50 border-l-4 border-l-emerald-600"
+                        : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                    }`}
+                    onClick={() => {
+                      setSelectedProfession(pg.profession);
+                      setSelectedSpecialtyId(null);
+                    }}
+                  >
+                    <div className="flex items-center justify-between p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{pg.profession}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {pg.specialties.length} {pg.specialties.length === 1 ? "specialty" : "specialties"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          title="Rename"
+                          onClick={() => {
+                            setRenameProfession(pg.profession);
+                            setRenameNewName(pg.profession);
+                            setRenameDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete profession"
+                          onClick={() => {
+                            // Delete all templates in this profession
+                            pg.specialties.forEach((s) => {
+                              performAction("checklist_template", "delete", { id: s.templateId });
+                            });
+                            if (selectedProfession === pg.profession) {
+                              setSelectedProfession(null);
+                              setSelectedSpecialtyId(null);
+                            }
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* ═══════════════════════════════════════════════════════════════
-            Tab 2 — Skills
-        ═══════════════════════════════════════════════════════════════ */}
-        <TabsContent value="skills">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-base">Skills</CardTitle>
-                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                    <SelectTrigger className="w-full sm:w-56">
-                      <SelectValue placeholder="Filter by template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Templates</SelectItem>
-                      {data?.checklistTemplates.map((t) => (
-                        <SelectItem key={t.id} value={String(t.id)}>
-                          {t.profession} — {t.specialty}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => openSkillDialog()}
-                  >
-                    <Plus className="size-4" />
-                    Add Skill
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleExportTemplate}>
-                    <Download className="size-4" />
-                    Export Template
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={() => { resetImportModal(); setImportModalOpen(true); }}>
-                    <Upload className="size-4" />
-                    Import Data
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleExportData}>
-                    <FileDown className="size-4" />
-                    Export Current Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-[#DC2626] text-[#DC2626] hover:bg-[#FEE2E2] bg-transparent"
-                    onClick={() => { setDeleteAllStep(1); setDeleteAllOtp(["", "", "", "", "", ""]); setDeleteAllModalOpen(true); }}
-                  >
-                    <Trash2 className="size-4" />
-                    Delete All Data
-                  </Button>
+        {/* ─── Right Panel (2/3): Selected Job Title Details ─────────── */}
+        <Card className="flex-1">
+          {isLoading ? (
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-48" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </CardContent>
+          ) : !selectedProfessionData ? (
+            <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+              <Database className="size-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-1">Select a Job Title</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Choose a profession from the left panel to view its specialties and skills.
+              </p>
+            </CardContent>
+          ) : (
+            <>
+              {/* ── Header ──────────────────────────────────────────── */}
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold">{selectedProfessionData.profession}</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {selectedProfessionData.specialties.length} {selectedProfessionData.specialties.length === 1 ? "specialty" : "specialties"} • {selectedProfessionData.specialties.reduce((s, sp) => s + sp.skills.length, 0)} skills
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <Select value={previewTemplateId} onValueChange={setPreviewTemplateId}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Select template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {data?.checklistTemplates.map((t) => (
-                          <SelectItem key={t.id} value={String(t.id)}>
-                            {t.profession} — {t.specialty}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="secondary" size="sm" onClick={handlePreviewChecklist} disabled={!previewTemplateId}>
-                      <Eye className="size-4" />
-                      Preview Checklist
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setRenameProfession(selectedProfessionData.profession);
+                        setRenameNewName(selectedProfessionData.profession);
+                        setRenameDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                      Rename
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => {
+                        selectedProfessionData.specialties.forEach((s) => {
+                          performAction("checklist_template", "delete", { id: s.templateId });
+                        });
+                        setSelectedProfession(null);
+                        setSelectedSpecialtyId(null);
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Delete
                     </Button>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded" />
-                  ))}
+              </CardHeader>
+
+              <CardContent className="p-4 max-h-[calc(100vh-300px)] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                {/* ── Specialties Section ────────────────────────────── */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Specialties</h3>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs"
+                      size="sm"
+                      onClick={() => openTemplateDialog()}
+                    >
+                      <Plus className="size-3" />
+                      Add Specialty
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProfessionData.specialties.map((sp) => (
+                      <div
+                        key={sp.templateId}
+                        className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all ${
+                          selectedSpecialtyId === sp.templateId
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                            : "bg-white text-gray-700 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"
+                        }`}
+                        onClick={() => setSelectedSpecialtyId(sp.templateId)}
+                      >
+                        <span className="text-sm font-medium">{sp.specialty}</span>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1">
+                          {sp.skills.length}
+                        </Badge>
+                        {!sp.isActive && (
+                          <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-[10px] h-4 px-1">Inactive</Badge>
+                        )}
+                        <div className="hidden group-hover:flex items-center gap-0.5 ml-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-5"
+                            onClick={() => openTemplateDialog(data?.checklistTemplates.find((t) => t.id === sp.templateId))}
+                          >
+                            <Pencil className="size-2.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-5 text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setDeleteTarget({ type: "checklist_template", id: sp.templateId });
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="size-2.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ) : filteredSkills.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <PenSquare className="size-10 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No skills found</p>
-                </div>
-              ) : (
-                <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">Order</TableHead>
-                        <TableHead>Skill Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>N/A</TableHead>
-                        <TableHead className="w-28">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSkills.map((skill) => (
-                        <TableRow key={skill.id}>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {skill.sortOrder}
-                          </TableCell>
-                          <TableCell className="font-medium text-sm">
-                            {skill.skillName}
-                          </TableCell>
-                          <TableCell className="text-sm">{skill.category}</TableCell>
-                          <TableCell className="text-sm">{skill.questionType}</TableCell>
-                          <TableCell>
-                            {skill.hasNaOption ? (
-                              <CheckCircle2 className="size-4 text-emerald-600" />
-                            ) : (
-                              <XCircle className="size-4 text-muted-foreground" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-0.5">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7"
-                                onClick={() =>
-                                  performAction("skill", "update", {
-                                    id: skill.id,
-                                    sortOrder: Math.max(0, skill.sortOrder - 1),
-                                    skillName: skill.skillName,
-                                    category: skill.category,
-                                    questionType: skill.questionType,
-                                    hasNaOption: skill.hasNaOption,
-                                    checklistTemplateId: skill.checklistTemplateId,
-                                  })
-                                }
-                                disabled={actionLoading}
+
+                {/* ── Skill Categories Section ────────────────────────── */}
+                {selectedSpecialtyData ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        Skill Categories — {selectedSpecialtyData.specialty}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => handlePreviewChecklist(selectedSpecialtyData.templateId)}
+                        >
+                          <Eye className="size-3" />
+                          Preview
+                        </Button>
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs"
+                          size="sm"
+                          onClick={() => openSkillDialog(undefined, selectedSpecialtyData.templateId)}
+                        >
+                          <Plus className="size-3" />
+                          Add Skill
+                        </Button>
+                      </div>
+                    </div>
+
+                    {selectedSpecialtyData.categories.size === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
+                        <PenSquare className="size-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">No skills in this specialty yet</p>
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white mt-2"
+                          size="sm"
+                          onClick={() => openSkillDialog(undefined, selectedSpecialtyData.templateId)}
+                        >
+                          <Plus className="size-4" />
+                          Add First Skill
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {Array.from(selectedSpecialtyData.categories.entries()).map(([category, skills]) => {
+                          const catKey = `${selectedSpecialtyData.templateId}-${category}`;
+                          const isExpanded = expandedCategories.has(catKey);
+                          const questionTypes = [...new Set(skills.map((s) => s.questionType))];
+
+                          return (
+                            <div key={category} className="border rounded-lg">
+                              <Collapsible
+                                open={isExpanded}
+                                onOpenChange={() => toggleCategory(catKey)}
                               >
-                                <ChevronUp className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7"
-                                onClick={() =>
-                                  performAction("skill", "update", {
-                                    id: skill.id,
-                                    sortOrder: skill.sortOrder + 1,
-                                    skillName: skill.skillName,
-                                    category: skill.category,
-                                    questionType: skill.questionType,
-                                    hasNaOption: skill.hasNaOption,
-                                    checklistTemplateId: skill.checklistTemplateId,
-                                  })
-                                }
-                                disabled={actionLoading}
-                              >
-                                <ChevronDown className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7"
-                                onClick={() => openSkillDialog(skill)}
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  setDeleteTarget({ type: "skill", id: skill.id });
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
+                                <CollapsibleTrigger asChild>
+                                  <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50">
+                                    <div className="flex items-center gap-2">
+                                      {isExpanded ? (
+                                        <ChevronUp className="size-4 text-muted-foreground" />
+                                      ) : (
+                                        <ChevronDown className="size-4 text-muted-foreground" />
+                                      )}
+                                      <span className="font-medium text-sm">{category}</span>
+                                      <Badge variant="outline" className="text-[10px] h-5">
+                                        {skills.length} skills
+                                      </Badge>
+                                      {questionTypes.map((qt) => (
+                                        <Badge key={qt} className="text-[10px] h-5 bg-blue-50 text-blue-700 border-blue-200">
+                                          {qt === "rating_1_4" ? "1-4 Rating" : qt === "yes_no" ? "Yes/No" : "Text"}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-7"
+                                        title="Add skill to this category"
+                                        onClick={() => openSkillDialog(undefined, selectedSpecialtyData.templateId)}
+                                      >
+                                        <Plus className="size-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <div className="px-3 pb-3 border-t">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="text-xs w-10">#</TableHead>
+                                          <TableHead className="text-xs">Skill Name</TableHead>
+                                          <TableHead className="text-xs">Type</TableHead>
+                                          <TableHead className="text-xs">N/A</TableHead>
+                                          <TableHead className="text-xs w-28">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {skills.map((skill) => (
+                                          <TableRow key={skill.id}>
+                                            <TableCell className="text-xs text-muted-foreground">{skill.sortOrder}</TableCell>
+                                            <TableCell className="text-xs font-medium">{skill.skillName}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                              {skill.questionType === "rating_1_4" ? "1-4 Rating" : skill.questionType === "yes_no" ? "Yes/No" : "Text"}
+                                            </TableCell>
+                                            <TableCell>
+                                              {skill.hasNaOption ? (
+                                                <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                              ) : (
+                                                <XCircle className="size-3.5 text-muted-foreground" />
+                                              )}
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex items-center gap-0.5">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="size-6"
+                                                  onClick={() =>
+                                                    performAction("skill", "update", {
+                                                      id: skill.id,
+                                                      sortOrder: Math.max(0, skill.sortOrder - 1),
+                                                      skillName: skill.skillName,
+                                                      category: skill.category,
+                                                      questionType: skill.questionType,
+                                                      hasNaOption: skill.hasNaOption,
+                                                      checklistTemplateId: skill.checklistTemplateId,
+                                                    })
+                                                  }
+                                                  disabled={actionLoading}
+                                                >
+                                                  <ChevronUp className="size-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="size-6"
+                                                  onClick={() =>
+                                                    performAction("skill", "update", {
+                                                      id: skill.id,
+                                                      sortOrder: skill.sortOrder + 1,
+                                                      skillName: skill.skillName,
+                                                      category: skill.category,
+                                                      questionType: skill.questionType,
+                                                      hasNaOption: skill.hasNaOption,
+                                                      checklistTemplateId: skill.checklistTemplateId,
+                                                    })
+                                                  }
+                                                  disabled={actionLoading}
+                                                >
+                                                  <ChevronDown className="size-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="size-6"
+                                                  onClick={() => openSkillDialog(skill)}
+                                                >
+                                                  <Pencil className="size-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="size-6 text-destructive hover:text-destructive"
+                                                  onClick={() => {
+                                                    setDeleteTarget({ type: "skill", id: skill.id });
+                                                    setDeleteDialogOpen(true);
+                                                  }}
+                                                >
+                                                  <Trash2 className="size-3" />
+                                                </Button>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <p className="text-sm text-muted-foreground">Select a specialty to view its skills</p>
+                  </div>
+                )}
+              </CardContent>
+            </>
+          )}
+        </Card>
+      </div>
 
       {/* ── Template Dialog ────────────────────────────────────────── */}
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingTemplate ? "Edit Template" : "Add Template"}
+              {editingTemplate ? "Edit Specialty" : "Add Specialty"}
             </DialogTitle>
             <DialogDescription>
               {editingTemplate
                 ? "Update the checklist template details."
-                : "Create a new checklist template for a profession and specialty."}
+                : "Create a new specialty template."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -982,6 +1272,39 @@ export default function SuperadminSkillsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Rename Profession Dialog ──────────────────────────────────── */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Profession</DialogTitle>
+            <DialogDescription>
+              Change the profession name. This will update all specialties under this profession.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>New Name</Label>
+              <Input
+                value={renameNewName}
+                onChange={(e) => setRenameNewName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleRenameProfession}
+              disabled={actionLoading}
+            >
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ═══════════════════════════════════════════════════════════════
           Import Modal
       ═══════════════════════════════════════════════════════════════ */}
@@ -989,147 +1312,124 @@ export default function SuperadminSkillsPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Import Skills Data</DialogTitle>
-            <DialogDescription>Upload an Excel file to import skills into the database.</DialogDescription>
+            <DialogDescription>Upload an .xlsx file to validate and import skills data.</DialogDescription>
           </DialogHeader>
 
           {!importResult ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Card 1 - Download Template */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <FileSpreadsheet className="size-8 text-emerald-600" />
-                    <h3 className="font-semibold text-sm">Download Template</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Download the Excel template with correct column format. Fill it in and upload it back.
-                    </p>
-                    <Button variant="secondary" className="w-full" onClick={handleExportTemplate}>
-                      <Download className="size-4" />
-                      Download Excel Template
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Card 2 - Upload Data */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <Upload className="size-8 text-orange-500" />
-                    <h3 className="font-semibold text-sm">Upload Data</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Upload your completed Excel file. Data will be validated before import.
-                    </p>
-                    <div className="w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                        {importFile ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="size-5 text-emerald-600" />
-                            <span className="text-sm font-medium">{importFile.name}</span>
-                            <span className="text-xs text-muted-foreground">({(importFile.size / 1024).toFixed(1)} KB)</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-1">
-                            <Upload className="size-5 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">.xlsx files only</span>
-                          </div>
-                        )}
-                        <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportFileSelect} />
-                      </label>
-                    </div>
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!importFile || importValidating} onClick={handleValidate}>
-                      {importValidating ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-                      Upload &amp; Validate
-                    </Button>
-                  </CardContent>
-                </Card>
+            <div className="space-y-4">
+              {/* Step 1: Upload */}
+              <div className="space-y-2">
+                <Label>Upload File (.xlsx)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx"
+                    onChange={handleImportFileSelect}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open("/api/admin/skills/export-template", "_blank")}
+                  >
+                    <FileSpreadsheet className="size-4" />
+                    Download Template
+                  </Button>
+                </div>
+                {importFile && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {importFile.name} ({(importFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
               </div>
 
-              {/* Warning box */}
-              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
-                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#92400E]">
-                  Importing will <strong>ADD</strong> new data to existing skills. To replace all data, use Delete All Data first, then import. Duplicate skills (same Profession + Job Title + Specialty + Category + Skill Name) will be skipped.
-                </p>
-              </div>
+              {/* Step 2: Validate */}
+              {importFile && !importValidationResult && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                  onClick={handleValidate}
+                  disabled={importValidating}
+                >
+                  {importValidating ? (
+                    <><Loader2 className="size-4 animate-spin mr-2" />Validating...</>
+                  ) : (
+                    <><CheckCircle2 className="size-4 mr-2" />Validate File</>
+                  )}
+                </Button>
+              )}
 
-              {/* Validation Results */}
+              {/* Validation Result */}
               {importValidationResult && (
                 <div className="space-y-3">
-                  {importValidationResult.errorRows > 0 && (
-                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#991B1B]">
-                        {importValidationResult.errorRows} row(s) have errors
-                      </p>
-                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
-                        {importValidationResult.errors.slice(0, 10).map((e, i) => (
-                          <p key={i}>Row {e.row}: {e.message}</p>
-                        ))}
-                        {importValidationResult.errors.length > 10 && (
-                          <p>...and {importValidationResult.errors.length - 10} more errors</p>
-                        )}
-                      </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-2xl font-bold">{importValidationResult.totalRows}</p>
+                        <p className="text-xs text-muted-foreground">Total Rows</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-2xl font-bold text-emerald-600">{importValidationResult.validRows}</p>
+                        <p className="text-xs text-muted-foreground">Valid Rows</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-2xl font-bold text-red-600">{importValidationResult.errorRows}</p>
+                        <p className="text-xs text-muted-foreground">Errors</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {importValidationResult.errors.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                      {importValidationResult.errors.map((err, idx) => (
+                        <p key={idx} className="text-xs text-red-600">
+                          Row {err.row}: {err.message}
+                        </p>
+                      ))}
                     </div>
                   )}
+
                   {importValidationResult.validRows > 0 && (
-                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#166534]">
-                        {importValidationResult.validRows} valid row(s) found out of {importValidationResult.totalRows} total
-                      </p>
-                      {importValidationResult.preview.length > 0 && (
-                        <div className="mt-3 overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-xs">Job Title</TableHead>
-                                <TableHead className="text-xs">Specialty</TableHead>
-                                <TableHead className="text-xs">Category</TableHead>
-                                <TableHead className="text-xs">Skill Name</TableHead>
-                                <TableHead className="text-xs">Type</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {importValidationResult.preview.slice(0, 3).map((row, i) => (
-                                <TableRow key={i}>
-                                  <TableCell className="text-xs">{row.jobTitle}</TableCell>
-                                  <TableCell className="text-xs">{row.specialty}</TableCell>
-                                  <TableCell className="text-xs">{row.category}</TableCell>
-                                  <TableCell className="text-xs">{row.skillName}</TableCell>
-                                  <TableCell className="text-xs">{row.questionType}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                      onClick={handleImport}
+                      disabled={importImporting || importValidationResult.validRows === 0}
+                    >
+                      {importImporting ? (
+                        <><Loader2 className="size-4 animate-spin mr-2" />Importing...</>
+                      ) : (
+                        <><Upload className="size-4 mr-2" />Import {importValidationResult.validRows} Rows</>
                       )}
-                      <div className="mt-4 flex gap-2">
-                        <Button
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={handleImport}
-                          disabled={importImporting}
-                        >
-                          {importImporting ? <Loader2 className="size-4 animate-spin" /> : null}
-                          Import {importValidationResult.validRows} Valid Rows
-                        </Button>
-                        <Button variant="ghost" onClick={() => { setImportModalOpen(false); resetImportModal(); }}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
+                    </Button>
                   )}
                 </div>
               )}
-            </>
+            </div>
           ) : (
-            /* Import Success */
-            <div className="flex flex-col items-center py-8 text-center gap-3">
-              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                <Check className="size-8 text-[#166534]" />
+            /* Import Result */
+            <div className="space-y-4 text-center py-4">
+              <CheckCircle2 className="size-12 text-emerald-600 mx-auto" />
+              <h3 className="text-lg font-semibold">Import Complete</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{importResult.imported}</p>
+                    <p className="text-xs text-muted-foreground">Imported</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-2xl font-bold text-amber-600">{importResult.skipped}</p>
+                    <p className="text-xs text-muted-foreground">Skipped (Duplicates)</p>
+                  </CardContent>
+                </Card>
               </div>
-              <h3 className="text-lg font-semibold">{importResult.imported} skills imported successfully</h3>
-              {importResult.skipped > 0 && (
-                <p className="text-sm text-muted-foreground">{importResult.skipped} duplicates skipped</p>
-              )}
-              <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setImportModalOpen(false); resetImportModal(); }}>
-                Close
+              <Button onClick={() => setImportModalOpen(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Done
               </Button>
             </div>
           )}
@@ -1137,221 +1437,146 @@ export default function SuperadminSkillsPage() {
       </Dialog>
 
       {/* ═══════════════════════════════════════════════════════════════
-          Delete All Data Modal
+          Delete All Modal
       ═══════════════════════════════════════════════════════════════ */}
       <Dialog open={deleteAllModalOpen} onOpenChange={setDeleteAllModalOpen}>
         <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete All Skills Data</DialogTitle>
+            <DialogDescription>
+              This will permanently delete ALL checklist templates and skills. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
           {deleteAllStep === 1 ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-center">Delete All Skills Data?</DialogTitle>
-              </DialogHeader>
-              <div className="flex flex-col items-center gap-4">
-                <div className="size-16 rounded-full bg-[#FEF2F2] flex items-center justify-center">
-                  <AlertTriangle className="size-8 text-[#DC2626]" />
-                </div>
-                <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4 w-full">
-                  <p className="text-sm text-[#991B1B] font-medium">This will permanently delete:</p>
-                  <ul className="mt-2 text-sm text-[#991B1B] list-disc list-inside space-y-1">
-                    <li>All professions</li>
-                    <li>All job titles</li>
-                    <li>All specialties</li>
-                    <li>All skill categories</li>
-                    <li>All individual skills</li>
-                    <li>All reference questions</li>
-                  </ul>
-                  <p className="mt-3 text-sm text-[#991B1B] font-semibold">This action cannot be undone.</p>
-                  <p className="mt-1 text-sm text-[#991B1B]">To proceed, you will need to verify with a one-time code.</p>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+                <AlertTriangle className="size-8 text-red-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Warning: Destructive Action</p>
+                  <p className="text-xs text-red-700 mt-1">
+                    This will delete all templates, skills, and their associated data.
+                    You will receive a verification code via email to confirm.
+                  </p>
                 </div>
               </div>
-              <DialogFooter className="gap-2">
-                <Button variant="ghost" onClick={() => setDeleteAllModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
-                  onClick={handleRequestOtp}
-                  disabled={deleteAllSending}
-                >
-                  {deleteAllSending ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Continue to Verification →
-                </Button>
-              </DialogFooter>
-            </>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white w-full"
+                onClick={handleRequestOtp}
+                disabled={deleteAllSending}
+              >
+                {deleteAllSending ? (
+                  <><Loader2 className="size-4 animate-spin mr-2" />Sending Code...</>
+                ) : (
+                  <>Send Verification Code</>
+                )}
+              </Button>
+            </div>
           ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Verify Your Identity</DialogTitle>
-                <DialogDescription>
-                  A one-time verification code has been sent to your registered email.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                  {deleteAllOtp.map((digit, i) => (
-                    <Input
-                      key={i}
-                      ref={(el) => { otpInputRefs.current[i] = el; }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(i, e.target.value.replace(/\D/g, ""))}
-                      className="w-12 h-14 text-center text-2xl font-bold"
-                      autoFocus={i === 0}
-                    />
-                  ))}
-                </div>
-                <div className="text-center">
-                  <button
-                    className="text-sm text-emerald-600 hover:underline disabled:opacity-50 disabled:no-underline"
-                    onClick={handleRequestOtp}
-                    disabled={resendCooldown > 0 || deleteAllSending}
-                  >
-                    {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : "Resend Code"}
-                  </button>
-                </div>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Enter the 6-digit verification code sent to your email.
+              </p>
+              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                {deleteAllOtp.map((digit, idx) => (
+                  <Input
+                    key={idx}
+                    ref={(el) => { otpInputRefs.current[idx] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    className="w-12 h-12 text-center text-lg font-bold"
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2">
                 <Button
-                  className="w-full bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleRequestOtp}
+                  disabled={resendCooldown > 0 || deleteAllSending}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
                   onClick={handleDeleteAll}
                   disabled={deleteAllOtp.join("").length !== 6 || deleteAllDeleting}
                 >
-                  {deleteAllDeleting ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Permanently Delete All Data
+                  {deleteAllDeleting ? (
+                    <><Loader2 className="size-4 animate-spin mr-2" />Deleting...</>
+                  ) : (
+                    "Confirm Delete All"
+                  )}
                 </Button>
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          Preview Checklist Modal
-      ═══════════════════════════════════════════════════════════════ */}
-      {previewModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setPreviewModalOpen(false)}>
-          <div className="bg-white rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">Checklist Preview</h2>
-              <button onClick={() => setPreviewModalOpen(false)} className="size-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
-                <X className="size-5" />
-              </button>
+      {/* ── Preview Checklist Modal ────────────────────────────────── */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Checklist Preview</DialogTitle>
+            <DialogDescription>
+              {previewData
+                ? `${previewData.template.profession} — ${previewData.template.specialty}`
+                : "Loading preview..."}
+            </DialogDescription>
+          </DialogHeader>
+          {previewLoading ? (
+            <div className="space-y-4 py-4">
+              <Loader2 className="size-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="text-center text-sm text-muted-foreground">Loading preview...</p>
             </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {previewLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          ) : previewData ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">Profession</p>
+                  <p className="text-sm font-medium">{previewData.template.profession}</p>
                 </div>
-              ) : previewData ? (
-                <div className="space-y-6">
-                  {/* Progress bar */}
-                  <Progress value={0} className="h-2" />
-
-                  {/* Sticky checklist name */}
-                  <div className="bg-gray-50 rounded-lg p-3 sticky top-0 z-10">
-                    <h3 className="font-semibold text-sm text-center">{previewData.template.name}</h3>
-                    <p className="text-xs text-center text-muted-foreground">
-                      {previewData.template.profession} — {previewData.template.specialty}
-                      {previewData.template.jobTitle ? ` — ${previewData.template.jobTitle}` : ""}
-                    </p>
-                  </div>
-
-                  {/* Intro card */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-sm text-muted-foreground">
-                        Please rate each skill according to your level of experience. This checklist helps evaluate professional competencies.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Rating scale legend */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
-                        <span>No theory / experience</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
-                        <span>Limited Experience</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
-                        <span>Experienced</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
-                        <span>Proficient</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Skills grouped by category */}
-                  {previewData.categories.map((cat) => (
-                    <div key={cat.category}>
-                      <h4 className="font-semibold text-sm text-[#166534] mb-2 border-b pb-1">{cat.category}</h4>
-                      <div className="space-y-2">
-                        {cat.skills.map((skill) => (
-                          <div key={skill.id} className="flex items-center justify-between py-2 border-b border-gray-50">
-                            <span className="text-sm flex-1">{skill.skillName}</span>
-                            {skill.questionType === "rating_1_4" ? (
-                              <div className="flex gap-2">
-                                {[1, 2, 3, 4].map((r) => (
-                                  <button key={r} className={getRatingBtnClass(r, null)}>{r}</button>
-                                ))}
-                                {skill.hasNaOption && (
-                                  <button className="w-10 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-xs font-medium hover:border-gray-400">
-                                    N/A
-                                  </button>
-                                )}
-                              </div>
-                            ) : skill.questionType === "yes_no" ? (
-                              <div className="flex gap-2">
-                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-emerald-600 hover:text-emerald-600">Yes</button>
-                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-red-600 hover:text-red-600">No</button>
-                              </div>
-                            ) : (
-                              <Textarea placeholder="Enter response..." disabled className="w-48 h-10 text-sm" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Signature section */}
-                  <Card className="border-dashed">
-                    <CardContent className="p-4">
-                      <Label className="text-sm font-medium">Digital Signature</Label>
-                      <div className="mt-2 h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-muted-foreground">
-                        Signature area (disabled in preview)
-                      </div>
-                      <Input placeholder="Type your full name" disabled className="mt-2" />
-                    </CardContent>
-                  </Card>
+                <div>
+                  <p className="text-xs text-muted-foreground">Specialty</p>
+                  <p className="text-sm font-medium">{previewData.template.specialty}</p>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  Select a template and click Preview
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Skills</p>
+                  <p className="text-sm font-medium">{previewData.totalSkills}</p>
                 </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            {previewData && (
-              <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-sm text-muted-foreground">
-                <span>{previewData.totalCategories} categories — {previewData.totalSkills} total skills</span>
-                <span>This is how candidates see this checklist</span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Categories</p>
+                  <p className="text-sm font-medium">{previewData.totalCategories}</p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+
+              {previewData.categories.map((cat) => (
+                <div key={cat.category} className="space-y-2">
+                  <h4 className="text-sm font-semibold text-emerald-800 border-b pb-1">{cat.category}</h4>
+                  <div className="space-y-1">
+                    {cat.skills.map((skill) => (
+                      <div key={skill.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50">
+                        <span className="text-sm">{skill.skillName}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px]">
+                            {skill.questionType === "rating_1_4" ? "1-4" : skill.questionType === "yes_no" ? "Y/N" : "Text"}
+                          </Badge>
+                          {skill.hasNaOption && <Badge variant="outline" className="text-[10px]">N/A</Badge>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

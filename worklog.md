@@ -1,97 +1,43 @@
----
-Task ID: 1
-Agent: Main Agent
-Task: Fix AI Resume Assistant 502 error on Vercel
+# Skills Pages Task Worklog
 
-Work Log:
-- Investigated root cause: `internal-api.z.ai` resolves to private IPs (172.25.x.x) that neither Vercel's serverless functions nor the user's browser can reach from the public internet
-- Created `/api/ai/proxy` route — server-side proxy that forwards AI requests to ZAI API (works in local dev, gives clear error on Vercel)
-- Updated `lib/ai-client.ts` — client now calls `/api/ai/proxy` instead of trying to reach `internal-api.z.ai` directly from the browser
-- Flipped resume upload parsing order: Affinda is now PRIMARY (works on Vercel), ZAI Vision is fallback
-- Enhanced `lib/affinda.ts` with skill suggestion and job title suggestion capabilities using Affinda's public API
-- Created `/api/ai/affinda` route for Affinda-backed AI features (skill suggestions, job title suggestions) that work on Vercel
-- Updated `/api/ai/resume/route.ts` to try Affinda first for skill suggestions, then fall back to ZAI
-- Updated debug endpoint to show both ZAI and Affinda status, with private IP detection
-- Updated CSP to include `https://api.affinda.com` and `https://*.affinda.com`
-- Build verified successfully
+## Task ID: skills-pages
 
-Stage Summary:
-- Resume PARSING now works on Vercel via Affinda (publicly accessible API)
-- Skill SUGGESTIONS now work on Vercel via Affinda
-- AI chat/generation (summaries, improvements, chat) requires ZAI API which is only reachable in local dev — on Vercel these features will show a clear error message
-- The AFFINDA_API_KEY must be set on Vercel for these features to work
+## Summary
+Created 5 new pages and redesigned 1 existing page for the MyZipVault superadmin dashboard under the Skills Checklist section, along with 7 new API routes to support them.
 
----
-Task ID: companies-improvements
-Agent: Main Agent
-Task: Fix errors and implement major improvements to the Companies section
+## Files Created
 
-Work Log:
-- Analyzed 2 screenshots showing errors: "Action failed - Failed to perform action" and "Failed to load member profile"
-- Read all companies-related files (page.tsx, API routes, member route)
-- Identified root causes: generic catch-all error messages, Swap Email requiring raw User ID input, missing member status indicators
-- Rewrote entire companies page with comprehensive improvements
-- Added suspend/activate member API actions with seat limit checks
-- Improved API error messages (replaced generic "Failed to perform action" with specific error messages)
-- Fixed seats counting to only count active members
-- Built successfully with zero errors
+### API Routes
+1. `src/app/api/superadmin/skills/overview/route.ts` — GET endpoint for skills overview stats, recent activity, flags/alerts, and requests by profession
+2. `src/app/api/superadmin/skills/recruiters/route.ts` — GET endpoint for recruiters with checklist request stats and history
+3. `src/app/api/superadmin/skills/users/route.ts` — GET endpoint for candidates with checklist response data
+4. `src/app/api/superadmin/skills/users/[id]/route.ts` — GET/PUT/DELETE endpoints for individual candidate checklist response (detail view, edit ratings, delete)
+5. `src/app/api/superadmin/skills/users/[id]/extend/route.ts` — PUT endpoint to extend expiry date of a checklist response
+6. `src/app/api/superadmin/audit-logs/route.ts` — GET endpoint for skills-related audit logs with filtering and pagination
 
-Stage Summary:
-- Fixed Swap Email dialog: replaced raw User ID input with member selection dropdown
-- Fixed Member Profile error: added better error handling with retry button and specific error messages
-- Fixed API error messages: replaced generic catch-all with specific error details
-- Added search/filter bar with company name + member search and BAA status filter
-- Added 4 summary stats cards (Companies, Total Credits, Seats Used, BAA Signed)
-- Consolidated 7 icon-only action buttons into a "Manage" dropdown menu
-- Added tooltips to member action buttons
-- Added account status badges (Active/Suspended) for each member
-- Added Suspend/Activate member functionality with confirmation dialog
-- Added relative time display for last activity
-- Added "Custom pricing" indicator for companies with pricing notes
-- Added validation for BAA signed-by name when status is "Signed"
-- Added seat limit validation (can't set below current usage)
-- Added credit ledger balance display in header
-- Added transaction type badges for admin_adjustment_add/deduct
-- Added no-results state with clear filters button
-- Improved company avatar: shows first 2 letters instead of just 1
----
-Task ID: 1
-Agent: Main
-Task: Build all missing features: Superadmin Skills DB page, Superadmin Reference Questions page, Reference Questions Import/Export, Candidate Checklists page
+### Pages
+1. `src/app/(superadmin)/superadmin/skills/overview/page.tsx` — Skills Checklist Overview dashboard with stats cards, recent activity, flags/alerts, quick actions, and requests by profession chart
+2. `src/app/(superadmin)/superadmin/skills/recruiters/page.tsx` — Recruiters page with expandable rows showing request history, search/filter, flag functionality
+3. `src/app/(superadmin)/superadmin/skills/companies/page.tsx` — Companies page focused on checklist metrics with stats and table
+4. `src/app/(superadmin)/superadmin/skills/audit-logs/page.tsx` — Audit Logs page with color-coded action badges, filtering by action/entity type/date, and pagination
+5. `src/app/(superadmin)/superadmin/skills/users/page.tsx` — Candidates page with view/extend/edit/delete dialogs for each checklist response
 
-Work Log:
-- Added "Skills DB" and "Ref Questions" navigation items to superadmin sidebar
-- Created /superadmin/skills/page.tsx with full Skills management (2 tabs: Professions & Specialties, Skills)
-- Created /superadmin/references/page.tsx with full Reference Questions management + Import/Export/Delete All/Preview
-- Created 4 new Reference Questions API endpoints: export-template, export-data, validate-import, import
-- Added Reference Questions Import/Export UI to admin content page (Tab 3)
-- Created /api/candidate/checklists/route.ts (GET - fetch all checklist requests)
-- Created /api/candidate/checklists/submit/route.ts (POST - save ratings + submit with signature)
-- Created /candidate/checklists/page.tsx with interactive checklist form, auto-save, digital signature
-- Fixed TypeScript error in checklists page (added textValue to ExistingRating interface)
+## Files Modified
 
-Stage Summary:
-- All 4 missing items are now built:
-  1. Superadmin Skills DB page at /superadmin/skills (full feature parity with admin)
-  2. Superadmin Reference Questions page at /superadmin/references (with import/export/delete-all/preview)
-  3. Reference Questions Import/Export backend + UI in both admin and superadmin
-  4. Candidate /checklists page rebuilt with interactive form, auto-save, digital signature
-- All TypeScript checks pass with zero new errors
+1. `src/components/sidebars/superadmin-sidebar.tsx` — Added "Skills Checklist" navigation group with 6 items (Overview, Skills Database, Recruiters, Companies, Candidates, Audit Logs)
+2. `src/lib/icons.ts` — Added `Flag` icon import/export for the recruiters page flag feature
+3. `src/app/(superadmin)/superadmin/skills/page.tsx` — **MAJOR REDESIGN** from tab-based layout to master-detail panel layout:
+   - Left panel (1/3 width): Job Titles list with search, add, rename, delete
+   - Right panel (2/3 width): Selected job title details with specialties pills, collapsible skill categories, and full CRUD
+   - Preserved all existing functionality: import/export, delete-all with OTP, preview checklist
 
----
-Task ID: ref-questions-delete-api
-Agent: Main Agent
-Task: Create dedicated Reference Questions OTP + Delete All API endpoints and fix references page to call correct endpoints
-
-Work Log:
-- Discovered the references page was incorrectly calling /api/admin/skills/request-delete-otp and /api/admin/skills/delete-all (which deletes ALL skills+templates+reference questions, not just reference questions)
-- Created /api/admin/reference-questions/request-delete-otp/route.ts (mirrors skills version but uses setting_key "delete_ref_questions_otp")
-- Created /api/admin/reference-questions/delete-all/route.ts (only deletes ReferenceQuestion records, not skills or templates)
-- Fixed references page to call /api/admin/reference-questions/request-delete-otp and /api/admin/reference-questions/delete-all
-- Updated toast message to say "All reference questions have been permanently deleted" instead of "All data"
-- Build verified with zero errors
-
-Stage Summary:
-- Reference Questions now has its own scoped Delete All functionality (separate from Skills)
-- OTP uses separate platform_setting key "delete_ref_questions_otp" so both delete flows can coexist
-- All 5 previously identified items are now fully implemented and working
+## Key Design Decisions
+- All pages use "use client" components
+- Consistent emerald green (#166534) primary action color
+- Stats cards with left border color coding
+- Tables with max-height and custom scrollbar styling
+- Loading skeletons for all data-fetching pages
+- Graceful empty state handling
+- All API routes include super_admin role verification
+- Audit logging for all destructive operations
+- The Skills Database redesign groups data by: Profession → Specialty → Category → Skills

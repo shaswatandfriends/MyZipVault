@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -36,6 +36,13 @@ import {
   ScrollText,
   Trash2,
   XCircle,
+  ChevronDown,
+  Eye,
+  Database,
+  Activity,
+  UserCheck,
+  ClipboardList,
+  DollarSign,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -61,12 +68,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { UserRole } from "@/lib/types";
 
-// ─── Nav Item Type ────────────────────────────────────────────────────
+// ─── Nav Item Types ────────────────────────────────────────────────────
 interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
   adminOnly?: boolean;
+}
+
+interface NavSection {
+  title: string; // e.g. "OVERVIEW", "MANAGE", "CONFIGURATION"
+  items: NavItem[];
+}
+
+interface NavGroup {
+  title: string; // e.g. "Skills Checklist", "Reference"
+  icon: LucideIcon;
+  sections: NavSection[];
 }
 
 // ─── Role Display Labels ─────────────────────────────────────────────
@@ -109,15 +127,72 @@ const platformAdminNav: NavItem[] = [
   { title: "Reminders", href: "/admin/reminders", icon: Bell },
 ];
 
-// ─── Super Admin Nav Items ───────────────────────────────────────────
-const superAdminNav: NavItem[] = [
+// ─── Super Admin: Skills Checklist Group ──────────────────────────────
+const skillsChecklistGroup: NavGroup = {
+  title: "Skills Checklist",
+  icon: ClipboardCheck,
+  sections: [
+    {
+      title: "OVERVIEW",
+      items: [
+        { title: "Overview", href: "/superadmin/skills/overview", icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: "MANAGE",
+      items: [
+        { title: "All Recruiters", href: "/superadmin/skills/recruiters", icon: Users },
+        { title: "Companies", href: "/superadmin/skills/companies", icon: Building2 },
+      ],
+    },
+    {
+      title: "CONFIGURATION",
+      items: [
+        { title: "Skills Database", href: "/superadmin/skills", icon: Database },
+        { title: "Audit Logs", href: "/superadmin/skills/audit-logs", icon: Activity },
+        { title: "Users", href: "/superadmin/skills/users", icon: UserCheck },
+      ],
+    },
+  ],
+};
+
+// ─── Super Admin: Reference Group ─────────────────────────────────────
+const referenceGroup: NavGroup = {
+  title: "Reference",
+  icon: ScrollText,
+  sections: [
+    {
+      title: "OVERVIEW",
+      items: [
+        { title: "Overview", href: "/superadmin/references/overview", icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Ref Requests", href: "/superadmin/references/requests", icon: ScrollText },
+        { title: "Ref Responses", href: "/superadmin/references/responses", icon: Eye },
+        { title: "All Candidates", href: "/superadmin/references/candidates", icon: Users },
+      ],
+    },
+    {
+      title: "CONFIGURATION",
+      items: [
+        { title: "Ref Questions", href: "/superadmin/references", icon: ClipboardList },
+        { title: "Ref Forms", href: "/superadmin/references/forms", icon: Pencil },
+        { title: "Audit Logs", href: "/superadmin/references/audit-logs", icon: Activity },
+      ],
+    },
+  ],
+};
+
+// ─── Super Admin: Flat Nav Items (non-grouped) ───────────────────────
+const superAdminFlatNav: NavItem[] = [
   { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
-  { title: "Users", href: "/superadmin/users", icon: Users },
-  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
+];
+
+const superAdminBottomNav: NavItem[] = [
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
-  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
-  { title: "Skills DB", href: "/superadmin/skills", icon: ClipboardCheck },
-  { title: "Ref Questions", href: "/superadmin/references", icon: ScrollText },
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
@@ -126,9 +201,18 @@ const superAdminNav: NavItem[] = [
   { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
+  { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
   { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
 ];
+
+// ─── Super Admin Groups ──────────────────────────────────────────────
+const superAdminGroups: NavGroup[] = [skillsChecklistGroup, referenceGroup];
+
+// ─── Get all hrefs for a group (for active state detection) ──────────
+function getGroupHrefs(group: NavGroup): string[] {
+  return group.sections.flatMap((s) => s.items.map((i) => i.href));
+}
 
 // ─── Get Nav Items for a Role ────────────────────────────────────────
 function getNavItems(role: UserRole): NavItem[] {
@@ -142,7 +226,7 @@ function getNavItems(role: UserRole): NavItem[] {
     case "platform_admin":
       return platformAdminNav;
     case "super_admin":
-      return superAdminNav;
+      return superAdminFlatNav; // only used for flat items
     default:
       return [];
   }
@@ -194,7 +278,6 @@ function NotificationBell({ role }: { role: UserRole }) {
         .catch(() => {});
     };
 
-    // Schedule initial fetch via setTimeout to avoid synchronous setState in effect
     const initialTimer = setTimeout(doFetch, 0);
     const interval = setInterval(doFetch, 30000);
 
@@ -300,6 +383,79 @@ function NotificationBell({ role }: { role: UserRole }) {
   );
 }
 
+// ─── Collapsible Nav Group Component ─────────────────────────────────
+function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: string }) {
+  const allHrefs = useMemo(() => getGroupHrefs(group), [group]);
+  const isAnyActive = allHrefs.some(
+    (href) => pathname === href || pathname.startsWith(href + "/")
+  );
+  const [isExpanded, setIsExpanded] = useState(isAnyActive);
+
+  // Auto-expand when a child becomes active
+  useEffect(() => {
+    if (isAnyActive) setIsExpanded(true);
+  }, [isAnyActive]);
+
+  return (
+    <div className="space-y-0.5">
+      {/* Group header - clickable to toggle */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+          isAnyActive
+            ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+            : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+        )}
+      >
+        <group.icon className="size-5 shrink-0" />
+        <span className="flex-1 text-left">{group.title}</span>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 transition-transform duration-200",
+            isExpanded ? "rotate-180" : "rotate-0"
+          )}
+        />
+      </button>
+
+      {/* Collapsible content */}
+      {isExpanded && (
+        <div className="ml-2 pl-4 border-l border-[#E5E7EB] space-y-2">
+          {group.sections.map((section) => (
+            <div key={section.title}>
+              {/* Section header */}
+              <p className="px-3 pt-2 pb-1 text-[10px] font-bold tracking-widest text-[#9CA3AF] uppercase">
+                {section.title}
+              </p>
+              {/* Section items */}
+              {section.items.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ease-in-out",
+                      isActive
+                        ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                        : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                    )}
+                  >
+                    <item.icon className="size-4 shrink-0" />
+                    <span>{item.title}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main AppSidebar Component ───────────────────────────────────────
 export function AppSidebar() {
   const { user, role } = useAuth();
@@ -307,7 +463,8 @@ export function AppSidebar() {
 
   if (!role) return null;
 
-  const navItems = getNavItems(role);
+  const isSuperAdmin = role === "super_admin";
+  const navItems = isSuperAdmin ? superAdminFlatNav : getNavItems(role);
   const label = roleLabels[role];
 
   const initials =
@@ -345,6 +502,7 @@ export function AppSidebar() {
         {/* ── Navigation Section ── */}
         <ScrollArea className="flex-1 px-3 py-3">
           <nav className="flex flex-col gap-1">
+            {/* Flat nav items (Dashboard for superadmin, all items for other roles) */}
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -365,6 +523,43 @@ export function AppSidebar() {
                 </Link>
               );
             })}
+
+            {/* Superadmin: Collapsible Groups */}
+            {isSuperAdmin && (
+              <>
+                <div className="my-1.5 h-px bg-[#E5E7EB]" />
+                {superAdminGroups.map((group) => (
+                  <NavGroupSection
+                    key={group.title}
+                    group={group}
+                    pathname={pathname}
+                  />
+                ))}
+                <div className="my-1.5 h-px bg-[#E5E7EB]" />
+
+                {/* Bottom nav items for superadmin */}
+                {superAdminBottomNav.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                        isActive
+                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                      )}
+                    >
+                      <item.icon className="size-5 shrink-0" />
+                      <span>{item.title}</span>
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
         </ScrollArea>
 
@@ -420,8 +615,6 @@ export function AppSidebar() {
                 <AlertDialogAction
                   className="bg-[#166534] text-white hover:bg-[#14532D]"
                   onClick={async () => {
-                    // Determine the correct redirect URL based on current role
-                    // (Do this BEFORE signing out, while we still know the role)
                     let redirectUrl = "/login";
                     if (role === "super_admin") {
                       redirectUrl = "/superadmin-login";
@@ -430,9 +623,6 @@ export function AppSidebar() {
                     } else if (role === "platform_admin") {
                       redirectUrl = "/admin-login";
                     }
-
-                    // Clear the NextAuth session and redirect to role-appropriate login
-                    // Audit logging is handled server-side by the events.signOut callback in auth.ts
                     await signOut({ callbackUrl: redirectUrl });
                   }}
                 >

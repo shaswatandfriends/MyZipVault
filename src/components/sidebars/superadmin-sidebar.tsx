@@ -21,6 +21,15 @@ import {
   ToggleLeft,
   PencilRuler,
   CalendarDays,
+  ClipboardList,
+  Eye,
+  UserCheck,
+  ScrollText,
+  Database,
+  FileSignature,
+  Activity,
+  Trash2,
+  ListChecks,
 } from "@/lib/icons";
 
 import {
@@ -47,6 +56,25 @@ const coreNavItems = [
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Admins", href: "/superadmin/admins", icon: ShieldCheck },
   { title: "Calendar", href: "/superadmin/calendar", icon: CalendarDays },
+];
+
+const skillsNavItems = [
+  { title: "Overview", href: "/superadmin/skills/overview", icon: Eye },
+  { title: "Skills Database", href: "/superadmin/skills", icon: Database },
+  { title: "Recruiters", href: "/superadmin/skills/recruiters", icon: UserCheck },
+  { title: "Companies", href: "/superadmin/skills/companies", icon: Building2 },
+  { title: "Candidates", href: "/superadmin/skills/users", icon: Users },
+  { title: "Audit Logs", href: "/superadmin/skills/audit-logs", icon: ScrollText },
+];
+
+const referencesNavItems = [
+  { title: "Overview", href: "/superadmin/references/overview", icon: Eye },
+  { title: "Deletion Requests", href: "/superadmin/references/requests", icon: Trash2 },
+  { title: "Responses", href: "/superadmin/references/responses", icon: FileSignature },
+  { title: "Candidates", href: "/superadmin/references/candidates", icon: Users },
+  { title: "Form Config", href: "/superadmin/references/forms", icon: ListChecks },
+  { title: "Questions", href: "/superadmin/references", icon: Database },
+  { title: "Audit Logs", href: "/superadmin/references/audit-logs", icon: ScrollText },
 ];
 
 const systemNavItems = [
@@ -114,6 +142,68 @@ export function SuperadminSidebar() {
             <SidebarMenu>
               {coreNavItems.map((item) => {
                 const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                        isActive
+                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="size-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[#9CA3AF]">Skills Checklist</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {skillsNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                        isActive
+                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="size-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[#9CA3AF]">References</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {referencesNavItems.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/superadmin/references" && pathname.startsWith(item.href));
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
