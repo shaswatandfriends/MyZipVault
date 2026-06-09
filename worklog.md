@@ -28,3 +28,27 @@ Stage Summary:
 - Template cards link to /recruiter/vaultsign/new?template={id} for quick document creation
 - Saved drafts appear in "Your Documents" section with Send action
 - New Document wizard auto-selects template when coming from dashboard
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix remaining VaultSign audit bugs (3 of 12 that were still unfixed)
+
+Work Log:
+- Reviewed all 12 original audit bugs against current codebase
+- Found 9 of 12 already fixed in prior sessions (bugs 2-10)
+- Fixed Bug 1 (Critical): Party 1 sender now stored as VaultSignSigner with auto-signed status
+- Fixed Bug 11 (Moderate): Added race condition protection to decline route using $transaction with re-check
+- Fixed Bug 12 (Minor): Added draft status check to candidate detail API
+- Updated allSigners in new/page.tsx and upload/page.tsx to include Party 1 for field placement
+- Updated send route to exclude Party 1 from status updates and email sends
+- Updated candidate APIs to exclude party_1 when finding candidate's signer record
+- Updated step 3 validation to only require fields for recipients, not the sender
+- Default activeSignerTab changed to index 1 (first recipient) instead of 0 (sender)
+- Build passed successfully, committed and pushed
+
+Stage Summary:
+- All 12 original audit bugs are now fixed
+- Party 1 (sender) is properly tracked as an auto-signed signer throughout the system
+- Decline route has race condition protection matching the submit route's pattern
+- Candidate APIs properly block draft documents and exclude sender from signer lookups
