@@ -249,6 +249,7 @@ export default function VaultSignSigningPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfTotalPages, setPdfTotalPages] = useState(1);
+  const [activeFieldInput, setActiveFieldInput] = useState<SignField | null>(null);
 
   const fetchSigningData = useCallback(async () => {
     try {
@@ -392,6 +393,21 @@ export default function VaultSignSigningPage() {
     }
   };
 
+  const handleFieldClick = (field: SignField) => {
+    if (field.type === "signature") {
+      setSignatureModalField(field.id);
+    } else if (field.type === "checkbox") {
+      setFieldValues((prev) => ({
+        ...prev,
+        [field.id]: prev[field.id] === "checked" ? "" : "checked",
+      }));
+    } else if (field.type === "date" || field.type === "email") {
+      // Read-only fields — nothing to edit
+    } else {
+      setActiveFieldInput(field);
+    }
+  };
+
   // ─── Error States ────────────────────────────────────────────────
   if (loading) {
     return (
@@ -469,11 +485,54 @@ export default function VaultSignSigningPage() {
         <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4">
           <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider">Document</h3>
 
-          {/* PDF Viewer */}
+          {/* PDF Viewer with Fields Overlay */}
           {data.document_url && (
             <div className="space-y-2">
               <div className="overflow-auto border border-[#E5E7EB] rounded-xl bg-[#F8F7F4]">
-                <canvas id="sign-pdf-canvas" className="block mx-auto" />
+                <div className="relative inline-block">
+                  <canvas id="sign-pdf-canvas" className="block" />
+                  {/* Overlay sign fields at their positions */}
+                  {data.sign_fields.filter((f) => f.page === pdfPage).map((field) => (
+                    <div
+                      key={field.id}
+                      className="absolute rounded cursor-pointer group hover:shadow-md transition-shadow"
+                      style={{
+                        left: `${field.x}%`,
+                        top: `${field.y}%`,
+                        width: `${field.width}%`,
+                        height: `${field.height}%`,
+                        backgroundColor: field.type === "signature" && signatureData
+                          ? "rgba(22, 101, 52, 0.06)"
+                          : field.type === "checkbox" && fieldValues[field.id] === "checked"
+                          ? "rgba(22, 101, 52, 0.06)"
+                          : fieldValues[field.id]
+                          ? "rgba(22, 101, 52, 0.06)"
+                          : "rgba(22, 101, 52, 0.08)",
+                        border: field.type === "signature" && signatureData
+                          ? "1.5px solid #166534"
+                          : fieldValues[field.id] || (field.type === "checkbox" && fieldValues[field.id] === "checked")
+                          ? "1.5px solid #166534"
+                          : "1.5px dashed #166534",
+                      }}
+                      onClick={() => handleFieldClick(field)}
+                    >
+                      <p className="text-[8px] px-1 truncate leading-tight text-[#166534]">{field.label}</p>
+                      {field.type === "signature" && signatureData && (
+                        <img src={signatureData.image_base64} alt="Signature" className="w-full h-[60%] object-contain" />
+                      )}
+                      {field.type !== "signature" && field.type !== "checkbox" && fieldValues[field.id] && (
+                        <p className="text-[9px] px-1 truncate text-[#111827]">{fieldValues[field.id]}</p>
+                      )}
+                      {field.type === "checkbox" && (
+                        <div className="flex items-center justify-center h-full">
+                          {fieldValues[field.id] === "checked" ? (
+                            <Check className="size-4 text-[#166534]" />
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
               {pdfTotalPages > 1 && (
                 <div className="flex items-center justify-center gap-2">
@@ -497,89 +556,33 @@ export default function VaultSignSigningPage() {
             </div>
           )}
 
-          {/* Interactive Fields */}
+          {/* Field Legend - shows which fields still need filling */}
           {data.sign_fields.length > 0 && (
-            <div className="space-y-4 max-w-lg mx-auto">
-              <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider text-center">Fill in Your Fields</h3>
-              {data.sign_fields.map((field) => (
-                <div key={field.id} className="space-y-1">
-                  <label className="text-sm font-medium text-[#111827]">
-                    {field.label}
-                    {field.required && <span className="text-[#DC2626] ml-1">*</span>}
-                  </label>
-
-                  {field.type === "signature" && (
-                    <div>
-                      {signatureData ? (
-                        <div className="border-2 border-[#166534] rounded-xl p-3 bg-[#DCFCE7]/10">
-                          <img src={signatureData.image_base64} alt="Signature" className="h-16" />
-                          <button onClick={() => { setSignatureData(null); setSignatureModalField(field.id); }} className="text-xs text-[#166534] mt-1">
-                            Change
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setSignatureModalField(field.id)}
-                          className="w-full py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl text-sm text-[#9CA3AF] hover:border-[#166534] hover:text-[#166534] transition-all"
-                        >
-                          Click to sign
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {field.type === "date" && (
-                    <Input value={fieldValues[field.id] || new Date().toLocaleDateString()} readOnly className="border-[#E5E7EB] bg-[#F8F7F4]" />
-                  )}
-
-                  {field.type === "full_name" && (
-                    <Input
-                      value={fieldValues[field.id] || ""}
-                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                      className="border-[#E5E7EB]"
-                      placeholder={field.label}
-                    />
-                  )}
-
-                  {field.type === "initials" && (
-                    <Input
-                      value={fieldValues[field.id] || ""}
-                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                      className="border-[#E5E7EB] max-w-[120px]"
-                      placeholder="J.S."
-                    />
-                  )}
-
-                  {field.type === "email" && (
-                    <Input
-                      value={fieldValues[field.id] || ""}
-                      readOnly
-                      className="border-[#E5E7EB] bg-[#F8F7F4]"
-                    />
-                  )}
-
-                  {field.type === "text" && (
-                    <Input
-                      value={fieldValues[field.id] || ""}
-                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                      className="border-[#E5E7EB]"
-                      placeholder={field.label}
-                    />
-                  )}
-
-                  {field.type === "checkbox" && (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={fieldValues[field.id] === "checked"}
-                        onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.checked ? "checked" : "" }))}
-                        className="accent-[#166534] size-4"
-                      />
-                      <span className="text-sm text-[#111827]">{field.label}</span>
-                    </label>
-                  )}
-                </div>
-              ))}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-[#9CA3AF] uppercase tracking-wider">Fields to Complete</h3>
+              <div className="flex flex-wrap gap-2">
+                {data.sign_fields.map((field) => {
+                  const isFilled = field.type === "signature" ? !!signatureData : !!(fieldValues[field.id]?.trim());
+                  return (
+                    <button
+                      key={field.id}
+                      onClick={() => {
+                        setPdfPage(field.page);
+                        handleFieldClick(field);
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isFilled
+                          ? "bg-[#DCFCE7] text-[#166534] border border-[#166534]/20"
+                          : "bg-[#F3F4F6] text-[#6B7280] border border-[#E5E7EB] hover:border-[#166534]/50"
+                      }`}
+                    >
+                      {isFilled ? <Check className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
+                      <span>{field.label}</span>
+                      {field.required && !isFilled && <span className="text-[#DC2626]">*</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -668,6 +671,44 @@ export default function VaultSignSigningPage() {
               <Button variant="ghost" onClick={() => setShowDeclineModal(false)} className="flex-1">Cancel</Button>
               <Button onClick={handleDecline} disabled={submitting} className="flex-1 bg-[#DC2626] hover:bg-[#B91C1C] text-white">
                 {submitting ? <Loader2 className="size-4 animate-spin" /> : "Decline Document"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Field Input Popover */}
+      {activeFieldInput && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setActiveFieldInput(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div>
+              <h3 className="text-sm font-semibold text-[#111827]">{activeFieldInput.label}</h3>
+              <p className="text-xs text-[#6B7280] capitalize mt-0.5">{activeFieldInput.type.replace(/_/g, " ")} field</p>
+            </div>
+
+            {activeFieldInput.type === "checkbox" ? (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fieldValues[activeFieldInput.id] === "checked"}
+                  onChange={(e) => setFieldValues((prev) => ({ ...prev, [activeFieldInput.id]: e.target.checked ? "checked" : "" }))}
+                  className="accent-[#166534] size-4"
+                />
+                <span className="text-sm text-[#111827]">{activeFieldInput.label}</span>
+              </label>
+            ) : (
+              <Input
+                value={fieldValues[activeFieldInput.id] || ""}
+                onChange={(e) => setFieldValues((prev) => ({ ...prev, [activeFieldInput.id]: e.target.value }))}
+                className="border-[#E5E7EB]"
+                placeholder={`Enter ${activeFieldInput.label.toLowerCase()}`}
+                autoFocus
+              />
+            )}
+
+            <div className="flex gap-2">
+              <Button onClick={() => setActiveFieldInput(null)} className="flex-1 bg-[#166534] hover:bg-[#14532D]">
+                Done
               </Button>
             </div>
           </div>

@@ -166,7 +166,7 @@ function DraggableField({
         {signerName}
       </p>
       <p className="text-[10px] font-medium text-[#111827] px-1 truncate capitalize leading-tight">
-        {field.icon || ""} {field.label}
+        {fieldTypes.find((ft) => ft.type === field.type)?.icon || ""} {field.label}
       </p>
       {isSelected && (
         <button
@@ -214,6 +214,7 @@ export default function NewVaultSignDocument() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
+  const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
 
   // Step 4
   const [legalConsent, setLegalConsent] = useState(false);
@@ -869,7 +870,7 @@ export default function NewVaultSignDocument() {
                 onClick={() => setSelectedField(null)}
               >
                 {pdfUrl ? (
-                  <div className="relative inline-block min-w-full">
+                  <div ref={pdfPageWrapperRef} id="pdf-page-wrapper" className="relative inline-block">
                     <canvas id="pdf-canvas" className="block" />
                     {/* Placed Fields Overlay */}
                     {signFields.filter((f) => f.page === currentPage).map((f) => {
@@ -883,7 +884,7 @@ export default function NewVaultSignDocument() {
                           signerColor={signerColor}
                           signerIdx={signerIdx}
                           isSelected={selectedField === f.id}
-                          containerRef={pdfContainerRef}
+                          containerRef={pdfPageWrapperRef}
                           onSelect={() => setSelectedField(f.id)}
                           onMove={handleMoveField}
                           onRemove={handleRemoveField}

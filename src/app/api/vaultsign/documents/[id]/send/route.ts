@@ -86,9 +86,11 @@ export async function POST(
     let signersToEmail: typeof document.signers;
 
     if (document.signing_order === "sequential") {
-      // Only send to the first signer
+      // Only send to the signer with the lowest signing_order_position
+      // (signers start at position 2 since Party 1 is the sender, not stored as a signer)
+      const minPosition = Math.min(...document.signers.map((s: any) => s.signing_order_position));
       signersToEmail = document.signers.filter(
-        (s) => s.signing_order_position === 1
+        (s: any) => s.signing_order_position === minPosition
       );
     } else {
       // Parallel: send to all signers

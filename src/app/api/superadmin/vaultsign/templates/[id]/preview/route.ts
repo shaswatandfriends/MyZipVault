@@ -15,7 +15,7 @@ export async function GET(
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "super_admin") {
+    if (userRole !== "super_admin" && userRole !== "client_recruiter" && userRole !== "platform_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

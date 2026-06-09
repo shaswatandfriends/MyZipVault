@@ -14,17 +14,24 @@ export async function PUT(
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter") {
+    if (userRole !== "client_recruiter" && userRole !== "platform_admin" && userRole !== "super_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
     const documentId = parseInt(id, 10);
     if (isNaN(documentId)) {
       return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
     }
 
+    const body = await request.json();
+    const { sign_fields } = body;
+
+    if (!Array.isArray(sign_fields)) {
+      return NextResponse.json({ error: "sign_fields must be an array" }, { status: 400 });
+    }
+
+    // Verify document exists and user has access
     const document = await db.vaultSignDocument.findUnique({
       where: { id: documentId },
     });
@@ -33,28 +40,10 @@ export async function PUT(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    if (document.created_by_user_id !== userId) {
-      return NextResponse.json(
-        { error: "Only the document creator can modify sign fields" },
-        { status: 403 }
-      );
-    }
-
-    if (document.status !== "draft") {
-      return NextResponse.json(
-        { error: "Can only modify sign fields on draft documents" },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const { sign_fields } = body;
-
-    if (!sign_fields || !Array.isArray(sign_fields)) {
-      return NextResponse.json(
-        { error: "sign_fields must be an array" },
-        { status: 400 }
-      );
+    // Verify the user is the creator (admins can bypass)
+    const userId = (session.user as Record<string, unknown>).id as number;
+    if (document.created_by_user_id !== userId && userRole !== "platform_admin" && userRole !== "super_admin") {
+      return NextResponse.json({ error: "You can only edit your own documents" }, { status: 403 });
     }
 
     await db.vaultSignDocument.update({
