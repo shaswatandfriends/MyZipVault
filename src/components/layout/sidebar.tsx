@@ -116,6 +116,8 @@ const superAdminNav: NavItem[] = [
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
+  { title: "Skills DB", href: "/superadmin/skills", icon: ClipboardCheck },
+  { title: "Ref Questions", href: "/superadmin/references", icon: ScrollText },
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },

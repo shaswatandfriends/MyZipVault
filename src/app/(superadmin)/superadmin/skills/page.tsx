@@ -117,15 +117,8 @@ interface PreviewTemplate {
   isActive: boolean;
 }
 
-interface PreviewRefQuestion {
-  id: number;
-  questionText: string;
-  responseType: string;
-  sortOrder: number;
-}
-
 // ─── Main Component ─────────────────────────────────────────────────
-export default function AdminContentPage() {
+export default function SuperadminSkillsPage() {
   const [data, setData] = useState<ContentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -152,17 +145,6 @@ export default function AdminContentPage() {
     questionType: "rating_1_4",
     sortOrder: 0,
     hasNaOption: true,
-  });
-
-  // ── Reference question dialog state
-  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<ReferenceQuestionItem | null>(null);
-  const [questionEmploymentFilter, setQuestionEmploymentFilter] = useState<string>("all");
-  const [questionForm, setQuestionForm] = useState({
-    employmentStatus: "current",
-    questionText: "",
-    responseType: "rating_1_4",
-    sortOrder: 0,
   });
 
   // ── Delete confirm dialog
@@ -203,27 +185,6 @@ export default function AdminContentPage() {
     totalCategories: number;
   } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-
-  // ── Reference Preview modal state
-  const [refPreviewOpen, setRefPreviewOpen] = useState(false);
-  const [refPreviewStatus, setRefPreviewStatus] = useState<string>("current");
-  const [refPreviewQuestions, setRefPreviewQuestions] = useState<PreviewRefQuestion[]>([]);
-  const [refPreviewLoading, setRefPreviewLoading] = useState(false);
-
-  // ── Reference Import modal state
-  const [refImportModalOpen, setRefImportModalOpen] = useState(false);
-  const [refImportFile, setRefImportFile] = useState<File | null>(null);
-  const [refImportValidating, setRefImportValidating] = useState(false);
-  const [refImportImporting, setRefImportImporting] = useState(false);
-  const [refImportValidationResult, setRefImportValidationResult] = useState<{
-    totalRows: number;
-    validRows: number;
-    errorRows: number;
-    errors: Array<{ row: number; message: string }>;
-    preview: Array<{ employmentStatus: string; questionText: string; responseType: string; sortOrder: number }>;
-  } | null>(null);
-  const [refImportResult, setRefImportResult] = useState<{ imported: number; skipped: number } | null>(null);
-  const refFileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Resend cooldown timer
   useEffect(() => {
@@ -352,41 +313,6 @@ export default function AdminContentPage() {
       await performAction("skill", "create", skillForm);
     }
     setSkillDialogOpen(false);
-  };
-
-  // ─── Reference question handlers ─────────────────────────────────
-  const openQuestionDialog = (question?: ReferenceQuestionItem) => {
-    if (question) {
-      setEditingQuestion(question);
-      setQuestionForm({
-        employmentStatus: question.employmentStatus,
-        questionText: question.questionText,
-        responseType: question.responseType,
-        sortOrder: question.sortOrder,
-      });
-    } else {
-      setEditingQuestion(null);
-      setQuestionForm({
-        employmentStatus: "current",
-        questionText: "",
-        responseType: "rating_1_4",
-        sortOrder: 0,
-      });
-    }
-    setQuestionDialogOpen(true);
-  };
-
-  const saveQuestion = async () => {
-    if (!questionForm.questionText) {
-      toast.error("Please enter a question");
-      return;
-    }
-    if (editingQuestion) {
-      await performAction("reference_question", "update", { id: editingQuestion.id, ...questionForm });
-    } else {
-      await performAction("reference_question", "create", questionForm);
-    }
-    setQuestionDialogOpen(false);
   };
 
   // ─── Delete handler ──────────────────────────────────────────────
@@ -558,107 +484,9 @@ export default function AdminContentPage() {
     }
   };
 
-  // ─── Reference Import handlers ────────────────────────────────────
-  const handleRefExportTemplate = () => {
-    window.open("/api/admin/reference-questions/export-template", "_blank");
-  };
-
-  const handleRefExportData = () => {
-    window.open("/api/admin/reference-questions/export-data", "_blank");
-  };
-
-  const handleRefImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.name.endsWith(".xlsx")) {
-        toast.error("Only .xlsx files are accepted");
-        return;
-      }
-      setRefImportFile(file);
-      setRefImportValidationResult(null);
-      setRefImportResult(null);
-    }
-  };
-
-  const handleRefValidate = async () => {
-    if (!refImportFile) return;
-    try {
-      setRefImportValidating(true);
-      const formData = new FormData();
-      formData.append("file", refImportFile);
-      const res = await fetch("/api/admin/reference-questions/validate-import", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || "Validation failed");
-      }
-      setRefImportValidationResult(result);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Validation failed", { description: message });
-    } finally {
-      setRefImportValidating(false);
-    }
-  };
-
-  const handleRefImport = async () => {
-    if (!refImportFile) return;
-    try {
-      setRefImportImporting(true);
-      const formData = new FormData();
-      formData.append("file", refImportFile);
-      const res = await fetch("/api/admin/reference-questions/import", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || "Import failed");
-      }
-      setRefImportResult(result);
-      fetchContent();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Import failed", { description: message });
-    } finally {
-      setRefImportImporting(false);
-    }
-  };
-
-  const resetRefImportModal = () => {
-    setRefImportFile(null);
-    setRefImportValidationResult(null);
-    setRefImportResult(null);
-    if (refFileInputRef.current) refFileInputRef.current.value = "";
-  };
-
-  // ─── Reference Preview handlers ───────────────────────────────────
-  const handleRefPreview = async () => {
-    try {
-      setRefPreviewLoading(true);
-      setRefPreviewOpen(true);
-      const res = await fetch(`/api/admin/reference-questions/preview?employment_status=${refPreviewStatus}`);
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to load preview");
-      setRefPreviewQuestions(result.questions || []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Preview failed", { description: message });
-      setRefPreviewOpen(false);
-    } finally {
-      setRefPreviewLoading(false);
-    }
-  };
-
   // ─── Filtered skills ─────────────────────────────────────────────
   const filteredSkills = data?.skills.filter(
     (s) => selectedTemplateId === "all" || s.checklistTemplateId === Number(selectedTemplateId)
-  ) ?? [];
-
-  const filteredQuestions = data?.referenceQuestions.filter(
-    (q) => questionEmploymentFilter === "all" || q.employmentStatus === questionEmploymentFilter
   ) ?? [];
 
   // ─── Rating button style helper ───────────────────────────────────
@@ -677,15 +505,14 @@ export default function AdminContentPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Content Management"
-        description="Manage professions, specialties, skills, and reference questions."
+        title="Skills Database"
+        description="Manage professions, specialties, skills, import/export, and preview checklists."
       />
 
       <Tabs defaultValue="templates" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="templates">Professions & Specialties</TabsTrigger>
+          <TabsTrigger value="templates">Professions &amp; Specialties</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
-          <TabsTrigger value="questions">Reference Questions</TabsTrigger>
         </TabsList>
 
         {/* ═══════════════════════════════════════════════════════════════
@@ -967,129 +794,6 @@ export default function AdminContentPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            Tab 3 — Reference Questions
-        ═══════════════════════════════════════════════════════════════ */}
-        <TabsContent value="questions">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-base">Reference Questions</CardTitle>
-                  <Select
-                    value={questionEmploymentFilter}
-                    onValueChange={setQuestionEmploymentFilter}
-                  >
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="current">Current</SelectItem>
-                      <SelectItem value="ending_contract">Ending Contract</SelectItem>
-                      <SelectItem value="past">Past</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="ghost" size="sm" onClick={handleRefExportTemplate}>
-                    <Download className="size-4" />
-                    Export Template
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={() => { resetRefImportModal(); setRefImportModalOpen(true); }}>
-                    <Upload className="size-4" />
-                    Import Data
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleRefExportData}>
-                    <FileDown className="size-4" />
-                    Export Current Data
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={handleRefPreview}>
-                    <Eye className="size-4" />
-                    Preview Form
-                  </Button>
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => openQuestionDialog()}
-                  >
-                    <Plus className="size-4" />
-                    Add Question
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded" />
-                  ))}
-                </div>
-              ) : filteredQuestions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <PenSquare className="size-10 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No questions found</p>
-                </div>
-              ) : (
-                <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">Order</TableHead>
-                        <TableHead>Employment Status</TableHead>
-                        <TableHead>Question</TableHead>
-                        <TableHead>Response Type</TableHead>
-                        <TableHead className="w-24">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredQuestions.map((q) => (
-                        <TableRow key={q.id}>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {q.sortOrder}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {q.employmentStatus.replace("_", " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm max-w-xs truncate">
-                            {q.questionText}
-                          </TableCell>
-                          <TableCell className="text-sm">{q.responseType}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7"
-                                onClick={() => openQuestionDialog(q)}
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  setDeleteTarget({ type: "reference_question", id: q.id });
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* ── Template Dialog ────────────────────────────────────────── */}
@@ -1258,87 +962,6 @@ export default function AdminContentPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Question Dialog ────────────────────────────────────────── */}
-      <Dialog open={questionDialogOpen} onOpenChange={setQuestionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingQuestion ? "Edit Question" : "Add Question"}</DialogTitle>
-            <DialogDescription>
-              {editingQuestion
-                ? "Update reference question details."
-                : "Add a new reference question."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Employment Status</Label>
-              <Select
-                value={questionForm.employmentStatus}
-                onValueChange={(val) => setQuestionForm((f) => ({ ...f, employmentStatus: val }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current</SelectItem>
-                  <SelectItem value="ending_contract">Ending Contract</SelectItem>
-                  <SelectItem value="past">Past</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Question Text</Label>
-              <Textarea
-                placeholder="e.g. How would you rate this employee's clinical skills?"
-                value={questionForm.questionText}
-                onChange={(e) => setQuestionForm((f) => ({ ...f, questionText: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Response Type</Label>
-                <Select
-                  value={questionForm.responseType}
-                  onValueChange={(val) => setQuestionForm((f) => ({ ...f, responseType: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rating_1_4">1-4 Rating</SelectItem>
-                    <SelectItem value="yes_no">Yes/No</SelectItem>
-                    <SelectItem value="text">Text</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Sort Order</Label>
-                <Input
-                  type="number"
-                  value={questionForm.sortOrder}
-                  onChange={(e) =>
-                    setQuestionForm((f) => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setQuestionDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={saveQuestion}
-              disabled={actionLoading}
-            >
-              {editingQuestion ? "Update" : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* ── Delete Confirmation Dialog ─────────────────────────────── */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
@@ -1414,7 +1037,7 @@ export default function AdminContentPage() {
                     </div>
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!importFile || importValidating} onClick={handleValidate}>
                       {importValidating ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-                      Upload & Validate
+                      Upload &amp; Validate
                     </Button>
                   </CardContent>
                 </Card>
@@ -1729,256 +1352,6 @@ export default function AdminContentPage() {
           </div>
         </div>
       )}
-
-      {/* ═══════════════════════════════════════════════════════════════
-          Reference Form Preview Modal
-      ═══════════════════════════════════════════════════════════════ */}
-      {refPreviewOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRefPreviewOpen(false)}>
-          <div className="bg-white rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">Reference Form Preview</h2>
-              <button onClick={() => setRefPreviewOpen(false)} className="size-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Employment Status Tabs */}
-            <div className="px-6 pt-4">
-              <div className="flex gap-2">
-                {(["current", "ending_contract", "past"] as const).map((status) => (
-                  <button
-                    key={status}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      refPreviewStatus === status
-                        ? "bg-[#166534] text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setRefPreviewStatus(status)}
-                  >
-                    {status === "current" ? "Currently Working" : status === "ending_contract" ? "Ending Contract" : "Past Employment"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {refPreviewLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : refPreviewQuestions.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Rating scale legend */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
-                        <span>No theory / experience</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
-                        <span>Limited Experience</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
-                        <span>Experienced</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
-                        <span>Proficient</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {refPreviewQuestions.map((q, i) => (
-                    <div key={q.id} className="py-3 border-b border-gray-50">
-                      <p className="text-sm font-medium mb-2">{i + 1}. {q.questionText}</p>
-                      {q.responseType === "rating_1_4" ? (
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4].map((r) => (
-                            <button key={r} className={getRatingBtnClass(r, null)}>{r}</button>
-                          ))}
-                        </div>
-                      ) : q.responseType === "yes_no" ? (
-                        <div className="flex gap-2">
-                          <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-emerald-600 hover:text-emerald-600">Yes</button>
-                          <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-red-600 hover:text-red-600">No</button>
-                        </div>
-                      ) : (
-                        <Textarea placeholder="Enter response..." disabled className="text-sm" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  No questions for this employment status
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-sm text-muted-foreground">
-              <span>{refPreviewQuestions.length} questions for {refPreviewStatus === "current" ? "Currently Working" : refPreviewStatus === "ending_contract" ? "Ending Contract" : "Past Employment"}</span>
-              <span>This is how managers see this form</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════
-          Reference Questions Import Modal
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={refImportModalOpen} onOpenChange={(open) => { setRefImportModalOpen(open); if (!open) resetRefImportModal(); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Import Reference Questions</DialogTitle>
-            <DialogDescription>Upload an Excel file to import reference questions into the database.</DialogDescription>
-          </DialogHeader>
-
-          {!refImportResult ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Card 1 - Download Template */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <FileSpreadsheet className="size-8 text-emerald-600" />
-                    <h3 className="font-semibold text-sm">Download Template</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Download the Excel template with correct column format. Fill it in and upload it back.
-                    </p>
-                    <Button variant="secondary" className="w-full" onClick={handleRefExportTemplate}>
-                      <Download className="size-4" />
-                      Download Excel Template
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Card 2 - Upload Data */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <Upload className="size-8 text-orange-500" />
-                    <h3 className="font-semibold text-sm">Upload Data</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Upload your completed Excel file. Data will be validated before import.
-                    </p>
-                    <div className="w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                        {refImportFile ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="size-5 text-emerald-600" />
-                            <span className="text-sm font-medium">{refImportFile.name}</span>
-                            <span className="text-xs text-muted-foreground">({(refImportFile.size / 1024).toFixed(1)} KB)</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-1">
-                            <Upload className="size-5 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">.xlsx files only</span>
-                          </div>
-                        )}
-                        <input ref={refFileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleRefImportFileSelect} />
-                      </label>
-                    </div>
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!refImportFile || refImportValidating} onClick={handleRefValidate}>
-                      {refImportValidating ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-                      Upload & Validate
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Warning box */}
-              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
-                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#92400E]">
-                  Importing will <strong>ADD</strong> new questions to existing data. To replace all data, use Delete All Data first, then import. Duplicate questions (same Employment Status + Question Text) will be skipped.
-                </p>
-              </div>
-
-              {/* Validation Results */}
-              {refImportValidationResult && (
-                <div className="space-y-3">
-                  {refImportValidationResult.errorRows > 0 && (
-                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#991B1B]">
-                        {refImportValidationResult.errorRows} row(s) have errors
-                      </p>
-                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
-                        {refImportValidationResult.errors.slice(0, 10).map((e, i) => (
-                          <p key={i}>Row {e.row}: {e.message}</p>
-                        ))}
-                        {refImportValidationResult.errors.length > 10 && (
-                          <p>...and {refImportValidationResult.errors.length - 10} more errors</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {refImportValidationResult.validRows > 0 && (
-                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#166534]">
-                        {refImportValidationResult.validRows} valid row(s) found out of {refImportValidationResult.totalRows} total
-                      </p>
-                      {refImportValidationResult.preview.length > 0 && (
-                        <div className="mt-3 overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-xs">Employment Status</TableHead>
-                                <TableHead className="text-xs">Question</TableHead>
-                                <TableHead className="text-xs">Type</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {refImportValidationResult.preview.slice(0, 3).map((row, i) => (
-                                <TableRow key={i}>
-                                  <TableCell className="text-xs">{row.employmentStatus}</TableCell>
-                                  <TableCell className="text-xs max-w-xs truncate">{row.questionText}</TableCell>
-                                  <TableCell className="text-xs">{row.responseType}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                      <div className="mt-4 flex gap-2">
-                        <Button
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={handleRefImport}
-                          disabled={refImportImporting}
-                        >
-                          {refImportImporting ? <Loader2 className="size-4 animate-spin" /> : null}
-                          Import {refImportValidationResult.validRows} Valid Rows
-                        </Button>
-                        <Button variant="ghost" onClick={() => { setRefImportModalOpen(false); resetRefImportModal(); }}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            /* Import Success */
-            <div className="flex flex-col items-center py-8 text-center gap-3">
-              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                <Check className="size-8 text-[#166534]" />
-              </div>
-              <h3 className="text-lg font-semibold">{refImportResult.imported} questions imported successfully</h3>
-              {refImportResult.skipped > 0 && (
-                <p className="text-sm text-muted-foreground">{refImportResult.skipped} duplicates skipped</p>
-              )}
-              <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setRefImportModalOpen(false); resetRefImportModal(); }}>
-                Close
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
