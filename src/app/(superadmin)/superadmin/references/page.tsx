@@ -352,7 +352,7 @@ export default function SuperadminReferencesPage() {
   const handleRequestOtp = async () => {
     try {
       setDeleteAllSending(true);
-      const res = await fetch("/api/admin/skills/request-delete-otp", {
+      const res = await fetch("/api/admin/reference-questions/request-delete-otp", {
         method: "POST",
       });
       const result = await res.json();
@@ -397,14 +397,14 @@ export default function SuperadminReferencesPage() {
     if (otpValue.length !== 6) return;
     try {
       setDeleteAllDeleting(true);
-      const res = await fetch("/api/admin/skills/delete-all", {
+      const res = await fetch("/api/admin/reference-questions/delete-all", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otp: otpValue }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to delete");
-      toast.success("All data has been permanently deleted");
+      toast.success("All reference questions have been permanently deleted");
       setDeleteAllModalOpen(false);
       setDeleteAllStep(1);
       setDeleteAllOtp(["", "", "", "", "", ""]);

@@ -77,3 +77,21 @@ Stage Summary:
   3. Reference Questions Import/Export backend + UI in both admin and superadmin
   4. Candidate /checklists page rebuilt with interactive form, auto-save, digital signature
 - All TypeScript checks pass with zero new errors
+
+---
+Task ID: ref-questions-delete-api
+Agent: Main Agent
+Task: Create dedicated Reference Questions OTP + Delete All API endpoints and fix references page to call correct endpoints
+
+Work Log:
+- Discovered the references page was incorrectly calling /api/admin/skills/request-delete-otp and /api/admin/skills/delete-all (which deletes ALL skills+templates+reference questions, not just reference questions)
+- Created /api/admin/reference-questions/request-delete-otp/route.ts (mirrors skills version but uses setting_key "delete_ref_questions_otp")
+- Created /api/admin/reference-questions/delete-all/route.ts (only deletes ReferenceQuestion records, not skills or templates)
+- Fixed references page to call /api/admin/reference-questions/request-delete-otp and /api/admin/reference-questions/delete-all
+- Updated toast message to say "All reference questions have been permanently deleted" instead of "All data"
+- Build verified with zero errors
+
+Stage Summary:
+- Reference Questions now has its own scoped Delete All functionality (separate from Skills)
+- OTP uses separate platform_setting key "delete_ref_questions_otp" so both delete flows can coexist
+- All 5 previously identified items are now fully implemented and working
