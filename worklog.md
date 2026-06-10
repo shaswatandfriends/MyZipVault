@@ -1,52 +1,24 @@
-# Task 1: Rewrite VaultSign PDF Editor Page
+# Worklog
 
-## Summary of Changes
+---
+Task ID: 1
+Agent: Main Agent
+Task: Read entire codebase for all 4 roles (Recruiter, Agency, Candidate, SuperAdmin) and generate detailed recreation prompts
 
-### 1. PdfViewer Component Rewrite (lines 411-730)
-- **Created `PdfPageLayer` sub-component** at module level with its own `useRef` for the page wrapper div
-  - Renders: canvas + draw canvas overlay + annotation overlays per page
-  - Receives callback refs for canvas and drawCanvas (set via Maps in parent)
-  - Each page has its own annotation overlay with DraggableTextAnnotation components
-- **Rewrote `PdfViewer` component** to render ALL pages in one scrollable gray container
-  - Removed `currentPage` and `totalPages` props (no longer needed)
-  - Loads PDF once and stores `PDFDocumentProxy` in `pdfDocRef` (not raw ArrayBuffer)
-  - Uses `new Uint8Array(pdfData)` when calling `pdfjsLib.getDocument()` to prevent ArrayBuffer detachment
-  - Uses `canvasRefsMap` and `drawCanvasRefsMap` (Map<number, HTMLCanvasElement>) for per-page canvas refs
-  - Renders all pages vertically in a scrollable container with:
-    - `maxHeight: "80vh"` and `overflow-y: auto`
-    - Light gray background (`#F3F4F6`)
-    - Pages centered with padding, each with white background + shadow
-    - "Page X" label above each page
-    - ~24px gap between pages
-  - Drawing handlers now use `e.currentTarget` to identify which canvas is being drawn on
-  - `activeDrawCanvasRef` tracks the canvas being drawn on (prevents cross-page drawing)
+Work Log:
+- Explored full project structure: 200+ files across 4 role portals + auth + public pages
+- Launched 5 parallel agents to read all sections simultaneously:
+  - Agent 1: Recruiter portal (14 files) - dashboard, candidates, send, calendar, team, billing, BAA, notifications, vaultsign (4 pages), sidebar
+  - Agent 2: Candidate portal (15 files) - dashboard, checklists, references, resume, credentials, vaultsign, settings, calendar, sharing, sidebar
+  - Agent 3: SuperAdmin portal (39 files) - dashboard, users, companies, admins, compliance, audit-logs, analytics, calendar, templates, settings, feature-flags, api-vault, errors, reminders, documents, announcements, landing-page-editor, auth-page-editor, skills/*, skill-checklist/*, reference/*
+  - Agent 4: Agency/Admin + Auth + Public pages (35 files) - admin layout/pages, all auth pages (login/signup/agency/admin/superadmin/forgot/reset/verify/onboard), landing page, about, privacy, terms, reference form, sign document, shared components, providers, middleware
+  - Agent 5: Design system (32 files) - globals.css, tailwind config, next config, package.json, utils, types, icons, configs, hooks, UI components, prisma schema
+- Compiled all findings into a comprehensive DOCX document with 7 sections
+- Generated document at /home/z/my-project/download/MyZipVault_Platform_Recreation_Prompts.docx (63.3 KB)
 
-### 2. Removed `editorPage` State
-- Removed `const [editorPage, setEditorPage] = useState(1);`
-- Removed `setEditorPage(1);` from the remove file handler
-
-### 3. Redesigned Step 1 Editor Toolbar
-**A. Header Toolbar** (dark-themed, Word-like ribbon at top):
-- Row 1: Tool buttons (Select, Text, Highlight, Shape, Draw, Eraser) | Undo/Redo | Page count | Zoom controls
-- Row 2: Text formatting (font family, font size, Bold, Italic, Underline, Strikethrough, Color, Alignment) — only visible when a text annotation is selected
-- Dark background (`#1F2937`) with teal (`#0D9488`) active states
-
-**B. Floating Format Bar** (appears when any annotation is selected):
-- Positioned at top of PDF viewer area with small triangle pointer
-- Contains: Font, Size, Bold, Italic, Underline, Strikethrough, Color picker, Delete button
-- White background with shadow, compact styling
-- Only appears when `selectedAnn` is not null
-
-### 4. Updated PdfViewer Usage
-- Removed `currentPage={editorPage}` and `totalPages={editorTotalPages}` props
-
-### 5. Lint/TS Fixes
-- Fixed unused eslint-disable directives
-- Added `onTotalPagesChange` to load effect dependencies
-- Added proper deps to uploadedFile effect
-
-## Files Changed
-- `/home/z/my-project/src/app/(recruiter)/recruiter/vaultsign/upload/page.tsx`
-
-## Pre-existing Issues (Not Modified)
-- Line 917: TS2345 error in Step 3 field placement PDF render (pre-existing, unrelated to changes)
+Stage Summary:
+- Complete platform documentation covering all 4 roles with exact hex colors, Tailwind classes, component patterns, typography, spacing, shadows, radii, animations
+- 7 self-contained sections: Universal Design System, Recruiter Portal, Agency Portal, Candidate Portal, SuperAdmin Portal, Auth & Public Pages, Cross-Role Relationships
+- Each section is copy-paste ready for AI-assisted recreation
+- Cross-references maintained: shared design system referenced by all role prompts, data flows connect all roles
+- Document includes: 18+ color tables, code blocks for component patterns, complete navigation architecture, 6 data flow diagrams, database relationship map, tech stack details
