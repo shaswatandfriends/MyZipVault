@@ -469,6 +469,9 @@ function PdfPageView({
   textItems,
   editorZoom,
   onAddTextReplace,
+  editingTextItem,
+  onUpdateEditingText,
+  onEditingTextItemChange,
 }: {
   pageNum: number;
   pageImage: string;
@@ -498,6 +501,9 @@ function PdfPageView({
     fontSize: number,
     fontFamily: string,
   ) => void;
+  editingTextItem: TextItem | null;
+  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean }) => void;
+  onEditingTextItemChange: (item: TextItem | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -509,7 +515,6 @@ function PdfPageView({
   const [rectCurrent, setRectCurrent] = useState<{ x: number; y: number } | null>(null);
   const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
   const [editingTextItemId, setEditingTextItemId] = useState<string | null>(null);
-  const [editingTextValue, setEditingTextValue] = useState("");
 
   // Initialize / size the drawing canvas
   useEffect(() => {
@@ -735,27 +740,21 @@ function PdfPageView({
           const existingReplace = pageAnnotations.find(
             a => a.type === "text-replace" && a.textItemId === item.id
           );
-          if (existingReplace) return null; // already replaced
+          if (existingReplace) return null; // already replaced — shown by annotation overlay
 
           const isEditing = editingTextItemId === item.id;
 
-          // Parse the percentage values from TextLayer for the onAddTextReplace callback
+          // Parse values for the onAddTextReplace callback and display
           const leftPct = parseFloat(item.left) || 0;
           const topPct = parseFloat(item.top) || 0;
           const fontHeightPx = parseFloat(item.fontHeight) || 12;
-          // Width/height as percentage of PDF page (used by save function)
-          // item.width is in PDF points at scale=1, viewportWidth is the page width in points
           const widthPct = item.width ? Math.max((item.width / item.viewportWidth) * 100, 2) : 2;
           const heightPct = Math.max((fontHeightPx / item.viewportHeight) * 100, 1);
 
-          // Parse fontHeight for direct use — TextLayer computes it at scale=1
-          // so these values are in PDF points. We need to scale to the display size.
+          // Display scaling
           const fontHeightValue = parseFloat(item.fontHeight) || 12;
           const scaleXValue = parseFloat(item.scaleX) || 1;
           const rotateValue = item.rotate || "0deg";
-          // Scale font size from PDF points to display pixels:
-          // The display pageWidth is based on the original PDF viewport scaled to fit
-          // the container, then zoomed. So: displayScale = pageWidth / viewportWidth
           const displayScale = pageWidth / item.viewportWidth;
           const scaledFontSize = fontHeightValue * displayScale;
 
@@ -764,83 +763,80 @@ function PdfPageView({
               key={item.id}
               className="absolute"
               style={{
-                // Use TextLayer's computed positions (percentages of page)
                 left: item.left,
                 top: item.top,
-                // Font sizing: scale from PDF points to display pixels
                 fontSize: `${scaledFontSize}px`,
                 fontFamily: getCssFontStack(item.fontFamily),
-                // Apply TextLayer transforms for proper text rendering
                 transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
                 transformOrigin: "0% 0%",
+                // When editing: show black text + white bg to cover canvas text underneath
+                // When not editing: transparent text so user sees canvas, dashed outline on hover
                 color: isEditing ? "#000" : "transparent",
+                backgroundColor: isEditing ? "white" : "transparent",
                 zIndex: isEditing ? 20 : 6,
                 overflow: isEditing ? "visible" : "hidden",
                 whiteSpace: "pre",
                 cursor: isEditing ? "text" : "pointer",
                 lineHeight: 1,
-                // Visible outline like Sejda — shows all editable text areas
-                outline: isEditing ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.35)",
-                outlineOffset: isEditing ? "0px" : "1px",
-                backgroundColor: isEditing ? "rgba(255,255,255,0.95)" : "rgba(13, 148, 136, 0.04)",
-                transition: "background-color 0.15s, outline-color 0.15s",
+                outline: isEditing ? "none" : "1px dashed rgba(13, 148, 136, 0.35)",
+                outlineOffset: "1px",
+                transition: "background-color 0.1s",
                 pointerEvents: "auto",
+                padding: "0 1px",
+                minWidth: isEditing ? "20px" : undefined,
               } as React.CSSProperties}
               onMouseEnter={(e) => {
                 if (!isEditing) {
-                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.15)";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.08)";
                   e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.7)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isEditing) {
-                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
+                  e.currentTarget.style.backgroundColor = "transparent";
                   e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.35)";
                 }
               }}
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                if (isEditing) return; // already editing
+                if (isEditing) return;
                 setEditingTextItemId(item.id);
-                setEditingTextValue(item.text);
+                onEditingTextItemChange(item);
               }}
             >
-              {isEditing ? (
-                <textarea
-                  autoFocus
-                  value={editingTextValue}
-                  onChange={(e) => setEditingTextValue(e.target.value)}
-                  onBlur={() => {
-                    const newText = editingTextValue.trim();
-                    if (newText !== item.text && newText !== "") {
-                      onAddTextReplace(item.id, item.text, newText, pageNum, leftPct, topPct, widthPct, heightPct, fontHeightPx, item.fontFamily);
-                    }
-                    setEditingTextItemId(null);
-                    setEditingTextValue("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setEditingTextItemId(null);
-                      setEditingTextValue("");
-                    }
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      (e.target as HTMLElement).blur();
-                    }
-                  }}
-                  className="bg-transparent outline-none resize-none p-0 m-0 border-0"
-                  style={{
-                    fontSize: "inherit",
-                    fontFamily: "inherit",
-                    color: "#000",
-                    lineHeight: "inherit",
-                    minWidth: "40px",
-                  }}
-                />
-              ) : (
-                <span>{item.text}</span>
-              )}
+              <span
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: item.text }}
+                onFocus={(e) => {
+                  // Select all text when entering edit mode
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+                }}
+                onBlur={(e) => {
+                  const newText = e.currentTarget.innerText.trim();
+                  if (newText !== item.text && newText !== "") {
+                    onAddTextReplace(item.id, item.text, newText, pageNum, leftPct, topPct, widthPct, heightPct, fontHeightPx, item.fontFamily);
+                  }
+                  setEditingTextItemId(null);
+                  onEditingTextItemChange(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.currentTarget.blur();
+                  }
+                  // Let Enter work normally for multi-line text (Shift+Enter for new line)
+                  // Single Enter just moves to next editable field or blurs
+                }}
+                style={{
+                  display: "inline",
+                  outline: "none",
+                }}
+              />
             </div>
           );
         })}
@@ -910,7 +906,6 @@ function PdfPageView({
 
           if (ann.type === "text-replace") {
             // Scale font size from PDF points to display pixels
-            // We need the viewport dimensions to compute the scale — find them from textItems
             const viewportW = textItems[0]?.viewportWidth || pageWidth;
             const annDisplayScale = pageWidth / viewportW;
             const annScaledFontSize = ann.fontSize * annDisplayScale;
@@ -924,8 +919,11 @@ function PdfPageView({
                   top: `${ann.y}%`,
                   width: `${ann.width}%`,
                   minHeight: `${ann.height}%`,
-                  // White background to cover the original text underneath (in the canvas image)
+                  // White background covers original canvas text — looks like editing in-place
                   backgroundColor: "white",
+                  // No visible border when not selected — text looks like it's part of the page
+                  border: isSelected ? "2px solid #0D9488" : "none",
+                  borderRadius: isSelected ? "2px" : "0",
                   zIndex: isSelected ? 12 : 11,
                 }}
                 onMouseDown={(e) => handleAnnMouseDown(e, ann)}
@@ -939,10 +937,9 @@ function PdfPageView({
                     color: ann.color,
                     fontWeight: ann.bold ? "bold" : "normal",
                     fontStyle: ann.italic ? "italic" : "normal",
-                    border: isSelected ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.5)",
-                    borderRadius: "2px",
-                    padding: "1px 3px",
-                    minWidth: "40px",
+                    textDecoration: ann.underline ? "underline" : "none",
+                    padding: "0 1px",
+                    minWidth: "20px",
                   }}
                 >
                   {ann.text}
@@ -1094,6 +1091,8 @@ function PdfEditorToolbar({
   onRedo,
   canUndo,
   canRedo,
+  editingTextItem,
+  onUpdateEditingText,
 }: {
   activeTool: EditorTool;
   onToolChange: (tool: EditorTool) => void;
@@ -1109,9 +1108,13 @@ function PdfEditorToolbar({
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  editingTextItem: TextItem | null;
+  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean }) => void;
 }) {
   const selectedAnn = selectedAnnotation ? annotations.find(a => a.id === selectedAnnotation) : null;
   const isTextAnn = selectedAnn?.type === "text" || selectedAnn?.type === "text-replace";
+  // Also show text controls when edit-text tool is active and a text item is being edited
+  const isEditingPdfText = activeTool === "edit-text" && editingTextItem !== null;
 
   const tools: { tool: EditorTool; icon: React.ReactNode; label: string }[] = [
     { tool: "select", icon: <MousePointer2 className="size-4" />, label: "Select" },
@@ -1166,13 +1169,19 @@ function PdfEditorToolbar({
 
         <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
 
-        {/* Text annotation formatting controls */}
-        {isTextAnn && (
+        {/* Text annotation formatting controls — shown for both Add Text and Edit Text */}
+        {(isTextAnn || isEditingPdfText) && (
           <>
             {/* Font Family */}
             <select
-              value={selectedAnn.fontFamily}
-              onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { fontFamily: e.target.value })}
+              value={isEditingPdfText ? editingTextItem!.fontFamily : selectedAnn!.fontFamily}
+              onChange={(e) => {
+                if (isEditingPdfText) {
+                  onUpdateEditingText({ fontFamily: e.target.value });
+                } else {
+                  onUpdateAnnotation(selectedAnnotation!, { fontFamily: e.target.value });
+                }
+              }}
               className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[170px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
             >
               {annotationFontFamilies.map((f) => (
@@ -1182,8 +1191,14 @@ function PdfEditorToolbar({
 
             {/* Font Size */}
             <select
-              value={selectedAnn.fontSize}
-              onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { fontSize: parseInt(e.target.value) })}
+              value={isEditingPdfText ? Math.round(parseFloat(editingTextItem!.fontHeight) || 12) : selectedAnn!.fontSize}
+              onChange={(e) => {
+                if (isEditingPdfText) {
+                  onUpdateEditingText({ fontSize: parseInt(e.target.value) });
+                } else {
+                  onUpdateAnnotation(selectedAnnotation!, { fontSize: parseInt(e.target.value) });
+                }
+              }}
               className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] w-[55px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
             >
               {annotationFontSizes.map((s) => (
@@ -1195,9 +1210,15 @@ function PdfEditorToolbar({
 
             {/* Bold */}
             <button
-              onClick={() => onUpdateAnnotation(selectedAnnotation!, { bold: !selectedAnn.bold })}
+              onClick={() => {
+                if (isEditingPdfText) {
+                  onUpdateEditingText({ bold: true });
+                } else {
+                  onUpdateAnnotation(selectedAnnotation!, { bold: !selectedAnn!.bold });
+                }
+              }}
               className={`p-1.5 rounded-md transition-colors ${
-                selectedAnn.bold ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? false : selectedAnn!.bold) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Bold"
             >
@@ -1205,9 +1226,15 @@ function PdfEditorToolbar({
             </button>
             {/* Italic */}
             <button
-              onClick={() => onUpdateAnnotation(selectedAnnotation!, { italic: !selectedAnn.italic })}
+              onClick={() => {
+                if (isEditingPdfText) {
+                  onUpdateEditingText({ italic: true });
+                } else {
+                  onUpdateAnnotation(selectedAnnotation!, { italic: !selectedAnn!.italic });
+                }
+              }}
               className={`p-1.5 rounded-md transition-colors ${
-                selectedAnn.italic ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? false : selectedAnn!.italic) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Italic"
             >
@@ -1215,9 +1242,15 @@ function PdfEditorToolbar({
             </button>
             {/* Underline */}
             <button
-              onClick={() => onUpdateAnnotation(selectedAnnotation!, { underline: !selectedAnn.underline })}
+              onClick={() => {
+                if (isEditingPdfText) {
+                  onUpdateEditingText({ italic: true });
+                } else {
+                  onUpdateAnnotation(selectedAnnotation!, { underline: !selectedAnn!.underline });
+                }
+              }}
               className={`p-1.5 rounded-md transition-colors ${
-                selectedAnn.underline ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? false : selectedAnn!.underline) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Underline"
             >
@@ -1227,24 +1260,26 @@ function PdfEditorToolbar({
             <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
 
             {/* Color */}
-            <div className="relative">
-              <button
-                className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
-                title="Text Color"
-              >
-                <Baseline className="size-4" />
-                <div
-                  className="h-[3px] w-4 mx-auto -mt-0.5 rounded-full"
-                  style={{ backgroundColor: selectedAnn.color }}
+            {!isEditingPdfText && (
+              <div className="relative">
+                <button
+                  className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                  title="Text Color"
+                >
+                  <Baseline className="size-4" />
+                  <div
+                    className="h-[3px] w-4 mx-auto -mt-0.5 rounded-full"
+                    style={{ backgroundColor: selectedAnn!.color }}
+                  />
+                </button>
+                <input
+                  type="color"
+                  value={selectedAnn!.color}
+                  onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { color: e.target.value })}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
-              </button>
-              <input
-                type="color"
-                value={selectedAnn.color}
-                onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { color: e.target.value })}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-            </div>
+              </div>
+            )}
 
             <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
           </>
@@ -1488,6 +1523,7 @@ function UploadVaultSignContent() {
   const [drawings, setDrawings] = useState<Map<number, string>>(new Map());
   const [editedPdfBytes, setEditedPdfBytes] = useState<Uint8Array | null>(null);
   const [textItems, setTextItems] = useState<Map<number, TextItem[]>>(new Map());
+  const [editingTextItem, setEditingTextItem] = useState<TextItem | null>(null);
 
   // Undo/Redo history
   const [annotationHistory, setAnnotationHistory] = useState<TextAnnotation[][]>([]);
@@ -2242,6 +2278,15 @@ function UploadVaultSignContent() {
                     onRedo={handleRedo}
                     canUndo={historyIndex > 0}
                     canRedo={historyIndex < annotationHistory.length - 1}
+                    editingTextItem={editingTextItem}
+                    onUpdateEditingText={(updates) => {
+                      if (!editingTextItem) return;
+                      setEditingTextItem({
+                        ...editingTextItem,
+                        fontFamily: updates.fontFamily ?? editingTextItem.fontFamily,
+                        fontHeight: updates.fontSize ? `${updates.fontSize}px` : editingTextItem.fontHeight,
+                      });
+                    }}
                   />
 
                   {/* Page Views */}
@@ -2276,6 +2321,16 @@ function UploadVaultSignContent() {
                             textItems={textItems.get(pn) || []}
                             editorZoom={editorZoom}
                             onAddTextReplace={handleAddTextReplace}
+                            editingTextItem={editingTextItem}
+                            onUpdateEditingText={(updates) => {
+                              if (!editingTextItem) return;
+                              setEditingTextItem({
+                                ...editingTextItem,
+                                fontFamily: updates.fontFamily ?? editingTextItem.fontFamily,
+                                fontHeight: updates.fontSize ? `${updates.fontSize}px` : editingTextItem.fontHeight,
+                              });
+                            }}
+                            onEditingTextItemChange={setEditingTextItem}
                           />
                         );
                       })}
