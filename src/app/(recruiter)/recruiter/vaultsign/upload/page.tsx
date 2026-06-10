@@ -7,11 +7,9 @@ import {
   Plus, X, Loader2, FileSignature, Check,
   ChevronLeft, ChevronRight, Trash2, MinusIcon, AlertCircle,
   Save, Type, Highlighter, Square,
-  Bold, Italic, Underline, Strikethrough,
-  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Bold, Italic, Underline,
   Paintbrush, Eraser, MousePointer2, Undo2, Redo2, Baseline,
-  Scissors, Move, Link2, FileText, Pencil, ZoomIn, ZoomOut,
-  Eye, Edit3,
+  ZoomIn, ZoomOut,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,57 +23,6 @@ import {
 import { useAuth } from "@/components/providers/auth-provider";
 import { toast } from "sonner";
 import * as PDFLib from "pdf-lib";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import TextAlign from "@tiptap/extension-text-align";
-import UnderlineExt from "@tiptap/extension-underline";
-import HighlightExt from "@tiptap/extension-highlight";
-import { TextStyle } from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
-import FontFamily from "@tiptap/extension-font-family";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Extension } from "@tiptap/core";
-import html2canvas from "html2canvas-pro";
-
-// ─── Custom FontSize Extension for TipTap ──────────────────────────
-const FontSize = Extension.create({
-  name: "fontSize",
-  addOptions() {
-    return { defaultSize: "14px" };
-  },
-  addGlobalAttributes() {
-    return [
-      {
-        types: ["textStyle"],
-        attributes: {
-          fontSize: {
-            default: null,
-            parseHTML: (element: HTMLElement) =>
-              element.style.fontSize?.replace(/['"]+/g, ""),
-            renderHTML: (attributes: Record<string, string>) => {
-              if (!attributes.fontSize) return {};
-              return { style: `font-size: ${attributes.fontSize}` };
-            },
-          },
-        },
-      },
-    ];
-  },
-  addCommands() {
-    return {
-      setFontSize:
-        (fontSize: string) =>
-        ({ chain }: { chain: () => any }) => {
-          return chain().setMark("textStyle", { fontSize }).run();
-        },
-      unsetFontSize:
-        () =>
-        ({ chain }: { chain: () => any }) => {
-          return chain().setMark("textStyle", { fontSize: null }).run();
-        },
-    };
-  },
-});
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface SignerForm {
@@ -100,6 +47,26 @@ interface SignField {
   value: string | null;
 }
 
+type EditorTool = "select" | "text" | "highlight" | "whiteout" | "draw" | "eraser";
+
+interface TextAnnotation {
+  id: string;
+  page: number;
+  x: number;       // percentage position (0-100)
+  y: number;       // percentage position (0-100)
+  width: number;   // percentage width (0-100)
+  height: number;  // percentage height (0-100)
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  type: "text" | "highlight" | "whiteout";
+}
+
+// ─── Constants ──────────────────────────────────────────────────────
 const typeLabels: Record<string, string> = {
   right_to_represent: "Right to Represent",
   pre_offer_acceptance: "Pre-Offer Acceptance",
@@ -112,20 +79,20 @@ const typeLabels: Record<string, string> = {
 };
 
 const fieldTypes = [
-  { type: "signature", label: "Signature", icon: "✍️" },
-  { type: "date", label: "Date Signed", icon: "📅" },
-  { type: "full_name", label: "Full Name", icon: "🔤" },
-  { type: "initials", label: "Initials", icon: "📝" },
-  { type: "email", label: "Email", icon: "✉️" },
-  { type: "text", label: "Text Field", icon: "📋" },
-  { type: "checkbox", label: "Checkbox", icon: "☑️" },
+  { type: "signature", label: "Signature", icon: "\u270D\uFE0F" },
+  { type: "date", label: "Date Signed", icon: "\uD83D\uDCC5" },
+  { type: "full_name", label: "Full Name", icon: "\uD83C\uDD00" },
+  { type: "initials", label: "Initials", icon: "\uD83D\uDCDD" },
+  { type: "email", label: "Email", icon: "\u2709\uFE0F" },
+  { type: "text", label: "Text Field", icon: "\uD83D\uDCCB" },
+  { type: "checkbox", label: "Checkbox", icon: "\u2611\uFE0F" },
 ];
 
 const partyColors = ["#166534", "#0D9488", "#7C3AED", "#D97706"];
 const roleOptions = ["Candidate", "Client Employer", "Witness", "Recruiter"];
 const zoomLevels = [50, 75, 100, 125, 150, 200];
 
-const tiptapFontFamilies = [
+const annotationFontFamilies = [
   { value: "Arial", label: "Arial" },
   { value: "Helvetica", label: "Helvetica" },
   { value: "Times New Roman", label: "Times New Roman" },
@@ -134,137 +101,329 @@ const tiptapFontFamilies = [
   { value: "Verdana", label: "Verdana" },
 ];
 
-const tiptapFontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72];
+const annotationFontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72];
 
-// ─── Convert PDF text content to HTML ────────────────────────────
-function convertTextContentToHtml(textContent: any): string {
-  const items = textContent.items as any[];
-  if (!items || items.length === 0) return "<p></p>";
+const toolHints: Record<EditorTool, string> = {
+  select: "Click an annotation to select it. Drag to move. Double-click text to edit.",
+  text: "Click on the document to add a text annotation.",
+  highlight: "Click and drag on the document to create a highlight.",
+  whiteout: "Click and drag on the document to white out content.",
+  draw: "Draw freehand on the document with your mouse.",
+  eraser: "Click and drag to erase freehand drawings.",
+};
 
-  // Build line groups by Y position
-  const lines: { y: number; items: any[] }[] = [];
-  const LINE_THRESHOLD = 3; // px threshold for same line
+// ─── Save Edited PDF (pdf-lib only, NO html2canvas) ────────────────
+async function saveEditedPdf(
+  originalPdfBytes: Uint8Array,
+  annotations: TextAnnotation[],
+  drawings: Map<number, string>,
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+  const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  const pages = pdfDoc.getPages();
 
-  for (const item of items) {
-    if (!item.str || item.str.trim() === "") continue;
-    const y = Math.round(item.transform[5]);
-    let foundLine = false;
-    for (const line of lines) {
-      if (Math.abs(line.y - y) < LINE_THRESHOLD) {
-        line.items.push(item);
-        foundLine = true;
-        break;
-      }
-    }
-    if (!foundLine) {
-      lines.push({ y, items: [item] });
-    }
-  }
-
-  // Sort lines by Y descending (top of page first in PDF coords = larger Y)
-  lines.sort((a, b) => b.y - a.y);
-
-  // Sort items within each line by X position
-  for (const line of lines) {
-    line.items.sort((a, b) => a.transform[4] - b.transform[4]);
-  }
-
-  // Convert to HTML paragraphs
-  const htmlParts: string[] = [];
-  for (const line of lines) {
-    const textParts = line.items.map((item) => {
-      const fontSize = Math.abs(item.transform[3]) || 12;
-      const text = item.str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return `<span style="font-size: ${fontSize}px">${text}</span>`;
+  // 1. First, apply whiteout rectangles (to cover existing text)
+  for (const ann of annotations.filter(a => a.type === "whiteout")) {
+    const pageIndex = ann.page - 1;
+    if (pageIndex >= pages.length) continue;
+    const page = pages[pageIndex];
+    const { width: pw, height: ph } = page.getSize();
+    page.drawRectangle({
+      x: (ann.x / 100) * pw,
+      y: ph - ((ann.y / 100) * ph) - ((ann.height / 100) * ph),
+      width: (ann.width / 100) * pw,
+      height: (ann.height / 100) * ph,
+      color: PDFLib.rgb(1, 1, 1),
     });
-    htmlParts.push(`<p>${textParts.join(" ")}</p>`);
   }
 
-  return htmlParts.length > 0 ? htmlParts.join("") : "<p></p>";
+  // 2. Apply highlights
+  for (const ann of annotations.filter(a => a.type === "highlight")) {
+    const pageIndex = ann.page - 1;
+    if (pageIndex >= pages.length) continue;
+    const page = pages[pageIndex];
+    const { width: pw, height: ph } = page.getSize();
+    page.drawRectangle({
+      x: (ann.x / 100) * pw,
+      y: ph - ((ann.y / 100) * ph) - ((ann.height / 100) * ph),
+      width: (ann.width / 100) * pw,
+      height: (ann.height / 100) * ph,
+      color: PDFLib.rgb(1, 0.94, 0),
+      opacity: 0.3,
+    });
+  }
+
+  // 3. Apply text annotations
+  for (const ann of annotations.filter(a => a.type === "text")) {
+    const pageIndex = ann.page - 1;
+    if (pageIndex >= pages.length) continue;
+    const page = pages[pageIndex];
+    const { width: pw, height: ph } = page.getSize();
+
+    const x = (ann.x / 100) * pw;
+    const y = ph - ((ann.y / 100) * ph) - (ann.fontSize * 0.8);
+    const font = ann.bold ? helveticaBold : helveticaFont;
+
+    const lines = (ann.text || "").split("\n");
+    const lineHeight = ann.fontSize * 1.3;
+    lines.forEach((line, i) => {
+      if (line.trim()) {
+        page.drawText(line, {
+          x,
+          y: y - i * lineHeight,
+          size: ann.fontSize,
+          font,
+          color: PDFLib.rgb(
+            parseInt(ann.color.slice(1, 3), 16) / 255,
+            parseInt(ann.color.slice(3, 5), 16) / 255,
+            parseInt(ann.color.slice(5, 7), 16) / 255,
+          ),
+        });
+      }
+    });
+  }
+
+  // 4. Embed drawings
+  for (const [pageNum, dataUrl] of drawings) {
+    const pageIndex = pageNum - 1;
+    if (pageIndex >= pages.length) continue;
+    const page = pages[pageIndex];
+    const { width: pw, height: ph } = page.getSize();
+
+    try {
+      const base64 = dataUrl.split(",")[1];
+      const pngBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const pngImage = await pdfDoc.embedPng(pngBytes);
+      page.drawImage(pngImage, { x: 0, y: 0, width: pw, height: ph });
+    } catch (e) {
+      console.error(`Failed to embed drawing on page ${pageNum}:`, e);
+    }
+  }
+
+  return pdfDoc.save();
 }
 
-// ─── PdfPageEditor Component (TipTap per page) ──────────────────
-function PdfPageEditor({
+// ─── PdfPageView Component ──────────────────────────────────────────
+function PdfPageView({
   pageNum,
   pageImage,
-  initialContent,
-  onContentChange,
-  onEditorReady,
   pageWidth,
   pageHeight,
-  editorMode,
+  activeTool,
+  annotations,
+  selectedAnnotation,
+  onSelectAnnotation,
+  onMoveAnnotation,
+  onRemoveAnnotation,
+  onUpdateAnnotation,
+  onAddAnnotationAt,
+  onDrawingEnd,
+  drawingDataUrl,
 }: {
   pageNum: number;
   pageImage: string;
-  initialContent: string;
-  onContentChange: (pageNum: number, html: string) => void;
-  onEditorReady: (pageNum: number, editor: any) => void;
   pageWidth: number;
   pageHeight: number;
-  editorMode: "edit" | "preview";
+  activeTool: EditorTool;
+  annotations: TextAnnotation[];
+  selectedAnnotation: string | null;
+  onSelectAnnotation: (id: string | null) => void;
+  onMoveAnnotation: (id: string, x: number, y: number) => void;
+  onRemoveAnnotation: (id: string) => void;
+  onUpdateAnnotation: (id: string, updates: Partial<TextAnnotation>) => void;
+  onAddAnnotationAt: (page: number, xPct: number, yPct: number) => void;
+  onDrawingEnd: (pageNum: number, dataUrl: string) => void;
+  drawingDataUrl: string | undefined;
 }) {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; annX: number; annY: number; annWidth: number; annHeight: number } | null>(null);
+  const [draggingAnnId, setDraggingAnnId] = useState<string | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [rectStart, setRectStart] = useState<{ x: number; y: number } | null>(null);
+  const [rectCurrent, setRectCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
-      UnderlineExt,
-      HighlightExt.configure({ multicolor: true }),
-      TextStyle,
-      Color,
-      FontFamily,
-      FontSize,
-      Placeholder.configure({
-        placeholder: "Start editing...",
-      }),
-    ],
-    content: initialContent,
-    editable: editorMode === "edit",
-    onUpdate: ({ editor: ed }) => {
-      onContentChange(pageNum, ed.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: "pdf-editor-content outline-none",
-      },
-    },
-  });
-
-  // Register editor with parent when created
+  // Initialize / size the drawing canvas
   useEffect(() => {
-    if (editor) {
-      onEditorReady(pageNum, editor);
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+    canvas.width = pageWidth;
+    canvas.height = pageHeight;
+    // If we have existing drawing data, restore it
+    if (drawingDataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.drawImage(img, 0, 0, pageWidth, pageHeight);
+      };
+      img.src = drawingDataUrl;
     }
-  }, [editor]);
+  }, [pageWidth, pageHeight, drawingDataUrl]);
 
-  // Update editable state when mode changes
-  useEffect(() => {
-    if (editor) {
-      editor.setEditable(editorMode === "edit");
+  // Click handler for adding annotations
+  const handlePageClick = useCallback((e: React.MouseEvent<HTMLDivElement | HTMLCanvasElement>) => {
+    if (activeTool === "select") return;
+    if (activeTool === "draw" || activeTool === "eraser") return;
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+    if (activeTool === "text") {
+      onAddAnnotationAt(pageNum, xPct, yPct);
     }
-  }, [editor, editorMode]);
+  }, [activeTool, pageNum, onAddAnnotationAt]);
 
-  if (editorMode === "preview") {
-    return (
-      <div className="flex flex-col items-center">
-        <p className="text-xs text-[#6B7280] mb-2 font-medium">Page {pageNum}</p>
-        <div
-          className="bg-white shadow-[0_2px_12px_rgba(0,0,0,0.12)]"
-          style={{ width: pageWidth, height: pageHeight }}
-        >
-          <img
-            src={pageImage}
-            alt={`Page ${pageNum}`}
-            className="block w-full h-full"
-            draggable={false}
-          />
-        </div>
-      </div>
-    );
-  }
+  // Mouse down for highlight/whiteout drag
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement | HTMLCanvasElement>) => {
+    if (activeTool !== "highlight" && activeTool !== "whiteout" && activeTool !== "draw" && activeTool !== "eraser") return;
+    const container = e.currentTarget;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+    if (activeTool === "highlight" || activeTool === "whiteout") {
+      setRectStart({ x: xPct, y: yPct });
+      setRectCurrent({ x: xPct, y: yPct });
+    }
+
+    if (activeTool === "draw" || activeTool === "eraser") {
+      setIsDrawing(true);
+      isDrawingRef.current = true;
+      const canvas = drawCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      if (activeTool === "draw") {
+        ctx.strokeStyle = "#DC2626";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      } else {
+        ctx.strokeStyle = "rgba(255,255,255,1)";
+        ctx.lineWidth = 20;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.globalCompositeOperation = "destination-out";
+      }
+    }
+  }, [activeTool]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement | HTMLCanvasElement>) => {
+    // Handle highlight/whiteout rectangle drawing
+    if (rectStart && (activeTool === "highlight" || activeTool === "whiteout")) {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+      setRectCurrent({ x: xPct, y: yPct });
+    }
+
+    // Handle freehand drawing
+    if (isDrawingRef.current && (activeTool === "draw" || activeTool === "eraser")) {
+      const canvas = drawCanvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+      const rect = container.getBoundingClientRect();
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      ctx.lineTo(px, py);
+      ctx.stroke();
+    }
+  }, [rectStart, activeTool]);
+
+  const handleMouseUp = useCallback(() => {
+    // Finish highlight/whiteout rectangle
+    if (rectStart && rectCurrent && (activeTool === "highlight" || activeTool === "whiteout")) {
+      const x = Math.min(rectStart.x, rectCurrent.x);
+      const y = Math.min(rectStart.y, rectCurrent.y);
+      const width = Math.abs(rectCurrent.x - rectStart.x);
+      const height = Math.abs(rectCurrent.y - rectStart.y);
+      if (width > 1 && height > 1) {
+        onAddAnnotationAt(pageNum, x, y);
+        // The onAddAnnotationAt will create based on activeTool type
+      }
+      setRectStart(null);
+      setRectCurrent(null);
+    }
+
+    // Finish freehand drawing
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
+      setIsDrawing(false);
+      const canvas = drawCanvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.globalCompositeOperation = "source-over";
+        const dataUrl = canvas.toDataURL("image/png");
+        onDrawingEnd(pageNum, dataUrl);
+      }
+    }
+  }, [rectStart, rectCurrent, activeTool, pageNum, onAddAnnotationAt, onDrawingEnd]);
+
+  // Drag annotation handlers
+  const handleAnnMouseDown = useCallback((e: React.MouseEvent, ann: TextAnnotation) => {
+    if (activeTool !== "select") return;
+    e.stopPropagation();
+    e.preventDefault();
+    onSelectAnnotation(ann.id);
+    setDraggingAnnId(ann.id);
+    const container = containerRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      annX: ann.x,
+      annY: ann.y,
+      annWidth: ann.width,
+      annHeight: ann.height,
+    };
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!dragStartRef.current || !containerRef.current) return;
+      const cRect = containerRef.current.getBoundingClientRect();
+      const dx = ev.clientX - dragStartRef.current.startX;
+      const dy = ev.clientY - dragStartRef.current.startY;
+      const dxPct = (dx / cRect.width) * 100;
+      const dyPct = (dy / cRect.height) * 100;
+      const newX = Math.max(0, Math.min(100 - dragStartRef.current.annWidth, dragStartRef.current.annX + dxPct));
+      const newY = Math.max(0, Math.min(100 - dragStartRef.current.annHeight, dragStartRef.current.annY + dyPct));
+      onMoveAnnotation(ann.id, Math.round(newX * 10) / 10, Math.round(newY * 10) / 10);
+    };
+
+    const handleMouseUp = () => {
+      setDraggingAnnId(null);
+      dragStartRef.current = null;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }, [activeTool, onSelectAnnotation, onMoveAnnotation]);
+
+  // Compute the rectangle preview for highlight/whiteout
+  const rectPreview = rectStart && rectCurrent ? {
+    x: Math.min(rectStart.x, rectCurrent.x),
+    y: Math.min(rectStart.y, rectCurrent.y),
+    width: Math.abs(rectCurrent.x - rectStart.x),
+    height: Math.abs(rectCurrent.y - rectStart.y),
+  } : null;
+
+  const pageAnnotations = annotations.filter(a => a.page === pageNum);
 
   return (
     <div className="flex flex-col items-center">
@@ -272,239 +431,394 @@ function PdfPageEditor({
       <div
         className="relative bg-white shadow-[0_2px_12px_rgba(0,0,0,0.12)]"
         style={{ width: pageWidth, height: pageHeight }}
-        ref={editorRef}
       >
         {/* Background PDF image */}
         <img
           src={pageImage}
           alt={`Page ${pageNum}`}
           className="absolute top-0 left-0 block"
-          style={{ width: pageWidth, height: pageHeight, opacity: 0.35 }}
+          style={{ width: pageWidth, height: pageHeight }}
           draggable={false}
         />
-        {/* TipTap Editor Overlay */}
-        <div
-          className="absolute top-0 left-0 w-full h-full overflow-y-auto"
+
+        {/* Drawing canvas overlay */}
+        <canvas
+          ref={drawCanvasRef}
+          className="absolute top-0 left-0"
           style={{
-            backgroundColor: "rgba(255,255,255,0.65)",
-            zIndex: 2,
+            width: pageWidth,
+            height: pageHeight,
+            pointerEvents: (activeTool === "draw" || activeTool === "eraser") ? "auto" : "none",
+            cursor: (activeTool === "draw") ? "crosshair" : (activeTool === "eraser") ? "cell" : "default",
+            zIndex: 5,
           }}
-        >
-          <EditorContent
-            editor={editor}
-            className="pdf-page-editor-content"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        />
+
+        {/* Annotation overlays */}
+        {pageAnnotations.map((ann) => {
+          const isSelected = selectedAnnotation === ann.id;
+          const isEditing = editingAnnId === ann.id;
+
+          if (ann.type === "highlight") {
+            return (
+              <div
+                key={ann.id}
+                className={`absolute ${activeTool === "select" ? "cursor-move" : "cursor-default"}`}
+                style={{
+                  left: `${ann.x}%`,
+                  top: `${ann.y}%`,
+                  width: `${ann.width}%`,
+                  height: `${ann.height}%`,
+                  backgroundColor: "rgba(250, 204, 21, 0.3)",
+                  border: isSelected ? "2px solid #EAB308" : "1px dashed rgba(234, 179, 8, 0.5)",
+                  zIndex: isSelected ? 12 : 8,
+                }}
+                onMouseDown={(e) => handleAnnMouseDown(e, ann)}
+                onClick={(e) => { e.stopPropagation(); if (activeTool === "select") onSelectAnnotation(ann.id); }}
+              >
+                {isSelected && (
+                  <button
+                    className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center z-50"
+                    onClick={(e) => { e.stopPropagation(); onRemoveAnnotation(ann.id); }}
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            );
+          }
+
+          if (ann.type === "whiteout") {
+            return (
+              <div
+                key={ann.id}
+                className={`absolute ${activeTool === "select" ? "cursor-move" : "cursor-default"}`}
+                style={{
+                  left: `${ann.x}%`,
+                  top: `${ann.y}%`,
+                  width: `${ann.width}%`,
+                  height: `${ann.height}%`,
+                  backgroundColor: "white",
+                  border: isSelected ? "2px solid #9CA3AF" : "1px solid rgba(156, 163, 175, 0.3)",
+                  zIndex: isSelected ? 12 : 9,
+                }}
+                onMouseDown={(e) => handleAnnMouseDown(e, ann)}
+                onClick={(e) => { e.stopPropagation(); if (activeTool === "select") onSelectAnnotation(ann.id); }}
+              >
+                {isSelected && (
+                  <button
+                    className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center z-50"
+                    onClick={(e) => { e.stopPropagation(); onRemoveAnnotation(ann.id); }}
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            );
+          }
+
+          // Text annotation
+          return (
+            <div
+              key={ann.id}
+              className={`absolute ${activeTool === "select" ? "cursor-move" : "cursor-default"}`}
+              style={{
+                left: `${ann.x}%`,
+                top: `${ann.y}%`,
+                width: `${ann.width}%`,
+                minHeight: `${ann.height}%`,
+                zIndex: isSelected ? 12 : 10,
+              }}
+              onMouseDown={(e) => handleAnnMouseDown(e, ann)}
+              onClick={(e) => { e.stopPropagation(); if (activeTool === "select") onSelectAnnotation(ann.id); }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (activeTool === "select") {
+                  setEditingAnnId(ann.id);
+                  onSelectAnnotation(ann.id);
+                }
+              }}
+            >
+              <div
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                className="outline-none whitespace-pre-wrap break-words"
+                style={{
+                  fontSize: `${ann.fontSize}px`,
+                  fontFamily: ann.fontFamily,
+                  color: ann.color,
+                  fontWeight: ann.bold ? "bold" : "normal",
+                  fontStyle: ann.italic ? "italic" : "normal",
+                  textDecoration: ann.underline ? "underline" : "none",
+                  border: isSelected ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.3)",
+                  borderRadius: "2px",
+                  padding: "2px 4px",
+                  backgroundColor: isSelected ? "rgba(13, 148, 136, 0.05)" : "transparent",
+                  minWidth: "60px",
+                }}
+                onBlur={(e) => {
+                  setEditingAnnId(null);
+                  onUpdateAnnotation(ann.id, { text: e.currentTarget.innerText });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setEditingAnnId(null);
+                    (e.target as HTMLElement).blur();
+                  }
+                }}
+              >
+                {ann.text || (isEditing ? "" : "Type here")}
+              </div>
+              {isSelected && !isEditing && (
+                <button
+                  className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center z-50"
+                  onClick={(e) => { e.stopPropagation(); onRemoveAnnotation(ann.id); }}
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Rectangle preview for highlight/whiteout drag */}
+        {rectPreview && (activeTool === "highlight" || activeTool === "whiteout") && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              left: `${rectPreview.x}%`,
+              top: `${rectPreview.y}%`,
+              width: `${rectPreview.width}%`,
+              height: `${rectPreview.height}%`,
+              backgroundColor: activeTool === "highlight" ? "rgba(250, 204, 21, 0.3)" : "rgba(255, 255, 255, 0.8)",
+              border: activeTool === "highlight" ? "2px dashed #EAB308" : "2px dashed #9CA3AF",
+              zIndex: 15,
+            }}
           />
-        </div>
+        )}
+
+        {/* Click overlay for text/highlight/whiteout tools */}
+        {(activeTool === "text" || activeTool === "highlight" || activeTool === "whiteout") && (
+          <div
+            ref={containerRef}
+            className="absolute top-0 left-0 w-full h-full"
+            style={{
+              cursor: activeTool === "text" ? "text" : "crosshair",
+              zIndex: (activeTool === "highlight" || activeTool === "whiteout") ? 4 : 3,
+            }}
+            onClick={handlePageClick}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+          />
+        )}
+
+        {/* Select tool overlay for deselecting */}
+        {activeTool === "select" && (
+          <div
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ zIndex: 1, cursor: "default" }}
+            onClick={() => onSelectAnnotation(null)}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-// ─── PdfEditorToolbar Component ──────────────────────────────────
+// ─── PdfEditorToolbar Component (v3 — annotation properties) ───────
 function PdfEditorToolbar({
-  editor,
+  activeTool,
+  onToolChange,
+  selectedAnnotation,
+  annotations,
+  onUpdateAnnotation,
   zoomLevel,
   onZoomChange,
-  editorMode,
-  onModeChange,
   onSave,
   totalPages,
   hasEdits,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
-  editor: any;
+  activeTool: EditorTool;
+  onToolChange: (tool: EditorTool) => void;
+  selectedAnnotation: string | null;
+  annotations: TextAnnotation[];
+  onUpdateAnnotation: (id: string, updates: Partial<TextAnnotation>) => void;
   zoomLevel: number;
   onZoomChange: (level: number) => void;
-  editorMode: "edit" | "preview";
-  onModeChange: (mode: "edit" | "preview") => void;
   onSave: () => void;
   totalPages: number;
   hasEdits: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) {
-  if (!editor) return null;
+  const selectedAnn = selectedAnnotation ? annotations.find(a => a.id === selectedAnnotation) : null;
+  const isTextAnn = selectedAnn?.type === "text";
 
-  const currentFontSize = editor.getAttributes("textStyle").fontSize || "14px";
-  const currentFontFamily = editor.getAttributes("textStyle").fontFamily || "Arial";
-  const currentColor = editor.getAttributes("textStyle").color || "#111827";
+  const tools: { tool: EditorTool; icon: React.ReactNode; label: string }[] = [
+    { tool: "select", icon: <MousePointer2 className="size-4" />, label: "Select" },
+    { tool: "text", icon: <Type className="size-4" />, label: "Add Text" },
+    { tool: "highlight", icon: <Highlighter className="size-4" />, label: "Highlight" },
+    { tool: "whiteout", icon: <Square className="size-4" />, label: "Whiteout" },
+    { tool: "draw", icon: <Paintbrush className="size-4" />, label: "Draw" },
+    { tool: "eraser", icon: <Eraser className="size-4" />, label: "Eraser" },
+  ];
 
   return (
     <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm">
       {/* Main Toolbar Row */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-[#F3F4F6] flex-wrap">
-        {/* Font Family */}
-        <select
-          value={currentFontFamily}
-          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
-          className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[120px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
-        >
-          {tiptapFontFamilies.map((f) => (
-            <option key={f.value} value={f.value}>{f.label}</option>
-          ))}
-        </select>
-
-        {/* Font Size */}
-        <select
-          value={parseInt(currentFontSize) || 14}
-          onChange={(e) =>
-            editor.chain().focus().setFontSize(`${e.target.value}px`).run()
-          }
-          className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] w-[55px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
-        >
-          {tiptapFontSizes.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-
-        <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
-
-        {/* Bold */}
-        <button
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive("bold")
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Bold"
-        >
-          <Bold className="size-4" />
-        </button>
-        {/* Italic */}
-        <button
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive("italic")
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Italic"
-        >
-          <Italic className="size-4" />
-        </button>
-        {/* Underline */}
-        <button
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive("underline")
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Underline"
-        >
-          <Underline className="size-4" />
-        </button>
-        {/* Strikethrough */}
-        <button
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive("strike")
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Strikethrough"
-        >
-          <Strikethrough className="size-4" />
-        </button>
-
-        <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
-
-        {/* Text Alignment */}
-        <button
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive({ textAlign: "left" })
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Align Left"
-        >
-          <AlignLeft className="size-4" />
-        </button>
-        <button
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive({ textAlign: "center" })
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Align Center"
-        >
-          <AlignCenter className="size-4" />
-        </button>
-        <button
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive({ textAlign: "right" })
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Align Right"
-        >
-          <AlignRight className="size-4" />
-        </button>
-        <button
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive({ textAlign: "justify" })
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Justify"
-        >
-          <AlignJustify className="size-4" />
-        </button>
-
-        <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
-
-        {/* Text Color */}
-        <div className="relative">
+        {/* Tool Buttons */}
+        {tools.map(({ tool, icon, label }) => (
           <button
-            className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
-            title="Text Color"
+            key={tool}
+            onClick={() => onToolChange(tool)}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              activeTool === tool
+                ? "bg-[#0D9488]/10 text-[#0D9488]"
+                : "text-[#6B7280] hover:bg-[#F3F4F6]"
+            }`}
+            title={label}
           >
-            <Baseline className="size-4" />
-            <div
-              className="h-[3px] w-4 mx-auto -mt-0.5 rounded-full"
-              style={{ backgroundColor: currentColor }}
-            />
+            {icon}
+            <span className="hidden sm:inline">{label}</span>
           </button>
-          <input
-            type="color"
-            value={currentColor}
-            onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
-            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-          />
-        </div>
-
-        {/* Highlight */}
-        <button
-          onClick={() => editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()}
-          className={`p-1.5 rounded-md transition-colors ${
-            editor.isActive("highlight")
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "text-[#6B7280] hover:bg-[#F3F4F6]"
-          }`}
-          title="Highlight"
-        >
-          <Highlighter className="size-4" />
-        </button>
+        ))}
 
         <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
 
         {/* Undo/Redo */}
         <button
-          onClick={() => editor.chain().focus().undo().run()}
-          className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Undo"
         >
           <Undo2 className="size-4" />
         </button>
         <button
-          onClick={() => editor.chain().focus().redo().run()}
-          className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Redo"
         >
           <Redo2 className="size-4" />
         </button>
+
+        <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+
+        {/* Text annotation formatting controls */}
+        {isTextAnn && (
+          <>
+            {/* Font Family */}
+            <select
+              value={selectedAnn.fontFamily}
+              onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { fontFamily: e.target.value })}
+              className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[110px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
+            >
+              {annotationFontFamilies.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+
+            {/* Font Size */}
+            <select
+              value={selectedAnn.fontSize}
+              onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { fontSize: parseInt(e.target.value) })}
+              className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] w-[55px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
+            >
+              {annotationFontSizes.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+
+            {/* Bold */}
+            <button
+              onClick={() => onUpdateAnnotation(selectedAnnotation!, { bold: !selectedAnn.bold })}
+              className={`p-1.5 rounded-md transition-colors ${
+                selectedAnn.bold ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+              }`}
+              title="Bold"
+            >
+              <Bold className="size-4" />
+            </button>
+            {/* Italic */}
+            <button
+              onClick={() => onUpdateAnnotation(selectedAnnotation!, { italic: !selectedAnn.italic })}
+              className={`p-1.5 rounded-md transition-colors ${
+                selectedAnn.italic ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+              }`}
+              title="Italic"
+            >
+              <Italic className="size-4" />
+            </button>
+            {/* Underline */}
+            <button
+              onClick={() => onUpdateAnnotation(selectedAnnotation!, { underline: !selectedAnn.underline })}
+              className={`p-1.5 rounded-md transition-colors ${
+                selectedAnn.underline ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+              }`}
+              title="Underline"
+            >
+              <Underline className="size-4" />
+            </button>
+
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+
+            {/* Color */}
+            <div className="relative">
+              <button
+                className="p-1.5 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                title="Text Color"
+              >
+                <Baseline className="size-4" />
+                <div
+                  className="h-[3px] w-4 mx-auto -mt-0.5 rounded-full"
+                  style={{ backgroundColor: selectedAnn.color }}
+                />
+              </button>
+              <input
+                type="color"
+                value={selectedAnn.color}
+                onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { color: e.target.value })}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+          </>
+        )}
+
+        {/* Disabled formatting controls when no text annotation selected */}
+        {!isTextAnn && (
+          <>
+            <select disabled className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-[#F9FAFB] text-[#9CA3AF] max-w-[110px] opacity-50">
+              <option>Font</option>
+            </select>
+            <select disabled className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-[#F9FAFB] text-[#9CA3AF] w-[55px] opacity-50">
+              <option>Size</option>
+            </select>
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+            <button disabled className="p-1.5 rounded-md text-[#9CA3AF] opacity-50 cursor-not-allowed" title="Bold"><Bold className="size-4" /></button>
+            <button disabled className="p-1.5 rounded-md text-[#9CA3AF] opacity-50 cursor-not-allowed" title="Italic"><Italic className="size-4" /></button>
+            <button disabled className="p-1.5 rounded-md text-[#9CA3AF] opacity-50 cursor-not-allowed" title="Underline"><Underline className="size-4" /></button>
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+            <button disabled className="p-1.5 rounded-md text-[#9CA3AF] opacity-50 cursor-not-allowed" title="Color"><Baseline className="size-4" /></button>
+            <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
+          </>
+        )}
 
         <div className="flex-1" />
 
@@ -543,29 +857,6 @@ function PdfEditorToolbar({
 
         <div className="w-px h-6 bg-[#E5E7EB] mx-1" />
 
-        {/* Edit/Preview Toggle */}
-        <button
-          onClick={() => onModeChange(editorMode === "edit" ? "preview" : "edit")}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            editorMode === "edit"
-              ? "bg-[#0D9488]/10 text-[#0D9488]"
-              : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]"
-          }`}
-          title={editorMode === "edit" ? "Switch to Preview" : "Switch to Edit"}
-        >
-          {editorMode === "edit" ? (
-            <>
-              <Edit3 className="size-3.5" />
-              <span className="hidden sm:inline">Edit</span>
-            </>
-          ) : (
-            <>
-              <Eye className="size-3.5" />
-              <span className="hidden sm:inline">Preview</span>
-            </>
-          )}
-        </button>
-
         {/* Save Button */}
         <Button
           onClick={onSave}
@@ -577,11 +868,10 @@ function PdfEditorToolbar({
         </Button>
       </div>
 
-      {/* Mode hint */}
+      {/* Tool hint */}
       <div className="px-3 py-1 bg-[#F8F7F4] text-xs text-[#9CA3AF]">
-        {editorMode === "edit"
-          ? "Edit Mode — Click text to edit. The faded background shows the original PDF for reference."
-          : "Preview Mode — Showing the original PDF. Switch to Edit Mode to make changes."}
+        {toolHints[activeTool]}
+        {isTextAnn && " — Use the formatting controls above to style the selected text."}
       </div>
     </div>
   );
@@ -731,28 +1021,24 @@ function UploadVaultSignContent() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Step 1 — Upload & Edit (new TipTap approach)
+  // Step 1 — Editor state (v3: page image + annotation overlay)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
-  const [editedPages, setEditedPages] = useState<Map<number, string>>(new Map());
-  const [originalPages, setOriginalPages] = useState<Map<number, string>>(new Map());
   const [pageImages, setPageImages] = useState<Map<number, string>>(new Map());
   const [pageDimensions, setPageDimensions] = useState<Map<number, { width: number; height: number }>>(new Map());
   const [totalPages, setTotalPages] = useState(0);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [editedPdfBytes, setEditedPdfBytes] = useState<Uint8Array | null>(null);
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderError, setRenderError] = useState(false);
   const [editorZoom, setEditorZoom] = useState(100);
-  const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
-  const [extractionError, setExtractionError] = useState(false);
-  const pageEditorRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const [activeEditorPage, setActiveEditorPage] = useState(1);
-  const [editorReadyVersion, setEditorReadyVersion] = useState(0);
+  const [activeTool, setActiveTool] = useState<EditorTool>("select");
+  const [annotations, setAnnotations] = useState<TextAnnotation[]>([]);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
+  const [drawings, setDrawings] = useState<Map<number, string>>(new Map());
+  const [editedPdfBytes, setEditedPdfBytes] = useState<Uint8Array | null>(null);
 
-  // We use a single "active" TipTap editor for the toolbar — the one on activeEditorPage
-  // Each PdfPageEditor creates its own editor internally.
-  // The toolbar connects to whichever page's editor is active.
-  // We store editors in a ref map that PdfPageEditor components register themselves into.
-  const editorsMap = useRef<Map<number, any>>(new Map());
+  // Undo/Redo history
+  const [annotationHistory, setAnnotationHistory] = useState<TextAnnotation[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Step 2 — Document Details & Signers
   const [documentName, setDocumentName] = useState("");
@@ -799,173 +1085,218 @@ function UploadVaultSignContent() {
     }
   }, [uploadedFile, pdfData, documentName]);
 
-  // ─── Extract PDF text and render page images ────────────
+  // ─── Render PDF pages as images (no text extraction) ──────
   useEffect(() => {
     if (!pdfData) return;
 
-    setIsExtracting(true);
-    setExtractionError(false);
+    setIsRendering(true);
+    setRenderError(false);
 
-    const extractAndRender = async () => {
+    const renderPages = async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
         setTotalPages(pdf.numPages);
 
-        const newPageImages = new Map<number, string>();
-        const newOriginalPages = new Map<number, string>();
-        const newPageDimensions = new Map<number, { width: number; height: number }>();
-
-        // Use a base scale for rendering the background image
-        const renderScale = 2; // high-res for background
+        const newImages = new Map<number, string>();
+        const newDims = new Map<number, { width: number; height: number }>();
+        const renderScale = 2;
 
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: renderScale });
 
-          // Render page to canvas for background image
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           const ctx = canvas.getContext("2d")!;
           await page.render({ canvasContext: ctx, viewport } as any).promise;
-          newPageImages.set(i, canvas.toDataURL("image/png"));
+          newImages.set(i, canvas.toDataURL("image/png"));
 
-          // Store dimensions for display sizing
           const baseViewport = page.getViewport({ scale: 1 });
-          // We display at a container-appropriate width
           const containerWidth = Math.max(500, Math.min(window.innerWidth - 80, 800));
           const displayScale = containerWidth / baseViewport.width;
-          newPageDimensions.set(i, {
+          newDims.set(i, {
             width: Math.round(baseViewport.width * displayScale),
             height: Math.round(baseViewport.height * displayScale),
           });
-
-          // Extract text content and convert to HTML
-          const textContent = await page.getTextContent();
-          const html = convertTextContentToHtml(textContent);
-          newOriginalPages.set(i, html);
         }
 
-        setPageImages(newPageImages);
-        setPageDimensions(newPageDimensions);
-        setOriginalPages(newOriginalPages);
-        setEditedPages(new Map(newOriginalPages)); // initialize edited = original
-        setIsExtracting(false);
+        setPageImages(newImages);
+        setPageDimensions(newDims);
+        setIsRendering(false);
       } catch (err) {
-        console.error("PDF extraction error:", err);
-        setExtractionError(true);
-        setIsExtracting(false);
+        console.error("PDF rendering error:", err);
+        setRenderError(true);
+        setIsRendering(false);
       }
     };
 
-    extractAndRender();
+    renderPages();
   }, [pdfData]);
 
-  // ─── Handle content change from page editors ────────────
-  const handleContentChange = useCallback((pageNum: number, html: string) => {
-    setEditedPages((prev) => {
+  // ─── Undo/Redo helpers ──────────────────────────────────────
+  const pushHistory = useCallback((newAnnotations: TextAnnotation[]) => {
+    setAnnotationHistory((prev) => {
+      const sliced = prev.slice(0, historyIndex + 1);
+      return [...sliced, newAnnotations];
+    });
+    setHistoryIndex((prev) => prev + 1);
+  }, [historyIndex]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0) return;
+    const newIndex = historyIndex - 1;
+    setHistoryIndex(newIndex);
+    setAnnotations(annotationHistory[newIndex]);
+    setSelectedAnnotation(null);
+  }, [historyIndex, annotationHistory]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex >= annotationHistory.length - 1) return;
+    const newIndex = historyIndex + 1;
+    setHistoryIndex(newIndex);
+    setAnnotations(annotationHistory[newIndex]);
+    setSelectedAnnotation(null);
+  }, [historyIndex, annotationHistory]);
+
+  // ─── Annotation handlers ─────────────────────────────────────
+  const handleAddAnnotationAt = useCallback((page: number, xPct: number, yPct: number) => {
+    let newAnn: TextAnnotation;
+
+    if (activeTool === "text") {
+      newAnn = {
+        id: `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        page,
+        x: xPct,
+        y: yPct,
+        width: 30,
+        height: 4,
+        text: "",
+        fontSize: 14,
+        fontFamily: "Helvetica",
+        color: "#111827",
+        bold: false,
+        italic: false,
+        underline: false,
+        type: "text",
+      };
+    } else if (activeTool === "highlight") {
+      newAnn = {
+        id: `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        page,
+        x: xPct,
+        y: yPct,
+        width: 25,
+        height: 2,
+        text: "",
+        fontSize: 14,
+        fontFamily: "Helvetica",
+        color: "#111827",
+        bold: false,
+        italic: false,
+        underline: false,
+        type: "highlight",
+      };
+    } else if (activeTool === "whiteout") {
+      newAnn = {
+        id: `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        page,
+        x: xPct,
+        y: yPct,
+        width: 20,
+        height: 2,
+        text: "",
+        fontSize: 14,
+        fontFamily: "Helvetica",
+        color: "#111827",
+        bold: false,
+        italic: false,
+        underline: false,
+        type: "whiteout",
+      };
+    } else {
+      return;
+    }
+
+    const newAnnotations = [...annotations, newAnn];
+    setAnnotations(newAnnotations);
+    setSelectedAnnotation(newAnn.id);
+    pushHistory(newAnnotations);
+  }, [activeTool, annotations, pushHistory]);
+
+  const handleMoveAnnotation = useCallback((id: string, x: number, y: number) => {
+    setAnnotations((prev) => prev.map(a => a.id === id ? { ...a, x, y } : a));
+  }, []);
+
+  const handleRemoveAnnotation = useCallback((id: string) => {
+    const newAnnotations = annotations.filter(a => a.id !== id);
+    setAnnotations(newAnnotations);
+    setSelectedAnnotation(null);
+    pushHistory(newAnnotations);
+  }, [annotations, pushHistory]);
+
+  const handleUpdateAnnotation = useCallback((id: string, updates: Partial<TextAnnotation>) => {
+    setAnnotations((prev) => {
+      const newAnns = prev.map(a => a.id === id ? { ...a, ...updates } : a);
+      // Don't push to history on every keystroke, just update state
+      return newAnns;
+    });
+  }, []);
+
+  const handleDrawingEnd = useCallback((pageNum: number, dataUrl: string) => {
+    setDrawings((prev) => {
       const next = new Map(prev);
-      next.set(pageNum, html);
+      next.set(pageNum, dataUrl);
       return next;
     });
   }, []);
 
-  // ─── Register editor from PdfPageEditor ────────────
-  const handleEditorReady = useCallback((pageNum: number, editor: any) => {
-    editorsMap.current.set(pageNum, editor);
-    setEditorReadyVersion((v) => v + 1); // force toolbar re-render
-  }, []);
+  // ─── Check if any edits have been made ────────────────────
+  const hasEdits = annotations.length > 0 || drawings.size > 0;
 
-  // ─── Check if any pages have been edited ────────────
-  const hasEdits = (() => {
-    for (const [pageNum, editedHtml] of editedPages) {
-      const originalHtml = originalPages.get(pageNum);
-      if (editedHtml !== originalHtml) return true;
-    }
-    return false;
-  })();
-
-  // ─── Save Edited PDF using html2canvas + pdf-lib ────────────
-  const handleSave = async () => {
+  // ─── Save Edited PDF (pdf-lib only) ───────────────────────
+  const handleSave = useCallback(async () => {
     if (!pdfData) return;
     try {
-      const pdfDoc = await PDFLib.PDFDocument.load(new Uint8Array(pdfData));
-      const pages = pdfDoc.getPages();
-
-      for (const [pageNum, editedHtml] of editedPages) {
-        const originalHtml = originalPages.get(pageNum);
-        if (editedHtml === originalHtml) continue; // skip unchanged pages
-
-        const pageIndex = pageNum - 1;
-        if (pageIndex >= pages.length) continue;
-
-        const page = pages[pageIndex];
-        const { width: pw, height: ph } = page.getSize();
-
-        // Find the editor DOM element for this page
-        const editorEl = pageEditorRefs.current.get(pageNum);
-        if (!editorEl) continue;
-
-        // Temporarily make the editor visible for capture
-        const editorOverlay = editorEl.querySelector(".pdf-page-editor-content") as HTMLElement;
-        const imgBackground = editorEl.querySelector("img") as HTMLElement;
-
-        // Store original styles
-        const origBgOpacity = imgBackground?.style.opacity;
-        const origOverlayBg = editorOverlay?.parentElement?.style.backgroundColor;
-
-        // Make background fully hidden and overlay fully white for clean capture
-        if (imgBackground) imgBackground.style.opacity = "0";
-        if (editorOverlay?.parentElement) {
-          editorOverlay.parentElement.style.backgroundColor = "rgba(255,255,255,1)";
-        }
-
-        try {
-          // Use html2canvas to capture the editor content
-          const canvas = await html2canvas(editorEl, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            width: editorEl.offsetWidth,
-            height: editorEl.offsetHeight,
-          });
-
-          // Convert canvas to PNG bytes
-          const pngDataUrl = canvas.toDataURL("image/png");
-          const pngBase64 = pngDataUrl.split(",")[1];
-          const pngBytes = Uint8Array.from(atob(pngBase64), (c) => c.charCodeAt(0));
-
-          // Draw a white rectangle to cover original content, then embed the image
-          page.drawRectangle({ x: 0, y: 0, width: pw, height: ph, color: PDFLib.rgb(1, 1, 1) });
-
-          const pngImage = await pdfDoc.embedPng(pngBytes);
-          page.drawImage(pngImage, {
-            x: 0,
-            y: 0,
-            width: pw,
-            height: ph,
-          });
-        } catch (imgErr) {
-          console.error(`Failed to capture page ${pageNum}:`, imgErr);
-        } finally {
-          // Restore original styles
-          if (imgBackground) imgBackground.style.opacity = origBgOpacity || "";
-          if (editorOverlay?.parentElement) {
-            editorOverlay.parentElement.style.backgroundColor = origOverlayBg || "";
-          }
-        }
-      }
-
-      const modifiedBytes = await pdfDoc.save();
+      const modifiedBytes = await saveEditedPdf(
+        new Uint8Array(pdfData),
+        annotations,
+        drawings,
+      );
       setEditedPdfBytes(modifiedBytes);
       toast.success("PDF saved with edits");
     } catch (err) {
       console.error("Save PDF error:", err);
       toast.error("Failed to save PDF");
     }
-  };
+  }, [pdfData, annotations, drawings]);
+
+  // ─── Keyboard shortcuts ──────────────────────────────────
+  useEffect(() => {
+    if (step !== 1) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        // Don't delete if user is editing text in a contentEditable
+        if ((e.target as HTMLElement)?.contentEditable === "true") return;
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        if (selectedAnnotation) {
+          handleRemoveAnnotation(selectedAnnotation);
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [step, selectedAnnotation, handleRemoveAnnotation, handleUndo, handleRedo]);
 
   // ─── Field Placement PDF Rendering (Step 3) ─────────────────────────
   useEffect(() => {
@@ -1067,7 +1398,6 @@ function UploadVaultSignContent() {
     }
 
     // Set the PDF data for field placement — use edited version if available
-    // Always create a fresh copy to avoid detached ArrayBuffer issues
     if (editedPdfBytes) {
       setFieldPdfData(new Uint8Array(editedPdfBytes).buffer as ArrayBuffer);
     } else if (pdfData) {
@@ -1209,47 +1539,12 @@ function UploadVaultSignContent() {
   // ─── Render ───────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* TipTap global styles */}
-      <style jsx global>{`
-        .pdf-page-editor-content .tiptap {
-          min-height: 100%;
-          padding: 20px 30px;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #111827;
-        }
-        .pdf-page-editor-content .tiptap p {
-          margin: 0.3em 0;
-        }
-        .pdf-page-editor-content .tiptap p:first-child {
-          margin-top: 0;
-        }
-        .pdf-page-editor-content .tiptap p:last-child {
-          margin-bottom: 0;
-        }
-        .pdf-page-editor-content .tiptap mark {
-          background-color: #fef08a;
-          padding: 0 2px;
-          border-radius: 2px;
-        }
-        .pdf-page-editor-content .tiptap span[style*="font-size"] {
-          line-height: 1.4;
-        }
-        .pdf-page-editor-content .tiptap p.is-editor-empty:first-child::before {
-          content: attr(data-placeholder);
-          float: left;
-          color: #9CA3AF;
-          pointer-events: none;
-          height: 0;
-        }
-      `}</style>
-
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
           Upload Custom PDF
         </h1>
-        <p className="text-sm text-[#6B7280] mt-1">Upload a PDF document, preview and edit it, then save it for future signing.</p>
+        <p className="text-sm text-[#6B7280] mt-1">Upload a PDF document, annotate it, then save it for signing.</p>
       </div>
 
       {/* Step Indicator */}
@@ -1267,14 +1562,14 @@ function UploadVaultSignContent() {
       </div>
       <div className="text-center mb-6">
         <p className="text-sm text-[#6B7280]">
-          {step === 1 && "Step 1: Upload & Edit PDF"}
+          {step === 1 && "Step 1: Upload & Annotate PDF"}
           {step === 2 && "Step 2: Document Details & Signers"}
           {step === 3 && "Step 3: Place Fields on Document"}
           {step === 4 && "Step 4: Review & Send"}
         </p>
       </div>
 
-      {/* ── STEP 1: Upload & Edit PDF ─────────────────────────────── */}
+      {/* ── STEP 1: Upload & Annotate PDF ─────────────────────────── */}
       {step === 1 && (
         <div className="space-y-4">
           {/* Upload Area */}
@@ -1315,15 +1610,18 @@ function UploadVaultSignContent() {
                   onClick={() => {
                     setPdfData(null);
                     setUploadedFile(null);
-                    setEditedPages(new Map());
-                    setOriginalPages(new Map());
                     setPageImages(new Map());
                     setPageDimensions(new Map());
                     setTotalPages(0);
                     setEditorZoom(100);
-                    setEditorMode("edit");
+                    setActiveTool("select");
+                    setAnnotations([]);
+                    setSelectedAnnotation(null);
+                    setDrawings(new Map());
                     setEditedPdfBytes(null);
-                    setExtractionError(false);
+                    setRenderError(false);
+                    setAnnotationHistory([]);
+                    setHistoryIndex(-1);
                   }}
                   className="text-sm text-[#0D9488] hover:text-[#0F766E] font-medium transition-colors"
                 >
@@ -1331,41 +1629,46 @@ function UploadVaultSignContent() {
                 </button>
               </div>
 
-              {/* Extraction Loading State */}
-              {isExtracting && (
+              {/* Rendering Loading State */}
+              {isRendering && (
                 <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-white border border-[#E5E7EB]">
                   <Loader2 className="size-8 text-[#0D9488] animate-spin mb-3" />
-                  <p className="text-sm text-[#6B7280]">Extracting text and rendering pages...</p>
+                  <p className="text-sm text-[#6B7280]">Rendering PDF pages...</p>
                   <p className="text-xs text-[#9CA3AF] mt-1">This may take a moment for large documents</p>
                 </div>
               )}
 
-              {/* Extraction Error */}
-              {extractionError && !isExtracting && (
+              {/* Render Error */}
+              {renderError && !isRendering && (
                 <div className="border border-[#DC2626]/30 rounded-xl bg-[#FEF2F2] p-6 text-center">
                   <AlertCircle className="size-8 text-[#DC2626] mx-auto mb-2" />
-                  <p className="text-sm text-[#DC2626] font-medium">Failed to extract document content</p>
+                  <p className="text-sm text-[#DC2626] font-medium">Failed to render document</p>
                   <p className="text-xs text-[#6B7280] mt-1">Try re-uploading the PDF.</p>
                 </div>
               )}
 
-              {/* PDF Editor - shown after extraction completes */}
-              {!isExtracting && !extractionError && pageImages.size > 0 && (
+              {/* PDF Editor - shown after rendering completes */}
+              {!isRendering && !renderError && pageImages.size > 0 && (
                 <>
                   {/* Toolbar */}
                   <PdfEditorToolbar
-                    editor={editorsMap.current.get(activeEditorPage) || null}
-                    key={`toolbar-${editorReadyVersion}-${activeEditorPage}`}
+                    activeTool={activeTool}
+                    onToolChange={setActiveTool}
+                    selectedAnnotation={selectedAnnotation}
+                    annotations={annotations}
+                    onUpdateAnnotation={handleUpdateAnnotation}
                     zoomLevel={editorZoom}
                     onZoomChange={setEditorZoom}
-                    editorMode={editorMode}
-                    onModeChange={setEditorMode}
                     onSave={handleSave}
                     totalPages={totalPages}
                     hasEdits={hasEdits}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                    canUndo={historyIndex > 0}
+                    canRedo={historyIndex < annotationHistory.length - 1}
                   />
 
-                  {/* Page Editors */}
+                  {/* Page Views */}
                   <div
                     className="overflow-y-auto rounded-xl"
                     style={{ maxHeight: "80vh", backgroundColor: "#E5E7EB" }}
@@ -1378,22 +1681,23 @@ function UploadVaultSignContent() {
                         const scaledHeight = Math.round(dims.height * zoomFactor);
 
                         return (
-                          <div
+                          <PdfPageView
                             key={pn}
-                            onClick={() => setActiveEditorPage(pn)}
-                            className={pn === activeEditorPage ? "ring-2 ring-[#0D9488] ring-offset-2 rounded" : ""}
-                          >
-                            <PdfPageEditor
-                              pageNum={pn}
-                              pageImage={pageImages.get(pn) || ""}
-                              initialContent={editedPages.get(pn) || "<p></p>"}
-                              onContentChange={handleContentChange}
-                              onEditorReady={handleEditorReady}
-                              pageWidth={scaledWidth}
-                              pageHeight={scaledHeight}
-                              editorMode={editorMode}
-                            />
-                          </div>
+                            pageNum={pn}
+                            pageImage={pageImages.get(pn) || ""}
+                            pageWidth={scaledWidth}
+                            pageHeight={scaledHeight}
+                            activeTool={activeTool}
+                            annotations={annotations}
+                            selectedAnnotation={selectedAnnotation}
+                            onSelectAnnotation={setSelectedAnnotation}
+                            onMoveAnnotation={handleMoveAnnotation}
+                            onRemoveAnnotation={handleRemoveAnnotation}
+                            onUpdateAnnotation={handleUpdateAnnotation}
+                            onAddAnnotationAt={handleAddAnnotationAt}
+                            onDrawingEnd={handleDrawingEnd}
+                            drawingDataUrl={drawings.get(pn)}
+                          />
                         );
                       })}
                     </div>
@@ -1403,7 +1707,11 @@ function UploadVaultSignContent() {
                   {hasEdits && (
                     <div className="flex items-center gap-2 text-xs text-[#6B7280]">
                       <Type className="size-3" />
-                      <span>Document has been edited. Click Save to apply changes.</span>
+                      <span>
+                        {annotations.length} annotation{annotations.length !== 1 ? "s" : ""}
+                        {drawings.size > 0 && ` and ${drawings.size} page${drawings.size !== 1 ? "s" : ""} with drawings`}.
+                        Click Save to apply changes.
+                      </span>
                     </div>
                   )}
                 </>

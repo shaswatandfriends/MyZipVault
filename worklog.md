@@ -49,3 +49,38 @@ Stage Summary:
 - New Step 1 flow: Upload PDF → pdfjs renders pages as images + extracts text → TipTap editors overlay pages → users freely edit → save captures editors as images via html2canvas-pro → pdf-lib embeds on PDF
 - All Steps 2-4 preserved and functional
 - Zero TypeScript errors, build compiles successfully
+
+---
+Task ID: pdf-editor-v3
+Agent: full-stack-developer
+Task: Rewrite PDF editor v3 — page image + annotation overlay
+
+Work Log:
+- Read worklog.md and existing page.tsx (1888 lines) to understand the v2 TipTap approach
+- Identified all TipTap-related code to remove: imports (useEditor, EditorContent, StarterKit, TextAlign, UnderlineExt, HighlightExt, TextStyle, Color, FontFamily, Placeholder, Extension, html2canvas), FontSize custom extension, convertTextContentToHtml function, PdfPageEditor component, PdfEditorToolbar component, state variables (editedPages, originalPages, isExtracting, extractionError, editorMode, activeEditorPage, editorReadyVersion, editorsMap, pageEditorRefs), handleContentChange, handleEditorReady, hasEdits comparison, handleSave with html2canvas
+- Read all Step 2/3/4 code (lines 1491-1888) to preserve it exactly
+- Wrote complete new page.tsx with v3 approach:
+  - New types: EditorTool, TextAnnotation
+  - New constants: annotationFontFamilies, annotationFontSizes, toolHints
+  - New saveEditedPdf standalone function using pdf-lib only (whiteout → highlight → text → drawings)
+  - New PdfPageView component: renders page image, drawing canvas overlay, annotation overlays (text with contentEditable, highlight rectangles, whiteout rectangles)
+  - New PdfEditorToolbar component: tool selection (Select, Text, Highlight, Whiteout, Draw, Eraser), undo/redo, text formatting (font, size, B/I/U, color) when text annotation selected, zoom, save
+  - New state: pageImages, pageDimensions, totalPages, isRendering, renderError, editorZoom, activeTool, annotations, selectedAnnotation, drawings, annotationHistory/historyIndex for undo/redo
+  - PDF rendering useEffect: pdfjs-dist renders pages as images only (NO text extraction)
+  - Save function: uses pdf-lib only via saveEditedPdf helper
+  - Annotation handlers: add, move, remove, update, drawing end
+  - Undo/redo with annotationHistory
+  - Keyboard shortcuts: Delete/Backspace to remove annotation, Ctrl+Z/Ctrl+Shift+Z for undo/redo
+  - All Step 2, 3, 4 code preserved exactly as-is
+- Fixed TS errors: mouse event types (HTMLDivElement → HTMLDivElement | HTMLCanvasElement), selectedAnnotation null assertion (!) in toolbar callbacks
+- Verified: tsc --noEmit shows zero errors for vaultsign/upload file
+- Verified: next build succeeds
+- Lint: no errors in vaultsign/upload file (6 pre-existing errors in other files from pdfjs library)
+
+Stage Summary:
+- Completely replaced TipTap/HTML text extraction approach with page image + annotation overlay approach
+- This is how DocuSign, Adobe Fill & Sign, PDFescape, and Sejda work
+- Step 1 flow: Upload PDF → pdfjs renders pages as high-res images → show images as document view → annotation tools (text, highlight, whiteout, draw, eraser) as positioned overlays → save writes annotations directly to PDF via pdf-lib
+- No TipTap, no html2canvas, no text extraction — the PDF page is shown as a clean image
+- All Steps 2-4 preserved and functional
+- Zero TypeScript errors, build compiles successfully
