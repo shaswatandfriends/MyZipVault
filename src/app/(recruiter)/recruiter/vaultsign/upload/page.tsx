@@ -504,6 +504,8 @@ function PdfPageView({
   const [rectStart, setRectStart] = useState<{ x: number; y: number } | null>(null);
   const [rectCurrent, setRectCurrent] = useState<{ x: number; y: number } | null>(null);
   const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
+  const [editingTextItemId, setEditingTextItemId] = useState<string | null>(null);
+  const [editingTextValue, setEditingTextValue] = useState("");
 
   // Initialize / size the drawing canvas
   useEffect(() => {
@@ -731,78 +733,86 @@ function PdfPageView({
           );
           if (existingReplace) return null; // already replaced
 
+          const isEditing = editingTextItemId === item.id;
+
           return (
             <div
               key={item.id}
-              className="absolute cursor-text"
+              className="absolute"
               style={{
                 left: `${item.x}%`,
                 top: `${item.y}%`,
-                width: `${item.width}%`,
+                width: isEditing ? "auto" : `${item.width}%`,
+                minWidth: `${item.width}%`,
                 height: `${item.height}%`,
                 fontSize: `${item.fontSize * (editorZoom / 100)}px`,
                 fontFamily: getCssFontStack(item.fontFamily),
-                color: "transparent",
-                zIndex: 6,
-                overflow: "hidden",
-                whiteSpace: "nowrap",
+                color: isEditing ? "#000" : "transparent",
+                zIndex: isEditing ? 20 : 6,
+                overflow: isEditing ? "visible" : "hidden",
+                whiteSpace: isEditing ? "pre-wrap" : "nowrap",
+                cursor: isEditing ? "text" : "pointer",
                 // Visible outline like Sejda — shows all editable text areas
-                outline: "1px dashed rgba(13, 148, 136, 0.35)",
-                outlineOffset: "1px",
-                backgroundColor: "rgba(13, 148, 136, 0.04)",
+                outline: isEditing ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.35)",
+                outlineOffset: isEditing ? "0px" : "1px",
+                backgroundColor: isEditing ? "rgba(255,255,255,0.95)" : "rgba(13, 148, 136, 0.04)",
                 transition: "background-color 0.15s, outline-color 0.15s",
+                pointerEvents: "auto",
               }}
               onMouseEnter={(e) => {
-                const el = e.currentTarget;
-                if (el.contentEditable !== "true") {
-                  el.style.backgroundColor = "rgba(13, 148, 136, 0.12)";
-                  el.style.outlineColor = "rgba(13, 148, 136, 0.7)";
+                if (!isEditing) {
+                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.15)";
+                  e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.7)";
                 }
               }}
               onMouseLeave={(e) => {
-                const el = e.currentTarget;
-                if (el.contentEditable !== "true") {
-                  el.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
-                  el.style.outlineColor = "rgba(13, 148, 136, 0.35)";
+                if (!isEditing) {
+                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
+                  e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.35)";
                 }
               }}
-              contentEditable={false}
               onClick={(e) => {
                 e.stopPropagation();
-                const el = e.currentTarget;
-                if (el.contentEditable === "true") return; // already editing
-                el.contentEditable = "true";
-                el.style.color = "#000";
-                el.style.backgroundColor = "rgba(255,255,255,0.95)";
-                el.style.outline = "2px solid #0D9488";
-                el.style.outlineOffset = "0px";
-                el.focus();
-                // Select all text for easy replacement
-                const range = document.createRange();
-                range.selectNodeContents(el);
-                const sel = window.getSelection();
-                sel?.removeAllRanges();
-                sel?.addRange(range);
-              }}
-              onBlur={(e) => {
-                const el = e.currentTarget;
-                el.contentEditable = "false";
-                el.style.color = "transparent";
-                el.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
-                el.style.outline = "1px dashed rgba(13, 148, 136, 0.35)";
-                el.style.outlineOffset = "1px";
-                const newText = el.innerText;
-                if (newText !== item.text) {
-                  onAddTextReplace(item.id, item.text, newText, pageNum, item.x, item.y, item.width, item.height, item.fontSize, item.fontFamily);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  (e.target as HTMLElement).blur();
-                }
+                e.preventDefault();
+                if (isEditing) return; // already editing
+                setEditingTextItemId(item.id);
+                setEditingTextValue(item.text);
               }}
             >
-              {item.text}
+              {isEditing ? (
+                <textarea
+                  autoFocus
+                  value={editingTextValue}
+                  onChange={(e) => setEditingTextValue(e.target.value)}
+                  onBlur={() => {
+                    const newText = editingTextValue.trim();
+                    if (newText !== item.text && newText !== "") {
+                      onAddTextReplace(item.id, item.text, newText, pageNum, item.x, item.y, item.width, item.height, item.fontSize, item.fontFamily);
+                    }
+                    setEditingTextItemId(null);
+                    setEditingTextValue("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setEditingTextItemId(null);
+                      setEditingTextValue("");
+                    }
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      (e.target as HTMLElement).blur();
+                    }
+                  }}
+                  className="w-full h-full bg-transparent outline-none resize-none p-0 m-0 border-0"
+                  style={{
+                    fontSize: "inherit",
+                    fontFamily: "inherit",
+                    color: "inherit",
+                    lineHeight: "inherit",
+                  }}
+                />
+              ) : (
+                <span>{item.text}</span>
+              )}
             </div>
           );
         })}
