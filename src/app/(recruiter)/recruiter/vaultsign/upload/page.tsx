@@ -525,6 +525,20 @@ function PdfPageView({
   const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
   const [editingTextItemId, setEditingTextItemId] = useState<string | null>(null);
 
+  // Auto-focus the contentEditable overlay when editing starts (Sejda behavior)
+  useEffect(() => {
+    if (editingTextItemId) {
+      // Small delay to ensure the element is rendered
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`text-editable-${editingTextItemId}`);
+        if (el) {
+          el.focus();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [editingTextItemId]);
+
   // Initialize / size the drawing canvas
   useEffect(() => {
     const canvas = drawCanvasRef.current;
@@ -737,65 +751,14 @@ function PdfPageView({
           onMouseLeave={handleMouseUp}
         />
 
-        {/* Modified text items — always visible regardless of active tool */}
-        {textItems.filter(item => modifiedTextItems.has(item.id) && !(activeTool === "edit-text" && editingTextItemId === item.id)).map((item) => {
-          const modified = modifiedTextItems.get(item.id)!;
-          const scaleXValue = parseFloat(item.scaleX) || 1;
-          const rotateValue = item.rotate || "0deg";
-          const displayScale = pageWidth / item.viewportWidth;
-          const displayFontSize = modified.fontSize * displayScale;
-
-          return (
-            <div
-              key={`mod-${item.id}`}
-              className="absolute"
-              style={{
-                left: item.left,
-                top: item.top,
-                fontSize: `${displayFontSize}px`,
-                fontFamily: getCssFontStack(modified.fontFamily),
-                transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
-                transformOrigin: "0% 0%",
-                color: modified.color || "#000000",
-                backgroundColor: "rgba(255,255,255,0.95)",
-                zIndex: 20,
-                overflow: "hidden",
-                whiteSpace: "pre",
-                cursor: activeTool === "edit-text" ? "pointer" : "default",
-                lineHeight: 1,
-                outline: "none",
-                outlineOffset: "1px",
-                pointerEvents: "auto",
-                padding: "0 1px",
-              } as React.CSSProperties}
-              onClick={(e) => {
-                if (activeTool === "edit-text") {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setEditingTextItemId(item.id);
-                  onEditingTextItemChange(item);
-                }
-              }}
-            >
-              {modified.newText}
-            </div>
-          );
-        })}
-
-        {/* Text layer for edit-text tool — positioned by pdfjs TextLayer API */}
-        {activeTool === "edit-text" && textItems.length === 0 && (
-          <div
-            className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-amber-800 text-xs font-medium shadow-sm z-20"
-          >
-            No editable text detected on this page.
-          </div>
-        )}
-        {activeTool === "edit-text" && textItems.map((item) => {
+        {/* ─── Sejda-style text layer ─────────────────────────────────── */}
+        {/* Text items — always rendered; original spans with white bg when edited (Sejda .edited approach) */}
+        {textItems.map((item) => {
           const isEditing = editingTextItemId === item.id;
           const modified = modifiedTextItems.get(item.id);
           const isModified = !!modified;
 
-          // Parse values for the onModifyTextItem callback and display
+          // Parse values for the onModifyTextItem callback
           const leftPct = parseFloat(item.left) || 0;
           const topPct = parseFloat(item.top) || 0;
           const fontHeightPx = parseFloat(item.fontHeight) || 12;
@@ -809,20 +772,32 @@ function PdfPageView({
           const displayScale = pageWidth / item.viewportWidth;
           const scaledFontSize = fontHeightValue * displayScale;
 
-          // Use editing text item's font if actively editing, then modified, then original
+          // When actively editing, use the editingTextItem's font (from toolbar)
           const editingFontFamily = isEditing && editingTextItem ? editingTextItem.fontFamily : undefined;
           const editingFontHeight = isEditing && editingTextItem ? parseFloat(editingTextItem.fontHeight) || 0 : 0;
-          const displayText = isEditing ? (modified?.newText || item.text) : (modified?.newText || item.text);
+
+          // Display values: editing > modified > original
           const displayFontFamily = editingFontFamily || modified?.fontFamily || item.fontFamily;
-          const displayFontSize = isEditing ? (editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize) : (modified ? modified.fontSize * displayScale : scaledFontSize);
+          const displayFontSize = isEditing
+            ? (editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize)
+            : (modified ? modified.fontSize * displayScale : scaledFontSize);
 
-          // If modified and not currently editing, skip — rendered by the "always visible" block above
-          if (isModified && !isEditing) return null;
+          // Sejda approach: the ORIGINAL span gets white background when edited
+          // This hides the canvas text underneath. The span ITSELF shows the new text.
+          // When actively editing, a separate contentEditable overlay is created on top.
+          const showAsEdited = isModified || isEditing;
+          const displayText = modified?.newText || item.text;
 
+          // Original text span — this is the Sejda ".textLayer > div" equivalent
+          // When edited: gets white background + shows new text (Sejda .edited class)
+          // When not edited: transparent, canvas shows through
           return (
             <div
               key={item.id}
               className="absolute"
+              data-font-face={item.origFontName}
+              data-font-color="#000000"
+              data-inline-editor-id={isEditing ? `text-editable-${item.id}` : undefined}
               style={{
                 left: item.left,
                 top: item.top,
@@ -830,103 +805,166 @@ function PdfPageView({
                 fontFamily: getCssFontStack(displayFontFamily),
                 transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
                 transformOrigin: "0% 0%",
-                // When editing: show text in original color with tight background
-                // When not editing and not modified: transparent so canvas shows through
-                color: isEditing ? (modified?.color || "#000000") : "transparent",
-                backgroundColor: isEditing
-                  ? "rgba(255,255,255,0.95)"
-                  : "transparent",
-                zIndex: isEditing ? 20 : 6,
+                // Sejda .edited: white bg hides canvas text underneath
+                color: showAsEdited ? (modified?.color || "#000000") : "transparent",
+                backgroundColor: showAsEdited ? "white" : "transparent",
+                zIndex: isEditing ? 6 : isModified ? 20 : 6,
                 overflow: isEditing ? "visible" : "hidden",
                 whiteSpace: "pre",
-                cursor: isEditing ? "text" : "pointer",
+                cursor: activeTool === "edit-text" ? (isEditing ? "text" : "pointer") : "default",
                 lineHeight: 1,
-                outline: isEditing ? "1px solid rgba(13, 148, 136, 0.5)"
-                        : "1px dashed rgba(13, 148, 136, 0.35)",
-                outlineOffset: "1px",
-                transition: "background-color 0.1s",
-                pointerEvents: "auto",
-                padding: "0 1px",
+                outline: isEditing ? "2px solid transparent"
+                        : isModified ? "2px dashed transparent"
+                        : activeTool === "edit-text" ? "2px dashed transparent" : "none",
+                outlineOffset: "2px",
+                userSelect: showAsEdited ? "none" : "auto",
+                pointerEvents: activeTool === "edit-text" ? "auto" : (isModified ? "auto" : "none"),
+                padding: "0 2px",
                 minWidth: isEditing ? "20px" : undefined,
               } as React.CSSProperties}
+              // Sejda-style hover: blue dashed outline when text tool active
               onMouseEnter={(e) => {
-                if (!isEditing) {
-                  e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.08)";
-                  e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.7)";
+                if (!isEditing && activeTool === "edit-text") {
+                  e.currentTarget.style.outlineColor = "#0282e5";
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isEditing) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.outlineColor = "rgba(13, 148, 136, 0.35)";
+                if (!isEditing && activeTool === "edit-text") {
+                  e.currentTarget.style.outlineColor = "transparent";
                 }
               }}
               onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (isEditing) return;
-                setEditingTextItemId(item.id);
-                onEditingTextItemChange(item);
+                if (activeTool === "edit-text" && !isEditing) {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setEditingTextItemId(item.id);
+                  onEditingTextItemChange(item);
+                }
               }}
             >
-              <span
-                contentEditable={isEditing}
-                suppressContentEditableWarning
-                dangerouslySetInnerHTML={{ __html: displayText }}
-                onFocus={(e) => {
-                  // Select all text when entering edit mode
-                  const range = document.createRange();
-                  range.selectNodeContents(e.currentTarget);
-                  const sel = window.getSelection();
-                  sel?.removeAllRanges();
-                  sel?.addRange(range);
-                }}
-                onBlur={(e) => {
-                  const newText = e.currentTarget.innerText.trim();
-                  const currentFontFamily = editingTextItem?.fontFamily || item.fontFamily;
-                  const currentFontSize = parseFloat(editingTextItem?.fontHeight || item.fontHeight) || fontHeightPx;
-                  // Save if text changed OR font/size changed from original
-                  const fontChanged = currentFontFamily !== item.fontFamily || currentFontSize !== fontHeightPx;
-                  if ((newText !== item.text || fontChanged) && newText !== "") {
-                    // Save modification
-                    onModifyTextItem({
-                      textItemId: item.id,
-                      page: pageNum,
-                      originalText: item.text,
-                      newText: newText || item.text,
-                      fontFamily: currentFontFamily,
-                      fontSize: currentFontSize,
-                      bold: false,
-                      italic: false,
-                      color: "#000000",
-                      leftPct,
-                      topPct,
-                      widthPct,
-                      heightPct,
-                    });
-                  } else if (newText === item.text && !fontChanged) {
-                    // Text and font unchanged - just deselect
-                    onModifyTextItemCancel(item.id);
-                  }
-                  setEditingTextItemId(null);
-                  onEditingTextItemChange(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    // Cancel editing - revert to original/modified text
-                    setEditingTextItemId(null);
-                    onEditingTextItemChange(null);
-                    e.currentTarget.blur();
-                  }
-                }}
-                style={{
-                  display: "inline",
-                  outline: "none",
-                }}
-              />
+              {showAsEdited ? displayText : ""}
             </div>
           );
         })}
+
+        {/* Sejda-style contentEditable overlay — created ON TOP of original when editing */}
+        {/* This is the "text-editable existingTextEdit" element that Sejda creates */}
+        {editingTextItemId && (() => {
+          const item = textItems.find(t => t.id === editingTextItemId);
+          if (!item) return null;
+
+          const modified = modifiedTextItems.get(item.id);
+          const fontHeightValue = parseFloat(item.fontHeight) || 12;
+          const scaleXValue = parseFloat(item.scaleX) || 1;
+          const rotateValue = item.rotate || "0deg";
+          const displayScale = pageWidth / item.viewportWidth;
+          const scaledFontSize = fontHeightValue * displayScale;
+
+          // Position values for save callback
+          const leftPct = parseFloat(item.left) || 0;
+          const topPct = parseFloat(item.top) || 0;
+          const widthPct = item.width ? Math.max((item.width / item.viewportWidth) * 100, 2) : 2;
+          const heightPct = Math.max((fontHeightValue / item.viewportHeight) * 100, 1);
+
+          const editingFontFamily = editingTextItem?.fontFamily || modified?.fontFamily || item.fontFamily;
+          const editingFontHeight = editingTextItem ? parseFloat(editingTextItem.fontHeight) || 0 : 0;
+          const displayFontSize = editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize;
+          const displayText = modified?.newText || item.text;
+
+          // Position offset by 2px (border width) like Sejda
+          const leftValue = parseFloat(item.left) || 0;
+          const topValue = parseFloat(item.top) || 0;
+          const leftPx = (leftValue / 100) * pageWidth - 2;
+          const topPx = (topValue / 100) * pageHeight - 2;
+
+          return (
+            <div
+              key={`text-editable-${item.id}`}
+              id={`text-editable-${item.id}`}
+              className="text-editable existingTextEdit"
+              contentEditable
+              suppressContentEditableWarning
+              style={{
+                position: "absolute",
+                zIndex: 10,
+                left: leftPx,
+                top: topPx,
+                fontSize: `${displayFontSize}px`,
+                fontFamily: getCssFontStack(editingFontFamily),
+                transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
+                transformOrigin: "0% 0%",
+                color: modified?.color || "#000000",
+                backgroundColor: "transparent",
+                outline: "2px dashed transparent",
+                whiteSpace: "pre",
+                overflow: "visible",
+                lineHeight: 1,
+                cursor: "text",
+                padding: "2px",
+                minWidth: "20px",
+                userSelect: "text",
+              } as React.CSSProperties}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#0282e5";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "transparent";
+              }}
+              onFocus={(e) => {
+                // Select all text when entering edit mode (Sejda behavior)
+                const range = document.createRange();
+                range.selectNodeContents(e.currentTarget);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+              }}
+              onBlur={(e) => {
+                const newText = e.currentTarget.innerText.trim();
+                const currentFontFamily = editingTextItem?.fontFamily || item.fontFamily;
+                const currentFontSize = parseFloat(editingTextItem?.fontHeight || item.fontHeight) || fontHeightValue;
+                const fontHeightPx = fontHeightValue;
+                // Save if text changed OR font/size changed from original
+                const fontChanged = currentFontFamily !== item.fontFamily || currentFontSize !== fontHeightPx;
+                if ((newText !== item.text || fontChanged) && newText !== "") {
+                  onModifyTextItem({
+                    textItemId: item.id,
+                    page: pageNum,
+                    originalText: item.text,
+                    newText: newText || item.text,
+                    fontFamily: currentFontFamily,
+                    fontSize: currentFontSize,
+                    bold: false,
+                    italic: false,
+                    color: "#000000",
+                    leftPct,
+                    topPct,
+                    widthPct,
+                    heightPct,
+                  });
+                }
+                setEditingTextItemId(null);
+                onEditingTextItemChange(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  // Cancel editing — revert to original
+                  setEditingTextItemId(null);
+                  onEditingTextItemChange(null);
+                }
+              }}
+              dangerouslySetInnerHTML={{ __html: displayText }}
+            />
+          );
+        })()}
+
+        {/* Empty text layer message */}
+        {activeTool === "edit-text" && textItems.length === 0 && (
+          <div
+            className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-amber-800 text-xs font-medium shadow-sm z-20"
+          >
+            No editable text detected on this page.
+          </div>
+        )}
 
         {/* Annotation overlays */}
         {pageAnnotations.map((ann) => {

@@ -295,3 +295,37 @@
   cursor: default;
   user-select: none;
 }
+
+/* ─── Sejda-style text-editable overlay (for inline PDF text editing) ── */
+.text-editable {
+  outline: 2px dashed transparent;
+  white-space: pre;
+  overflow: hidden;
+  text-align: left;
+  line-height: 1;
+}
+
+.text-editable:hover {
+  border-color: #0282e5;
+}
+
+.text-editable:hover:focus {
+  border-color: transparent;
+}
+
+.text-editable::selection,
+.text-editable::-moz-selection {
+  background: #9ecaed;
+}
+
+/* Sejda .edited state: original text span hidden with white background */
+.textLayer > .edited,
+.text-edited-original {
+  background-color: white;
+  outline-color: white;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
