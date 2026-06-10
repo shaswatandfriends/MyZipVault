@@ -175,6 +175,9 @@ import {
   Undo2,
   Redo2,
   Baseline,
+  Scissors,
+  Move,
+  ZoomInIcon,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -344,6 +347,9 @@ export {
   Undo2,
   Redo2,
   Baseline,
+  Scissors,
+  Move,
+  ZoomInIcon,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────
