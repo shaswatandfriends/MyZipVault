@@ -189,6 +189,7 @@ function PdfPageEditor({
   pageImage,
   initialContent,
   onContentChange,
+  onEditorReady,
   pageWidth,
   pageHeight,
   editorMode,
@@ -197,6 +198,7 @@ function PdfPageEditor({
   pageImage: string;
   initialContent: string;
   onContentChange: (pageNum: number, html: string) => void;
+  onEditorReady: (pageNum: number, editor: any) => void;
   pageWidth: number;
   pageHeight: number;
   editorMode: "edit" | "preview";
@@ -230,6 +232,13 @@ function PdfPageEditor({
       },
     },
   });
+
+  // Register editor with parent when created
+  useEffect(() => {
+    if (editor) {
+      onEditorReady(pageNum, editor);
+    }
+  }, [editor]);
 
   // Update editable state when mode changes
   useEffect(() => {
@@ -863,6 +872,11 @@ function UploadVaultSignContent() {
     });
   }, []);
 
+  // ─── Register editor from PdfPageEditor ────────────
+  const handleEditorReady = useCallback((pageNum: number, editor: any) => {
+    editorsMap.current.set(pageNum, editor);
+  }, []);
+
   // ─── Check if any pages have been edited ────────────
   const hasEdits = (() => {
     for (const [pageNum, editedHtml] of editedPages) {
@@ -1370,6 +1384,7 @@ function UploadVaultSignContent() {
                               pageImage={pageImages.get(pn) || ""}
                               initialContent={editedPages.get(pn) || "<p></p>"}
                               onContentChange={handleContentChange}
+                              onEditorReady={handleEditorReady}
                               pageWidth={scaledWidth}
                               pageHeight={scaledHeight}
                               editorMode={editorMode}
