@@ -131,6 +131,148 @@ const annotationFontFamilies = [
 
 const annotationFontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72];
 
+// ─── CSS Font Stack Mapping (Sejda-style fallbacks) ─────────────────
+// Maps commercial font names to CSS font stacks with open-source equivalents.
+// The stored annotation value uses the commercial name (e.g., "Calibri")
+// so the PDF save function can map it to the correct pdf-lib StandardFont.
+// But CSS rendering needs fallbacks for non-Windows systems.
+const cssFontStacks: Record<string, string> = {
+  "Arial": "'Arial', 'Liberation Sans', 'Helvetica', sans-serif",
+  "Arial Narrow": "'Arial Narrow', 'Liberation Sans Narrow', 'Helvetica Narrow', sans-serif",
+  "Calibri": "'Calibri', 'Carlito', 'Liberation Sans', sans-serif",
+  "Cambria": "'Cambria', 'Caladea', 'Liberation Serif', serif",
+  "Times New Roman": "'Times New Roman', 'Tinos', 'Liberation Serif', serif",
+  "Courier New": "'Courier New', 'Cousine', 'Liberation Mono', monospace",
+  "Verdana": "'Verdana', 'DejaVu Sans', 'Liberation Sans', sans-serif",
+  "Tahoma": "'Tahoma', 'Liberation Sans', 'DejaVu Sans', sans-serif",
+  "Segoe UI": "'Segoe UI', 'Selawik', 'Liberation Sans', sans-serif",
+  "Georgia": "'Georgia', 'DejaVu Serif', 'Liberation Serif', serif",
+  "Garamond": "'Garamond', 'EB Garamond', 'Liberation Serif', serif",
+  "Bahnschrift": "'Bahnschrift', 'Liberation Sans', 'Carlito', sans-serif",
+  "Franklin Gothic": "'Franklin Gothic', 'Liberation Sans', 'Carlito', sans-serif",
+  "Century Gothic": "'Century Gothic', 'Arimo', sans-serif",
+  "Trebuchet MS": "'Trebuchet MS', 'Fira Sans', 'Liberation Sans', sans-serif",
+  "Palatino Linotype": "'Palatino Linotype', 'PT Serif', 'P052', 'Liberation Serif', serif",
+  "Consolas": "'Consolas', 'Cousine', 'Liberation Mono', monospace",
+  "Lucida Sans Unicode": "'Lucida Sans Unicode', 'DejaVu Sans', 'Liberation Sans', sans-serif",
+  "Impact": "'Impact', 'Liberation Sans', sans-serif",
+  "Book Antiqua": "'Book Antiqua', 'PT Serif Caption', 'P052', 'Liberation Serif', serif",
+  "Helvetica": "'Helvetica', 'Liberation Sans', 'Arial', sans-serif",
+};
+
+/**
+ * Returns a CSS font-family string with proper fallbacks for the given font name.
+ * If the font name is not in our mapping (e.g., a PDF internal font name like "g_d0_f1"),
+ * it falls back to a generic family based on heuristic matching.
+ */
+function getCssFontStack(fontName: string): string {
+  // Direct lookup in our mapping
+  if (cssFontStacks[fontName]) return cssFontStacks[fontName];
+
+  // Heuristic: try to match PDF internal names or partial names
+  const lower = fontName.toLowerCase();
+  for (const [key, stack] of Object.entries(cssFontStacks)) {
+    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+      return stack;
+    }
+  }
+
+  // Heuristic: serif/sans-serif/mono based on common PDF font name patterns
+  if (lower.includes("serif") || lower.includes("roman") || lower.includes("times") || lower.includes("garamond") || lower.includes("palatino")) {
+    return "'Liberation Serif', 'Times New Roman', serif";
+  }
+  if (lower.includes("mono") || lower.includes("courier") || lower.includes("consol") || lower.includes("code")) {
+    return "'Liberation Mono', 'Courier New', monospace";
+  }
+  // Default: sans-serif
+  return "'Liberation Sans', 'Helvetica', 'Arial', sans-serif";
+}
+
+/**
+ * Maps PDF internal font names (e.g., "ArialMT", "g_d0_f1", "TimesNewRomanPSMT")
+ * to one of our known annotation font families. This is used when extracting
+ * text from PDFs so that the edit-text tool and save function can work correctly.
+ */
+function mapPdfFontToAnnotationFont(pdfFontName: string): string {
+  if (!pdfFontName) return "Helvetica";
+
+  // Direct match
+  const knownFonts = annotationFontFamilies.map(f => f.value);
+  if (knownFonts.includes(pdfFontName)) return pdfFontName;
+
+  // Common PDF font name patterns
+  const lower = pdfFontName.toLowerCase();
+
+  // Arial variants: ArialMT, Arial-BoldMT, Arial-ItalicMT, ArialNarrow, etc.
+  if (lower.startsWith("arial")) {
+    if (lower.includes("narrow")) return "Arial Narrow";
+    return "Arial";
+  }
+  // Times variants: TimesNewRomanPSMT, Times-Roman, TimesNewRomanPS-BoldMT
+  if (lower.includes("times") || lower === "timesnewromanpsmt" || lower === "times-roman") {
+    return "Times New Roman";
+  }
+  // Courier variants: CourierNewPSMT, Courier
+  if (lower.includes("courier")) return "Courier New";
+  // Helvetica variants: Helvetica, Helvetica-Bold, HelveticaNeue
+  if (lower.includes("helvetica") || lower === "arialunicodems") return "Helvetica";
+  // Calibri variants: Calibri, Calibri-Bold
+  if (lower.includes("calibri") || lower.includes("carlito")) return "Calibri";
+  // Cambria variants
+  if (lower.includes("cambria") || lower.includes("caladea")) return "Cambria";
+  // Verdana
+  if (lower.includes("verdana")) return "Verdana";
+  // Tahoma
+  if (lower.includes("tahoma")) return "Tahoma";
+  // Segoe UI
+  if (lower.includes("segoe")) return "Segoe UI";
+  // Georgia
+  if (lower.includes("georgia")) return "Georgia";
+  // Garamond / EB Garamond
+  if (lower.includes("garamond")) return "Garamond";
+  // Consolas
+  if (lower.includes("consolas")) return "Consolas";
+  // Impact
+  if (lower.includes("impact")) return "Impact";
+  // Century Gothic
+  if (lower.includes("century") && lower.includes("gothic")) return "Century Gothic";
+  // Trebuchet
+  if (lower.includes("trebuchet")) return "Trebuchet MS";
+  // Palatino
+  if (lower.includes("palatino")) return "Palatino Linotype";
+  // Book Antiqua
+  if (lower.includes("book") && lower.includes("antiqua")) return "Book Antiqua";
+  // Lucida
+  if (lower.includes("lucida")) return "Lucida Sans Unicode";
+  // Bahnschrift
+  if (lower.includes("bahnschrift")) return "Bahnschrift";
+  // Franklin Gothic
+  if (lower.includes("franklin")) return "Franklin Gothic";
+  // DejaVu Serif (common Linux PDF font)
+  if (lower.includes("dejavu") && lower.includes("serif")) return "Georgia";
+  // DejaVu Sans
+  if (lower.includes("dejavu") && lower.includes("sans")) return "Verdana";
+  // Liberation Serif
+  if (lower.includes("liberation") && lower.includes("serif")) return "Times New Roman";
+  // Liberation Sans
+  if (lower.includes("liberation") && lower.includes("sans")) return "Arial";
+  // Liberation Mono
+  if (lower.includes("liberation") && lower.includes("mono")) return "Courier New";
+  // Noto Serif
+  if (lower.includes("noto") && lower.includes("serif")) return "Georgia";
+  // Noto Sans
+  if (lower.includes("noto") && lower.includes("sans")) return "Arial";
+  // Symbol / ZapfDingbats (not real text fonts)
+  if (lower.includes("symbol") || lower.includes("zapf")) return "Helvetica";
+
+  // Generic serif/sans/mono heuristics
+  if (lower.includes("serif") || lower.includes("roman")) return "Times New Roman";
+  if (lower.includes("mono") || lower.includes("courier") || lower.includes("code")) return "Courier New";
+
+  // Default: sans-serif
+  return "Helvetica";
+}
+
 const toolHints: Record<EditorTool, string> = {
   select: "Click an annotation to select it. Drag to move. Double-click text to edit.",
   text: "Click on the document to add a text annotation.",
@@ -592,7 +734,7 @@ function PdfPageView({
                 width: `${item.width}%`,
                 height: `${item.height}%`,
                 fontSize: `${item.fontSize * (editorZoom / 100)}px`,
-                fontFamily: item.fontFamily,
+                fontFamily: getCssFontStack(item.fontFamily),
                 color: "transparent",
                 zIndex: 6,
                 overflow: "hidden",
@@ -712,7 +854,7 @@ function PdfPageView({
                   className="outline-none whitespace-pre-wrap break-words"
                   style={{
                     fontSize: `${ann.fontSize}px`,
-                    fontFamily: ann.fontFamily,
+                    fontFamily: getCssFontStack(ann.fontFamily),
                     color: ann.color,
                     fontWeight: ann.bold ? "bold" : "normal",
                     fontStyle: ann.italic ? "italic" : "normal",
@@ -770,7 +912,7 @@ function PdfPageView({
                 className="outline-none whitespace-pre-wrap break-words"
                 style={{
                   fontSize: `${ann.fontSize}px`,
-                  fontFamily: ann.fontFamily,
+                  fontFamily: getCssFontStack(ann.fontFamily),
                   color: ann.color,
                   fontWeight: ann.bold ? "bold" : "normal",
                   fontStyle: ann.italic ? "italic" : "normal",
@@ -1365,7 +1507,7 @@ function UploadVaultSignContent() {
                   width: Math.max(width, 2),
                   height: Math.max(height, 1),
                   fontSize: Math.abs(item.transform[0]) || 12,
-                  fontFamily: item.fontName || "Helvetica",
+                  fontFamily: mapPdfFontToAnnotationFont(item.fontName),
                 };
               });
             newTextItems.set(i, items);
