@@ -342,14 +342,12 @@ export default function VaultSignSigningPage() {
     const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        } catch {
-          // Fallback: try alternate worker paths
-          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
-        }
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(data.document_url!);
+        // Fetch PDF as ArrayBuffer for reliable rendering
+        const pdfResponse = await fetch(data.document_url!);
+        const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: pdfArrayBuffer });
         const pdf = await loadingTask.promise;
         if (cancelled) return;
         setPdfTotalPages(pdf.numPages);

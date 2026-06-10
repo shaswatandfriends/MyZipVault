@@ -161,6 +161,20 @@ import {
   Square,
   ZoomIn,
   ZoomOut,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Paintbrush,
+  Eraser,
+  MousePointer2,
+  Undo2,
+  Redo2,
+  Baseline,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -316,6 +330,20 @@ export {
   Square,
   ZoomIn,
   ZoomOut,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Paintbrush,
+  Eraser,
+  MousePointer2,
+  Undo2,
+  Redo2,
+  Baseline,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────

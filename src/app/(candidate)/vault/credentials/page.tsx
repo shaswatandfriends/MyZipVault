@@ -144,13 +144,12 @@ function PdfCanvasPreview({ url }: { url: string }) {
     const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        } catch {
-          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
-        }
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(url);
+        // Fetch PDF as ArrayBuffer for reliable rendering
+        const pdfResponse = await fetch(url);
+        const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: pdfArrayBuffer });
         const pdf = await loadingTask.promise;
         if (cancelled) return;
         setTotalPages(pdf.numPages);

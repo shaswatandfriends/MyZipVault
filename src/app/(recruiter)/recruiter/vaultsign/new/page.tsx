@@ -248,7 +248,7 @@ function NewVaultSignDocumentContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -327,7 +327,7 @@ function NewVaultSignDocumentContent() {
 
   // ─── PDF rendering with pdfjs-dist ────────────────────────────────
   useEffect(() => {
-    if (step !== 3 || !pdfUrl) return;
+    if (step !== 3 || !pdfData) return;
 
     let cancelled = false;
     setPdfRenderError(false);
@@ -335,14 +335,10 @@ function NewVaultSignDocumentContent() {
     const renderPdf = async (attempt = 0) => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        } catch {
-          // Fallback: try alternate worker paths
-          try { pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js"; } catch {}
-        }
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Use ArrayBuffer data instead of URL
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdf = await loadingTask.promise;
 
         if (cancelled) return;
@@ -402,7 +398,7 @@ function NewVaultSignDocumentContent() {
       cancelled = true;
       if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
     };
-  }, [step, pdfUrl, currentPage, zoomLevel]);
+  }, [step, pdfData, currentPage, zoomLevel]);
 
   // ─── Get signers for field placement ──
   // Party 1 is the sender/recruiter — they auto-sign at document creation.
@@ -422,12 +418,15 @@ function NewVaultSignDocumentContent() {
 
     // We need a PDF URL for Step 3
     if (selectedTemplate) {
-      // Get template preview URL
+      // Get template preview URL and fetch as ArrayBuffer
       try {
         const res = await fetch(`/api/superadmin/vaultsign/templates/${selectedTemplate.id}/preview`);
         if (res.ok) {
           const data = await res.json();
-          setPdfUrl(data.url);
+          // Fetch the PDF and convert to ArrayBuffer
+          const pdfRes = await fetch(data.url);
+          const arrayBuffer = await pdfRes.arrayBuffer();
+          setPdfData(arrayBuffer);
         } else {
           toast.error("Could not load template PDF preview");
         }
@@ -436,13 +435,15 @@ function NewVaultSignDocumentContent() {
       }
       setStep(2);
     } else if (uploadedFile) {
-      // Revoke previous blob URL to prevent memory leak
-      if (pdfUrl && pdfUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-      // Create object URL from uploaded file for preview
-      const objUrl = URL.createObjectURL(uploadedFile);
-      setPdfUrl(objUrl);
+      // Read uploaded file as ArrayBuffer
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPdfData(reader.result as ArrayBuffer);
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read the PDF file");
+      };
+      reader.readAsArrayBuffer(uploadedFile);
       setStep(2);
     } else {
       return toast.error("Please select a template or upload a PDF");
@@ -512,10 +513,7 @@ function NewVaultSignDocumentContent() {
   // ─── Cleanup object URLs on unmount ─────────────────────────────────
   useEffect(() => {
     return () => {
-      // Revoke object URL to prevent memory leak
-      if (pdfUrl && pdfUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(pdfUrl);
-      }
+      // Cleanup is no longer needed since we use ArrayBuffer, not blob URLs
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1018,7 +1016,7 @@ function NewVaultSignDocumentContent() {
                 style={{ minHeight: "500px" }}
                 onClick={() => setSelectedField(null)}
               >
-                {pdfUrl && !pdfRenderError ? (
+                {pdfData && !pdfRenderError ? (
                   <div
                     ref={pdfPageWrapperRef}
                     id="pdf-page-wrapper"
