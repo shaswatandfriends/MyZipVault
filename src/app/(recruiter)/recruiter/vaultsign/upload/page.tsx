@@ -1596,8 +1596,14 @@ function UploadVaultSignContent() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        // IMPORTANT: Use a copy of the PDF bytes, NOT pdfData directly.
+        // pdfjs transfers the ArrayBuffer to the Web Worker, which DETACHES it.
+        // After getDocument(), pdfData is detached and any new Uint8Array(pdfData) will throw.
+        const pdfCopy = originalPdfBytesRef.current
+          ? new Uint8Array(originalPdfBytesRef.current)
+          : new Uint8Array(pdfData.slice(0));
         const pdf = await pdfjsLib.getDocument({
-          data: new Uint8Array(pdfData),
+          data: pdfCopy,
           cMapUrl: "/cmaps/",
           cMapPacked: true,
           standardFontDataUrl: "/standard_fonts/",
@@ -1629,68 +1635,115 @@ function UploadVaultSignContent() {
             height: Math.round(baseViewport.height * displayScale),
           });
 
-          // Extract text items for edit-text tool using pdfjs TextLayer API
-          // This ensures pixel-perfect positioning — the same logic Sejda uses
+          // Extract text items for edit-text tool
+          // Phase 1: Try pdfjs TextLayer API for pixel-perfect positioning
+          // Phase 2: Fallback to direct textContent.items positioning
           try {
             const textContent = await page.getTextContent();
-            const textLayerViewport = page.getViewport({ scale: 1 });
-
-            // Create a temporary container for TextLayer to render into
-            const tempContainer = document.createElement("div");
-            tempContainer.style.position = "absolute";
-            tempContainer.style.left = "-9999px";  // off-screen
-            tempContainer.style.top = "0";
-            tempContainer.style.width = `${textLayerViewport.width}px`;
-            tempContainer.style.height = `${textLayerViewport.height}px`;
-            tempContainer.className = "textLayer";
-            document.body.appendChild(tempContainer);
-
-            // Use pdfjs TextLayer to render properly positioned text spans
-            const textLayer = new pdfjsLib.TextLayer({
-              textContentSource: textContent,
-              container: tempContainer,
-              viewport: textLayerViewport,
-            });
-            await textLayer.render();
-
-            // Extract positioning data from the rendered spans
-            const spans = tempContainer.querySelectorAll("span:not(.markedContent span)");
+            const vp = page.getViewport({ scale: 1 });
+            const pageW = vp.width;
+            const pageH = vp.height;
             const items: TextItem[] = [];
+
+            // Filter to items with actual text content
             const textItemsArr = textContent.items.filter((item: any) => item.str && item.str.trim());
 
-            spans.forEach((span, idx) => {
-              const style = (span as HTMLElement).style;
-              const text = span.textContent || "";
-              if (!text.trim()) return;
+            if (textItemsArr.length === 0) {
+              newTextItems.set(i, []);
+              continue;
+            }
 
-              // Get computed CSS values set by TextLayer
-              const left = style.left;          // e.g. "12.34%"
-              const top = style.top;            // e.g. "56.78%"
-              const fontHeight = style.getPropertyValue("--font-height") || "12";
-              const scaleX = style.getPropertyValue("--scale-x") || "1";
-              const rotate = style.getPropertyValue("--rotate") || "0deg";
+            // Try TextLayer API first (gives pixel-perfect CSS positioning)
+            let textLayerSuccess = false;
+            try {
+              const tempContainer = document.createElement("div");
+              tempContainer.style.position = "absolute";
+              tempContainer.style.left = "-9999px";
+              tempContainer.style.top = "0";
+              tempContainer.style.width = `${pageW}px`;
+              tempContainer.style.height = `${pageH}px`;
+              tempContainer.className = "textLayer";
+              document.body.appendChild(tempContainer);
 
-              // Get the original font name from the text content item
-              const origFontName = (textItemsArr[idx] as any)?.fontName || "";
-
-              items.push({
-                id: `text-${i}-${idx}`,
-                text,
-                left,
-                top,
-                fontHeight,
-                scaleX,
-                rotate,
-                fontFamily: mapPdfFontToAnnotationFont(origFontName),
-                origFontName,
-                width: (textItemsArr[idx] as any)?.width || 0,
-                viewportWidth: textLayerViewport.width,
-                viewportHeight: textLayerViewport.height,
+              const textLayer = new pdfjsLib.TextLayer({
+                textContentSource: textContent,
+                container: tempContainer,
+                viewport: vp,
               });
-            });
+              await textLayer.render();
 
-            // Clean up the temporary container
-            document.body.removeChild(tempContainer);
+              const spans = tempContainer.querySelectorAll("span:not(.markedContent span)");
+              let itemIdx = 0;
+
+              spans.forEach((span) => {
+                const style = (span as HTMLElement).style;
+                const text = span.textContent || "";
+                if (!text.trim()) return;
+
+                const left = style.left;
+                const top = style.top;
+                const fontHeight = style.getPropertyValue("--font-height") || "12";
+                const scaleX = style.getPropertyValue("--scale-x") || "1";
+                const rotate = style.getPropertyValue("--rotate") || "0deg";
+                const origFontName = (textItemsArr[itemIdx] as any)?.fontName || "";
+
+                items.push({
+                  id: `text-${i}-${itemIdx}`,
+                  text,
+                  left,
+                  top,
+                  fontHeight,
+                  scaleX,
+                  rotate,
+                  fontFamily: mapPdfFontToAnnotationFont(origFontName),
+                  origFontName,
+                  width: (textItemsArr[itemIdx] as any)?.width || 0,
+                  viewportWidth: pageW,
+                  viewportHeight: pageH,
+                });
+                itemIdx++;
+              });
+
+              document.body.removeChild(tempContainer);
+              textLayerSuccess = items.length > 0;
+            } catch (tlErr) {
+              console.warn(`TextLayer rendering failed for page ${i}, falling back to direct positioning:`, tlErr);
+              // Clean up temp container if it was added
+              const orphan = document.querySelector(".textLayer[style*='-9999px']");
+              if (orphan && orphan.parentNode) orphan.parentNode.removeChild(orphan);
+            }
+
+            // Phase 2: Fallback — compute positions directly from textContent.items transform
+            if (!textLayerSuccess) {
+              textItemsArr.forEach((txtItem: any, idx: number) => {
+                const tx = txtItem.transform; // [scaleX, shearX, shearY, scaleY, translateX, translateY]
+                if (!tx || tx.length < 6) return;
+
+                const text = txtItem.str;
+                const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]); // Math.sqrt(shearY² + scaleY²)
+                const leftPct = (tx[4] / pageW) * 100;
+                const topPct = ((pageH - tx[5]) / pageH) * 100; // PDF Y is bottom-up
+                const widthPts = txtItem.width || (text.length * fontSize * 0.6);
+                const scaleXVal = tx[0] !== 0 ? Math.abs(tx[0] / fontSize) : 1;
+                const origFontName = txtItem.fontName || "";
+
+                items.push({
+                  id: `text-${i}-${idx}`,
+                  text,
+                  left: `${leftPct}%`,
+                  top: `${topPct}%`,
+                  fontHeight: `${fontSize}`,
+                  scaleX: `${scaleXVal}`,
+                  rotate: "0deg",
+                  fontFamily: mapPdfFontToAnnotationFont(origFontName),
+                  origFontName,
+                  width: widthPts,
+                  viewportWidth: pageW,
+                  viewportHeight: pageH,
+                });
+              });
+            }
+
             newTextItems.set(i, items);
           } catch (textErr) {
             console.error(`Text extraction error on page ${i}:`, textErr);
@@ -1902,7 +1955,7 @@ function UploadVaultSignContent() {
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
         const loadingTask = pdfjsLib.getDocument({
-          data: new Uint8Array(fieldPdfData),
+          data: new Uint8Array(fieldPdfData.slice(0)), // copy to prevent detachment
           cMapUrl: "/cmaps/",
           cMapPacked: true,
           standardFontDataUrl: "/standard_fonts/",
@@ -1995,10 +2048,11 @@ function UploadVaultSignContent() {
     }
 
     // Set the PDF data for field placement — use edited version if available
+    // IMPORTANT: Use originalPdfBytesRef, not pdfData (which may be detached by pdfjs)
     if (editedPdfBytes) {
       setFieldPdfData(new Uint8Array(editedPdfBytes).buffer as ArrayBuffer);
-    } else if (pdfData) {
-      setFieldPdfData(new Uint8Array(pdfData).buffer as ArrayBuffer);
+    } else if (originalPdfBytesRef.current) {
+      setFieldPdfData(new Uint8Array(originalPdfBytesRef.current).buffer as ArrayBuffer);
     }
 
     setStep(3);
