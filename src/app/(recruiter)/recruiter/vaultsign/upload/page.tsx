@@ -909,6 +909,12 @@ function PdfPageView({
           }
 
           if (ann.type === "text-replace") {
+            // Scale font size from PDF points to display pixels
+            // We need the viewport dimensions to compute the scale — find them from textItems
+            const viewportW = textItems[0]?.viewportWidth || pageWidth;
+            const annDisplayScale = pageWidth / viewportW;
+            const annScaledFontSize = ann.fontSize * annDisplayScale;
+
             return (
               <div
                 key={ann.id}
@@ -918,6 +924,8 @@ function PdfPageView({
                   top: `${ann.y}%`,
                   width: `${ann.width}%`,
                   minHeight: `${ann.height}%`,
+                  // White background to cover the original text underneath (in the canvas image)
+                  backgroundColor: "white",
                   zIndex: isSelected ? 12 : 11,
                 }}
                 onMouseDown={(e) => handleAnnMouseDown(e, ann)}
@@ -926,7 +934,7 @@ function PdfPageView({
                 <div
                   className="outline-none whitespace-pre-wrap break-words"
                   style={{
-                    fontSize: `${ann.fontSize}px`,
+                    fontSize: `${annScaledFontSize}px`,
                     fontFamily: getCssFontStack(ann.fontFamily),
                     color: ann.color,
                     fontWeight: ann.bold ? "bold" : "normal",
@@ -934,7 +942,6 @@ function PdfPageView({
                     border: isSelected ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.5)",
                     borderRadius: "2px",
                     padding: "1px 3px",
-                    backgroundColor: isSelected ? "rgba(13, 148, 136, 0.05)" : "rgba(13, 148, 136, 0.03)",
                     minWidth: "40px",
                   }}
                 >
@@ -958,6 +965,11 @@ function PdfPageView({
           }
 
           // Text annotation
+          // Scale font size from PDF points to display pixels for consistent rendering
+          const viewportWForAnn = textItems[0]?.viewportWidth || pageWidth;
+          const textAnnDisplayScale = pageWidth / viewportWForAnn;
+          const textAnnScaledFontSize = ann.fontSize * textAnnDisplayScale;
+
           return (
             <div
               key={ann.id}
@@ -984,7 +996,7 @@ function PdfPageView({
                 suppressContentEditableWarning
                 className="outline-none whitespace-pre-wrap break-words"
                 style={{
-                  fontSize: `${ann.fontSize}px`,
+                  fontSize: `${textAnnScaledFontSize}px`,
                   fontFamily: getCssFontStack(ann.fontFamily),
                   color: ann.color,
                   fontWeight: ann.bold ? "bold" : "normal",
