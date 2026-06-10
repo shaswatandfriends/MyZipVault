@@ -297,17 +297,25 @@
 }
 
 /* ─── Sejda-style inline PDF text editing ── */
-/* When a text item is being edited (contentEditable), it gets a white background
-   to cover the canvas-rendered text underneath. This is the Sejda .edited approach. */
+/* Based on Sejda's approach:
+   - Text layer divs are semi-transparent "ghosts" (opacity 0.4, color transparent)
+     when browsing — just outlines you can hover/click.
+   - When EDITING (contentEditable), the div becomes fully visible with white background
+     to cover the canvas-rendered text underneath (Sejda .edited class).
+   - This prevents duplicate text overlapping the canvas-rendered PDF text. */
+
+/* When a text item is being edited (contentEditable = true) — Sejda .edited style */
 [data-text-item-id][contenteditable="true"] {
   background-color: white !important;
+  opacity: 1 !important;
   color: #000000 !important;
-  outline: 1px solid rgba(2, 130, 229, 0.5) !important;
+  outline: 2px solid rgba(2, 130, 229, 0.5) !important;
   outline-offset: 1px;
   caret-color: #000000;
   user-select: text;
   -webkit-user-select: text;
   cursor: text;
+  overflow: visible !important;
 }
 
 [data-text-item-id][contenteditable="true"]::selection,
@@ -315,14 +323,11 @@
   background: #9ecaed;
 }
 
-/* When edit-text tool is active, show faint blue dashed outlines on all text items
-   so the user can see where to click. Hover makes them solid blue. */
-[data-text-item-id]:not([contenteditable="true"]) {
-  outline-offset: 2px;
-}
-
+/* When edit-text tool is active, ghost text items get transparent dashed outlines
+   on hover so the user can see where to click — Sejda [data-tool=text] style */
 [data-text-item-id]:not([contenteditable="true"]):hover {
   outline-color: #0282e5 !important;
   outline-style: solid !important;
-  background-color: rgba(2, 130, 229, 0.06) !important;
+  outline-width: 2px !important;
+  opacity: 0.7 !important;
 }

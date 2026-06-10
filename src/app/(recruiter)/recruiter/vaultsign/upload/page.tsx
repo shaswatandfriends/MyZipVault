@@ -799,10 +799,10 @@ function PdfPageView({
           const displayItalic = isEditing && editingTextItem ? editingTextItem.italic : (modified?.italic ?? item.italic);
           const displayUnderline = isEditing && editingTextItem ? editingTextItem.underline : (modified ? false : item.underline);
 
-          // When edited or editing: show text with white background to cover canvas text
-          // When not edited: text is transparent so canvas text shows through, BUT the div
-          // must contain actual text content to have proper width for the clickable area.
-          // This is exactly how pdfjs TextLayer works: transparent text over canvas for selection.
+          // Sejda approach: text layer divs are semi-transparent "ghosts" when browsing
+          // (opacity 0.4, color transparent) — just outlines you can hover/click.
+          // Only when EDITING does the div become fully visible with a white background
+          // to cover the canvas-rendered text underneath.
           const showAsEdited = isModified || isEditing;
           const displayText = modified?.newText || item.text;
 
@@ -828,21 +828,24 @@ function PdfPageView({
                 textDecoration: displayUnderline ? "underline" : "none",
                 transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
                 transformOrigin: "0% 0%",
-                // When editing/modified: black text on white bg to cover canvas text (Sejda style)
-                // When not edited: transparent text — canvas text shows through, but div has
-                // proper width because text content is still rendered (just invisible)
+                // === SEJDA-STYLE TEXT LAYER ===
+                // When NOT editing: ghost overlay — text is transparent, div is semi-transparent
+                // This prevents duplicate text overlapping the canvas-rendered text.
+                // The div still has width from the text content, making it clickable.
+                // When EDITING/MODIFIED: full opacity + white bg covers canvas text (Sejda .edited)
                 color: showAsEdited ? (modified?.color || "#000000") : "transparent",
                 backgroundColor: showAsEdited ? "white" : "transparent",
+                opacity: showAsEdited ? 1 : (isEditTextTool ? 0.4 : 0),
                 zIndex: isEditing ? 20 : isModified ? 20 : (isEditTextTool ? 6 : 6),
                 overflow: isEditing ? "visible" : "hidden",
                 whiteSpace: "pre",
                 cursor: isEditTextTool ? (isEditing ? "text" : "pointer") : "default",
                 lineHeight: 1.2,
-                // When edit-text tool is active, show ALL text items with a faint dashed outline
-                // so the user can see where to click. On hover, the outline becomes solid blue.
+                // When edit-text tool is active, show ghost items with dashed outline
+                // so user can see where to click. Hover = solid blue outline.
                 outline: isEditing ? "1px solid rgba(2, 130, 229, 0.5)"
                         : isModified ? "none"
-                        : isEditTextTool ? "1px dashed rgba(2, 130, 229, 0.25)" : "none",
+                        : isEditTextTool ? "2px dashed transparent" : "none",
                 outlineOffset: "2px",
                 userSelect: isEditing ? "text" : "none",
                 // All text items must be clickable when edit-text tool is active
@@ -851,19 +854,21 @@ function PdfPageView({
                 minWidth: isEditing ? "20px" : undefined,
                 caretColor: isEditing ? "#000000" : "transparent",
               } as React.CSSProperties}
-              // Sejda-style hover: blue solid outline when text tool active
+              // Sejda-style hover: blue solid outline + slight bg when text tool active
               onMouseEnter={(e) => {
-                if (!isEditing && activeTool === "edit-text") {
+                if (!isEditing && !isModified && activeTool === "edit-text") {
                   e.currentTarget.style.outlineColor = "#0282e5";
                   e.currentTarget.style.outlineStyle = "solid";
-                  e.currentTarget.style.backgroundColor = "rgba(2, 130, 229, 0.06)";
+                  e.currentTarget.style.outlineWidth = "2px";
+                  e.currentTarget.style.opacity = "0.7";
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isEditing && activeTool === "edit-text") {
-                  e.currentTarget.style.outlineColor = "rgba(2, 130, 229, 0.25)";
+                if (!isEditing && !isModified && activeTool === "edit-text") {
+                  e.currentTarget.style.outlineColor = "transparent";
                   e.currentTarget.style.outlineStyle = "dashed";
-                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.outlineWidth = "2px";
+                  e.currentTarget.style.opacity = "0.4";
                 }
               }}
               onClick={(e) => {
