@@ -746,11 +746,11 @@ function UploadVaultSignContent() {
   const [extractionError, setExtractionError] = useState(false);
   const pageEditorRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [activeEditorPage, setActiveEditorPage] = useState(1);
+  const [editorReadyVersion, setEditorReadyVersion] = useState(0);
 
   // We use a single "active" TipTap editor for the toolbar — the one on activeEditorPage
   // Each PdfPageEditor creates its own editor internally.
   // The toolbar connects to whichever page's editor is active.
-  // For simplicity, we'll pass toolbar commands to the active page's editor.
   // We store editors in a ref map that PdfPageEditor components register themselves into.
   const editorsMap = useRef<Map<number, any>>(new Map());
 
@@ -875,6 +875,7 @@ function UploadVaultSignContent() {
   // ─── Register editor from PdfPageEditor ────────────
   const handleEditorReady = useCallback((pageNum: number, editor: any) => {
     editorsMap.current.set(pageNum, editor);
+    setEditorReadyVersion((v) => v + 1); // force toolbar re-render
   }, []);
 
   // ─── Check if any pages have been edited ────────────
@@ -978,7 +979,7 @@ function UploadVaultSignContent() {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument({ data: fieldPdfData });
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(fieldPdfData) });
         const pdf = await loadingTask.promise;
 
         if (cancelled) return;
@@ -1066,9 +1067,11 @@ function UploadVaultSignContent() {
     }
 
     // Set the PDF data for field placement — use edited version if available
-    const pdfForField = editedPdfBytes ? (editedPdfBytes.buffer as ArrayBuffer) : pdfData;
-    if (pdfForField && !fieldPdfData) {
-      setFieldPdfData(pdfForField);
+    // Always create a fresh copy to avoid detached ArrayBuffer issues
+    if (editedPdfBytes) {
+      setFieldPdfData(new Uint8Array(editedPdfBytes).buffer as ArrayBuffer);
+    } else if (pdfData) {
+      setFieldPdfData(new Uint8Array(pdfData).buffer as ArrayBuffer);
     }
 
     setStep(3);
@@ -1352,6 +1355,7 @@ function UploadVaultSignContent() {
                   {/* Toolbar */}
                   <PdfEditorToolbar
                     editor={editorsMap.current.get(activeEditorPage) || null}
+                    key={`toolbar-${editorReadyVersion}-${activeEditorPage}`}
                     zoomLevel={editorZoom}
                     onZoomChange={setEditorZoom}
                     editorMode={editorMode}
