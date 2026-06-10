@@ -52,8 +52,8 @@ type EditorTool = "select" | "text" | "edit-text" | "highlight" | "whiteout" | "
 interface TextItem {
   id: string;
   text: string;
-  left: string;    // CSS left percentage string from TextLayer, e.g. "12.34%"
-  top: string;     // CSS top percentage string from TextLayer
+  left: string;    // CSS left percentage string, e.g. "12.34%"
+  top: string;     // CSS top percentage string, e.g. "5.67%"
   fontHeight: string;  // CSS --font-height value (px at scale=1)
   scaleX: string;  // CSS --scale-x value
   rotate: string;  // CSS --rotate value (deg)
@@ -62,6 +62,9 @@ interface TextItem {
   width: number;    // text width in PDF points (from item.width at scale=1)
   viewportWidth: number;   // PDF page width in points at scale=1
   viewportHeight: number;  // PDF page height in points at scale=1
+  bold: boolean;     // Whether the original font is bold
+  italic: boolean;   // Whether the original font is italic
+  underline: boolean; // Whether the text has underline styling
 }
 
 interface TextAnnotation {
@@ -511,7 +514,7 @@ function PdfPageView({
   onModifyTextItem: (mod: ModifiedTextItem) => void;
   onModifyTextItemCancel: (textItemId: string) => void;
   editingTextItem: TextItem | null;
-  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean }) => void;
+  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean; underline?: boolean }) => void;
   onEditingTextItemChange: (item: TextItem | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -791,10 +794,21 @@ function PdfPageView({
             ? (editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize)
             : (modified ? modified.fontSize * displayScale : scaledFontSize);
 
+          // Bold/Italic/Underline: editing > modified > original
+          const displayBold = isEditing && editingTextItem ? editingTextItem.bold : (modified?.bold ?? item.bold);
+          const displayItalic = isEditing && editingTextItem ? editingTextItem.italic : (modified?.italic ?? item.italic);
+          const displayUnderline = isEditing && editingTextItem ? editingTextItem.underline : (modified ? false : item.underline);
+
           // When edited or editing: show text with white background to cover canvas text
-          // When not edited: transparent so canvas text shows through
+          // When not edited: text is transparent so canvas text shows through, BUT the div
+          // must contain actual text content to have proper width for the clickable area.
+          // This is exactly how pdfjs TextLayer works: transparent text over canvas for selection.
           const showAsEdited = isModified || isEditing;
           const displayText = modified?.newText || item.text;
+
+          // When edit-text tool is active, ALL text items need to be interactive.
+          // When other tools are active, only modified items need pointer events.
+          const isEditTextTool = activeTool === "edit-text";
 
           return (
             <div
@@ -809,24 +823,30 @@ function PdfPageView({
                 top: item.top,
                 fontSize: `${displayFontSize}px`,
                 fontFamily: getCssFontStack(displayFontFamily),
+                fontWeight: displayBold ? "bold" : "normal",
+                fontStyle: displayItalic ? "italic" : "normal",
+                textDecoration: displayUnderline ? "underline" : "none",
                 transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
                 transformOrigin: "0% 0%",
-                // White bg hides canvas text underneath when edited (Sejda .edited)
+                // When editing/modified: black text on white bg to cover canvas text (Sejda style)
+                // When not edited: transparent text — canvas text shows through, but div has
+                // proper width because text content is still rendered (just invisible)
                 color: showAsEdited ? (modified?.color || "#000000") : "transparent",
                 backgroundColor: showAsEdited ? "white" : "transparent",
-                zIndex: isEditing ? 20 : isModified ? 20 : 6,
+                zIndex: isEditing ? 20 : isModified ? 20 : (isEditTextTool ? 6 : 6),
                 overflow: isEditing ? "visible" : "hidden",
                 whiteSpace: "pre",
-                cursor: activeTool === "edit-text" ? (isEditing ? "text" : "pointer") : "default",
-                lineHeight: 1,
-                // When edit-text tool is active, show ALL text items with a faint outline
-                // so the user can see where to click. On hover, the outline becomes blue.
+                cursor: isEditTextTool ? (isEditing ? "text" : "pointer") : "default",
+                lineHeight: 1.2,
+                // When edit-text tool is active, show ALL text items with a faint dashed outline
+                // so the user can see where to click. On hover, the outline becomes solid blue.
                 outline: isEditing ? "1px solid rgba(2, 130, 229, 0.5)"
                         : isModified ? "none"
-                        : activeTool === "edit-text" ? "1px dashed rgba(2, 130, 229, 0.25)" : "none",
+                        : isEditTextTool ? "1px dashed rgba(2, 130, 229, 0.25)" : "none",
                 outlineOffset: "2px",
                 userSelect: isEditing ? "text" : "none",
-                pointerEvents: activeTool === "edit-text" ? "auto" : (isModified ? "auto" : "none"),
+                // All text items must be clickable when edit-text tool is active
+                pointerEvents: isEditTextTool || isModified ? "auto" : "none",
                 padding: "0 2px",
                 minWidth: isEditing ? "20px" : undefined,
                 caretColor: isEditing ? "#000000" : "transparent",
@@ -860,8 +880,10 @@ function PdfPageView({
                 const newText = e.currentTarget.innerText.trim();
                 const currentFontFamily = editingTextItem?.fontFamily || item.fontFamily;
                 const currentFontSize = parseFloat(editingTextItem?.fontHeight || item.fontHeight) || fontHeightPx;
-                // Save if text changed OR font/size changed from original
-                const fontChanged = currentFontFamily !== item.fontFamily || currentFontSize !== fontHeightPx;
+                const currentBold = editingTextItem?.bold ?? item.bold;
+                const currentItalic = editingTextItem?.italic ?? item.italic;
+                // Save if text changed OR font/size/style changed from original
+                const fontChanged = currentFontFamily !== item.fontFamily || currentFontSize !== fontHeightPx || currentBold !== item.bold || currentItalic !== item.italic;
                 if ((newText !== item.text || fontChanged) && newText !== "") {
                   onModifyTextItem({
                     textItemId: item.id,
@@ -870,8 +892,8 @@ function PdfPageView({
                     newText: newText || item.text,
                     fontFamily: currentFontFamily,
                     fontSize: currentFontSize,
-                    bold: false,
-                    italic: false,
+                    bold: currentBold,
+                    italic: currentItalic,
                     color: "#000000",
                     leftPct,
                     topPct,
@@ -895,9 +917,15 @@ function PdfPageView({
                   reconciling/overwriting the contentEditable DOM content on re-renders
                   (e.g., when the user changes font from the toolbar). When not editing,
                   use regular React children. */}
+              {/* CRITICAL: Always render the text content so the div has proper width.
+                  When not editing/modified, text is transparent (color: transparent) so the
+                  canvas-rendered text shows through. This is how pdfjs TextLayer works — the
+                  text layer has transparent text positioned exactly over the canvas for selection.
+                  When editing, use dangerouslySetInnerHTML to prevent React from overwriting
+                  user edits on re-renders (e.g., when font changes from toolbar). */}
               {isEditing
                 ? <span dangerouslySetInnerHTML={{ __html: editingInitialTextRef.current }} />
-                : (showAsEdited ? displayText : "")}
+                : displayText}
             </div>
           );
         })}
@@ -1122,7 +1150,7 @@ function PdfEditorToolbar({
   canUndo: boolean;
   canRedo: boolean;
   editingTextItem: TextItem | null;
-  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean }) => void;
+  onUpdateEditingText: (updates: { fontFamily?: string; fontSize?: number; bold?: boolean; italic?: boolean; underline?: boolean }) => void;
 }) {
   const selectedAnn = selectedAnnotation ? annotations.find(a => a.id === selectedAnnotation) : null;
   const isTextAnn = selectedAnn?.type === "text";
@@ -1225,13 +1253,14 @@ function PdfEditorToolbar({
             <button
               onClick={() => {
                 if (isEditingPdfText) {
-                  onUpdateEditingText({ bold: true });
+                  // Toggle bold on the editing text item
+                  onUpdateEditingText({ bold: !editingTextItem!.bold });
                 } else {
                   onUpdateAnnotation(selectedAnnotation!, { bold: !selectedAnn!.bold });
                 }
               }}
               className={`p-1.5 rounded-md transition-colors ${
-                (isEditingPdfText ? false : selectedAnn!.bold) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? editingTextItem!.bold : selectedAnn!.bold) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Bold"
             >
@@ -1241,13 +1270,14 @@ function PdfEditorToolbar({
             <button
               onClick={() => {
                 if (isEditingPdfText) {
-                  onUpdateEditingText({ italic: true });
+                  // Toggle italic on the editing text item
+                  onUpdateEditingText({ italic: !editingTextItem!.italic });
                 } else {
                   onUpdateAnnotation(selectedAnnotation!, { italic: !selectedAnn!.italic });
                 }
               }}
               className={`p-1.5 rounded-md transition-colors ${
-                (isEditingPdfText ? false : selectedAnn!.italic) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? editingTextItem!.italic : selectedAnn!.italic) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Italic"
             >
@@ -1257,13 +1287,13 @@ function PdfEditorToolbar({
             <button
               onClick={() => {
                 if (isEditingPdfText) {
-                  onUpdateEditingText({ italic: true });
+                  onUpdateEditingText({ underline: !editingTextItem!.underline });
                 } else {
                   onUpdateAnnotation(selectedAnnotation!, { underline: !selectedAnn!.underline });
                 }
               }}
               className={`p-1.5 rounded-md transition-colors ${
-                (isEditingPdfText ? false : selectedAnn!.underline) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
+                (isEditingPdfText ? editingTextItem!.underline : selectedAnn!.underline) ? "bg-[#0D9488]/10 text-[#0D9488]" : "text-[#6B7280] hover:bg-[#F3F4F6]"
               }`}
               title="Underline"
             >
@@ -1298,8 +1328,8 @@ function PdfEditorToolbar({
           </>
         )}
 
-        {/* Disabled formatting controls when no text annotation selected */}
-        {!isTextAnn && (
+        {/* Disabled formatting controls when no text annotation or edit-text item selected */}
+        {!isTextAnn && !isEditingPdfText && (
           <>
             <select disabled className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-[#F9FAFB] text-[#9CA3AF] max-w-[110px] opacity-50">
               <option>Font</option>
@@ -1692,18 +1722,28 @@ function UploadVaultSignContent() {
                 const text = span.textContent || "";
                 if (!text.trim()) return;
 
-                const left = style.left;
-                const top = style.top;
+                // TextLayer returns CSS positions in pixels at the viewport scale (scale=1).
+                // Convert to percentages so they work at any display scale/zoom level.
+                const leftPx = parseFloat(style.left) || 0;
+                const topPx = parseFloat(style.top) || 0;
+                const leftPct = (leftPx / pageW) * 100;
+                const topPct = (topPx / pageH) * 100;
+
                 const fontHeight = style.getPropertyValue("--font-height") || "12";
                 const scaleX = style.getPropertyValue("--scale-x") || "1";
                 const rotate = style.getPropertyValue("--rotate") || "0deg";
                 const origFontName = (textItemsArr[itemIdx] as any)?.fontName || "";
 
+                // Detect bold/italic from the PDF font name
+                const lowerFontName = origFontName.toLowerCase();
+                const isBold = lowerFontName.includes("bold") || lowerFontName.includes("black") || lowerFontName.includes("heavy");
+                const isItalic = lowerFontName.includes("italic") || lowerFontName.includes("oblique");
+
                 items.push({
                   id: `text-${i}-${itemIdx}`,
                   text,
-                  left,
-                  top,
+                  left: `${leftPct}%`,
+                  top: `${topPct}%`,
                   fontHeight,
                   scaleX,
                   rotate,
@@ -1712,10 +1752,13 @@ function UploadVaultSignContent() {
                   width: (textItemsArr[itemIdx] as any)?.width || 0,
                   viewportWidth: pageW,
                   viewportHeight: pageH,
+                  bold: isBold,
+                  italic: isItalic,
+                  underline: false,
                 });
                 // Debug: log first 3 items to verify positioning
                 if (debugCount < 3) {
-                  console.log(`[VaultSign]   item[${itemIdx}]: left="${left}" top="${top}" fontHeight="${fontHeight}" scaleX="${scaleX}" text="${text.substring(0, 30)}"`);
+                  console.log(`[VaultSign]   item[${itemIdx}]: left="${leftPct.toFixed(2)}%" top="${topPct.toFixed(2)}%" fontHeight="${fontHeight}" scaleX="${scaleX}" text="${text.substring(0, 30)}"`);
                   debugCount++;
                 }
                 itemIdx++;
@@ -1757,6 +1800,9 @@ function UploadVaultSignContent() {
                   width: widthPts,
                   viewportWidth: pageW,
                   viewportHeight: pageH,
+                  bold: origFontName.toLowerCase().includes("bold"),
+                  italic: origFontName.toLowerCase().includes("italic") || origFontName.toLowerCase().includes("oblique"),
+                  underline: false,
                 });
               });
             }
@@ -2343,7 +2389,11 @@ function UploadVaultSignContent() {
                       setEditingTextItem({
                         ...editingTextItem,
                         fontFamily: updates.fontFamily ?? editingTextItem.fontFamily,
-                        fontHeight: updates.fontSize ? `${updates.fontSize}px` : editingTextItem.fontHeight,
+                        // fontHeight is stored as a plain number string (e.g., "12"), not "12px"
+                        fontHeight: updates.fontSize ? `${updates.fontSize}` : editingTextItem.fontHeight,
+                        bold: updates.bold ?? editingTextItem.bold,
+                        italic: updates.italic ?? editingTextItem.italic,
+                        underline: updates.underline ?? editingTextItem.underline,
                       });
                     }}
                   />
@@ -2388,7 +2438,10 @@ function UploadVaultSignContent() {
                               setEditingTextItem({
                                 ...editingTextItem,
                                 fontFamily: updates.fontFamily ?? editingTextItem.fontFamily,
-                                fontHeight: updates.fontSize ? `${updates.fontSize}px` : editingTextItem.fontHeight,
+                                fontHeight: updates.fontSize ? `${updates.fontSize}` : editingTextItem.fontHeight,
+                                bold: updates.bold ?? editingTextItem.bold,
+                                italic: updates.italic ?? editingTextItem.italic,
+                                underline: updates.underline ?? editingTextItem.underline,
                               });
                             }}
                             onEditingTextItemChange={setEditingTextItem}
