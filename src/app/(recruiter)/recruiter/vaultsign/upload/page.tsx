@@ -1722,17 +1722,24 @@ function UploadVaultSignContent() {
                 const text = span.textContent || "";
                 if (!text.trim()) return;
 
-                // TextLayer returns CSS positions in pixels at the viewport scale (scale=1).
-                // Convert to percentages so they work at any display scale/zoom level.
-                const leftPx = parseFloat(style.left) || 0;
-                const topPx = parseFloat(style.top) || 0;
-                const leftPct = (leftPx / pageW) * 100;
-                const topPct = (topPx / pageH) * 100;
+                // TextLayer ALREADY outputs left/top as CSS percentages (e.g., "12.34%").
+                // Do NOT convert them again — just extract the numeric percentage value.
+                const leftPct = parseFloat(style.left) || 0;
+                const topPct = parseFloat(style.top) || 0;
 
-                const fontHeight = style.getPropertyValue("--font-height") || "12";
+                // Strip "px" suffix from --font-height if present (TextLayer adds it)
+                const fontHeightRaw = style.getPropertyValue("--font-height") || "12";
+                const fontHeight = fontHeightRaw.replace("px", "").trim();
                 const scaleX = style.getPropertyValue("--scale-x") || "1";
                 const rotate = style.getPropertyValue("--rotate") || "0deg";
                 const origFontName = (textItemsArr[itemIdx] as any)?.fontName || "";
+
+                // On HiDPI/Retina screens, TextLayer includes devicePixelRatio in --scale-x,
+                // which would stretch text horizontally. Normalize it.
+                const scaleXNum = parseFloat(scaleX) || 1;
+                const normalizedScaleX = window.devicePixelRatio > 1
+                  ? scaleXNum / window.devicePixelRatio
+                  : scaleXNum;
 
                 // Detect bold/italic from the PDF font name
                 const lowerFontName = origFontName.toLowerCase();
@@ -1745,7 +1752,7 @@ function UploadVaultSignContent() {
                   left: `${leftPct}%`,
                   top: `${topPct}%`,
                   fontHeight,
-                  scaleX,
+                  scaleX: `${normalizedScaleX}`,
                   rotate,
                   fontFamily: mapPdfFontToAnnotationFont(origFontName),
                   origFontName,
@@ -1758,7 +1765,7 @@ function UploadVaultSignContent() {
                 });
                 // Debug: log first 3 items to verify positioning
                 if (debugCount < 3) {
-                  console.log(`[VaultSign]   item[${itemIdx}]: left="${leftPct.toFixed(2)}%" top="${topPct.toFixed(2)}%" fontHeight="${fontHeight}" scaleX="${scaleX}" text="${text.substring(0, 30)}"`);
+                  console.log(`[VaultSign]   item[${itemIdx}]: left="${leftPct.toFixed(2)}%" top="${topPct.toFixed(2)}%" fontHeight="${fontHeight}" scaleX="${normalizedScaleX}" text="${text.substring(0, 30)}"`);
                   debugCount++;
                 }
                 itemIdx++;

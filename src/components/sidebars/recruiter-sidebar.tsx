@@ -151,7 +151,7 @@ export function RecruiterSidebar() {
             <SidebarMenuButton
               tooltip="Sign Out"
               className="text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: "/agency-login" })}
             >
               <LogOut className="size-5" />
               <span>Sign Out</span>

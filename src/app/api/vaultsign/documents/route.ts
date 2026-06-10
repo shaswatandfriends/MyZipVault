@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter") {
+    if (userRole !== "client_recruiter" && userRole !== "client_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
