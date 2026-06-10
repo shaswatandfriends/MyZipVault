@@ -1653,8 +1653,10 @@ function UploadVaultSignContent() {
 
             // Filter to items with actual text content
             const textItemsArr = textContent.items.filter((item: any) => item.str && item.str.trim());
+            console.log(`[VaultSign] Page ${i}: textContent has ${textContent.items.length} items, ${textItemsArr.length} with text`);
 
             if (textItemsArr.length === 0) {
+              console.warn(`[VaultSign] Page ${i}: No text items found — PDF may have corrupted streams or no selectable text`);
               newTextItems.set(i, []);
               continue;
             }
@@ -1679,7 +1681,11 @@ function UploadVaultSignContent() {
               await textLayer.render();
 
               const spans = tempContainer.querySelectorAll("span:not(.markedContent span)");
+              console.log(`[VaultSign] Page ${i} TextLayer: ${spans.length} spans rendered`);
               let itemIdx = 0;
+
+              // Log first 3 items for debugging
+              let debugCount = 0;
 
               spans.forEach((span) => {
                 const style = (span as HTMLElement).style;
@@ -1707,6 +1713,11 @@ function UploadVaultSignContent() {
                   viewportWidth: pageW,
                   viewportHeight: pageH,
                 });
+                // Debug: log first 3 items to verify positioning
+                if (debugCount < 3) {
+                  console.log(`[VaultSign]   item[${itemIdx}]: left="${left}" top="${top}" fontHeight="${fontHeight}" scaleX="${scaleX}" text="${text.substring(0, 30)}"`);
+                  debugCount++;
+                }
                 itemIdx++;
               });
 
