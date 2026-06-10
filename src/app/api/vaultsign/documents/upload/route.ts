@@ -12,15 +12,30 @@ export async function POST(request: Request) {
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
+<<<<<<< Updated upstream
     if (userRole !== "client_recruiter") {
+=======
+    if (userRole !== "client_recruiter" && userRole !== "client_admin") {
+>>>>>>> Stashed changes
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
+<<<<<<< Updated upstream
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const documentIdStr = formData.get("document_id") as string | null;
+=======
+    const organizationId = (session.user as Record<string, unknown>).organizationId as number;
+    if (!organizationId) {
+      return NextResponse.json({ error: "No organization found" }, { status: 400 });
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    const documentId = formData.get("document_id") as string | null;
+>>>>>>> Stashed changes
 
     if (!file) {
       return NextResponse.json(
@@ -29,13 +44,21 @@ export async function POST(request: Request) {
       );
     }
 
+<<<<<<< Updated upstream
     if (!documentIdStr) {
       return NextResponse.json(
         { error: "Document ID is required" },
+=======
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "Only PDF files are allowed" },
+>>>>>>> Stashed changes
         { status: 400 }
       );
     }
 
+<<<<<<< Updated upstream
     const documentId = parseInt(documentIdStr, 10);
     if (isNaN(documentId)) {
       return NextResponse.json(
@@ -65,19 +88,33 @@ export async function POST(request: Request) {
     if (document.status !== "draft") {
       return NextResponse.json(
         { error: "Cannot upload file to a non-draft document" },
+=======
+    // Validate file size (25MB max)
+    if (file.size > 25 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File size must be under 25MB" },
+>>>>>>> Stashed changes
         { status: 400 }
       );
     }
 
     // Upload PDF to Supabase Storage
+<<<<<<< Updated upstream
     const { url } = await uploadFile(
       "vaultsign-documents",
       `${documentId}`,
+=======
+    const folder = documentId || `upload-${Date.now()}`;
+    const { url, isLocalStorage } = await uploadFile(
+      "vaultsign-documents",
+      folder,
+>>>>>>> Stashed changes
       file,
       file.name,
       "application/pdf"
     );
 
+<<<<<<< Updated upstream
     // Update document with the URL
     await db.vaultSignDocument.update({
       where: { id: documentId },
@@ -114,6 +151,45 @@ export async function POST(request: Request) {
     console.error("[VAULTSIGN_DOCUMENT_UPLOAD]", error);
     return NextResponse.json(
       { error: "Failed to upload document" },
+=======
+    // If document_id is provided, update the existing document with the PDF URL
+    if (documentId) {
+      const docId = parseInt(documentId, 10);
+      const existingDoc = await db.vaultSignDocument.findFirst({
+        where: {
+          id: docId,
+          created_by_user_id: userId,
+          organization_id: organizationId,
+        },
+      });
+
+      if (existingDoc) {
+        await db.vaultSignDocument.update({
+          where: { id: docId },
+          data: {
+            original_document_url: url,
+          },
+        });
+
+        return NextResponse.json({
+          url,
+          document_id: docId,
+          isLocalStorage,
+        });
+      }
+    }
+
+    // If no document_id or document not found, just return the URL
+    // The caller will use this URL when creating the document
+    return NextResponse.json({
+      url,
+      isLocalStorage,
+    });
+  } catch (error) {
+    console.error("[VAULTSIGN_UPLOAD_POST]", error);
+    return NextResponse.json(
+      { error: "Failed to upload PDF" },
+>>>>>>> Stashed changes
       { status: 500 }
     );
   }

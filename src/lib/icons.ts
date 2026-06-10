@@ -157,6 +157,13 @@ import {
   RotateCw,
   SquareCheck,
   FilePlus,
+<<<<<<< Updated upstream
+=======
+  Highlighter,
+  Square,
+  ZoomIn,
+  ZoomOut,
+>>>>>>> Stashed changes
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -308,6 +315,13 @@ export {
   RotateCw,
   SquareCheck,
   FilePlus,
+<<<<<<< Updated upstream
+=======
+  Highlighter,
+  Square,
+  ZoomIn,
+  ZoomOut,
+>>>>>>> Stashed changes
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────

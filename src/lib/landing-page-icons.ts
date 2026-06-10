@@ -1,0 +1,75 @@
+// ─── Dynamic Icon Mapping for Landing Page ───────────────────────────
+// Maps icon name strings from CMS config to actual Lucide React components.
+
+import {
+  ClipboardCheck,
+  FileText,
+  Bell,
+  Users,
+  Lock,
+  Shield,
+  Eye,
+  FolderOpen,
+  BadgeCheck,
+  Handshake,
+  Timer,
+  Trash2,
+  Zap,
+  Upload,
+  CheckCircle2,
+  Stethoscope,
+  Briefcase,
+  Clock,
+  ShieldCheck,
+  ArrowRight,
+  Heart,
+  Star,
+  Award,
+  Globe,
+  Search,
+  Settings,
+  Link2,
+  Database,
+  Server,
+  Code,
+  type LucideIcon,
+} from "@/lib/icons";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  ClipboardCheck,
+  FileText,
+  Bell,
+  Users,
+  Lock,
+  Shield,
+  Eye,
+  FolderOpen,
+  BadgeCheck,
+  Handshake,
+  Timer,
+  Trash2,
+  Zap,
+  Upload,
+  CheckCircle2,
+  Stethoscope,
+  Briefcase,
+  Clock,
+  ShieldCheck,
+  ArrowRight,
+  Heart,
+  Star,
+  Award,
+  Globe,
+  Search,
+  Settings,
+  Link2,
+  Database,
+  Server,
+  Code,
+};
+
+export function getIcon(name: string): LucideIcon {
+  return ICON_MAP[name] || ClipboardCheck;
+}
+
+export { ICON_MAP };
