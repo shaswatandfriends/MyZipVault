@@ -315,7 +315,14 @@
   background: #9ecaed;
 }
 
-/* Hover state for non-editing text items when edit-text tool is active */
+/* When edit-text tool is active, show faint blue dashed outlines on all text items
+   so the user can see where to click. Hover makes them solid blue. */
+[data-text-item-id]:not([contenteditable="true"]) {
+  outline-offset: 2px;
+}
+
 [data-text-item-id]:not([contenteditable="true"]):hover {
   outline-color: #0282e5 !important;
+  outline-style: solid !important;
+  background-color: rgba(2, 130, 229, 0.06) !important;
 }

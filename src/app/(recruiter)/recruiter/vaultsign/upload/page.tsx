@@ -819,25 +819,31 @@ function PdfPageView({
                 whiteSpace: "pre",
                 cursor: activeTool === "edit-text" ? (isEditing ? "text" : "pointer") : "default",
                 lineHeight: 1,
+                // When edit-text tool is active, show ALL text items with a faint outline
+                // so the user can see where to click. On hover, the outline becomes blue.
                 outline: isEditing ? "1px solid rgba(2, 130, 229, 0.5)"
                         : isModified ? "none"
-                        : activeTool === "edit-text" ? "2px dashed transparent" : "none",
-                outlineOffset: "1px",
+                        : activeTool === "edit-text" ? "1px dashed rgba(2, 130, 229, 0.25)" : "none",
+                outlineOffset: "2px",
                 userSelect: isEditing ? "text" : "none",
                 pointerEvents: activeTool === "edit-text" ? "auto" : (isModified ? "auto" : "none"),
                 padding: "0 2px",
                 minWidth: isEditing ? "20px" : undefined,
                 caretColor: isEditing ? "#000000" : "transparent",
               } as React.CSSProperties}
-              // Sejda-style hover: blue dashed outline when text tool active
+              // Sejda-style hover: blue solid outline when text tool active
               onMouseEnter={(e) => {
                 if (!isEditing && activeTool === "edit-text") {
                   e.currentTarget.style.outlineColor = "#0282e5";
+                  e.currentTarget.style.outlineStyle = "solid";
+                  e.currentTarget.style.backgroundColor = "rgba(2, 130, 229, 0.06)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isEditing && activeTool === "edit-text") {
-                  e.currentTarget.style.outlineColor = "transparent";
+                  e.currentTarget.style.outlineColor = "rgba(2, 130, 229, 0.25)";
+                  e.currentTarget.style.outlineStyle = "dashed";
+                  e.currentTarget.style.backgroundColor = "transparent";
                 }
               }}
               onClick={(e) => {
@@ -1745,6 +1751,7 @@ function UploadVaultSignContent() {
             }
 
             newTextItems.set(i, items);
+            console.log(`[VaultSign] Page ${i}: extracted ${items.length} text items (textLayerSuccess=${textLayerSuccess})`);
           } catch (textErr) {
             console.error(`Text extraction error on page ${i}:`, textErr);
             newTextItems.set(i, []);
@@ -1754,6 +1761,7 @@ function UploadVaultSignContent() {
         setPageImages(newImages);
         setPageDimensions(newDims);
         setTextItems(newTextItems);
+        console.log(`[VaultSign] Total text items across all pages:`, Array.from(newTextItems.entries()).map(([k, v]) => `page ${k}: ${v.length}`).join(', '));
         setIsRendering(false);
       } catch (err) {
         console.error("PDF rendering error:", err);
