@@ -276,7 +276,7 @@ function mapPdfFontToAnnotationFont(pdfFontName: string): string {
 const toolHints: Record<EditorTool, string> = {
   select: "Click an annotation to select it. Drag to move. Double-click text to edit.",
   text: "Click on the document to add a text annotation.",
-  "edit-text": "Click on existing text in the document to edit it. Changes will be saved with the closest matching font.",
+  "edit-text": "Click on any highlighted text area to edit it. Press Escape when done.",
   highlight: "Click and drag on the document to create a highlight.",
   whiteout: "Click and drag on the document to white out content.",
   draw: "Draw freehand on the document with your mouse.",
@@ -718,6 +718,13 @@ function PdfPageView({
         />
 
         {/* Text layer for edit-text tool */}
+        {activeTool === "edit-text" && textItems.length === 0 && (
+          <div
+            className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-amber-800 text-xs font-medium shadow-sm z-20"
+          >
+            No editable text detected on this page. Use &quot;Add Text&quot; + &quot;Whiteout&quot; to make edits instead.
+          </div>
+        )}
         {activeTool === "edit-text" && textItems.map((item) => {
           const existingReplace = pageAnnotations.find(
             a => a.type === "text-replace" && a.textItemId === item.id
@@ -727,7 +734,7 @@ function PdfPageView({
           return (
             <div
               key={item.id}
-              className="absolute cursor-text hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-dashed"
+              className="absolute cursor-text"
               style={{
                 left: `${item.x}%`,
                 top: `${item.y}%`,
@@ -739,23 +746,51 @@ function PdfPageView({
                 zIndex: 6,
                 overflow: "hidden",
                 whiteSpace: "nowrap",
+                // Visible outline like Sejda — shows all editable text areas
+                outline: "1px dashed rgba(13, 148, 136, 0.35)",
+                outlineOffset: "1px",
+                backgroundColor: "rgba(13, 148, 136, 0.04)",
+                transition: "background-color 0.15s, outline-color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                if (el.contentEditable !== "true") {
+                  el.style.backgroundColor = "rgba(13, 148, 136, 0.12)";
+                  el.style.outlineColor = "rgba(13, 148, 136, 0.7)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                if (el.contentEditable !== "true") {
+                  el.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
+                  el.style.outlineColor = "rgba(13, 148, 136, 0.35)";
+                }
               }}
               contentEditable={false}
-              onDoubleClick={(e) => {
+              onClick={(e) => {
                 e.stopPropagation();
                 const el = e.currentTarget;
+                if (el.contentEditable === "true") return; // already editing
                 el.contentEditable = "true";
                 el.style.color = "#000";
-                el.style.backgroundColor = "rgba(255,255,255,0.9)";
-                el.style.border = "1px solid #0D9488";
+                el.style.backgroundColor = "rgba(255,255,255,0.95)";
+                el.style.outline = "2px solid #0D9488";
+                el.style.outlineOffset = "0px";
                 el.focus();
+                // Select all text for easy replacement
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
               }}
               onBlur={(e) => {
                 const el = e.currentTarget;
                 el.contentEditable = "false";
                 el.style.color = "transparent";
-                el.style.backgroundColor = "transparent";
-                el.style.border = "none";
+                el.style.backgroundColor = "rgba(13, 148, 136, 0.04)";
+                el.style.outline = "1px dashed rgba(13, 148, 136, 0.35)";
+                el.style.outlineOffset = "1px";
                 const newText = el.innerText;
                 if (newText !== item.text) {
                   onAddTextReplace(item.id, item.text, newText, pageNum, item.x, item.y, item.width, item.height, item.fontSize, item.fontFamily);
@@ -1388,6 +1423,9 @@ function UploadVaultSignContent() {
   // Step 1 — Editor state (v3: page image + annotation overlay)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  // Keep a separate copy of original PDF bytes for Save (pdfjs transfers the ArrayBuffer to its worker,
+  // which detaches it from the main thread, causing "Cannot perform Construct on a detached ArrayBuffer")
+  const originalPdfBytesRef = useRef<Uint8Array | null>(null);
   const [pageImages, setPageImages] = useState<Map<number, string>>(new Map());
   const [pageDimensions, setPageDimensions] = useState<Map<number, { width: number; height: number }>>(new Map());
   const [totalPages, setTotalPages] = useState(0);
@@ -1438,7 +1476,10 @@ function UploadVaultSignContent() {
     if (uploadedFile && !pdfData) {
       const reader = new FileReader();
       reader.onload = () => {
-        setPdfData(reader.result as ArrayBuffer);
+        const arrayBuffer = reader.result as ArrayBuffer;
+        // Immediately save a copy of the raw bytes before pdfjs can transfer/detach the ArrayBuffer
+        originalPdfBytesRef.current = new Uint8Array(arrayBuffer.slice(0));
+        setPdfData(arrayBuffer);
       };
       reader.onerror = () => {
         toast.error("Failed to read the PDF file");
@@ -1461,7 +1502,13 @@ function UploadVaultSignContent() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          data: new Uint8Array(pdfData),
+          cMapUrl: "/cmaps/",
+          cMapPacked: true,
+          standardFontDataUrl: "/standard_fonts/",
+          useSystemFonts: true,
+        }).promise;
         setTotalPages(pdf.numPages);
 
         const newImages = new Map<number, string>();
@@ -1689,10 +1736,11 @@ function UploadVaultSignContent() {
 
   // ─── Save Edited PDF (pdf-lib only) ───────────────────────
   const handleSave = useCallback(async () => {
-    if (!pdfData) return;
+    const originalBytes = originalPdfBytesRef.current;
+    if (!originalBytes) return;
     try {
       const modifiedBytes = await saveEditedPdf(
-        new Uint8Array(pdfData),
+        originalBytes,
         annotations,
         drawings,
       );
@@ -1702,7 +1750,7 @@ function UploadVaultSignContent() {
       console.error("Save PDF error:", err);
       toast.error("Failed to save PDF");
     }
-  }, [pdfData, annotations, drawings]);
+  }, [annotations, drawings]);
 
   // ─── Keyboard shortcuts ──────────────────────────────────
   useEffect(() => {
@@ -1741,7 +1789,13 @@ function UploadVaultSignContent() {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(fieldPdfData) });
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(fieldPdfData),
+          cMapUrl: "/cmaps/",
+          cMapPacked: true,
+          standardFontDataUrl: "/standard_fonts/",
+          useSystemFonts: true,
+        });
         const pdf = await loadingTask.promise;
 
         if (cancelled) return;
