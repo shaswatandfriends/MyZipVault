@@ -296,36 +296,26 @@
   user-select: none;
 }
 
-/* ─── Sejda-style text-editable overlay (for inline PDF text editing) ── */
-.text-editable {
-  outline: 2px dashed transparent;
-  white-space: pre;
-  overflow: hidden;
-  text-align: left;
-  line-height: 1;
+/* ─── Sejda-style inline PDF text editing ── */
+/* When a text item is being edited (contentEditable), it gets a white background
+   to cover the canvas-rendered text underneath. This is the Sejda .edited approach. */
+[data-text-item-id][contenteditable="true"] {
+  background-color: white !important;
+  color: #000000 !important;
+  outline: 1px solid rgba(2, 130, 229, 0.5) !important;
+  outline-offset: 1px;
+  caret-color: #000000;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
-.text-editable:hover {
-  border-color: #0282e5;
-}
-
-.text-editable:hover:focus {
-  border-color: transparent;
-}
-
-.text-editable::selection,
-.text-editable::-moz-selection {
+[data-text-item-id][contenteditable="true"]::selection,
+[data-text-item-id][contenteditable="true"]::-moz-selection {
   background: #9ecaed;
 }
 
-/* Sejda .edited state: original text span hidden with white background */
-.textLayer > .edited,
-.text-edited-original {
-  background-color: white;
-  outline-color: white;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+/* Hover state for non-editing text items when edit-text tool is active */
+[data-text-item-id]:not([contenteditable="true"]):hover {
+  outline-color: #0282e5 !important;
 }

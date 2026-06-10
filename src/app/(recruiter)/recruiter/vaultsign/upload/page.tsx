@@ -524,17 +524,24 @@ function PdfPageView({
   const [rectCurrent, setRectCurrent] = useState<{ x: number; y: number } | null>(null);
   const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
   const [editingTextItemId, setEditingTextItemId] = useState<string | null>(null);
+  // Track the initial text when editing starts, so React children don't overwrite user edits
+  const editingInitialTextRef = useRef<string>("");
 
-  // Auto-focus the contentEditable overlay when editing starts (Sejda behavior)
+  // Auto-focus the contentEditable text item when editing starts
   useEffect(() => {
     if (editingTextItemId) {
-      // Small delay to ensure the element is rendered
       const timer = setTimeout(() => {
-        const el = document.getElementById(`text-editable-${editingTextItemId}`);
+        const el = document.querySelector(`[data-text-item-id="${editingTextItemId}"]`) as HTMLElement;
         if (el) {
           el.focus();
+          // Select all text when entering edit mode (Sejda behavior)
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
         }
-      }, 50);
+      }, 30);
       return () => clearTimeout(timer);
     }
   }, [editingTextItemId]);
@@ -751,21 +758,23 @@ function PdfPageView({
           onMouseLeave={handleMouseUp}
         />
 
-        {/* ─── Sejda-style text layer ─────────────────────────────────── */}
-        {/* Text items — always rendered; original spans with white bg when edited (Sejda .edited approach) */}
+        {/* ─── Sejda-style inline text editing ─────────────────────── */}
+        {/* Each text item is a single element that becomes contentEditable when clicked.
+            This is exactly how Sejda works: the SAME span transitions between display
+            and edit mode. No separate overlay needed. */}
         {textItems.map((item) => {
           const isEditing = editingTextItemId === item.id;
           const modified = modifiedTextItems.get(item.id);
           const isModified = !!modified;
 
-          // Parse values for the onModifyTextItem callback
+          // Position values for the onModifyTextItem callback
           const leftPct = parseFloat(item.left) || 0;
           const topPct = parseFloat(item.top) || 0;
           const fontHeightPx = parseFloat(item.fontHeight) || 12;
           const widthPct = item.width ? Math.max((item.width / item.viewportWidth) * 100, 2) : 2;
           const heightPct = Math.max((fontHeightPx / item.viewportHeight) * 100, 1);
 
-          // Display scaling
+          // Display scaling: PDF points → display pixels
           const fontHeightValue = parseFloat(item.fontHeight) || 12;
           const scaleXValue = parseFloat(item.scaleX) || 1;
           const rotateValue = item.rotate || "0deg";
@@ -782,22 +791,19 @@ function PdfPageView({
             ? (editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize)
             : (modified ? modified.fontSize * displayScale : scaledFontSize);
 
-          // Sejda approach: the ORIGINAL span gets white background when edited
-          // This hides the canvas text underneath. The span ITSELF shows the new text.
-          // When actively editing, a separate contentEditable overlay is created on top.
+          // When edited or editing: show text with white background to cover canvas text
+          // When not edited: transparent so canvas text shows through
           const showAsEdited = isModified || isEditing;
           const displayText = modified?.newText || item.text;
 
-          // Original text span — this is the Sejda ".textLayer > div" equivalent
-          // When edited: gets white background + shows new text (Sejda .edited class)
-          // When not edited: transparent, canvas shows through
           return (
             <div
               key={item.id}
-              className="absolute"
+              data-text-item-id={item.id}
               data-font-face={item.origFontName}
-              data-font-color="#000000"
-              data-inline-editor-id={isEditing ? `text-editable-${item.id}` : undefined}
+              className="absolute"
+              contentEditable={isEditing}
+              suppressContentEditableWarning
               style={{
                 left: item.left,
                 top: item.top,
@@ -805,22 +811,23 @@ function PdfPageView({
                 fontFamily: getCssFontStack(displayFontFamily),
                 transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
                 transformOrigin: "0% 0%",
-                // Sejda .edited: white bg hides canvas text underneath
+                // White bg hides canvas text underneath when edited (Sejda .edited)
                 color: showAsEdited ? (modified?.color || "#000000") : "transparent",
                 backgroundColor: showAsEdited ? "white" : "transparent",
-                zIndex: isEditing ? 6 : isModified ? 20 : 6,
+                zIndex: isEditing ? 20 : isModified ? 20 : 6,
                 overflow: isEditing ? "visible" : "hidden",
                 whiteSpace: "pre",
                 cursor: activeTool === "edit-text" ? (isEditing ? "text" : "pointer") : "default",
                 lineHeight: 1,
-                outline: isEditing ? "2px solid transparent"
-                        : isModified ? "2px dashed transparent"
+                outline: isEditing ? "1px solid rgba(2, 130, 229, 0.5)"
+                        : isModified ? "none"
                         : activeTool === "edit-text" ? "2px dashed transparent" : "none",
-                outlineOffset: "2px",
-                userSelect: showAsEdited ? "none" : "auto",
+                outlineOffset: "1px",
+                userSelect: isEditing ? "text" : "none",
                 pointerEvents: activeTool === "edit-text" ? "auto" : (isModified ? "auto" : "none"),
                 padding: "0 2px",
                 minWidth: isEditing ? "20px" : undefined,
+                caretColor: isEditing ? "#000000" : "transparent",
               } as React.CSSProperties}
               // Sejda-style hover: blue dashed outline when text tool active
               onMouseEnter={(e) => {
@@ -837,92 +844,16 @@ function PdfPageView({
                 if (activeTool === "edit-text" && !isEditing) {
                   e.stopPropagation();
                   e.preventDefault();
+                  editingInitialTextRef.current = displayText;
                   setEditingTextItemId(item.id);
                   onEditingTextItemChange(item);
                 }
               }}
-            >
-              {showAsEdited ? displayText : ""}
-            </div>
-          );
-        })}
-
-        {/* Sejda-style contentEditable overlay — created ON TOP of original when editing */}
-        {/* This is the "text-editable existingTextEdit" element that Sejda creates */}
-        {editingTextItemId && (() => {
-          const item = textItems.find(t => t.id === editingTextItemId);
-          if (!item) return null;
-
-          const modified = modifiedTextItems.get(item.id);
-          const fontHeightValue = parseFloat(item.fontHeight) || 12;
-          const scaleXValue = parseFloat(item.scaleX) || 1;
-          const rotateValue = item.rotate || "0deg";
-          const displayScale = pageWidth / item.viewportWidth;
-          const scaledFontSize = fontHeightValue * displayScale;
-
-          // Position values for save callback
-          const leftPct = parseFloat(item.left) || 0;
-          const topPct = parseFloat(item.top) || 0;
-          const widthPct = item.width ? Math.max((item.width / item.viewportWidth) * 100, 2) : 2;
-          const heightPct = Math.max((fontHeightValue / item.viewportHeight) * 100, 1);
-
-          const editingFontFamily = editingTextItem?.fontFamily || modified?.fontFamily || item.fontFamily;
-          const editingFontHeight = editingTextItem ? parseFloat(editingTextItem.fontHeight) || 0 : 0;
-          const displayFontSize = editingFontHeight > 0 ? editingFontHeight * displayScale : scaledFontSize;
-          const displayText = modified?.newText || item.text;
-
-          // Position offset by 2px (border width) like Sejda
-          const leftValue = parseFloat(item.left) || 0;
-          const topValue = parseFloat(item.top) || 0;
-          const leftPx = (leftValue / 100) * pageWidth - 2;
-          const topPx = (topValue / 100) * pageHeight - 2;
-
-          return (
-            <div
-              key={`text-editable-${item.id}`}
-              id={`text-editable-${item.id}`}
-              className="text-editable existingTextEdit"
-              contentEditable
-              suppressContentEditableWarning
-              style={{
-                position: "absolute",
-                zIndex: 10,
-                left: leftPx,
-                top: topPx,
-                fontSize: `${displayFontSize}px`,
-                fontFamily: getCssFontStack(editingFontFamily),
-                transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
-                transformOrigin: "0% 0%",
-                color: modified?.color || "#000000",
-                backgroundColor: "transparent",
-                outline: "2px dashed transparent",
-                whiteSpace: "pre",
-                overflow: "visible",
-                lineHeight: 1,
-                cursor: "text",
-                padding: "2px",
-                minWidth: "20px",
-                userSelect: "text",
-              } as React.CSSProperties}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#0282e5";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "transparent";
-              }}
-              onFocus={(e) => {
-                // Select all text when entering edit mode (Sejda behavior)
-                const range = document.createRange();
-                range.selectNodeContents(e.currentTarget);
-                const sel = window.getSelection();
-                sel?.removeAllRanges();
-                sel?.addRange(range);
-              }}
               onBlur={(e) => {
+                if (!isEditing) return; // guard
                 const newText = e.currentTarget.innerText.trim();
                 const currentFontFamily = editingTextItem?.fontFamily || item.fontFamily;
-                const currentFontSize = parseFloat(editingTextItem?.fontHeight || item.fontHeight) || fontHeightValue;
-                const fontHeightPx = fontHeightValue;
+                const currentFontSize = parseFloat(editingTextItem?.fontHeight || item.fontHeight) || fontHeightPx;
                 // Save if text changed OR font/size changed from original
                 const fontChanged = currentFontFamily !== item.fontFamily || currentFontSize !== fontHeightPx;
                 if ((newText !== item.text || fontChanged) && newText !== "") {
@@ -947,15 +878,23 @@ function PdfPageView({
               }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
-                  // Cancel editing — revert to original
+                  e.preventDefault();
+                  e.stopPropagation();
                   setEditingTextItemId(null);
                   onEditingTextItemChange(null);
                 }
               }}
-              dangerouslySetInnerHTML={{ __html: displayText }}
-            />
+            >
+              {/* When editing, use dangerouslySetInnerHTML to prevent React from
+                  reconciling/overwriting the contentEditable DOM content on re-renders
+                  (e.g., when the user changes font from the toolbar). When not editing,
+                  use regular React children. */}
+              {isEditing
+                ? <span dangerouslySetInnerHTML={{ __html: editingInitialTextRef.current }} />
+                : (showAsEdited ? displayText : "")}
+            </div>
           );
-        })()}
+        })}
 
         {/* Empty text layer message */}
         {activeTool === "edit-text" && textItems.length === 0 && (
