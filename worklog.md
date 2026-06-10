@@ -118,3 +118,34 @@ Stage Summary:
 - Font mapping ensures correct PDF output: sans-serif→Helvetica, serif→TimesRoman, mono→Courier
 - Google Fonts loaded for web preview of non-system fonts
 - All changes compile cleanly with zero TypeScript errors
+
+---
+Task ID: font-css-fallbacks-fix
+Agent: Main Agent
+Task: Add CSS font fallback stacks (Sejda-style) and PDF font name mapping for proper cross-platform rendering
+
+Work Log:
+- Identified critical issue: fonts like "Calibri" and "Segoe UI" were stored as raw CSS fontFamily values without fallbacks, causing rendering failures on non-Windows systems
+- Added cssFontStacks mapping (21 fonts → proper CSS font-family stacks with open-source equivalents):
+  - e.g., Calibri → "'Calibri', 'Carlito', 'Liberation Sans', sans-serif"
+  - e.g., Cambria → "'Cambria', 'Caladea', 'Liberation Serif', serif"
+  - e.g., Times New Roman → "'Times New Roman', 'Tinos', 'Liberation Serif', serif"
+  - e.g., Courier New → "'Courier New', 'Cousine', 'Liberation Mono', monospace"
+  - e.g., Century Gothic → "'Century Gothic', 'Arimo', sans-serif"
+- Added getCssFontStack() function with heuristic matching for unknown font names
+- Added mapPdfFontToAnnotationFont() function to map PDF internal font names (e.g., "ArialMT", "TimesNewRomanPSMT", "g_d0_f1") to known annotation font families
+- Applied getCssFontStack() to all 3 CSS fontFamily rendering locations:
+  1. Text layer overlay (edit-text tool) - line 652
+  2. Text-replace annotation display - line 772
+  3. Text annotation display - line 830
+- Updated text extraction to use mapPdfFontToAnnotationFont() instead of raw PDF font names
+- Added Google Fonts: Arimo (Century Gothic equiv), Tinos (Times equiv), Cousine (Courier equiv)
+- Verified: tsc --noEmit shows zero errors for vaultsign/upload file and layout.tsx
+- Verified: next build succeeds
+- Committed and pushed to main branch
+
+Stage Summary:
+- Fonts now render correctly on all platforms (Windows, macOS, Linux) via proper CSS fallback chains
+- PDF internal font names are properly mapped to known families for editing and saving
+- Additional Google Fonts (Arimo, Tinos, Cousine) ensure web preview accuracy
+- Commit: e859a5c pushed to origin/main
