@@ -408,14 +408,89 @@ function DraggableTextAnnotation({
   );
 }
 
+// ─── PDF Page Layer Sub-Component ────────────────────────────────────
+function PdfPageLayer({
+  pageNum,
+  pageDim,
+  pageAnnotations,
+  selectedAnnotation,
+  activeTool,
+  canvasRefCallback,
+  drawCanvasRefCallback,
+  onSelectAnnotation,
+  onMoveAnnotation,
+  onRemoveAnnotation,
+  onUpdateAnnotation,
+  onDrawStart,
+  onDrawMove,
+  onDrawEnd,
+}: {
+  pageNum: number;
+  pageDim: { width: number; height: number };
+  pageAnnotations: TextAnnotation[];
+  selectedAnnotation: string | null;
+  activeTool: EditorTool;
+  canvasRefCallback: (el: HTMLCanvasElement | null) => void;
+  drawCanvasRefCallback: (el: HTMLCanvasElement | null) => void;
+  onSelectAnnotation: (id: string | null) => void;
+  onMoveAnnotation: (id: string, x: number, y: number) => void;
+  onRemoveAnnotation: (id: string) => void;
+  onUpdateAnnotation: (id: string, updates: Partial<TextAnnotation>) => void;
+  onDrawStart: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onDrawMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onDrawEnd: () => void;
+}) {
+  const pageWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  return (
+    <div className="flex flex-col items-center">
+      <p className="text-xs text-[#6B7280] mb-1.5 font-medium">Page {pageNum}</p>
+      <div
+        ref={pageWrapperRef}
+        className="relative bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+        style={{
+          width: pageDim.width ? `${pageDim.width}px` : "auto",
+          height: pageDim.height ? `${pageDim.height}px` : "auto",
+        }}
+      >
+        <canvas ref={canvasRefCallback} className="block" />
+        {/* Drawing overlay canvas */}
+        <canvas
+          ref={drawCanvasRefCallback}
+          className="absolute top-0 left-0"
+          style={{
+            cursor: activeTool === "draw" ? "crosshair" : activeTool === "eraser" ? "cell" : "default",
+            pointerEvents: (activeTool === "draw" || activeTool === "eraser") ? "auto" : "none",
+          }}
+          onMouseDown={onDrawStart}
+          onMouseMove={onDrawMove}
+          onMouseUp={onDrawEnd}
+          onMouseLeave={onDrawEnd}
+        />
+        {/* Annotations Overlay */}
+        {pageAnnotations.map((a) => (
+          <DraggableTextAnnotation
+            key={a.id}
+            annotation={a}
+            isSelected={selectedAnnotation === a.id}
+            containerRef={pageWrapperRef}
+            onSelect={() => onSelectAnnotation(a.id)}
+            onMove={(id, x, y) => onMoveAnnotation(id, x, y)}
+            onRemove={onRemoveAnnotation}
+            onUpdate={onUpdateAnnotation}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── PDF Viewer Component ────────────────────────────────────────────
 function PdfViewer({
   pdfData,
   annotations,
   selectedAnnotation,
   activeTool,
-  currentPage,
-  totalPages,
   zoomLevel,
   onTotalPagesChange,
   onSelectAnnotation,
@@ -427,8 +502,6 @@ function PdfViewer({
   annotations: TextAnnotation[];
   selectedAnnotation: string | null;
   activeTool: EditorTool;
-  currentPage: number;
-  totalPages: number;
   zoomLevel: number;
   onTotalPagesChange: (pages: number) => void;
   onSelectAnnotation: (id: string | null) => void;
@@ -437,99 +510,116 @@ function PdfViewer({
   onUpdateAnnotation: (id: string, updates: Partial<TextAnnotation>) => void;
 }) {
   const [pdfRenderError, setPdfRenderError] = useState(false);
-  const [canvasDims, setCanvasDims] = useState({ width: 0, height: 0 });
-  const canvasDimsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [totalPages, setTotalPages] = useState(0);
+  const [pageDims, setPageDims] = useState<Map<number, { width: number; height: number }>>(new Map());
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
-  const pdfPageWrapperRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Drawing canvas overlay
-  const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pdfDocRef = useRef<any>(null); // PDFDocumentProxy // eslint-disable-line @typescript-eslint/no-explicit-any
+  const canvasRefsMap = useRef<Map<number, HTMLCanvasElement | null>>(new Map());
+  const drawCanvasRefsMap = useRef<Map<number, HTMLCanvasElement | null>>(new Map());
   const [isDrawing, setIsDrawing] = useState(false);
   const drawStartRef = useRef<{ x: number; y: number } | null>(null);
+  const activeDrawCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // PDF rendering using ArrayBuffer data
+  // Load PDF document once when pdfData changes
   useEffect(() => {
-    if (!pdfData) return;
+    if (!pdfData) {
+      pdfDocRef.current = null;
+      setTotalPages(0);
+      setPageDims(new Map());
+      return;
+    }
 
     let cancelled = false;
     setPdfRenderError(false);
 
-    const renderPdf = async (attempt = 0) => {
+    const loadPdf = async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-
-        // Use ArrayBuffer data instead of URL
-        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+        // Use new Uint8Array to prevent ArrayBuffer detachment
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfData) });
         const pdf = await loadingTask.promise;
-
         if (cancelled) return;
+        pdfDocRef.current = pdf;
+        setTotalPages(pdf.numPages);
         onTotalPagesChange(pdf.numPages);
-
-        const pageNum = currentPage;
-        if (pageNum < 1 || pageNum > pdf.numPages) return;
-
-        const page = await pdf.getPage(pageNum);
-        if (cancelled) return;
-
-        const baseViewport = page.getViewport({ scale: 1 });
-        const containerEl = pdfContainerRef.current;
-        const containerWidth = containerEl ? containerEl.offsetWidth - 2 : 800;
-        const baseScale = Math.min(containerWidth / baseViewport.width, 2);
-        const scale = baseScale * (zoomLevel / 100);
-        const finalScale = Math.max(0.3, Math.min(scale, 3));
-        const viewport = page.getViewport({ scale: finalScale });
-
-        const canvas = canvasRef.current;
-        if (!canvas) {
-          if (attempt < 10) {
-            setTimeout(() => { if (!cancelled) renderPdf(attempt + 1); }, 200);
-          }
-          return;
-        }
-
-        const context = canvas.getContext("2d");
-        if (!context) return;
-
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        // Also size the drawing overlay canvas
-        const drawCanvas = drawCanvasRef.current;
-        if (drawCanvas) {
-          drawCanvas.width = viewport.width;
-          drawCanvas.height = viewport.height;
-        }
-
-        if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
-        canvasDimsDebounceRef.current = setTimeout(() => {
-          if (!cancelled) setCanvasDims({ width: viewport.width, height: viewport.height });
-        }, 50);
-
-        await page.render({
-          canvasContext: context,
-          viewport: viewport,
-        }).promise;
       } catch (err) {
-        console.error("PDF render error:", err);
+        console.error("PDF load error:", err);
         if (!cancelled) setPdfRenderError(true);
       }
     };
 
-    renderPdf();
-    return () => {
-      cancelled = true;
-      if (canvasDimsDebounceRef.current) clearTimeout(canvasDimsDebounceRef.current);
+    loadPdf();
+    return () => { cancelled = true; };
+  }, [pdfData, onTotalPagesChange]);
+
+  // Render all pages when pdfDoc or zoom changes
+  useEffect(() => {
+    const pdf = pdfDocRef.current;
+    if (!pdf || totalPages === 0) return;
+
+    let cancelled = false;
+
+    const renderAllPages = async () => {
+      const newDims = new Map<number, { width: number; height: number }>();
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        if (cancelled) break;
+        try {
+          const page = await pdf.getPage(pageNum);
+          if (cancelled) break;
+
+          const baseViewport = page.getViewport({ scale: 1 });
+          const containerEl = pdfContainerRef.current;
+          const containerWidth = containerEl ? containerEl.offsetWidth - 48 : 800;
+          const baseScale = Math.min(containerWidth / baseViewport.width, 2);
+          const scale = baseScale * (zoomLevel / 100);
+          const finalScale = Math.max(0.3, Math.min(scale, 3));
+          const viewport = page.getViewport({ scale: finalScale });
+
+          const canvas = canvasRefsMap.current.get(pageNum);
+          if (!canvas) continue;
+
+          const context = canvas.getContext("2d");
+          if (!context) continue;
+
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          // Size the draw overlay canvas too
+          const drawCanvas = drawCanvasRefsMap.current.get(pageNum);
+          if (drawCanvas) {
+            drawCanvas.width = viewport.width;
+            drawCanvas.height = viewport.height;
+          }
+
+          newDims.set(pageNum, { width: viewport.width, height: viewport.height });
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport,
+          }).promise;
+        } catch (err) {
+          console.error(`PDF render error page ${pageNum}:`, err);
+        }
+      }
+
+      if (!cancelled) {
+        setPageDims(newDims);
+      }
     };
-  }, [pdfData, currentPage, zoomLevel]);
+
+    renderAllPages();
+    return () => { cancelled = true; };
+  }, [zoomLevel, totalPages]);
 
   // Drawing handlers for freehand draw tool
   const handleDrawStart = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (activeTool !== "draw" && activeTool !== "eraser") return;
     e.stopPropagation();
+    const canvas = e.currentTarget;
+    activeDrawCanvasRef.current = canvas;
     setIsDrawing(true);
-    const canvas = drawCanvasRef.current;
-    if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -554,8 +644,8 @@ function PdfViewer({
 
   const handleDrawMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || (activeTool !== "draw" && activeTool !== "eraser")) return;
-    const canvas = drawCanvasRef.current;
-    if (!canvas) return;
+    const canvas = e.currentTarget;
+    if (canvas !== activeDrawCanvasRef.current) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -569,6 +659,7 @@ function PdfViewer({
   const handleDrawEnd = useCallback(() => {
     setIsDrawing(false);
     drawStartRef.current = null;
+    activeDrawCanvasRef.current = null;
   }, []);
 
   if (!pdfData) {
@@ -593,43 +684,34 @@ function PdfViewer({
       )}
       <div
         ref={pdfContainerRef}
-        className="relative bg-white border border-[#E5E7EB] rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07)] overflow-auto"
-        style={{ minHeight: "500px" }}
+        className="overflow-y-auto rounded-xl"
+        style={{ maxHeight: "80vh", backgroundColor: "#F3F4F6" }}
         onClick={() => onSelectAnnotation(null)}
       >
-        <div
-          ref={pdfPageWrapperRef}
-          className="relative inline-block"
-          style={{
-            width: canvasDims.width ? `${canvasDims.width}px` : "100%",
-            height: canvasDims.height ? `${canvasDims.height}px` : "auto",
-          }}
-        >
-          <canvas ref={canvasRef} className="block" />
-          {/* Drawing overlay canvas */}
-          <canvas
-            ref={drawCanvasRef}
-            className="absolute top-0 left-0"
-            style={{
-              cursor: activeTool === "draw" ? "crosshair" : activeTool === "eraser" ? "cell" : "default",
-              pointerEvents: (activeTool === "draw" || activeTool === "eraser") ? "auto" : "none",
-            }}
-            onMouseDown={handleDrawStart}
-            onMouseMove={handleDrawMove}
-            onMouseUp={handleDrawEnd}
-            onMouseLeave={handleDrawEnd}
-          />
-          {/* Annotations Overlay */}
-          {annotations.filter((a) => a.page === currentPage).map((a) => (
-            <DraggableTextAnnotation
-              key={a.id}
-              annotation={a}
-              isSelected={selectedAnnotation === a.id}
-              containerRef={pdfPageWrapperRef}
-              onSelect={() => onSelectAnnotation(a.id)}
-              onMove={(id, x, y) => onMoveAnnotation(id, x, y)}
-              onRemove={onRemoveAnnotation}
-              onUpdate={onUpdateAnnotation}
+        <div className="flex flex-col items-center gap-6 py-6 px-4">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+            <PdfPageLayer
+              key={pageNum}
+              pageNum={pageNum}
+              pageDim={pageDims.get(pageNum) || { width: 0, height: 0 }}
+              pageAnnotations={annotations.filter((a) => a.page === pageNum)}
+              selectedAnnotation={selectedAnnotation}
+              activeTool={activeTool}
+              canvasRefCallback={(el) => {
+                if (el) canvasRefsMap.current.set(pageNum, el);
+                else canvasRefsMap.current.delete(pageNum);
+              }}
+              drawCanvasRefCallback={(el) => {
+                if (el) drawCanvasRefsMap.current.set(pageNum, el);
+                else drawCanvasRefsMap.current.delete(pageNum);
+              }}
+              onSelectAnnotation={onSelectAnnotation}
+              onMoveAnnotation={onMoveAnnotation}
+              onRemoveAnnotation={onRemoveAnnotation}
+              onUpdateAnnotation={onUpdateAnnotation}
+              onDrawStart={handleDrawStart}
+              onDrawMove={handleDrawMove}
+              onDrawEnd={handleDrawEnd}
             />
           ))}
         </div>
@@ -660,7 +742,6 @@ function UploadVaultSignContent() {
   const [annotations, setAnnotations] = useState<TextAnnotation[]>([]);
   const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<EditorTool>("select");
-  const [editorPage, setEditorPage] = useState(1);
   const [editorTotalPages, setEditorTotalPages] = useState(1);
   const [editorZoom, setEditorZoom] = useState(100);
 
@@ -711,7 +792,7 @@ function UploadVaultSignContent() {
         setDocumentName(uploadedFile.name.replace(/\.pdf$/i, ""));
       }
     }
-  }, [uploadedFile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [uploadedFile, pdfData, documentName]);
 
   // ─── Annotation Handlers ────────────────────────────────────────────
   const pushUndo = useCallback(() => {
@@ -1084,7 +1165,6 @@ function UploadVaultSignContent() {
                     setUploadedFile(null);
                     setAnnotations([]);
                     setSelectedAnnotation(null);
-                    setEditorPage(1);
                     setEditorTotalPages(1);
                     setEditorZoom(100);
                   }}
@@ -1094,68 +1174,60 @@ function UploadVaultSignContent() {
                 </button>
               </div>
 
-              {/* ── Full PDF Editor Toolbar ── */}
-              <div className="bg-white rounded-xl border border-[#E5E7EB] divide-y divide-[#E5E7EB]">
-                {/* Row 1: Editor tools, page nav, zoom */}
-                <div className="flex items-center justify-between px-3 py-1.5">
+              {/* ── Header Toolbar (Dark Ribbon) ── */}
+              <div className="sticky top-0 z-30 bg-[#1F2937] rounded-t-xl">
+                {/* Row 1: Tool buttons, Undo/Redo, Zoom, Page count */}
+                <div className="flex items-center justify-between px-3 py-2">
                   {/* Left: Tool Selection */}
                   <div className="flex items-center gap-0.5">
-                    {/* Select / Pointer */}
                     <button
                       onClick={() => setActiveTool("select")}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "select" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "select" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Select & Move"
                     >
                       <MousePointer2 className="size-4" />
                     </button>
-                    {/* Text */}
                     <button
                       onClick={() => { setActiveTool("text"); handleAddAnnotation("text"); }}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "text" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "text" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Add Text"
                     >
                       <Type className="size-4" />
                     </button>
-                    {/* Highlight */}
                     <button
                       onClick={() => { setActiveTool("highlight"); handleAddAnnotation("highlight"); }}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "highlight" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "highlight" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Add Highlight"
                     >
                       <Highlighter className="size-4" />
                     </button>
-                    {/* Shape */}
                     <button
                       onClick={() => { setActiveTool("shape"); handleAddAnnotation("shape"); }}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "shape" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "shape" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Add Shape"
                     >
                       <Square className="size-4" />
                     </button>
-                    {/* Draw / Pen */}
                     <button
                       onClick={() => setActiveTool("draw")}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "draw" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "draw" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Draw / Pen"
                     >
                       <Paintbrush className="size-4" />
                     </button>
-                    {/* Eraser */}
                     <button
                       onClick={() => setActiveTool("eraser")}
-                      className={`p-1.5 rounded-md transition-colors ${activeTool === "eraser" ? "bg-[#0D9488] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${activeTool === "eraser" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Eraser"
                     >
                       <Eraser className="size-4" />
                     </button>
 
-                    {/* Divider */}
-                    <div className="w-px h-5 bg-[#E5E7EB] mx-1" />
+                    <div className="w-px h-5 bg-[#4B5563] mx-1.5" />
 
-                    {/* Undo / Redo */}
                     <button
                       onClick={handleUndo}
-                      className={`p-1.5 rounded-md transition-colors ${undoStack.length === 0 ? "text-[#D1D5DB] cursor-not-allowed" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${undoStack.length === 0 ? "text-[#6B7280] cursor-not-allowed" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Undo"
                       disabled={undoStack.length === 0}
                     >
@@ -1163,7 +1235,7 @@ function UploadVaultSignContent() {
                     </button>
                     <button
                       onClick={handleRedo}
-                      className={`p-1.5 rounded-md transition-colors ${redoStack.length === 0 ? "text-[#D1D5DB] cursor-not-allowed" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1.5 rounded-md transition-colors ${redoStack.length === 0 ? "text-[#6B7280] cursor-not-allowed" : "text-[#D1D5DB] hover:bg-[#374151] hover:text-white"}`}
                       title="Redo"
                       disabled={redoStack.length === 0}
                     >
@@ -1171,97 +1243,90 @@ function UploadVaultSignContent() {
                     </button>
                   </div>
 
-                  {/* Center: Page Navigation */}
-                  <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="icon" className="size-7 border-[#E5E7EB]" onClick={() => setEditorPage((p) => Math.max(1, p - 1))} disabled={editorPage <= 1}>
-                      <ChevronLeft className="size-3.5" />
-                    </Button>
-                    <span className="text-xs text-[#6B7280] min-w-[70px] text-center">Page {editorPage} of {editorTotalPages}</span>
-                    <Button variant="outline" size="icon" className="size-7 border-[#E5E7EB]" onClick={() => setEditorPage((p) => Math.min(editorTotalPages, p + 1))} disabled={editorPage >= editorTotalPages}>
-                      <ChevronRight className="size-3.5" />
-                    </Button>
-                  </div>
-
-                  {/* Right: Zoom Controls */}
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="size-7 border-[#E5E7EB]" onClick={() => setEditorZoom((z) => zoomLevels[Math.max(0, zoomLevels.indexOf(z) - 1)])} disabled={editorZoom <= 50}>
-                      <MinusIcon className="size-3.5" />
-                    </Button>
-                    <span className="text-xs text-[#6B7280] w-10 text-center">{editorZoom}%</span>
-                    <Button variant="outline" size="icon" className="size-7 border-[#E5E7EB]" onClick={() => setEditorZoom((z) => zoomLevels[Math.min(zoomLevels.length - 1, zoomLevels.indexOf(z) + 1)])} disabled={editorZoom >= 200}>
-                      +
-                    </Button>
+                  {/* Right: Zoom + Page Count */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-[#9CA3AF]">{editorTotalPages} page{editorTotalPages !== 1 ? "s" : ""}</span>
+                    <div className="w-px h-5 bg-[#4B5563]" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEditorZoom((z) => zoomLevels[Math.max(0, zoomLevels.indexOf(z) - 1)])}
+                        className="p-1 rounded-md text-[#D1D5DB] hover:bg-[#374151] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={editorZoom <= 50}
+                        title="Zoom Out"
+                      >
+                        <MinusIcon className="size-3.5" />
+                      </button>
+                      <span className="text-xs text-[#D1D5DB] w-10 text-center font-medium">{editorZoom}%</span>
+                      <button
+                        onClick={() => setEditorZoom((z) => zoomLevels[Math.min(zoomLevels.length - 1, zoomLevels.indexOf(z) + 1)])}
+                        className="p-1 rounded-md text-[#D1D5DB] hover:bg-[#374151] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={editorZoom >= 200}
+                        title="Zoom In"
+                      >
+                        <span className="text-sm font-bold leading-none">+</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Row 2: Text Formatting (only shown when text annotation is selected) */}
+                {/* Row 2: Text Formatting (only when text annotation is selected) */}
                 {selectedAnn && selectedAnn.type === "text" && (
-                  <div className="flex items-center gap-1 px-3 py-1.5 flex-wrap">
-                    {/* Font Family */}
+                  <div className="flex items-center gap-1 px-3 py-1.5 border-t border-[#374151] flex-wrap">
                     <select
                       value={selectedAnn.fontFamily}
                       onChange={(e) => handleApplyFormat("fontFamily", e.target.value)}
-                      className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[130px]"
+                      className="h-7 rounded-md border border-[#4B5563] text-xs px-1.5 bg-[#374151] text-[#E5E7EB] max-w-[130px]"
                     >
                       {fontFamilies.map((f) => (
                         <option key={f.value} value={f.value}>{f.label}</option>
                       ))}
                     </select>
-
-                    {/* Font Size */}
                     <select
                       value={selectedAnn.fontSize}
                       onChange={(e) => handleApplyFormat("fontSize", parseInt(e.target.value))}
-                      className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] w-[55px]"
+                      className="h-7 rounded-md border border-[#4B5563] text-xs px-1.5 bg-[#374151] text-[#E5E7EB] w-[55px]"
                     >
                       {fontSizes.map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
 
-                    {/* Divider */}
-                    <div className="w-px h-5 bg-[#E5E7EB] mx-0.5" />
+                    <div className="w-px h-5 bg-[#4B5563] mx-0.5" />
 
-                    {/* Bold */}
                     <button
                       onClick={() => handleApplyFormat("bold", !selectedAnn.bold)}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.bold ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.bold ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Bold"
                     >
                       <Bold className="size-4" />
                     </button>
-                    {/* Italic */}
                     <button
                       onClick={() => handleApplyFormat("italic", !selectedAnn.italic)}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.italic ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.italic ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Italic"
                     >
                       <Italic className="size-4" />
                     </button>
-                    {/* Underline */}
                     <button
                       onClick={() => handleApplyFormat("underline", !selectedAnn.underline)}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.underline ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.underline ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Underline"
                     >
                       <Underline className="size-4" />
                     </button>
-                    {/* Strikethrough */}
                     <button
                       onClick={() => handleApplyFormat("strikethrough", !selectedAnn.strikethrough)}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.strikethrough ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.strikethrough ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Strikethrough"
                     >
                       <Strikethrough className="size-4" />
                     </button>
 
-                    {/* Divider */}
-                    <div className="w-px h-5 bg-[#E5E7EB] mx-0.5" />
+                    <div className="w-px h-5 bg-[#4B5563] mx-0.5" />
 
-                    {/* Text Color */}
                     <div className="relative">
                       <button
-                        className="p-1 rounded-md text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                        className="p-1 rounded-md text-[#D1D5DB] hover:bg-[#374151] transition-colors"
                         title="Text Color"
                       >
                         <Baseline className="size-4" />
@@ -1278,34 +1343,32 @@ function UploadVaultSignContent() {
                       />
                     </div>
 
-                    {/* Divider */}
-                    <div className="w-px h-5 bg-[#E5E7EB] mx-0.5" />
+                    <div className="w-px h-5 bg-[#4B5563] mx-0.5" />
 
-                    {/* Alignment */}
                     <button
                       onClick={() => handleApplyFormat("alignment", "left")}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "left" ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "left" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Align Left"
                     >
                       <AlignLeft className="size-4" />
                     </button>
                     <button
                       onClick={() => handleApplyFormat("alignment", "center")}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "center" ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "center" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Align Center"
                     >
                       <AlignCenter className="size-4" />
                     </button>
                     <button
                       onClick={() => handleApplyFormat("alignment", "right")}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "right" ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "right" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Align Right"
                     >
                       <AlignRight className="size-4" />
                     </button>
                     <button
                       onClick={() => handleApplyFormat("alignment", "justify")}
-                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "justify" ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                      className={`p-1 rounded-md transition-colors ${selectedAnn.alignment === "justify" ? "bg-[#0D9488] text-white" : "text-[#D1D5DB] hover:bg-[#374151]"}`}
                       title="Justify"
                     >
                       <AlignJustify className="size-4" />
@@ -1314,14 +1377,104 @@ function UploadVaultSignContent() {
                 )}
               </div>
 
+              {/* ── Floating Format Bar ── */}
+              {selectedAnn && (
+                <div className="relative z-20 flex justify-center">
+                  <div className="absolute -top-1 flex flex-col items-center">
+                    <div className="flex items-center gap-1 px-3 py-1.5 bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-[#E5E7EB]">
+                      <select
+                        value={selectedAnn.fontFamily}
+                        onChange={(e) => handleApplyFormat("fontFamily", e.target.value)}
+                        className="h-6 rounded border border-[#E5E7EB] text-xs px-1 bg-white text-[#374151] max-w-[110px]"
+                      >
+                        {fontFamilies.map((f) => (
+                          <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={selectedAnn.fontSize}
+                        onChange={(e) => handleApplyFormat("fontSize", parseInt(e.target.value))}
+                        className="h-6 rounded border border-[#E5E7EB] text-xs px-1 bg-white text-[#374151] w-[48px]"
+                      >
+                        {fontSizes.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+
+                      <div className="w-px h-4 bg-[#E5E7EB] mx-0.5" />
+
+                      <button
+                        onClick={() => handleApplyFormat("bold", !selectedAnn.bold)}
+                        className={`p-1 rounded transition-colors ${selectedAnn.bold ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                        title="Bold"
+                      >
+                        <Bold className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleApplyFormat("italic", !selectedAnn.italic)}
+                        className={`p-1 rounded transition-colors ${selectedAnn.italic ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                        title="Italic"
+                      >
+                        <Italic className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleApplyFormat("underline", !selectedAnn.underline)}
+                        className={`p-1 rounded transition-colors ${selectedAnn.underline ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                        title="Underline"
+                      >
+                        <Underline className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleApplyFormat("strikethrough", !selectedAnn.strikethrough)}
+                        className={`p-1 rounded transition-colors ${selectedAnn.strikethrough ? "bg-[#E5E7EB] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                        title="Strikethrough"
+                      >
+                        <Strikethrough className="size-3.5" />
+                      </button>
+
+                      <div className="w-px h-4 bg-[#E5E7EB] mx-0.5" />
+
+                      <div className="relative">
+                        <button
+                          className="p-1 rounded text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                          title="Text Color"
+                        >
+                          <Baseline className="size-3.5" />
+                          <div
+                            className="h-0.5 w-3 mx-auto -mt-0.5 rounded-full"
+                            style={{ backgroundColor: selectedAnn.color }}
+                          />
+                        </button>
+                        <input
+                          type="color"
+                          value={selectedAnn.color}
+                          onChange={(e) => handleApplyFormat("color", e.target.value)}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                      </div>
+
+                      <div className="w-px h-4 bg-[#E5E7EB] mx-0.5" />
+
+                      <button
+                        onClick={() => handleRemoveAnnotation(selectedAnn.id)}
+                        className="p-1 rounded text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+                        title="Delete Annotation"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                    {/* Triangle pointer */}
+                    <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white" />
+                  </div>
+                </div>
+              )}
+
               {/* PDF Editor */}
               <PdfViewer
                 pdfData={pdfData}
                 annotations={annotations}
                 selectedAnnotation={selectedAnnotation}
                 activeTool={activeTool}
-                currentPage={editorPage}
-                totalPages={editorTotalPages}
                 zoomLevel={editorZoom}
                 onTotalPagesChange={setEditorTotalPages}
                 onSelectAnnotation={setSelectedAnnotation}

@@ -1,54 +1,52 @@
----
-Task ID: 1
-Agent: Main Agent
-Task: Redesign VaultSign dashboard, create Upload PDF page, update wizard for template pre-selection
+# Task 1: Rewrite VaultSign PDF Editor Page
 
-Work Log:
-- Read and analyzed current VaultSign dashboard page at /src/app/(recruiter)/recruiter/vaultsign/page.tsx
-- Read and analyzed current New Document wizard at /src/app/(recruiter)/recruiter/vaultsign/new/page.tsx
-- Analyzed uploaded screenshot showing the current UI with PDF render error
-- Redesigned dashboard page with two sections: "Start with a Template" (primary) and "Your Documents"
-- Added "Upload Custom PDF" outlined button and "New Document" primary button to header
-- Created template grid with 3-column layout, hover effects, type badges with emoji icons
-- Added template loading skeleton and empty state with fallback buttons
-- Created dedicated upload page at /src/app/(recruiter)/recruiter/vaultsign/upload/page.tsx (1310 lines)
-- Upload page has 3-step wizard: Upload & Details, Add Signers & Place Fields, Review & Save
-- Step 1: Drag-and-drop upload, document details form, PDF preview side by side
-- Step 2: Signer management, field placement with DraggableField, PDF preview with overlays
-- Step 3: Review summary with Save as Draft and Save & Send buttons
-- Save flow: POST create → POST upload → PUT fields → POST send (if Save & Send)
-- Updated New Document wizard to support ?template=ID URL parameter
-- Added useSearchParams and Suspense wrapper for template pre-selection
-- When template ID in URL: auto-selects template, hides mode selection buttons, shows template indicator
-- Build passed successfully with no errors
+## Summary of Changes
 
-Stage Summary:
-- Dashboard now shows templates as primary view with "Upload Custom PDF" button at top right
-- New upload page provides complete PDF upload → preview → edit → save flow
-- Template cards link to /recruiter/vaultsign/new?template={id} for quick document creation
-- Saved drafts appear in "Your Documents" section with Send action
-- New Document wizard auto-selects template when coming from dashboard
+### 1. PdfViewer Component Rewrite (lines 411-730)
+- **Created `PdfPageLayer` sub-component** at module level with its own `useRef` for the page wrapper div
+  - Renders: canvas + draw canvas overlay + annotation overlays per page
+  - Receives callback refs for canvas and drawCanvas (set via Maps in parent)
+  - Each page has its own annotation overlay with DraggableTextAnnotation components
+- **Rewrote `PdfViewer` component** to render ALL pages in one scrollable gray container
+  - Removed `currentPage` and `totalPages` props (no longer needed)
+  - Loads PDF once and stores `PDFDocumentProxy` in `pdfDocRef` (not raw ArrayBuffer)
+  - Uses `new Uint8Array(pdfData)` when calling `pdfjsLib.getDocument()` to prevent ArrayBuffer detachment
+  - Uses `canvasRefsMap` and `drawCanvasRefsMap` (Map<number, HTMLCanvasElement>) for per-page canvas refs
+  - Renders all pages vertically in a scrollable container with:
+    - `maxHeight: "80vh"` and `overflow-y: auto`
+    - Light gray background (`#F3F4F6`)
+    - Pages centered with padding, each with white background + shadow
+    - "Page X" label above each page
+    - ~24px gap between pages
+  - Drawing handlers now use `e.currentTarget` to identify which canvas is being drawn on
+  - `activeDrawCanvasRef` tracks the canvas being drawn on (prevents cross-page drawing)
 
----
-Task ID: 2
-Agent: Main Agent
-Task: Fix remaining VaultSign audit bugs (3 of 12 that were still unfixed)
+### 2. Removed `editorPage` State
+- Removed `const [editorPage, setEditorPage] = useState(1);`
+- Removed `setEditorPage(1);` from the remove file handler
 
-Work Log:
-- Reviewed all 12 original audit bugs against current codebase
-- Found 9 of 12 already fixed in prior sessions (bugs 2-10)
-- Fixed Bug 1 (Critical): Party 1 sender now stored as VaultSignSigner with auto-signed status
-- Fixed Bug 11 (Moderate): Added race condition protection to decline route using $transaction with re-check
-- Fixed Bug 12 (Minor): Added draft status check to candidate detail API
-- Updated allSigners in new/page.tsx and upload/page.tsx to include Party 1 for field placement
-- Updated send route to exclude Party 1 from status updates and email sends
-- Updated candidate APIs to exclude party_1 when finding candidate's signer record
-- Updated step 3 validation to only require fields for recipients, not the sender
-- Default activeSignerTab changed to index 1 (first recipient) instead of 0 (sender)
-- Build passed successfully, committed and pushed
+### 3. Redesigned Step 1 Editor Toolbar
+**A. Header Toolbar** (dark-themed, Word-like ribbon at top):
+- Row 1: Tool buttons (Select, Text, Highlight, Shape, Draw, Eraser) | Undo/Redo | Page count | Zoom controls
+- Row 2: Text formatting (font family, font size, Bold, Italic, Underline, Strikethrough, Color, Alignment) — only visible when a text annotation is selected
+- Dark background (`#1F2937`) with teal (`#0D9488`) active states
 
-Stage Summary:
-- All 12 original audit bugs are now fixed
-- Party 1 (sender) is properly tracked as an auto-signed signer throughout the system
-- Decline route has race condition protection matching the submit route's pattern
-- Candidate APIs properly block draft documents and exclude sender from signer lookups
+**B. Floating Format Bar** (appears when any annotation is selected):
+- Positioned at top of PDF viewer area with small triangle pointer
+- Contains: Font, Size, Bold, Italic, Underline, Strikethrough, Color picker, Delete button
+- White background with shadow, compact styling
+- Only appears when `selectedAnn` is not null
+
+### 4. Updated PdfViewer Usage
+- Removed `currentPage={editorPage}` and `totalPages={editorTotalPages}` props
+
+### 5. Lint/TS Fixes
+- Fixed unused eslint-disable directives
+- Added `onTotalPagesChange` to load effect dependencies
+- Added proper deps to uploadedFile effect
+
+## Files Changed
+- `/home/z/my-project/src/app/(recruiter)/recruiter/vaultsign/upload/page.tsx`
+
+## Pre-existing Issues (Not Modified)
+- Line 917: TS2345 error in Step 3 field placement PDF render (pre-existing, unrelated to changes)
