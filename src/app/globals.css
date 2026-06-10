@@ -297,18 +297,57 @@
 }
 
 /* ─── Sejda-style inline PDF text editing ── */
-/* Based on Sejda's approach:
-   - Text layer divs are semi-transparent "ghosts" (opacity 0.4, color transparent)
-     when browsing — just outlines you can hover/click.
-   - When EDITING (contentEditable), the div becomes fully visible with white background
-     to cover the canvas-rendered text underneath (Sejda .edited class).
-   - This prevents duplicate text overlapping the canvas-rendered PDF text. */
+/* Core principle (from Sejda):
+   - The PDF is rendered as a canvas/image — original text is BAKED INTO the image.
+   - Text overlay divs sit on top of the image.
+   - Unedited text divs must be COMPLETELY INVISIBLE (color: transparent, no opacity trick).
+     Only the canvas/image text should be visible.
+   - When EDITING, the div gets a WHITE BACKGROUND that COVERS the canvas text underneath,
+     and the overlay text becomes visible. This creates the illusion of editing in-place.
+   - NEVER use opacity to create "ghost" effects — opacity on a div with text content
+     creates visible duplicate text on top of the canvas-rendered original. */
 
-/* When a text item is being edited (contentEditable = true) — Sejda .edited style */
-[data-text-item-id][contenteditable="true"] {
+/* ─── RULE 1: All text items are invisible by default ─── */
+/* Text is always transparent. No background. Full opacity (we never use opacity to hide).
+   The div is an invisible clickable region positioned over the canvas text. */
+[data-text-item-id] {
+  color: transparent !important;
+  background-color: transparent !important;
+  opacity: 1 !important;
+}
+
+/* ─── RULE 2: When edit-text tool is active, show dashed outlines ─── */
+/* Like Sejda's [data-tool=text] .textLayer>div — outlines only, text stays transparent.
+   The outline shows the user where they can click. No opacity change! */
+[data-tool="edit-text"] [data-text-item-id]:not(.edited):not([contenteditable="true"]) {
+  outline: 1px dashed rgba(2, 130, 229, 0.25);
+  outline-offset: 1px;
+  cursor: pointer;
+}
+
+/* ─── RULE 3: Hover on unedited items when edit-text tool active ─── */
+/* Solid blue outline + very subtle highlight. Text stays transparent. */
+[data-tool="edit-text"] [data-text-item-id]:not(.edited):not([contenteditable="true"]):hover {
+  outline: 2px solid #0282e5 !important;
+  outline-offset: 1px;
+  background-color: rgba(2, 130, 229, 0.04) !important;
+  cursor: pointer;
+}
+
+/* ─── RULE 4: Edited/modified items — Sejda .edited style ─── */
+/* White background COVERS the canvas text underneath. Text becomes visible.
+   This is the key Sejda trick: the white bg hides the original, overlay text replaces it. */
+[data-text-item-id].edited {
+  color: #000000 !important;
   background-color: white !important;
   opacity: 1 !important;
+}
+
+/* ─── RULE 5: Currently editing (contentEditable) — Sejda .edited + focus style ─── */
+[data-text-item-id][contenteditable="true"] {
   color: #000000 !important;
+  background-color: white !important;
+  opacity: 1 !important;
   outline: 2px solid rgba(2, 130, 229, 0.5) !important;
   outline-offset: 1px;
   caret-color: #000000;
@@ -321,13 +360,4 @@
 [data-text-item-id][contenteditable="true"]::selection,
 [data-text-item-id][contenteditable="true"]::-moz-selection {
   background: #9ecaed;
-}
-
-/* When edit-text tool is active, ghost text items get transparent dashed outlines
-   on hover so the user can see where to click — Sejda [data-tool=text] style */
-[data-text-item-id]:not([contenteditable="true"]):hover {
-  outline-color: #0282e5 !important;
-  outline-style: solid !important;
-  outline-width: 2px !important;
-  opacity: 0.7 !important;
 }
