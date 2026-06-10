@@ -84,3 +84,37 @@ Stage Summary:
 - No TipTap, no html2canvas, no text extraction — the PDF page is shown as a clean image
 - All Steps 2-4 preserved and functional
 - Zero TypeScript errors, build compiles successfully
+
+---
+Task ID: font-expansion-and-edit-text
+Agent: Main Agent
+Task: Add expanded font support (21 fonts) and Sejda-style "Edit Text" tool for editing existing PDF text
+
+Work Log:
+- Analyzed Sejda PDF editor HTML source to understand their text layer editing approach
+- Read existing upload/page.tsx (2000+ lines) to understand current editor architecture
+- Expanded annotationFontFamilies from 6 fonts to 21 fonts: Arial, Arial Narrow, Calibri (Carlito), Cambria (Caladea), Times New Roman, Courier New, Verdana, Tahoma, Segoe UI (Selawik), Georgia, Garamond (EB Garamond), Bahnschrift, Franklin Gothic, Century Gothic (Arimo), Trebuchet MS (Fira Sans), Palatino Linotype (PT Serif), Consolas, Lucida Sans Unicode, Impact, Book Antiqua (PT Serif Caption), Helvetica
+- Added "alt" fallback labels to font options (matching Sejda's approach of showing alternative web-safe fonts)
+- Replaced saveEditedPdf function with font-aware version:
+  - Maps CSS font families to pdf-lib StandardFonts (Helvetica variants for sans-serif, TimesRoman variants for serif, Courier variants for mono)
+  - Supports bold, italic, and bold+italic variants via getStandardFont() helper
+  - Uses fontCache for efficient embedding
+  - Added text-replace annotation handling (whiteout original + draw replacement text)
+- Added "Edit Text" tool (EditorTool type extended with "edit-text"):
+  - Added TextItem interface for extracted PDF text
+  - Extended TextAnnotation type with "text-replace" and optional originalText/textItemId fields
+  - Added text extraction during PDF rendering using pdfjs page.getTextContent()
+  - Added transparent text layer overlay in PdfPageView when edit-text tool is active
+  - Double-click on existing text makes it editable; on blur creates text-replace annotation
+  - text-replace annotations render with visual indicator showing original text
+- Added Google Fonts imports in layout.tsx for web font fallbacks (EB Garamond, Fira Sans, PT Serif, PT Serif Caption)
+- Widened font dropdown from max-w-[110px] to max-w-[170px] to accommodate longer font names
+- Verified: tsc --noEmit shows zero errors for vaultsign/upload file
+- Verified: next build succeeds
+
+Stage Summary:
+- Font support expanded from 6 to 21 fonts with proper PDF font mapping
+- New "Edit Text" tool allows editing existing PDF text (Sejda-style approach)
+- Font mapping ensures correct PDF output: sans-serif→Helvetica, serif→TimesRoman, mono→Courier
+- Google Fonts loaded for web preview of non-system fonts
+- All changes compile cleanly with zero TypeScript errors

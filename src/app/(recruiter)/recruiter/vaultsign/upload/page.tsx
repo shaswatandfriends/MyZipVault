@@ -47,7 +47,18 @@ interface SignField {
   value: string | null;
 }
 
-type EditorTool = "select" | "text" | "highlight" | "whiteout" | "draw" | "eraser";
+type EditorTool = "select" | "text" | "edit-text" | "highlight" | "whiteout" | "draw" | "eraser";
+
+interface TextItem {
+  id: string;
+  text: string;
+  x: number;  // percentage 0-100
+  y: number;  // percentage 0-100
+  width: number;
+  height: number;
+  fontSize: number;
+  fontFamily: string;
+}
 
 interface TextAnnotation {
   id: string;
@@ -63,7 +74,9 @@ interface TextAnnotation {
   bold: boolean;
   italic: boolean;
   underline: boolean;
-  type: "text" | "highlight" | "whiteout";
+  type: "text" | "highlight" | "whiteout" | "text-replace";
+  originalText?: string;
+  textItemId?: string;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -94,11 +107,26 @@ const zoomLevels = [50, 75, 100, 125, 150, 200];
 
 const annotationFontFamilies = [
   { value: "Arial", label: "Arial" },
-  { value: "Helvetica", label: "Helvetica" },
+  { value: "Arial Narrow", label: "Arial Narrow" },
+  { value: "Calibri", label: "Calibri", alt: "Carlito" },
+  { value: "Cambria", label: "Cambria", alt: "Caladea" },
   { value: "Times New Roman", label: "Times New Roman" },
   { value: "Courier New", label: "Courier New" },
-  { value: "Georgia", label: "Georgia" },
   { value: "Verdana", label: "Verdana" },
+  { value: "Tahoma", label: "Tahoma" },
+  { value: "Segoe UI", label: "Segoe UI", alt: "Selawik" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Garamond", label: "Garamond", alt: "EB Garamond" },
+  { value: "Bahnschrift", label: "Bahnschrift" },
+  { value: "Franklin Gothic", label: "Franklin Gothic", alt: "Liberty Sans" },
+  { value: "Century Gothic", label: "Century Gothic", alt: "Arimo" },
+  { value: "Trebuchet MS", label: "Trebuchet MS", alt: "Fira Sans" },
+  { value: "Palatino Linotype", label: "Palatino Linotype", alt: "PT Serif" },
+  { value: "Consolas", label: "Consolas" },
+  { value: "Lucida Sans Unicode", label: "Lucida Sans Unicode" },
+  { value: "Impact", label: "Impact" },
+  { value: "Book Antiqua", label: "Book Antiqua", alt: "PT Serif Caption" },
+  { value: "Helvetica", label: "Helvetica" },
 ];
 
 const annotationFontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72];
@@ -106,6 +134,7 @@ const annotationFontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 4
 const toolHints: Record<EditorTool, string> = {
   select: "Click an annotation to select it. Drag to move. Double-click text to edit.",
   text: "Click on the document to add a text annotation.",
+  "edit-text": "Click on existing text in the document to edit it. Changes will be saved with the closest matching font.",
   highlight: "Click and drag on the document to create a highlight.",
   whiteout: "Click and drag on the document to white out content.",
   draw: "Draw freehand on the document with your mouse.",
@@ -119,11 +148,45 @@ async function saveEditedPdf(
   drawings: Map<number, string>,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
-  const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
   const pages = pdfDoc.getPages();
 
-  // 1. First, apply whiteout rectangles (to cover existing text)
+  // Pre-embed all needed standard fonts
+  const fontCache: Record<string, PDFLib.PDFFont> = {};
+  const getFont = async (name: PDFLib.StandardFonts) => {
+    if (!fontCache[name]) {
+      fontCache[name] = await pdfDoc.embedFont(name);
+    }
+    return fontCache[name];
+  };
+
+  // Map CSS fontFamily to pdf-lib StandardFonts
+  function getStandardFont(ff: string, bold: boolean, italic: boolean): PDFLib.StandardFonts {
+    const sansSerifFonts = ["Arial", "Helvetica", "Tahoma", "Verdana", "Segoe UI", "Calibri",
+      "Century Gothic", "Franklin Gothic", "Bahnschrift", "Arial Narrow", "Trebuchet MS", "Impact"];
+    const serifFonts = ["Times New Roman", "Cambria", "Garamond", "Palatino Linotype",
+      "Book Antiqua", "Georgia"];
+    const monoFonts = ["Courier New", "Consolas", "Lucida Sans Unicode"];
+
+    if (serifFonts.includes(ff)) {
+      if (bold && italic) return PDFLib.StandardFonts.TimesRomanBoldItalic;
+      if (bold) return PDFLib.StandardFonts.TimesRomanBold;
+      if (italic) return PDFLib.StandardFonts.TimesRomanItalic;
+      return PDFLib.StandardFonts.TimesRoman;
+    }
+    if (monoFonts.includes(ff)) {
+      if (bold && italic) return PDFLib.StandardFonts.CourierBoldOblique;
+      if (bold) return PDFLib.StandardFonts.CourierBold;
+      if (italic) return PDFLib.StandardFonts.CourierOblique;
+      return PDFLib.StandardFonts.Courier;
+    }
+    // Default: sans-serif (Helvetica)
+    if (bold && italic) return PDFLib.StandardFonts.HelveticaBoldOblique;
+    if (bold) return PDFLib.StandardFonts.HelveticaBold;
+    if (italic) return PDFLib.StandardFonts.HelveticaOblique;
+    return PDFLib.StandardFonts.Helvetica;
+  }
+
+  // 1. Apply whiteout rectangles
   for (const ann of annotations.filter(a => a.type === "whiteout")) {
     const pageIndex = ann.page - 1;
     if (pageIndex >= pages.length) continue;
@@ -135,6 +198,41 @@ async function saveEditedPdf(
       width: (ann.width / 100) * pw,
       height: (ann.height / 100) * ph,
       color: PDFLib.rgb(1, 1, 1),
+    });
+  }
+
+  // 1.5 Apply text replacements (whiteout original + draw new text)
+  for (const ann of annotations.filter(a => a.type === "text-replace")) {
+    const pageIndex = ann.page - 1;
+    if (pageIndex >= pages.length) continue;
+    const page = pages[pageIndex];
+    const { width: pw, height: ph } = page.getSize();
+
+    // White out the original text
+    page.drawRectangle({
+      x: (ann.x / 100) * pw,
+      y: ph - ((ann.y / 100) * ph) - ((ann.height / 100) * ph),
+      width: (ann.width / 100) * pw,
+      height: (ann.height / 100) * ph,
+      color: PDFLib.rgb(1, 1, 1),
+    });
+
+    // Draw the replacement text
+    const standardFontName = getStandardFont(ann.fontFamily, ann.bold, ann.italic);
+    const font = await getFont(standardFontName);
+    const x = (ann.x / 100) * pw;
+    const y = ph - ((ann.y / 100) * ph) - (ann.fontSize * 0.6);
+
+    page.drawText(ann.text, {
+      x,
+      y,
+      size: ann.fontSize,
+      font,
+      color: PDFLib.rgb(
+        parseInt(ann.color.slice(1, 3), 16) / 255,
+        parseInt(ann.color.slice(3, 5), 16) / 255,
+        parseInt(ann.color.slice(5, 7), 16) / 255,
+      ),
     });
   }
 
@@ -161,9 +259,11 @@ async function saveEditedPdf(
     const page = pages[pageIndex];
     const { width: pw, height: ph } = page.getSize();
 
+    const standardFontName = getStandardFont(ann.fontFamily, ann.bold, ann.italic);
+    const font = await getFont(standardFontName);
+
     const x = (ann.x / 100) * pw;
     const y = ph - ((ann.y / 100) * ph) - (ann.fontSize * 0.8);
-    const font = ann.bold ? helveticaBold : helveticaFont;
 
     const lines = (ann.text || "").split("\n");
     const lineHeight = ann.fontSize * 1.3;
@@ -220,6 +320,9 @@ function PdfPageView({
   onAddAnnotationAt,
   onDrawingEnd,
   drawingDataUrl,
+  textItems,
+  editorZoom,
+  onAddTextReplace,
 }: {
   pageNum: number;
   pageImage: string;
@@ -235,6 +338,20 @@ function PdfPageView({
   onAddAnnotationAt: (page: number, xPct: number, yPct: number) => void;
   onDrawingEnd: (pageNum: number, dataUrl: string) => void;
   drawingDataUrl: string | undefined;
+  textItems: TextItem[];
+  editorZoom: number;
+  onAddTextReplace: (
+    textItemId: string,
+    originalText: string,
+    newText: string,
+    page: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fontSize: number,
+    fontFamily: string,
+  ) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -458,6 +575,61 @@ function PdfPageView({
           onMouseLeave={handleMouseUp}
         />
 
+        {/* Text layer for edit-text tool */}
+        {activeTool === "edit-text" && textItems.map((item) => {
+          const existingReplace = pageAnnotations.find(
+            a => a.type === "text-replace" && a.textItemId === item.id
+          );
+          if (existingReplace) return null; // already replaced
+
+          return (
+            <div
+              key={item.id}
+              className="absolute cursor-text hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-dashed"
+              style={{
+                left: `${item.x}%`,
+                top: `${item.y}%`,
+                width: `${item.width}%`,
+                height: `${item.height}%`,
+                fontSize: `${item.fontSize * (editorZoom / 100)}px`,
+                fontFamily: item.fontFamily,
+                color: "transparent",
+                zIndex: 6,
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+              }}
+              contentEditable={false}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const el = e.currentTarget;
+                el.contentEditable = "true";
+                el.style.color = "#000";
+                el.style.backgroundColor = "rgba(255,255,255,0.9)";
+                el.style.border = "1px solid #0D9488";
+                el.focus();
+              }}
+              onBlur={(e) => {
+                const el = e.currentTarget;
+                el.contentEditable = "false";
+                el.style.color = "transparent";
+                el.style.backgroundColor = "transparent";
+                el.style.border = "none";
+                const newText = el.innerText;
+                if (newText !== item.text) {
+                  onAddTextReplace(item.id, item.text, newText, pageNum, item.x, item.y, item.width, item.height, item.fontSize, item.fontFamily);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  (e.target as HTMLElement).blur();
+                }
+              }}
+            >
+              {item.text}
+            </div>
+          );
+        })}
+
         {/* Annotation overlays */}
         {pageAnnotations.map((ann) => {
           const isSelected = selectedAnnotation === ann.id;
@@ -509,6 +681,55 @@ function PdfPageView({
                 onMouseDown={(e) => handleAnnMouseDown(e, ann)}
                 onClick={(e) => { e.stopPropagation(); if (activeTool === "select") onSelectAnnotation(ann.id); }}
               >
+                {isSelected && (
+                  <button
+                    className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center z-50"
+                    onClick={(e) => { e.stopPropagation(); onRemoveAnnotation(ann.id); }}
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            );
+          }
+
+          if (ann.type === "text-replace") {
+            return (
+              <div
+                key={ann.id}
+                className={`absolute ${activeTool === "select" ? "cursor-move" : "cursor-default"}`}
+                style={{
+                  left: `${ann.x}%`,
+                  top: `${ann.y}%`,
+                  width: `${ann.width}%`,
+                  minHeight: `${ann.height}%`,
+                  zIndex: isSelected ? 12 : 11,
+                }}
+                onMouseDown={(e) => handleAnnMouseDown(e, ann)}
+                onClick={(e) => { e.stopPropagation(); if (activeTool === "select") onSelectAnnotation(ann.id); }}
+              >
+                <div
+                  className="outline-none whitespace-pre-wrap break-words"
+                  style={{
+                    fontSize: `${ann.fontSize}px`,
+                    fontFamily: ann.fontFamily,
+                    color: ann.color,
+                    fontWeight: ann.bold ? "bold" : "normal",
+                    fontStyle: ann.italic ? "italic" : "normal",
+                    border: isSelected ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.5)",
+                    borderRadius: "2px",
+                    padding: "1px 3px",
+                    backgroundColor: isSelected ? "rgba(13, 148, 136, 0.05)" : "rgba(13, 148, 136, 0.03)",
+                    minWidth: "40px",
+                  }}
+                >
+                  {ann.text}
+                </div>
+                {isSelected && (
+                  <div className="absolute -top-5 left-0 text-[9px] text-[#0D9488] bg-[#CCFBF1] px-1 rounded whitespace-nowrap">
+                    Edited: &quot;{ann.originalText}&quot;
+                  </div>
+                )}
                 {isSelected && (
                   <button
                     className="absolute -top-2 -right-2 size-5 rounded-full bg-[#DC2626] text-white flex items-center justify-center z-50"
@@ -663,11 +884,12 @@ function PdfEditorToolbar({
   canRedo: boolean;
 }) {
   const selectedAnn = selectedAnnotation ? annotations.find(a => a.id === selectedAnnotation) : null;
-  const isTextAnn = selectedAnn?.type === "text";
+  const isTextAnn = selectedAnn?.type === "text" || selectedAnn?.type === "text-replace";
 
   const tools: { tool: EditorTool; icon: React.ReactNode; label: string }[] = [
     { tool: "select", icon: <MousePointer2 className="size-4" />, label: "Select" },
     { tool: "text", icon: <Type className="size-4" />, label: "Add Text" },
+    { tool: "edit-text", icon: <Type className="size-4" />, label: "Edit Text" },
     { tool: "highlight", icon: <Highlighter className="size-4" />, label: "Highlight" },
     { tool: "whiteout", icon: <Square className="size-4" />, label: "Whiteout" },
     { tool: "draw", icon: <Paintbrush className="size-4" />, label: "Draw" },
@@ -724,10 +946,10 @@ function PdfEditorToolbar({
             <select
               value={selectedAnn.fontFamily}
               onChange={(e) => onUpdateAnnotation(selectedAnnotation!, { fontFamily: e.target.value })}
-              className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[110px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
+              className="h-7 rounded-md border border-[#E5E7EB] text-xs px-1.5 bg-white text-[#374151] max-w-[170px] hover:border-[#9CA3AF] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] outline-none"
             >
               {annotationFontFamilies.map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
+                <option key={f.value} value={f.value}>{f.label}{"alt" in f && f.alt ? ` (${f.alt})` : ""}</option>
               ))}
             </select>
 
@@ -1035,6 +1257,7 @@ function UploadVaultSignContent() {
   const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
   const [drawings, setDrawings] = useState<Map<number, string>>(new Map());
   const [editedPdfBytes, setEditedPdfBytes] = useState<Uint8Array | null>(null);
+  const [textItems, setTextItems] = useState<Map<number, TextItem[]>>(new Map());
 
   // Undo/Redo history
   const [annotationHistory, setAnnotationHistory] = useState<TextAnnotation[][]>([]);
@@ -1085,7 +1308,7 @@ function UploadVaultSignContent() {
     }
   }, [uploadedFile, pdfData, documentName]);
 
-  // ─── Render PDF pages as images (no text extraction) ──────
+  // ─── Render PDF pages as images + extract text items ──────
   useEffect(() => {
     if (!pdfData) return;
 
@@ -1101,6 +1324,7 @@ function UploadVaultSignContent() {
 
         const newImages = new Map<number, string>();
         const newDims = new Map<number, { width: number; height: number }>();
+        const newTextItems = new Map<number, TextItem[]>();
         const renderScale = 2;
 
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -1121,10 +1345,39 @@ function UploadVaultSignContent() {
             width: Math.round(baseViewport.width * displayScale),
             height: Math.round(baseViewport.height * displayScale),
           });
+
+          // Extract text items for edit-text tool
+          try {
+            const textContent = await page.getTextContent();
+            const pageViewport = page.getViewport({ scale: renderScale });
+            const items = textContent.items
+              .filter((item: any) => item.str && item.str.trim())
+              .map((item: any, idx: number) => {
+                const x = (item.transform[4] / pageViewport.width) * 100;
+                const y = (1 - item.transform[5] / pageViewport.height) * 100;
+                const width = (item.width / pageViewport.width) * 100;
+                const height = (Math.abs(item.transform[3]) / pageViewport.height) * 100;
+                return {
+                  id: `text-${i}-${idx}`,
+                  text: item.str,
+                  x,
+                  y,
+                  width: Math.max(width, 2),
+                  height: Math.max(height, 1),
+                  fontSize: Math.abs(item.transform[0]) || 12,
+                  fontFamily: item.fontName || "Helvetica",
+                };
+              });
+            newTextItems.set(i, items);
+          } catch (textErr) {
+            console.error(`Text extraction error on page ${i}:`, textErr);
+            newTextItems.set(i, []);
+          }
         }
 
         setPageImages(newImages);
         setPageDimensions(newDims);
+        setTextItems(newTextItems);
         setIsRendering(false);
       } catch (err) {
         console.error("PDF rendering error:", err);
@@ -1252,6 +1505,42 @@ function UploadVaultSignContent() {
       return next;
     });
   }, []);
+
+  // ─── Handle text replacement from edit-text tool ───────────────
+  const handleAddTextReplace = useCallback((
+    textItemId: string,
+    originalText: string,
+    newText: string,
+    page: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fontSize: number,
+    fontFamily: string,
+  ) => {
+    const newAnn: TextAnnotation = {
+      id: `tr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      page,
+      x,
+      y,
+      width,
+      height,
+      text: newText,
+      originalText,
+      textItemId,
+      fontSize,
+      fontFamily,
+      color: "#000000",
+      bold: false,
+      italic: false,
+      underline: false,
+      type: "text-replace",
+    };
+    const newAnnotations = [...annotations, newAnn];
+    setAnnotations(newAnnotations);
+    pushHistory(newAnnotations);
+  }, [annotations, pushHistory]);
 
   // ─── Check if any edits have been made ────────────────────
   const hasEdits = annotations.length > 0 || drawings.size > 0;
@@ -1622,6 +1911,7 @@ function UploadVaultSignContent() {
                     setRenderError(false);
                     setAnnotationHistory([]);
                     setHistoryIndex(-1);
+                    setTextItems(new Map());
                   }}
                   className="text-sm text-[#0D9488] hover:text-[#0F766E] font-medium transition-colors"
                 >
@@ -1697,6 +1987,9 @@ function UploadVaultSignContent() {
                             onAddAnnotationAt={handleAddAnnotationAt}
                             onDrawingEnd={handleDrawingEnd}
                             drawingDataUrl={drawings.get(pn)}
+                            textItems={textItems.get(pn) || []}
+                            editorZoom={editorZoom}
+                            onAddTextReplace={handleAddTextReplace}
                           />
                         );
                       })}
