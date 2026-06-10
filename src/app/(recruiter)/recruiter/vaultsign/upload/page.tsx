@@ -52,12 +52,16 @@ type EditorTool = "select" | "text" | "edit-text" | "highlight" | "whiteout" | "
 interface TextItem {
   id: string;
   text: string;
-  x: number;  // percentage 0-100
-  y: number;  // percentage 0-100
-  width: number;
-  height: number;
-  fontSize: number;
+  left: string;    // CSS left percentage string from TextLayer, e.g. "12.34%"
+  top: string;     // CSS top percentage string from TextLayer
+  fontHeight: string;  // CSS --font-height value (px at scale=1)
+  scaleX: string;  // CSS --scale-x value
+  rotate: string;  // CSS --rotate value (deg)
   fontFamily: string;
+  origFontName: string;  // Original PDF font name for mapping
+  width: number;    // text width in PDF points (from item.width at scale=1)
+  viewportWidth: number;   // PDF page width in points at scale=1
+  viewportHeight: number;  // PDF page height in points at scale=1
 }
 
 interface TextAnnotation {
@@ -719,7 +723,7 @@ function PdfPageView({
           onMouseLeave={handleMouseUp}
         />
 
-        {/* Text layer for edit-text tool */}
+        {/* Text layer for edit-text tool — positioned by pdfjs TextLayer API */}
         {activeTool === "edit-text" && textItems.length === 0 && (
           <div
             className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-amber-800 text-xs font-medium shadow-sm z-20"
@@ -735,30 +739,53 @@ function PdfPageView({
 
           const isEditing = editingTextItemId === item.id;
 
+          // Parse the percentage values from TextLayer for the onAddTextReplace callback
+          const leftPct = parseFloat(item.left) || 0;
+          const topPct = parseFloat(item.top) || 0;
+          const fontHeightPx = parseFloat(item.fontHeight) || 12;
+          // Width/height as percentage of PDF page (used by save function)
+          // item.width is in PDF points at scale=1, viewportWidth is the page width in points
+          const widthPct = item.width ? Math.max((item.width / item.viewportWidth) * 100, 2) : 2;
+          const heightPct = Math.max((fontHeightPx / item.viewportHeight) * 100, 1);
+
+          // Parse fontHeight for direct use — TextLayer computes it at scale=1
+          // so these values are in PDF points. We need to scale to the display size.
+          const fontHeightValue = parseFloat(item.fontHeight) || 12;
+          const scaleXValue = parseFloat(item.scaleX) || 1;
+          const rotateValue = item.rotate || "0deg";
+          // Scale font size from PDF points to display pixels:
+          // The display pageWidth is based on the original PDF viewport scaled to fit
+          // the container, then zoomed. So: displayScale = pageWidth / viewportWidth
+          const displayScale = pageWidth / item.viewportWidth;
+          const scaledFontSize = fontHeightValue * displayScale;
+
           return (
             <div
               key={item.id}
               className="absolute"
               style={{
-                left: `${item.x}%`,
-                top: `${item.y}%`,
-                width: isEditing ? "auto" : `${item.width}%`,
-                minWidth: `${item.width}%`,
-                height: `${item.height}%`,
-                fontSize: `${item.fontSize * (editorZoom / 100)}px`,
+                // Use TextLayer's computed positions (percentages of page)
+                left: item.left,
+                top: item.top,
+                // Font sizing: scale from PDF points to display pixels
+                fontSize: `${scaledFontSize}px`,
                 fontFamily: getCssFontStack(item.fontFamily),
+                // Apply TextLayer transforms for proper text rendering
+                transform: `rotate(${rotateValue}) scaleX(${scaleXValue})`,
+                transformOrigin: "0% 0%",
                 color: isEditing ? "#000" : "transparent",
                 zIndex: isEditing ? 20 : 6,
                 overflow: isEditing ? "visible" : "hidden",
-                whiteSpace: isEditing ? "pre-wrap" : "nowrap",
+                whiteSpace: "pre",
                 cursor: isEditing ? "text" : "pointer",
+                lineHeight: 1,
                 // Visible outline like Sejda — shows all editable text areas
                 outline: isEditing ? "2px solid #0D9488" : "1px dashed rgba(13, 148, 136, 0.35)",
                 outlineOffset: isEditing ? "0px" : "1px",
                 backgroundColor: isEditing ? "rgba(255,255,255,0.95)" : "rgba(13, 148, 136, 0.04)",
                 transition: "background-color 0.15s, outline-color 0.15s",
                 pointerEvents: "auto",
-              }}
+              } as React.CSSProperties}
               onMouseEnter={(e) => {
                 if (!isEditing) {
                   e.currentTarget.style.backgroundColor = "rgba(13, 148, 136, 0.15)";
@@ -787,7 +814,7 @@ function PdfPageView({
                   onBlur={() => {
                     const newText = editingTextValue.trim();
                     if (newText !== item.text && newText !== "") {
-                      onAddTextReplace(item.id, item.text, newText, pageNum, item.x, item.y, item.width, item.height, item.fontSize, item.fontFamily);
+                      onAddTextReplace(item.id, item.text, newText, pageNum, leftPct, topPct, widthPct, heightPct, fontHeightPx, item.fontFamily);
                     }
                     setEditingTextItemId(null);
                     setEditingTextValue("");
@@ -802,12 +829,13 @@ function PdfPageView({
                       (e.target as HTMLElement).blur();
                     }
                   }}
-                  className="w-full h-full bg-transparent outline-none resize-none p-0 m-0 border-0"
+                  className="bg-transparent outline-none resize-none p-0 m-0 border-0"
                   style={{
                     fontSize: "inherit",
                     fontFamily: "inherit",
-                    color: "inherit",
+                    color: "#000",
                     lineHeight: "inherit",
+                    minWidth: "40px",
                   }}
                 />
               ) : (
@@ -1545,28 +1573,68 @@ function UploadVaultSignContent() {
             height: Math.round(baseViewport.height * displayScale),
           });
 
-          // Extract text items for edit-text tool
+          // Extract text items for edit-text tool using pdfjs TextLayer API
+          // This ensures pixel-perfect positioning — the same logic Sejda uses
           try {
             const textContent = await page.getTextContent();
-            const pageViewport = page.getViewport({ scale: renderScale });
-            const items = textContent.items
-              .filter((item: any) => item.str && item.str.trim())
-              .map((item: any, idx: number) => {
-                const x = (item.transform[4] / pageViewport.width) * 100;
-                const y = (1 - item.transform[5] / pageViewport.height) * 100;
-                const width = (item.width / pageViewport.width) * 100;
-                const height = (Math.abs(item.transform[3]) / pageViewport.height) * 100;
-                return {
-                  id: `text-${i}-${idx}`,
-                  text: item.str,
-                  x,
-                  y,
-                  width: Math.max(width, 2),
-                  height: Math.max(height, 1),
-                  fontSize: Math.abs(item.transform[0]) || 12,
-                  fontFamily: mapPdfFontToAnnotationFont(item.fontName),
-                };
+            const textLayerViewport = page.getViewport({ scale: 1 });
+
+            // Create a temporary container for TextLayer to render into
+            const tempContainer = document.createElement("div");
+            tempContainer.style.position = "absolute";
+            tempContainer.style.left = "-9999px";  // off-screen
+            tempContainer.style.top = "0";
+            tempContainer.style.width = `${textLayerViewport.width}px`;
+            tempContainer.style.height = `${textLayerViewport.height}px`;
+            tempContainer.className = "textLayer";
+            document.body.appendChild(tempContainer);
+
+            // Use pdfjs TextLayer to render properly positioned text spans
+            const textLayer = new pdfjsLib.TextLayer({
+              textContentSource: textContent,
+              container: tempContainer,
+              viewport: textLayerViewport,
+            });
+            await textLayer.render();
+
+            // Extract positioning data from the rendered spans
+            const spans = tempContainer.querySelectorAll("span:not(.markedContent span)");
+            const items: TextItem[] = [];
+            const textItemsArr = textContent.items.filter((item: any) => item.str && item.str.trim());
+
+            spans.forEach((span, idx) => {
+              const style = (span as HTMLElement).style;
+              const text = span.textContent || "";
+              if (!text.trim()) return;
+
+              // Get computed CSS values set by TextLayer
+              const left = style.left;          // e.g. "12.34%"
+              const top = style.top;            // e.g. "56.78%"
+              const fontHeight = style.getPropertyValue("--font-height") || "12";
+              const scaleX = style.getPropertyValue("--scale-x") || "1";
+              const rotate = style.getPropertyValue("--rotate") || "0deg";
+
+              // Get the original font name from the text content item
+              const origFontName = (textItemsArr[idx] as any)?.fontName || "";
+
+              items.push({
+                id: `text-${i}-${idx}`,
+                text,
+                left,
+                top,
+                fontHeight,
+                scaleX,
+                rotate,
+                fontFamily: mapPdfFontToAnnotationFont(origFontName),
+                origFontName,
+                width: (textItemsArr[idx] as any)?.width || 0,
+                viewportWidth: textLayerViewport.width,
+                viewportHeight: textLayerViewport.height,
               });
+            });
+
+            // Clean up the temporary container
+            document.body.removeChild(tempContainer);
             newTextItems.set(i, items);
           } catch (textErr) {
             console.error(`Text extraction error on page ${i}:`, textErr);
