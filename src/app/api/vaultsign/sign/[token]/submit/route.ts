@@ -60,12 +60,20 @@ export async function POST(
     });
 
     // Update signer data
+    // Frontend sends: { fieldId1: { type, image_base64/text }, fieldId2: { ... } }
+    // We need to store as: { per_field: { fieldId1: { ... }, fieldId2: { ... } } }
+    // so pdf-sign.ts can look up each field's signature by ID.
     const signerSignatureStore: SignerSignatureStore = {};
     if (signature_data) {
       if (signature_data.per_field) {
+        // Already in per_field format
         signerSignatureStore.per_field = signature_data.per_field;
-      } else {
+      } else if (signature_data.type || signature_data.image_base64 || signature_data.text) {
+        // Single signature object (legacy) — store as primary
         signerSignatureStore.primary = signature_data;
+      } else {
+        // Frontend sends { fieldId: signatureData } map — treat as per_field
+        signerSignatureStore.per_field = signature_data;
       }
     }
 
@@ -234,8 +242,31 @@ export async function POST(
 
               if (docDefinition && docDefinition.content && docDefinition.content.length > 0) {
                 const generatedBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 30000);
+
+                // Bake signatures into the generated PDF
+                const signFieldsList: SignField[] = JSON.parse(refreshedDocument.sign_fields || "[]");
+                const signerRecords = refreshedDocument.signers.map((s) => ({
+                  id: s.id,
+                  signer_index: s.signer_index,
+                  name: s.name,
+                  email: s.email,
+                  status: s.status,
+                  signature_data: s.signature_data,
+                }));
+
+                let finalBuffer: Buffer;
+                try {
+                  const { pdfBuffer: signedPdfBuffer, hash } = await generateSignedPdf(generatedBuffer, signFieldsList, signerRecords);
+                  // Add audit trail page
+                  finalBuffer = await addAuditTrailPage(signedPdfBuffer, auditTrail, refreshedDocument.document_name);
+                } catch (sigErr) {
+                  console.error("[VAULTSIGN] Error baking signatures into TipTap-generated PDF:", sigErr);
+                  // Fall back to unsigned PDF + audit trail
+                  finalBuffer = await addAuditTrailPage(generatedBuffer, auditTrail, refreshedDocument.document_name);
+                }
+
                 const uploadResult = await uploadGeneratedPdf(
-                  generatedBuffer,
+                  finalBuffer,
                   `org-${refreshedDocument.organization_id}/doc-${refreshedDocument.id}`,
                   `final-${Date.now()}.pdf`
                 );
