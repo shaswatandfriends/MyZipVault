@@ -253,7 +253,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         setPdfPage(1);
         setPdfTotalPages(0);
         setViewMode("preview");
-        toast.success("PDF preview generated with exact formatting");
+        const method = data.conversion_method || "unknown";
+        const isExact = method === "libreoffice";
+        toast.success(isExact
+          ? "PDF preview generated with exact formatting"
+          : "PDF preview generated (approximate formatting)"
+        );
       } else {
         throw new Error("No PDF URL returned");
       }
@@ -1163,7 +1168,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             </Button>
             <Separator orientation="vertical" className="h-6 mx-1" />
             <Badge variant="outline" className="text-[10px] bg-[#F0FDF4] text-[#166534] border-[#166534]/20">
-              Exact Format Preview
+              PDF Preview
             </Badge>
           </div>
         </div>
@@ -1190,7 +1195,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <div className="bg-[#EFF6FF] border-b border-[#BFDBFE] px-4 py-2 flex items-center gap-2">
                 <Eye className="h-4 w-4 text-[#2563EB] flex-shrink-0" />
                 <p className="text-xs text-[#1E40AF]">
-                  <strong>Tip:</strong> For exact Word formatting with real page breaks, use the <strong>Preview</strong> mode. The editor shows an approximate view.
+                  <strong>Tip:</strong> Use <strong>Preview</strong> mode to see the document with proper page breaks and formatting.
                 </p>
                 <Button
                   variant="outline"
@@ -1218,8 +1223,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               {pdfLoading ? (
                 <div className="flex flex-col items-center gap-3 py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
-                  <p className="text-sm text-[#6B7280]">Converting DOCX to PDF with exact formatting...</p>
-                  <p className="text-xs text-[#9CA3AF]">This uses LibreOffice for pixel-perfect conversion</p>
+                  <p className="text-sm text-[#6B7280]">Generating PDF preview...</p>
+                  <p className="text-xs text-[#9CA3AF]">This may take a few seconds</p>
                 </div>
               ) : pdfError ? (
                 <div className="flex flex-col items-center gap-3 py-20 max-w-md text-center">

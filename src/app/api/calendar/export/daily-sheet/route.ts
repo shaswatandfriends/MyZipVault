@@ -2,16 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generatePdfBuffer } from "@/lib/vaultsign/pdfmake-server";
-
-const fonts = {
-  Roboto: {
-    normal: new URL("pdfmake/build/vfs_fonts.js", import.meta.url).pathname.replace("/vfs_fonts.js", "/Roboto-Regular.ttf"),
-    bold: new URL("pdfmake/build/vfs_fonts.js", import.meta.url).pathname.replace("/vfs_fonts.js", "/Roboto-Medium.ttf"),
-    italics: new URL("pdfmake/build/vfs_fonts.js", import.meta.url).pathname.replace("/vfs_fonts.js", "/Roboto-Italic.ttf"),
-    bolditalics: new URL("pdfmake/build/vfs_fonts.js", import.meta.url).pathname.replace("/vfs_fonts.js", "/Roboto-MediumItalic.ttf"),
-  },
-};
+import { generatePdfBuffer, HELVETICA_FONTS } from "@/lib/vaultsign/pdfmake-server";
 
 // GET: Generate PDF of recruiter's scheduled calls for a specific date
 export async function GET(request: Request) {
@@ -132,11 +123,11 @@ export async function GET(request: Request) {
         subtitle: { fontSize: 12, margin: [0, 0, 0, 5] as [number, number, number, number] },
         tableHeader: { bold: true, fontSize: 10, color: "#374151" },
       },
-      defaultStyle: { font: "Roboto" },
+      defaultStyle: { font: "Helvetica" },
     };
 
-    // Use shared pdfmake utility with ESM/CJS interop handling
-    const pdfBuffer = await generatePdfBuffer(docDefinition, fonts, 15000);
+    // Use shared pdfmake utility with Helvetica built-in fonts
+    const pdfBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 15000);
 
     return new NextResponse(pdfBuffer, {
       headers: {

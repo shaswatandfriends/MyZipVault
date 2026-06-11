@@ -40,6 +40,13 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns"],
   },
   transpilePackages: ["lucide-react", "signature_pad"],
+
+  // Include pdfkit's font data files in the serverless function bundle.
+  // PDFKit reads these files at runtime using __dirname + '/data/...',
+  // but Vercel's bundler doesn't detect these dynamic file reads.
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/pdfkit/js/data/**/*"],
+  },
 };
 
 export default nextConfig;
