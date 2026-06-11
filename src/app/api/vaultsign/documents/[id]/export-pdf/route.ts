@@ -211,8 +211,7 @@ async function generatePdfViaPdfmake(document: any): Promise<Buffer> {
   const org = document.organization;
 
   const pdfOptions = {
-    headerConfig: (() => { try { return JSON.parse((document as any).header_config || "{}"); } catch { return {}; } })(),
-    footerConfig: (() => { try { return JSON.parse((document as any).footer_config || "{}"); } catch { return {}; } })(),
+    showHeaderFooter: (document as any).show_header_footer !== false,
     organization: {
       name: org?.name || undefined,
       logo_url: org?.company_logo_url || undefined,

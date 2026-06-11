@@ -48,6 +48,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const renderTaskRef = useRef<any>(null);
+  const [showHeaderFooter, setShowHeaderFooter] = useState(true);
 
   // Unwrap params
   useEffect(() => {
@@ -280,7 +281,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       const res = await fetch(`/api/vaultsign/documents/${docId}/fields`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sign_fields: signFields }),
+        body: JSON.stringify({ sign_fields: signFields, show_header_footer: showHeaderFooter }),
       });
       if (res.ok) {
         toast.success("Fields saved");
@@ -458,6 +459,22 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
     <>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
+          {/* Header & Footer */}
+          <div>
+            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+              <div>
+                <span className="text-xs font-medium text-[#374151]">Header & Footer</span>
+                <p className="text-[9px] text-[#9CA3AF]">Company header and footer on document</p>
+              </div>
+              <button 
+                onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          </div>
+
           {/* Signers */}
           <div>
             <div className="flex items-center justify-between mb-2">

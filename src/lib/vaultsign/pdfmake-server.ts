@@ -1,67 +1,110 @@
 /**
  * Server-side pdfmake utility for pdfmake v0.3.x
  *
- * pdfmake 0.3.x has breaking changes from earlier versions:
- * 1. `createPdfKitDocument()` is now async (returns a Promise)
- * 2. PdfPrinter constructor requires (fontDescriptors, virtualfs, urlResolver, localAccessPolicy)
- * 3. The high-level `pdfmake` singleton handles URL resolution automatically
- * 4. `createPdf()` returns an OutputDocumentServer with `.getBuffer()` and `.getBase64()` methods
+ * pdfmake 0.3.x uses:
+ * - PdfPrinter class (from pdfmake/js/Printer.js) for server-side PDF generation
+ * - Requires virtualfs for font file access
+ * - Requires URLResolver for URL-based resources
+ * - createPdfKitDocument() is async (returns a Promise)
  *
- * We use the high-level API for robustness — it manages virtualfs and URLResolver internally.
+ * Font handling:
+ * We register Liberation Sans TTF fonts in virtualfs and reference them by path.
+ * This avoids the .afm file lookup issue that crashes on Vercel/Docker deployments
+ * when using standard font names like "Helvetica" directly.
  *
- * IMPORTANT: We do NOT call pdfmake.setFonts() with string names like "Helvetica" because
- * that causes pdfmake/PDFKit to look for .afm font metric files on the filesystem. In
- * deployment environments (Vercel, Docker), these files may not be available, causing crashes.
- *
- * Instead, we use PdfPrinter directly with the PDFKit built-in font descriptors,
- * which are embedded in the PDFKit binary and don't require file system access.
+ * Liberation Sans is metrically identical to Helvetica (same character widths),
+ * so documents designed for Helvetica will look identical.
  */
 
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
+import fs from "fs";
+import path from "path";
 
-let _pdfPrinter: any = null;
+// Lazy-loaded pdfmake modules
+let _printer: any = null;
+let _vfs: any = null;
+let _fontsRegistered = false;
+
+// Font paths in virtualfs
+const FONT_VFS_PREFIX = "/fonts/liberation";
 
 /**
- * Get the PdfPrinter instance with proper font configuration.
- * Uses PDFKit's 14 standard fonts (Helvetica, Courier, Times-Roman) which are
- * embedded in the PDFKit binary and don't need file system access.
+ * Get the pdfmake virtualfs singleton.
  */
-function getPdfPrinter(): any {
-  if (_pdfPrinter) return _pdfPrinter;
-
-  const PdfPrinter = require("pdfmake");
-
-  // Define fonts using PDFKit's built-in standard font names.
-  // These are the 14 standard PDF fonts that PDFKit knows about natively.
-  // They don't require .afm files or any file system access.
-  const fonts = {
-    Helvetica: {
-      normal: "Helvetica",
-      bold: "Helvetica-Bold",
-      italics: "Helvetica-Oblique",
-      bolditalics: "Helvetica-BoldOblique",
-    },
-    Courier: {
-      normal: "Courier",
-      bold: "Courier-Bold",
-      italics: "Courier-Oblique",
-      bolditalics: "Courier-BoldOblique",
-    },
-    "Times-Roman": {
-      normal: "Times-Roman",
-      bold: "Times-Bold",
-      italics: "Times-Italic",
-      bolditalics: "Times-BoldItalic",
-    },
-  };
-
-  _pdfPrinter = new PdfPrinter(fonts);
-  return _pdfPrinter;
+function getVirtualfs(): any {
+  if (_vfs) return _vfs;
+  const pdfmake = require("pdfmake");
+  _vfs = pdfmake.virtualfs;
+  return _vfs;
 }
 
 /**
- * Standard Helvetica font configuration for pdfmake (built-in PDF fonts).
- * These don't require file system access since they're built into PDFKit.
+ * Register Liberation Sans fonts in virtualfs.
+ * These are metrically identical to Helvetica.
+ */
+function registerFonts(): void {
+  if (_fontsRegistered) return;
+
+  const vfs = getVirtualfs();
+
+  const fontFiles: Record<string, string> = {
+    "LiberationSans-Regular.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "LiberationSans-Bold.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "LiberationSans-Italic.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf",
+    "LiberationSans-BoldItalic.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf",
+  };
+
+  for (const [name, fsPath] of Object.entries(fontFiles)) {
+    try {
+      if (fs.existsSync(fsPath)) {
+        const data = fs.readFileSync(fsPath);
+        vfs.writeFileSync(`${FONT_VFS_PREFIX}/${name}`, data);
+      }
+    } catch (err) {
+      console.error(`[VAULTSIGN] Failed to register font ${name}:`, err);
+    }
+  }
+
+  _fontsRegistered = true;
+}
+
+/**
+ * Get the PdfPrinter instance with proper font configuration.
+ * Uses Liberation Sans fonts registered in virtualfs.
+ */
+function getPdfPrinter(): any {
+  if (_printer) return _printer;
+
+  registerFonts();
+
+  const PdfPrinter = require("pdfmake/js/Printer.js").default;
+  const URLResolver = require("pdfmake/js/URLResolver.js").default;
+  const vfs = getVirtualfs();
+
+  // Define fonts using virtualfs paths
+  const fonts = {
+    Helvetica: {
+      normal: `${FONT_VFS_PREFIX}/LiberationSans-Regular.ttf`,
+      bold: `${FONT_VFS_PREFIX}/LiberationSans-Bold.ttf`,
+      italics: `${FONT_VFS_PREFIX}/LiberationSans-Italic.ttf`,
+      bolditalics: `${FONT_VFS_PREFIX}/LiberationSans-BoldItalic.ttf`,
+    },
+    Courier: {
+      normal: `${FONT_VFS_PREFIX}/LiberationSans-Regular.ttf`,
+      bold: `${FONT_VFS_PREFIX}/LiberationSans-Bold.ttf`,
+      italics: `${FONT_VFS_PREFIX}/LiberationSans-Italic.ttf`,
+      bolditalics: `${FONT_VFS_PREFIX}/LiberationSans-BoldItalic.ttf`,
+    },
+  };
+
+  const urlResolver = new URLResolver(vfs, () => true);
+  _printer = new PdfPrinter(fonts, vfs, urlResolver, () => true);
+  return _printer;
+}
+
+/**
+ * Standard Helvetica font configuration (kept for API compatibility).
+ * Actual font resolution happens inside PdfPrinter via virtualfs paths.
  */
 export const HELVETICA_FONTS = {
   Helvetica: {
@@ -75,8 +118,7 @@ export const HELVETICA_FONTS = {
 /**
  * Generate a PDF buffer from a pdfmake docDefinition.
  *
- * Uses PdfPrinter directly to avoid the pdfmake.setFonts() issue where
- * font name strings cause .afm file lookups on the filesystem.
+ * Uses PdfPrinter with Liberation Sans fonts registered in virtualfs.
  *
  * @param docDefinition - pdfmake document definition object
  * @param fonts - Font definitions (unused, kept for API compatibility)
@@ -89,8 +131,15 @@ export async function generatePdfBuffer(
 ): Promise<Buffer> {
   const printer = getPdfPrinter();
 
-  // Create the PDF document using PdfPrinter
-  const pdfDoc = printer.createPdfKitDocument(docDefinition);
+  // Ensure default font is set
+  if (!docDefinition.defaultStyle) {
+    (docDefinition as any).defaultStyle = { font: "Helvetica" };
+  } else if (!(docDefinition.defaultStyle as any).font) {
+    (docDefinition.defaultStyle as any).font = "Helvetica";
+  }
+
+  // Create the PDF document (async in pdfmake 0.3.x)
+  const pdfDoc = await printer.createPdfKitDocument(docDefinition);
 
   // Collect chunks into a buffer
   const bufferPromise = new Promise<Buffer>((resolve, reject) => {
@@ -123,11 +172,9 @@ export async function generatePdfBuffer(
 }
 
 /**
- * @deprecated Use generatePdfBuffer instead. This function is kept for backward compatibility
- * but the pdfmake singleton approach with setFonts() causes deployment crashes.
+ * @deprecated Use generatePdfBuffer instead.
  */
 export async function getPdfmakeInstance(): Promise<any> {
   console.warn("[VAULTSIGN] getPdfmakeInstance() is deprecated. Use generatePdfBuffer() directly.");
-  const pdfmake = require("pdfmake");
-  return pdfmake;
+  return getPdfPrinter();
 }

@@ -40,12 +40,16 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { sign_fields, signers } = body;
+    const { sign_fields, signers, show_header_footer } = body;
 
     const updateData: any = { updated_at: new Date() };
 
     if (sign_fields !== undefined) {
       updateData.sign_fields = typeof sign_fields === "string" ? sign_fields : JSON.stringify(sign_fields);
+    }
+
+    if (show_header_footer !== undefined) {
+      updateData.show_header_footer = show_header_footer;
     }
 
     await db.vaultSignDocument.update({
