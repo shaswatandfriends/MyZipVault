@@ -57,6 +57,12 @@ export async function POST(
       if (!fileUrl) {
         return NextResponse.json({ error: "No PDF file URL" }, { status: 404 });
       }
+
+      // If it's already a data URL (base64), return as-is
+      if (fileUrl.startsWith("data:")) {
+        return NextResponse.json({ pdf_url: fileUrl, source_type: "pdf" });
+      }
+
       try {
         const signedUrl = await getDocumentSignedUrl(fileUrl, 30);
         return NextResponse.json({ pdf_url: signedUrl, source_type: "pdf" });
@@ -110,7 +116,12 @@ export async function POST(
       docDefinition = htmlToPdfmake(rawContent, pdfOptions);
     }
 
-    // Generate PDF using pdfmake
+    // Validate docDefinition has content
+    if (!docDefinition || !docDefinition.content || docDefinition.content.length === 0) {
+      return NextResponse.json({ error: "No printable content found in document" }, { status: 400 });
+    }
+
+    // Generate PDF using pdfmake with timeout protection
     const fonts = {
       Helvetica: {
         normal: "Helvetica",
@@ -120,41 +131,91 @@ export async function POST(
       },
     };
 
-    const printer = new (PdfPrinter as any)(fonts);
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    let pdfBuffer: Buffer;
+    try {
+      const printer = new (PdfPrinter as any)(fonts);
+      const pdfDoc = printer.createPdfKitDocument(docDefinition);
 
-    // Collect PDF into buffer
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on("end", resolve);
-      pdfDoc.on("error", reject);
-      pdfDoc.end();
-    });
+      // Collect PDF into buffer with timeout
+      const chunks: Buffer[] = [];
+      pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("PDF generation timed out after 30 seconds"));
+        }, 30000);
 
-    const pdfBuffer = Buffer.concat(chunks);
+        pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
+        pdfDoc.on("end", () => {
+          clearTimeout(timeout);
+          resolve(Buffer.concat(chunks));
+        });
+        pdfDoc.on("error", (err: Error) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+        pdfDoc.end();
+      });
+    } catch (pdfErr: any) {
+      console.error("[VAULTSIGN] PDF generation error:", pdfErr);
+      return NextResponse.json({
+        error: `PDF generation failed: ${pdfErr.message || "Unknown error"}`,
+      }, { status: 500 });
+    }
+
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      return NextResponse.json({ error: "Generated PDF is empty" }, { status: 500 });
+    }
 
     // Upload the generated PDF to storage
-    const uploadResult = await uploadGeneratedPdf(
-      pdfBuffer,
-      `org-${document.organization_id}/doc-${document.id}`,
-      `edited-${Date.now()}.pdf`
-    );
+    let uploadResult;
+    try {
+      uploadResult = await uploadGeneratedPdf(
+        pdfBuffer,
+        `org-${document.organization_id}/doc-${document.id}`,
+        `edited-${Date.now()}.pdf`
+      );
+    } catch (uploadErr: any) {
+      console.error("[VAULTSIGN] PDF upload error:", uploadErr);
+      // If upload fails, convert PDF buffer to base64 data URL as fallback
+      const base64 = pdfBuffer.toString("base64");
+      uploadResult = {
+        url: `data:application/pdf;base64,${base64}`,
+        isLocalStorage: true,
+      };
+    }
 
     // Update the document's edited_pdf_url
-    await db.vaultSignDocument.update({
-      where: { id: docId },
-      data: {
-        edited_pdf_url: uploadResult.url,
-        updated_at: new Date(),
-      },
-    });
+    try {
+      await db.vaultSignDocument.update({
+        where: { id: docId },
+        data: {
+          edited_pdf_url: uploadResult.url,
+          updated_at: new Date(),
+        },
+      });
+    } catch (dbErr) {
+      console.error("[VAULTSIGN] Failed to update edited_pdf_url:", dbErr);
+      // Non-critical — the PDF was generated, just the DB update failed
+    }
 
-    const signedUrl = await getDocumentSignedUrl(uploadResult.url);
+    // Generate signed URL for the uploaded file
+    let pdfResponseUrl: string;
+    if (uploadResult.url.startsWith("data:")) {
+      // Base64 data URL — return as-is (can't sign it)
+      pdfResponseUrl = uploadResult.url;
+    } else {
+      try {
+        pdfResponseUrl = await getDocumentSignedUrl(uploadResult.url);
+      } catch (signErr) {
+        console.error("[VAULTSIGN] Signed URL generation failed:", signErr);
+        pdfResponseUrl = uploadResult.url;
+      }
+    }
 
-    return NextResponse.json({ pdf_url: signedUrl, source_type: "word" });
-  } catch (error) {
+    return NextResponse.json({ pdf_url: pdfResponseUrl, source_type: "word" });
+  } catch (error: any) {
     console.error("[VAULTSIGN] Export PDF error:", error);
-    return NextResponse.json({ error: "Export PDF failed" }, { status: 500 });
+    return NextResponse.json({
+      error: `Export PDF failed: ${error.message || "Unknown error"}`,
+    }, { status: 500 });
   }
 }

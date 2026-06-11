@@ -22,6 +22,9 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import CharacterCount from "@tiptap/extension-character-count";
 import Placeholder from "@tiptap/extension-placeholder";
+import { FontSize } from "@/lib/vaultsign/tiptap-font-size";
+import { LineHeight } from "@/lib/vaultsign/tiptap-line-height";
+import { ParagraphSpacing } from "@/lib/vaultsign/tiptap-paragraph-spacing";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, FileDown, Send, Bold, Italic, Underline as UnderlineIcon,
@@ -71,7 +74,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     params.then((p) => setDocId(p.id));
   }, [params]);
 
-  // Initialize TipTap editor
+  // Initialize TipTap editor with format-preserving extensions
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -80,6 +83,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       FontFamily,
       TextStyle,
       Color,
+      FontSize,         // Preserves font-size from docx inline styles
+      LineHeight,        // Preserves line-height from docx inline styles
+      ParagraphSpacing,  // Preserves margin-top/margin-bottom from docx inline styles
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
@@ -214,7 +220,14 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     const loadingToast = toast.loading("Generating PDF...");
     try {
       await handleSave();
-      const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
+      // Use AbortController with 45s timeout to prevent infinite buffering
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Export failed");
@@ -227,7 +240,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         toast.error("No PDF URL returned", { id: loadingToast });
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to export PDF", { id: loadingToast });
+      if (err.name === "AbortError") {
+        toast.error("PDF generation timed out. Please try again.", { id: loadingToast });
+      } else {
+        toast.error(err.message || "Failed to export PDF", { id: loadingToast });
+      }
     }
   };
 

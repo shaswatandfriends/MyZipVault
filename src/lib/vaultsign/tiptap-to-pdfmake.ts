@@ -358,6 +358,22 @@ function transformParagraph(node: TipTapNode, placeholders: Record<string, strin
     result.alignment = textAlign;
   }
 
+  // Preserve line-height from docx-to-html conversion
+  if (node.attrs?.lineHeight) {
+    const lh = parseFloat(String(node.attrs.lineHeight));
+    if (!isNaN(lh)) result.lineHeight = lh;
+  }
+
+  // Preserve margin-top/margin-bottom (spacing) from docx-to-html conversion
+  if (node.attrs?.marginTop) {
+    const mt = parseSpacingValue(String(node.attrs.marginTop));
+    if (mt !== null) result.marginTop = mt;
+  }
+  if (node.attrs?.marginBottom) {
+    const mb = parseSpacingValue(String(node.attrs.marginBottom));
+    if (mb !== null) result.marginBottom = mb;
+  }
+
   return result;
 }
 
@@ -375,6 +391,22 @@ function transformHeading(node: TipTapNode, placeholders: Record<string, string>
 
   if (textAlign && ["left", "center", "right", "justify"].includes(textAlign)) {
     result.alignment = textAlign;
+  }
+
+  // Preserve line-height from docx-to-html conversion
+  if (node.attrs?.lineHeight) {
+    const lh = parseFloat(String(node.attrs.lineHeight));
+    if (!isNaN(lh)) result.lineHeight = lh;
+  }
+
+  // Preserve margin-top/margin-bottom (spacing) from docx-to-html conversion
+  if (node.attrs?.marginTop) {
+    const mt = parseSpacingValue(String(node.attrs.marginTop));
+    if (mt !== null) result.marginTop = mt;
+  }
+  if (node.attrs?.marginBottom) {
+    const mb = parseSpacingValue(String(node.attrs.marginBottom));
+    if (mb !== null) result.marginBottom = mb;
   }
 
   return result;
@@ -443,9 +475,15 @@ function applyMarks(text: string, marks: TipTapMark[]): any {
           result.color = mark.attrs.color;
         }
         if (mark.attrs?.fontSize) {
-          const size = parseInt(mark.attrs.fontSize);
-          if (!isNaN(size)) {
-            result.fontSize = size;
+          const fontSizeStr = String(mark.attrs.fontSize);
+          const sizeNum = parseFloat(fontSizeStr);
+          if (!isNaN(sizeNum)) {
+            // Handle "12pt" → 12, "16px" → 12 (px to pt conversion)
+            if (fontSizeStr.includes("px")) {
+              result.fontSize = sizeNum * 0.75;
+            } else {
+              result.fontSize = sizeNum;
+            }
           }
         }
         break;
@@ -514,6 +552,19 @@ function transformTable(node: TipTapNode, placeholders: Record<string, string>):
     },
     margin: [0, 8, 0, 8] as any,
   };
+}
+
+/**
+ * Parse CSS spacing value (e.g., "4pt", "8px", "0.5em") to a number in pt for pdfmake.
+ * Returns null if the value cannot be parsed.
+ */
+function parseSpacingValue(value: string): number | null {
+  if (!value) return null;
+  const num = parseFloat(value);
+  if (isNaN(num)) return null;
+  if (value.includes("px")) return num * 0.75; // px to pt
+  if (value.includes("em")) return num * 12;   // em to pt (assuming 12pt base)
+  return num; // Assume pt if no unit
 }
 
 function transformTableRow(node: TipTapNode, placeholders: Record<string, string>): Content {

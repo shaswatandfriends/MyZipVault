@@ -43,17 +43,36 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
 
+  // Store PDF document object for page-by-page rendering (declared before fetchDocument)
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [rendering, setRendering] = useState(false);
+  const renderTaskRef = useRef<any>(null);
+
   // Unwrap params
   useEffect(() => {
     params.then((p) => setDocId(p.id));
   }, [params]);
+
+  // Helper: fetch with AbortController timeout
+  const fetchWithTimeout = useCallback(async (url: string, options: RequestInit = {}, timeoutMs: number = 15000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      return res;
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
 
   // Fetch document
   const fetchDocument = useCallback(async () => {
     if (!docId) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/vaultsign/documents/${docId}`);
+      setPdfError(null);
+      const res = await fetchWithTimeout(`/api/vaultsign/documents/${docId}`, {}, 15000);
       if (!res.ok) throw new Error("Failed to fetch document");
       const data = await res.json();
       setDocument(data);
@@ -61,12 +80,13 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       setSigners(data.signers || []);
       setSignFields(data.sign_fields || []);
 
-      // Resolve PDF URL — prefer direct signed URL API, fallback to export-pdf
+      // Resolve PDF URL based on document source_type
       let resolvedPdfUrl = "";
+      const isPdfSource = data.source_type === "pdf";
 
-      // Strategy 1: Try the direct signed URL API (lighter weight than export-pdf)
+      // Strategy 1: Try the direct signed URL API (works for both PDF and Word docs)
       try {
-        const signedRes = await fetch(`/api/vaultsign/documents/${docId}/signed-url`);
+        const signedRes = await fetchWithTimeout(`/api/vaultsign/documents/${docId}/signed-url`, {}, 10000);
         if (signedRes.ok) {
           const signedData = await signedRes.json();
           if (signedData.signed_url) {
@@ -74,13 +94,19 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
           }
         }
       } catch {
-        console.warn("Signed URL API failed, trying export-pdf...");
+        console.warn("Signed URL API failed, trying fallback...");
       }
 
-      // Strategy 2: Try export-pdf API (generates + signs URL)
-      if (!resolvedPdfUrl) {
+      // Strategy 2: Only for non-PDF (Word) docs — try export-pdf with timeout
+      // NOTE: export-pdf POST is for converting Word docs to PDF and can hang,
+      // so we skip it for PDF source_type documents entirely.
+      if (!resolvedPdfUrl && !isPdfSource) {
         try {
-          const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
+          const pdfRes = await fetchWithTimeout(
+            `/api/vaultsign/documents/${docId}/export-pdf`,
+            { method: "POST" },
+            30000 // 30s timeout for Word-to-PDF conversion
+          );
           if (pdfRes.ok) {
             const pdfData = await pdfRes.json();
             resolvedPdfUrl = pdfData.pdf_url;
@@ -88,17 +114,24 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             const errBody = await pdfRes.json().catch(() => ({}));
             console.warn("Export-PDF failed:", errBody.error);
           }
-        } catch (err) {
-          console.warn("Export-PDF request failed:", err);
+        } catch (err: any) {
+          if (err?.name === "AbortError") {
+            console.warn("Export-PDF timed out after 30s");
+            toast.error("Word-to-PDF conversion timed out. Try uploading a PDF instead.");
+          } else {
+            console.warn("Export-PDF request failed:", err);
+          }
         }
       }
 
       // Strategy 3: Fall back to the stored URL directly
       if (!resolvedPdfUrl) {
-        if (data.source_type === "pdf" && data.original_file_url) {
+        if (isPdfSource && data.original_file_url) {
           resolvedPdfUrl = data.original_file_url;
         } else if (data.edited_pdf_url) {
           resolvedPdfUrl = data.edited_pdf_url;
+        } else if (data.original_file_url) {
+          resolvedPdfUrl = data.original_file_url;
         }
       }
 
@@ -108,23 +141,24 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         setPdfError("No PDF URL available for this document");
         toast.error("Could not load PDF file");
       }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      toast.error("Failed to load document");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        console.error("Document fetch timed out");
+        toast.error("Document loading timed out. Please try again.");
+        setPdfError("Document loading timed out");
+      } else {
+        console.error("Fetch error:", err);
+        toast.error("Failed to load document");
+        setPdfError("Failed to load document");
+      }
     } finally {
       setLoading(false);
     }
-  }, [docId]);
+  }, [docId, fetchWithTimeout]);
 
   useEffect(() => {
     fetchDocument();
   }, [fetchDocument]);
-
-  // Store PDF document object for page-by-page rendering
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
-  const [rendering, setRendering] = useState(false);
-  const renderTaskRef = useRef<any>(null);
 
   // Load PDF document object
   useEffect(() => {
@@ -134,16 +168,30 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
     const loadPdf = async () => {
       try {
         setPdfError(null);
+        setPdfDoc(null);
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+        // Ensure worker is configured before loading
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        }
 
         // Handle different URL types
         let loadingTask;
-        if (pdfUrl.startsWith("data:")) {
-          // Base64 data URL — pdfjs-dist can load directly with string
+        if (pdfUrl.startsWith("data:application/pdf;base64,")) {
+          // Base64 data URL — decode and use Uint8Array for reliable loading
+          const base64 = pdfUrl.split(",")[1];
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          loadingTask = pdfjsLib.getDocument({ data: bytes } as any);
+        } else if (pdfUrl.startsWith("data:")) {
+          // Other data URL — try direct loading as fallback
           loadingTask = pdfjsLib.getDocument(pdfUrl as any);
-        } else if (pdfUrl.startsWith("http")) {
-          // HTTP URL — try with CORS settings
+        } else if (pdfUrl.startsWith("http") || pdfUrl.startsWith("/")) {
+          // HTTP or relative URL — try with CORS settings
           loadingTask = pdfjsLib.getDocument({
             url: pdfUrl,
             withCredentials: false,
@@ -160,7 +208,8 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       } catch (err: any) {
         if (cancelled) return;
         console.error("PDF load error:", err);
-        setPdfError(err.message || "Failed to load PDF");
+        const msg = err?.message || "Failed to load PDF";
+        setPdfError(msg.includes("worker") ? "PDF worker failed to load. Please refresh the page." : msg);
         toast.error("Failed to render PDF");
       }
     };
@@ -186,7 +235,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         if (cancelled) return;
 
         // Wait a tick for the canvas ref to be available
-        await new Promise((r) => setTimeout(r, 50));
+        await new Promise((r) => setTimeout(r, 100));
 
         const canvas = canvasRefs.current.get(currentPage);
         if (!canvas || cancelled) return;
@@ -195,8 +244,15 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         if (!context) return;
 
         const viewport = page.getViewport({ scale: scale * 1.5 });
+
+        // Set canvas pixel dimensions for sharp rendering
         canvas.height = viewport.height;
         canvas.width = viewport.width;
+
+        // Set CSS display dimensions explicitly based on viewport to avoid distortion
+        // Do NOT use className="w-full" which conflicts with pixel dimensions
+        canvas.style.width = `${viewport.width / 1.5}px`;
+        canvas.style.height = `${viewport.height / 1.5}px`;
 
         const renderTask = page.render({
           canvasContext: context,
@@ -695,7 +751,8 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   ref={(el) => {
                     if (el) canvasRefs.current.set(currentPage, el);
                   }}
-                  className="w-full shadow-lg rounded-lg border border-[#E5E7EB]"
+                  className="shadow-lg rounded-lg border border-[#E5E7EB]"
+                  style={{ maxWidth: "100%", height: "auto" }}
                 />
               )}
 
