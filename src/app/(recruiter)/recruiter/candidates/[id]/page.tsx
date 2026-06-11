@@ -253,30 +253,25 @@ export default function CandidateDetailPage() {
         throw new Error(body.error || "Failed to download document");
       }
 
-      // Check if it's a redirect (for credentials/resumes with signed URLs)
-      if (res.redirected) {
-        window.open(res.url, "_blank");
-      } else {
-        // Download the blob (PDF or other file)
-        const blob = await res.blob();
-        const contentDisposition = res.headers.get("Content-Disposition");
-        let filename = `document.${doc.type === "checklist" || doc.type === "reference" ? "pdf" : "bin"}`;
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-          if (match) {
-            filename = match[1].replace(/["']/g, "");
-          }
+      // Server now always returns file content directly (no redirects)
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get("Content-Disposition");
+      let filename = `document.${doc.type === "checklist" || doc.type === "reference" ? "pdf" : "bin"}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match) {
+          filename = match[1].replace(/["']/g, "");
         }
-
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
       }
+
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
 
       toast.success("Download started");
     } catch (err) {

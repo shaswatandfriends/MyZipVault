@@ -198,8 +198,20 @@ async function handleIndividualDownload(
       if (!credential?.file_url) {
         return NextResponse.json({ error: "Credential file not found" }, { status: 404 });
       }
-      const signedUrl = await getSignedUrl(STORAGE_BUCKETS.CREDENTIALS, credential.file_url);
-      return NextResponse.redirect(signedUrl);
+      const fileResult = await fetchFileAsBuffer(credential.file_url, STORAGE_BUCKETS.CREDENTIALS);
+      if (!fileResult) {
+        return NextResponse.json({ error: "Failed to fetch credential file" }, { status: 500 });
+      }
+      const credExt = getExtensionFromUrl(credential.file_url);
+      const credMime = getMimeTypeFromExt(credExt);
+      const credFilename = `${sanitizeFileName(credential.document_name || "credential")}.${credExt}`;
+      return new NextResponse(fileResult.buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": credMime,
+          "Content-Disposition": `attachment; filename="${credFilename}"`,
+        },
+      });
     }
 
     case "resume": {
@@ -210,8 +222,20 @@ async function handleIndividualDownload(
       if (!resume?.file_url) {
         return NextResponse.json({ error: "Resume file not found" }, { status: 404 });
       }
-      const signedUrl = await getSignedUrl(STORAGE_BUCKETS.RESUMES, resume.file_url);
-      return NextResponse.redirect(signedUrl);
+      const resumeResult = await fetchFileAsBuffer(resume.file_url, STORAGE_BUCKETS.RESUMES);
+      if (!resumeResult) {
+        return NextResponse.json({ error: "Failed to fetch resume file" }, { status: 500 });
+      }
+      const resumeExt = getExtensionFromUrl(resume.file_url);
+      const resumeMime = getMimeTypeFromExt(resumeExt);
+      const resumeFilename = `resume.${resumeExt}`;
+      return new NextResponse(resumeResult.buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": resumeMime,
+          "Content-Disposition": `attachment; filename="${resumeFilename}"`,
+        },
+      });
     }
 
     case "reference": {
@@ -473,6 +497,58 @@ function getExtensionFromUrl(url: string): string {
   const ext = urlPath.split(".").pop()?.toLowerCase();
   if (ext && ext.length <= 5) return ext;
   return "bin";
+}
+
+function getMimeTypeFromExt(ext: string): string {
+  const mimeMap: Record<string, string> = {
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    bin: "application/octet-stream",
+  };
+  return mimeMap[ext] || "application/octet-stream";
+}
+
+/**
+ * Fetch a file as a Buffer, handling both Supabase signed URLs and base64 data URLs.
+ * Returns null if the file cannot be fetched.
+ */
+async function fetchFileAsBuffer(
+  fileUrl: string,
+  bucket: string
+): Promise<{ buffer: Buffer } | null> {
+  // Handle base64 data URLs (used when Supabase is not configured)
+  if (fileUrl.startsWith("data:")) {
+    try {
+      const base64Match = fileUrl.match(/base64,(.*)$/);
+      if (base64Match) {
+        return { buffer: Buffer.from(base64Match[1], "base64") };
+      }
+    } catch (err) {
+      console.error("[download-packet] Failed to decode base64 data URL:", err);
+      return null;
+    }
+  }
+
+  // Handle Supabase storage URLs — get a signed URL and fetch the file
+  try {
+    const signedUrl = await getSignedUrl(bucket, fileUrl);
+    const fileRes = await fetch(signedUrl);
+    if (!fileRes.ok) {
+      console.error(`[download-packet] Failed to fetch file from signed URL: ${fileRes.status}`);
+      return null;
+    }
+    const arrayBuf = await fileRes.arrayBuffer();
+    return { buffer: Buffer.from(arrayBuf) };
+  } catch (err) {
+    console.error("[download-packet] Failed to fetch file:", err);
+    return null;
+  }
 }
 
 function streamToBuffer(stream: Readable): Promise<Buffer> {
