@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import {
   Plus, Search, FileText, Clock, CheckCircle2, XCircle, AlertTriangle,
   Send, Ban, RefreshCw, MoreHorizontal, Loader2, Download, Eye,
-  FileSignature, LayoutTemplate
+  FileSignature, LayoutTemplate, Settings, Save, Building2, Upload,
+  Globe, Phone, Mail
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +17,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -39,6 +43,12 @@ export default function VaultSignDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [orgSettings, setOrgSettings] = useState<any>(null);
+  const [orgSettingsLoading, setOrgSettingsLoading] = useState(false);
+  const [orgSettingsSaving, setOrgSettingsSaving] = useState(false);
+  const [isClientAdmin, setIsClientAdmin] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [stats, setStats] = useState({
     pending: 0,
     completed: 0,
@@ -50,15 +60,15 @@ export default function VaultSignDashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [docsRes, templatesRes] = await Promise.all([
+        const [docsRes, templatesRes, sessionRes] = await Promise.all([
           fetch(`/api/vaultsign/documents?limit=50`),
           fetch(`/api/vaultsign/templates`),
+          fetch("/api/auth/session"),
         ]);
 
         if (docsRes.ok) {
           const docsData = await docsRes.json();
           setDocuments(docsData.documents || []);
-          // Compute stats
           const allDocs = docsData.documents || [];
           setStats({
             pending: allDocs.filter((d: any) => ["sent", "partially_signed"].includes(d.status)).length,
@@ -77,6 +87,12 @@ export default function VaultSignDashboardPage() {
           const tData = await templatesRes.json();
           setTemplates(tData.templates || []);
         }
+
+        if (sessionRes.ok) {
+          const session = await sessionRes.json();
+          const role = session?.user?.role;
+          setIsClientAdmin(role === "client_admin");
+        }
       } catch (err) {
         console.error("Fetch error:", err);
         toast.error("Failed to load documents");
@@ -87,6 +103,67 @@ export default function VaultSignDashboardPage() {
 
     fetchData();
   }, []);
+
+  // Fetch org settings for client admin
+  const fetchOrgSettings = async () => {
+    try {
+      setOrgSettingsLoading(true);
+      const res = await fetch("/api/vaultsign/organization");
+      if (res.ok) {
+        const data = await res.json();
+        setOrgSettings(data);
+      }
+    } catch (err) {
+      console.error("Org settings fetch error:", err);
+    } finally {
+      setOrgSettingsLoading(false);
+    }
+  };
+
+  const saveOrgSettings = async () => {
+    if (!orgSettings) return;
+    try {
+      setOrgSettingsSaving(true);
+      const res = await fetch("/api/vaultsign/organization", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company_logo_url: orgSettings.company_logo_url,
+          company_address: orgSettings.company_address,
+          company_phone: orgSettings.company_phone,
+          company_email: orgSettings.company_email,
+          company_website: orgSettings.company_website,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Organization settings saved");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setOrgSettingsSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setLogoUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/vaultsign/documents/upload", { method: "POST", body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        setOrgSettings({ ...orgSettings, company_logo_url: data.document_url });
+        toast.success("Logo uploaded");
+      }
+    } catch { toast.error("Upload failed"); }
+    finally { setLogoUploading(false); }
+  };
 
   // Filter documents
   const filteredDocs = documents.filter((doc) => {
@@ -259,12 +336,24 @@ export default function VaultSignDashboardPage() {
             </h1>
             <p className="text-sm text-[#6B7280] mt-0.5">Send, sign, and manage documents</p>
           </div>
-          <Button
-            className="bg-[#166534] hover:bg-[#14532D] text-white w-full sm:w-auto"
-            onClick={() => router.push("/recruiter/vaultsign/new")}
-          >
-            <Plus className="h-4 w-4 mr-1" /> New Document
-          </Button>
+          <div className="flex items-center gap-2">
+            {isClientAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-[#E5E7EB] text-[#6B7280] hover:text-[#111827]"
+                onClick={() => { setShowOrgSettings(true); fetchOrgSettings(); }}
+              >
+                <Settings className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Org Settings</span>
+              </Button>
+            )}
+            <Button
+              className="bg-[#166534] hover:bg-[#14532D] text-white w-full sm:w-auto"
+              onClick={() => router.push("/recruiter/vaultsign/new")}
+            >
+              <Plus className="h-4 w-4 mr-1" /> New Document
+            </Button>
+          </div>
         </div>
 
         {/* Stats cards */}
@@ -617,6 +706,91 @@ export default function VaultSignDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Org Settings Dialog (Client Admin Only) */}
+      <Dialog open={showOrgSettings} onOpenChange={setShowOrgSettings}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-[#166534]" /> Organization Settings
+            </DialogTitle>
+          </DialogHeader>
+          {orgSettingsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-[#166534]" />
+            </div>
+          ) : orgSettings ? (
+            <div className="space-y-4">
+              {/* Company Logo */}
+              <div>
+                <Label className="text-sm font-medium flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Company Logo</Label>
+                <div className="mt-2 flex items-center gap-4">
+                  {orgSettings.company_logo_url ? (
+                    <div className="w-16 h-16 rounded-xl border border-[#E5E7EB] overflow-hidden bg-white flex items-center justify-center">
+                      <img src={orgSettings.company_logo_url} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl border-2 border-dashed border-[#E5E7EB] flex items-center justify-center bg-[#F8F7F4]">
+                      <Building2 className="h-6 w-6 text-[#9CA3AF]" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input value={orgSettings.company_logo_url || ""}
+                      onChange={(e) => setOrgSettings({ ...orgSettings, company_logo_url: e.target.value })}
+                      placeholder="https://example.com/logo.png" className="h-8 text-xs" />
+                    <label className="cursor-pointer mt-1 inline-block">
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={logoUploading} />
+                      <Button variant="outline" size="sm" className="h-7 text-xs" asChild disabled={logoUploading}>
+                        <span>{logoUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />} Upload</span>
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-sm flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Address</Label>
+                <Textarea value={orgSettings.company_address || ""}
+                  onChange={(e) => setOrgSettings({ ...orgSettings, company_address: e.target.value })}
+                  placeholder="123 Main St, City, State, ZIP" rows={2} className="mt-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> Phone</Label>
+                  <Input value={orgSettings.company_phone || ""}
+                    onChange={(e) => setOrgSettings({ ...orgSettings, company_phone: e.target.value })}
+                    placeholder="+1 (555) 000-0000" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                  <Input value={orgSettings.company_email || ""}
+                    onChange={(e) => setOrgSettings({ ...orgSettings, company_email: e.target.value })}
+                    placeholder="company@example.com" className="mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Website</Label>
+                <Input value={orgSettings.company_website || ""}
+                  onChange={(e) => setOrgSettings({ ...orgSettings, company_website: e.target.value })}
+                  placeholder="https://example.com" className="mt-1" />
+              </div>
+              <p className="text-[10px] text-[#9CA3AF]">These details appear in document headers and footers</p>
+            </div>
+          ) : (
+            <p className="text-sm text-[#9CA3AF] text-center py-4">Could not load organization settings</p>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowOrgSettings(false)}>Cancel</Button>
+            <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={() => { saveOrgSettings(); }}
+              disabled={orgSettingsSaving || !orgSettings}>
+              {orgSettingsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+              Save Settings
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </VaultSignErrorBoundary>
   );

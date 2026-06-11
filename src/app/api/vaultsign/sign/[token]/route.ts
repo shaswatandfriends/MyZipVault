@@ -138,6 +138,7 @@ export async function GET(
         role: signer.role,
         signer_index: signer.signer_index,
         status: signer.status === "sent" ? "viewed" : signer.status,
+        user_id: signer.user_id,
       },
       all_signers: document.signers.map((s: any) => ({
         id: s.id,

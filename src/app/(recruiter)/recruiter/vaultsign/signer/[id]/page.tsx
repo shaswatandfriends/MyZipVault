@@ -61,15 +61,38 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       setSigners(data.signers || []);
       setSignFields(data.sign_fields || []);
 
-      // Get PDF URL
+      // Get PDF URL — try export-pdf first (generates signed URL), fallback to direct URL
+      let resolvedPdfUrl = "";
       if (data.source_type === "pdf" && data.original_file_url) {
-        const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
-        if (pdfRes.ok) {
-          const pdfData = await pdfRes.json();
-          setPdfUrl(pdfData.pdf_url);
+        try {
+          const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
+          if (pdfRes.ok) {
+            const pdfData = await pdfRes.json();
+            resolvedPdfUrl = pdfData.pdf_url;
+          }
+        } catch {
+          // Fallback: try the original_file_url directly
+          console.warn("Export-PDF failed, trying original_file_url directly");
+        }
+        if (!resolvedPdfUrl && data.original_file_url) {
+          resolvedPdfUrl = data.original_file_url;
         }
       } else if (data.edited_pdf_url) {
-        setPdfUrl(data.edited_pdf_url);
+        try {
+          const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
+          if (pdfRes.ok) {
+            const pdfData = await pdfRes.json();
+            resolvedPdfUrl = pdfData.pdf_url;
+          }
+        } catch {
+          resolvedPdfUrl = data.edited_pdf_url;
+        }
+      }
+
+      if (resolvedPdfUrl) {
+        setPdfUrl(resolvedPdfUrl);
+      } else {
+        toast.error("Could not load PDF file");
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -83,43 +106,60 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
     fetchDocument();
   }, [fetchDocument]);
 
-  // Render PDF using pdfjs-dist
+  // Store PDF document object for page-by-page rendering
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+
+  // Load PDF document object
   useEffect(() => {
     if (!pdfUrl || typeof window === "undefined") return;
 
-    const renderPdf = async () => {
+    const loadPdf = async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
+        setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const canvas = canvasRefs.current.get(i);
-          if (!canvas) continue;
-
-          const context = canvas.getContext("2d");
-          if (!context) continue;
-
-          const viewport = page.getViewport({ scale: scale * 1.5 });
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          await page.render({
-            canvasContext: context,
-            viewport: viewport,
-          }).promise;
-        }
+        setCurrentPage(1);
       } catch (err) {
-        console.error("PDF render error:", err);
+        console.error("PDF load error:", err);
+        toast.error("Failed to render PDF");
       }
     };
 
-    renderPdf();
-  }, [pdfUrl, scale]);
+    loadPdf();
+  }, [pdfUrl]);
+
+  // Render current page when page or scale changes
+  useEffect(() => {
+    if (!pdfDoc) return;
+
+    const renderPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(currentPage);
+        const canvas = canvasRefs.current.get(currentPage);
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        const viewport = page.getViewport({ scale: scale * 1.5 });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+        }).promise;
+      } catch (err) {
+        console.error("PDF page render error:", err);
+      }
+    };
+
+    renderPage();
+  }, [pdfDoc, currentPage, scale]);
 
   // Save fields
   const handleSave = async () => {

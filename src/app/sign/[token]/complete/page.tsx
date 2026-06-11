@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import {
-  CheckCircle2, Download, FileText, Loader2, Shield, Clock
+  CheckCircle2, Download, FileText, Loader2, Shield, Clock, UserPlus
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,6 +123,25 @@ export default function SigningCompletePage() {
             under the ESIGN Act and UETA. A copy of the signed document will be emailed to all parties.
           </p>
         </div>
+
+        {/* Create Account CTA for new/external users */}
+        {signingData?.signer && !signingData.signer.user_id && (
+          <div className="mb-4 p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <UserPlus className="h-5 w-5 text-[#2563EB]" />
+              <h3 className="font-medium text-[#111827] text-sm">Create Your Account</h3>
+            </div>
+            <p className="text-xs text-[#6B7280] mb-3">
+              You signed as a guest. Create a free account to track all your documents, get notifications, and sign faster next time.
+            </p>
+            <Button
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white w-full h-9 text-sm"
+              onClick={() => window.location.href = "/register?email=" + encodeURIComponent(signingData.signer.email || "")}
+            >
+              <UserPlus className="h-4 w-4 mr-2" /> Create Free Account
+            </Button>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col gap-2">

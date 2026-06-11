@@ -174,6 +174,7 @@ function NewDocumentContent() {
         source_type: source === "template" ? "word" : uploadedSourceType || "word",
         template_id: selectedTemplateId,
         original_file_url: uploadedFileUrl,
+        tiptap_content: uploadedHtmlContent || undefined,
         signing_order: signingOrder,
         expiry_date: new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString(),
         personal_message: personalMessage || undefined,
