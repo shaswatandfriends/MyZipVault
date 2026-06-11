@@ -23,6 +23,13 @@ model Organization {
   account_status      String               @default("pending")
   created_at          DateTime             @default(now())
 
+  // VaultSign document settings
+  company_logo_url    String?              // Logo for document headers
+  company_address     String?              // Address for document headers/footers
+  company_phone       String?              // Phone for document headers
+  company_email       String?              // Email for document headers
+  company_website     String?              // Website for document headers
+
   users               User[]
   credit_transactions CreditTransaction[]
   invoices            Invoice[]
@@ -672,20 +679,24 @@ model ShiftRequest {
 
 // ─── 40. VaultSign Templates ────────────────────────────────────────
 model VaultSignTemplate {
-  id                    Int       @id @default(autoincrement())
-  name                  String
-  description           String?
-  document_url          String
-  document_type         String    @default("custom") // right_to_represent, pre_offer_acceptance, offer_letter, nda, background_check_authorization, employment_contract, onboarding_form, custom
-  placeholder_fields    String    @default("[]") // JSON array of {key, label, description}
-  predefined_sign_fields String   @default("[]") // JSON array of {id, type, page, x, y, width, height, assigned_to_party, label}
-  is_active             Boolean   @default(true)
-  created_by            Int
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @default(now())
+  id                      Int       @id @default(autoincrement())
+  name                    String
+  description             String?
+  document_type           String    @default("custom") // right_to_represent, pre_offer_acceptance, offer_letter, nda, background_check_authorization, employment_contract, onboarding_form, custom
+  source_type             String    @default("word") // word or pdf
+  original_file_url       String    // .docx or .pdf in Supabase Storage
+  tiptap_content          String?   // TipTap document JSON for word templates
+  predefined_sign_fields  String    @default("[]") // JSON array of preset field positions
+  placeholder_variables   String    @default("[]") // JSON array of {key, label, description, category}
+  header_config           String    @default("{}") // JSON: {show_logo, show_company_name, show_contact, show_address, show_document_title}
+  footer_config           String    @default("{}") // JSON: {show_rights_reserved, show_powered_by, show_page_numbers}
+  is_active               Boolean   @default(true)
+  created_by              Int
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @default(now())
 
-  creator               User      @relation("VaultSignTemplateCreator", fields: [created_by], references: [id])
-  vault_sign_documents  VaultSignDocument[]
+  creator                 User      @relation("VaultSignTemplateCreator", fields: [created_by], references: [id])
+  vault_sign_documents    VaultSignDocument[]
 }
 
 // ─── 41. VaultSign Documents ────────────────────────────────────────
@@ -696,16 +707,19 @@ model VaultSignDocument {
   template_id              Int?
   document_name            String
   document_type            String    @default("custom")
-  original_document_url    String?
-  final_document_url       String?
+  source_type              String    @default("word") // word or pdf
+  original_file_url        String?   // uploaded .docx or .pdf in Supabase Storage
+  tiptap_content           String?   // saved TipTap editor state JSON
+  edited_pdf_url           String?   // PDF generated from Word editor
+  final_document_url       String?   // completed signed PDF
   signing_order            String    @default("sequential") // sequential, parallel
   expiry_date              DateTime
   personal_message         String?
   status                   String    @default("draft") // draft, sent, partially_signed, completed, declined, expired, voided
-  placeholder_values       String    @default("{}") // JSON object {key: value}
-  sign_fields              String    @default("[]") // JSON array of {id, type, page, x, y, width, height, assigned_to_signer_id, label, required, value}
-  audit_trail              String    @default("[]") // JSON array of {event, user_id, name, ip_address, timestamp}
-  document_hash            String?
+  placeholder_values       String    @default("{}") // JSON object {key: value} — all variable values filled by recruiter
+  sign_fields              String    @default("[]") // JSON array of {id, type, page, x_percent, y_percent, width_percent, height_percent, assigned_to_signer_index, label, required, value}
+  audit_trail              String    @default("[]") // JSON array of {event, user_name, ip_address, device_info, timestamp}
+  document_hash            String?   // SHA-256 of final PDF
   revised_from_document_id Int?
   created_at               DateTime  @default(now())
   updated_at               DateTime  @default(now())
@@ -721,29 +735,29 @@ model VaultSignDocument {
 
 // ─── 42. VaultSign Signers ──────────────────────────────────────────
 model VaultSignSigner {
-  id                   Int       @id @default(autoincrement())
-  document_id          Int
-  user_id              Int?
-  name                 String
-  email                String
-  role                 String    // Candidate, Recruiter, Client Employer, Witness, etc.
-  party_number         Int       // 1 = sender, 2+ = other parties
-  signing_order_position Int     @default(1)
-  status               String    @default("pending") // pending, sent, viewed, signed, declined
-  signed_at            DateTime?
-  declined_at          DateTime?
-  decline_reason       String?
-  sign_token           String    @unique
-  token_used           Boolean   @default(false)
-  ip_address           String?
-  device_info          String?
-  signature_data       String?   // JSON {type, font, text, image_base64}
-  created_at           DateTime  @default(now())
-  updated_at           DateTime  @default(now())
+  id                     Int       @id @default(autoincrement())
+  document_id            Int
+  user_id                Int?      // null for external signers
+  name                   String
+  email                  String
+  role                   String    // Candidate, Recruiter, Client Employer, Witness, etc.
+  signer_index           Int       // 0-based index, used to assign fields
+  signing_order_position Int       @default(1) // 1,2,3 for sequential. All same for parallel.
+  status                 String    @default("pending") // pending, sent, viewed, signed, declined
+  signed_at              DateTime?
+  declined_at            DateTime?
+  decline_reason         String?
+  sign_token             String    @unique
+  token_used             Boolean   @default(false)
+  ip_address             String?
+  device_info            String?
+  signature_data         String?   // JSON {type, font_name, text, image_base64}
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @default(now())
 
-  document             VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
-  user                 User?     @relation("VaultSignSignerUser", fields: [user_id], references: [id])
-  reminders            VaultSignReminder[]
+  document               VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user                   User?     @relation("VaultSignSignerUser", fields: [user_id], references: [id])
+  reminders              VaultSignReminder[]
 }
 
 // ─── 43. VaultSign Reminders ────────────────────────────────────────
