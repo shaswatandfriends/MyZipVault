@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import SignaturePad from "signature_pad";
 import {
@@ -302,65 +303,66 @@ export default function PublicSigningPage() {
   const myFields: SignField[] = signingData?.document?.sign_fields || [];
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Header — compact on mobile */}
+      <div className="bg-white border-b border-[#E5E7EB] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div>
-            <h1 className="font-semibold text-[#111827] text-lg">VaultSign</h1>
-            <p className="text-xs text-[#6B7280]">by MyZipVault</p>
+            <h1 className="font-semibold text-[#111827] text-base sm:text-lg">VaultSign</h1>
+            <p className="text-[10px] sm:text-xs text-[#6B7280]">by MyZipVault</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right">
-            <p className="text-sm font-medium text-[#111827]">{signingData?.signer?.name}</p>
-            <p className="text-xs text-[#6B7280]">{signingData?.signer?.email}</p>
+            <p className="text-xs sm:text-sm font-medium text-[#111827]">{signingData?.signer?.name}</p>
+            <p className="text-[10px] sm:text-xs text-[#6B7280]">{signingData?.signer?.email}</p>
           </div>
         </div>
       </div>
 
-      {/* Document info */}
-      <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-[#166534]" />
-          <span className="font-medium text-sm text-[#111827]">{signingData?.document?.document_name}</span>
-          <Badge variant="outline" className="text-xs">{signingData?.document?.document_type}</Badge>
+      {/* Document info — compact on mobile */}
+      <div className="bg-white border-b border-[#E5E7EB] px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <FileText className="h-4 w-4 text-[#166534] flex-shrink-0" />
+          <span className="font-medium text-xs sm:text-sm text-[#111827] truncate">{signingData?.document?.document_name}</span>
+          <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">{signingData?.document?.document_type}</Badge>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="text-[#DC2626] border-[#DC2626]/30 hover:bg-[#FEF2F2]"
+          className="text-[#DC2626] border-[#DC2626]/30 hover:bg-[#FEF2F2] text-xs flex-shrink-0 h-7"
           onClick={() => setShowDeclineModal(true)}
         >
-          Decline to Sign
+          Decline
         </Button>
       </div>
 
-      {/* Main content */}
+      {/* Main content — stacked on mobile, side-by-side on lg+ */}
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* PDF viewer */}
-        <div className="flex-1 flex flex-col">
-          {/* Page navigation */}
-          <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1}>
-              <ChevronLeft className="h-4 w-4" />
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Page navigation — compact on mobile */}
+          <div className="bg-white border-b border-[#E5E7EB] px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1}>
+              <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-sm text-[#6B7280]">Page {currentPage} of {numPages}</span>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.min(numPages, currentPage + 1))} disabled={currentPage >= numPages}>
-              <ChevronRight className="h-4 w-4" />
+            <span className="text-xs sm:text-sm text-[#6B7280]">{currentPage}/{numPages}</span>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentPage(Math.min(numPages, currentPage + 1))} disabled={currentPage >= numPages}>
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
             <Separator orientation="vertical" className="h-4" />
-            <Button variant="ghost" size="sm" onClick={() => setScale(Math.max(0.5, scale - 0.1))}>
-              <ZoomOut className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setScale(Math.max(0.5, scale - 0.1))}>
+              <ZoomOut className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-xs text-[#6B7280]">{Math.round(scale * 100)}%</span>
-            <Button variant="ghost" size="sm" onClick={() => setScale(Math.min(2, scale + 0.1))}>
-              <ZoomIn className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs text-[#6B7280]">{Math.round(scale * 100)}%</span>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setScale(Math.min(2, scale + 0.1))}>
+              <ZoomIn className="h-3.5 w-3.5" />
             </Button>
           </div>
 
-          {/* Canvas */}
-          <div className="flex-1 overflow-auto p-4 lg:p-6">
+          {/* Canvas — full width on mobile */}
+          <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
             <div className="relative mx-auto" style={{ maxWidth: "800px" }}>
               <canvas
                 ref={(el) => {
@@ -378,7 +380,7 @@ export default function PublicSigningPage() {
                   return (
                     <div
                       key={field.id}
-                      className={`absolute cursor-pointer flex items-center justify-center text-xs font-medium rounded border-2 transition-all ${
+                      className={`absolute cursor-pointer vaultsign-field-drag flex items-center justify-center text-xs font-medium rounded border-2 transition-all ${
                         isFilled ? "border-green-500 bg-green-50/80" : "border-[#166534] bg-[#F0FDF4]/80 hover:bg-[#DCFCE7]/80"
                       }`}
                       style={{
@@ -407,14 +409,19 @@ export default function PublicSigningPage() {
           </div>
         </div>
 
-        {/* Right panel — Fields to fill */}
-        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-[#E5E7EB] bg-white">
-          <div className="p-4 border-b border-[#E5E7EB]">
-            <h3 className="font-semibold text-sm text-[#111827]">Your Fields to Fill</h3>
-            <p className="text-xs text-[#6B7280] mt-0.5">Fill in all required fields below</p>
+        {/* Right panel / Bottom section on mobile — Fields to fill */}
+        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-[#E5E7EB] bg-white flex flex-col max-h-[50vh] lg:max-h-none">
+          <div className="p-3 sm:p-4 border-b border-[#E5E7EB] flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm text-[#111827]">Your Fields to Fill</h3>
+              <p className="text-xs text-[#6B7280] mt-0.5">Fill in all required fields</p>
+            </div>
+            <Badge variant="outline" className="text-[10px] lg:hidden">
+              {Object.keys(fieldValues).filter((k) => fieldValues[k]).length}/{myFields.length}
+            </Badge>
           </div>
-          <ScrollArea className="h-[400px] lg:h-auto">
-            <div className="p-4 space-y-3">
+          <ScrollArea className="flex-1">
+            <div className="p-3 sm:p-4 space-y-3">
               {myFields.map((field) => (
                 <div key={field.id} className="p-3 rounded-lg border border-[#E5E7EB]">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -426,7 +433,7 @@ export default function PublicSigningPage() {
                   {field.type === "signature" ? (
                     <Button
                       variant="outline"
-                      className="w-full h-12 border-dashed border-[#166534]/30 text-[#166534] hover:bg-[#F0FDF4]"
+                      className={`w-full h-12 border-dashed border-[#166534]/30 text-[#166534] hover:bg-[#F0FDF4] ${!fieldValues[field.id] ? "animate-vaultsign-pulse-green" : ""}`}
                       onClick={() => openSignatureModal(field.id)}
                     >
                       {fieldValues[field.id] ? (
@@ -453,7 +460,7 @@ export default function PublicSigningPage() {
           </ScrollArea>
 
           {/* Agreement & Submit */}
-          <div className="p-4 border-t border-[#E5E7EB] space-y-3">
+          <div className="p-3 sm:p-4 border-t border-[#E5E7EB] space-y-3 flex-shrink-0">
             <div className="flex items-start gap-2">
               <Checkbox
                 id="agree-electronic"
@@ -477,27 +484,27 @@ export default function PublicSigningPage() {
         </div>
       </div>
 
-      {/* Signature Modal */}
+      {/* Signature Modal — full screen on mobile */}
       <Dialog open={showSignatureModal} onOpenChange={setShowSignatureModal}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg w-[calc(100%-1rem)] h-[90vh] sm:h-auto max-h-none sm:max-h-none flex flex-col p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Create Your Signature</DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="draw" className="w-full">
+          <Tabs defaultValue="draw" className="w-full flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="draw">Draw</TabsTrigger>
               <TabsTrigger value="type">Type</TabsTrigger>
               <TabsTrigger value="upload">Upload</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="draw" className="mt-4">
-              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden bg-white">
+            <TabsContent value="draw" className="mt-4 flex-1 flex flex-col">
+              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden bg-white flex-1 min-h-[180px] sm:min-h-[200px]">
                 <canvas
                   ref={sigCanvasRef}
                   width={460}
                   height={200}
-                  className="w-full touch-none"
+                  className="w-full h-full touch-none"
                   onTouchEnd={() => {
                     if (sigPadRef.current) {
                       setSignaturePadData(sigPadRef.current.toDataURL());
@@ -575,7 +582,7 @@ export default function PublicSigningPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-[#E5E7EB]">
             <Button variant="outline" onClick={() => setShowSignatureModal(false)}>
               Cancel
             </Button>
@@ -613,5 +620,6 @@ export default function PublicSigningPage() {
       </Dialog>
 
     </div>
+    </VaultSignErrorBoundary>
   );
 }

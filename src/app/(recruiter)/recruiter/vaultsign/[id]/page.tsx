@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import {
   ArrowLeft, Send, Ban, RefreshCw, Download, Clock, CheckCircle2,
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -138,8 +140,105 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {/* Skeleton Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-16" />
+              <div>
+                <Skeleton className="h-6 w-48 mb-1" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-20" />
+              <Skeleton className="h-9 w-36" />
+            </div>
+          </div>
+
+          {/* Skeleton Timeline */}
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <React.Fragment key={i}>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Skeleton className="w-8 h-8 rounded-full" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    {i < 3 && <Skeleton className="flex-1 h-0.5 mx-2 min-w-[20px]" />}
+                  </React.Fragment>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skeleton Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Skeleton Signers */}
+            <div className="lg:col-span-2">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardHeader>
+                  <Skeleton className="h-6 w-16" />
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#E5E7EB]">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-1.5">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-36" />
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-14 rounded-full" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Skeleton Details & Audit */}
+            <div className="space-y-6">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardHeader>
+                  <Skeleton className="h-5 w-16" />
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex justify-between">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardHeader>
+                  <Skeleton className="h-5 w-20" />
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Skeleton className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-2 w-36" />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -150,19 +249,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const timelineProgress = TIMELINE_STEPS.findIndex((s) => s.key === document.status);
 
   return (
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <VaultSignErrorBoundary>
+    <div className="min-h-screen bg-[#F8F7F4] animate-vaultsign-fade-in">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        {/* Header — stacks on mobile with buttons below */}
+        <div className="flex flex-col gap-3 mb-6">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-[#6B7280]">
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
-            <div>
-              <h1 className="text-xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-bold text-[#111827] truncate" style={{ fontFamily: "'Clash Display', sans-serif" }}>
                 {document.document_name}
               </h1>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>{statusConf.label}</Badge>
                 <span className="text-xs text-[#6B7280]">
                   {document.source_type === "word" ? "Word Document" : "PDF Document"} • {document.document_type}
@@ -170,11 +270,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {document.status === "draft" && (
               <>
                 <Button
                   variant="outline"
+                  size="sm"
                   className="border-[#E5E7EB]"
                   onClick={() => {
                     const route = document.source_type === "pdf"
@@ -186,6 +287,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <FileText className="h-4 w-4 mr-1" /> Edit
                 </Button>
                 <Button
+                  size="sm"
                   className="bg-[#166534] hover:bg-[#14532D] text-white"
                   onClick={handleSend}
                   disabled={actionLoading === "send"}
@@ -196,41 +298,41 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </>
             )}
             {["sent", "partially_signed"].includes(document.status) && (
-              <Button variant="outline" className="border-[#DC2626]/30 text-[#DC2626] hover:bg-[#FEF2F2]" onClick={handleVoid} disabled={actionLoading === "void"}>
+              <Button variant="outline" size="sm" className="border-[#DC2626]/30 text-[#DC2626] hover:bg-[#FEF2F2]" onClick={handleVoid} disabled={actionLoading === "void"}>
                 <Ban className="h-4 w-4 mr-1" /> Void
               </Button>
             )}
             {document.status === "declined" && (
-              <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={handleRevise} disabled={actionLoading === "revise"}>
+              <Button size="sm" className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={handleRevise} disabled={actionLoading === "revise"}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Revise
               </Button>
             )}
             {document.status === "completed" && (
-              <Button variant="outline" className="border-[#E5E7EB]" onClick={handleDownload}>
+              <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-1" /> Download PDF
               </Button>
             )}
           </div>
         </div>
 
-        {/* Status Timeline */}
-        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-6">
+        {/* Status Timeline — horizontally scrollable on mobile */}
+        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-6 animate-vaultsign-scale-in">
           <CardContent className="p-4">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
               {TIMELINE_STEPS.map((step, i) => (
                 <React.Fragment key={step.key}>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                       i <= timelineProgress ? "bg-[#166534] text-white" : "bg-[#E5E7EB] text-[#9CA3AF]"
                     }`}>
                       {i <= timelineProgress ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                     </div>
-                    <span className={`text-xs font-medium ${i <= timelineProgress ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
+                    <span className={`text-xs font-medium whitespace-nowrap ${i <= timelineProgress ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
                       {step.label}
                     </span>
                   </div>
                   {i < TIMELINE_STEPS.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-2 ${i < timelineProgress ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />
+                    <div className={`flex-1 h-0.5 mx-2 min-w-[20px] ${i < timelineProgress ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />
                   )}
                 </React.Fragment>
               ))}
@@ -246,7 +348,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <CardTitle className="text-lg">Signers</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="space-y-3">
+                <div className="space-y-3 vaultsign-stagger animate-vaultsign-slide-up">
                   {document.signers?.map((signer: any) => {
                     const sConfig = SIGNER_STATUS_CONFIG[signer.status] || SIGNER_STATUS_CONFIG.pending;
                     const StatusIcon = sConfig.icon;
@@ -260,7 +362,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm text-[#111827]">{signer.name}</p>
                           <p className="text-xs text-[#6B7280]">{signer.email}</p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <Badge variant="outline" className="text-[10px]">{signer.role}</Badge>
                             <div className="flex items-center gap-1">
                               <StatusIcon className={`h-3.5 w-3.5 ${sConfig.color}`} />
@@ -354,5 +456,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

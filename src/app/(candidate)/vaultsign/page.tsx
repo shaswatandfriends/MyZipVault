@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import {
   FileSignature, Loader2, Clock, CheckCircle2, XCircle, ExternalLink
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: "Pending", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
@@ -54,13 +56,46 @@ export default function CandidateVaultSignPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {/* Skeleton Header */}
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-1" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+
+          {/* Skeleton Document Cards */}
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-lg" />
+                      <div>
+                        <Skeleton className="h-4 w-40 mb-1" />
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4]">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
@@ -79,7 +114,7 @@ export default function CandidateVaultSignPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 vaultsign-stagger animate-vaultsign-slide-up">
             {documents.map((item: any, index: number) => {
               const docStatus = DOC_STATUS_CONFIG[item.document?.status] || DOC_STATUS_CONFIG.draft;
               const signerStatus = STATUS_CONFIG[item.signer_status] || STATUS_CONFIG.pending;
@@ -130,5 +165,6 @@ export default function CandidateVaultSignPage() {
         )}
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

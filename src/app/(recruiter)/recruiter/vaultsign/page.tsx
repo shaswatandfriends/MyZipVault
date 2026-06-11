@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import {
   Plus, Search, FileText, Clock, CheckCircle2, XCircle, AlertTriangle,
@@ -18,6 +19,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
@@ -163,17 +166,93 @@ export default function VaultSignDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {/* Skeleton Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <Skeleton className="h-8 w-32 mb-1" />
+              <Skeleton className="h-4 w-52" />
+            </div>
+            <Skeleton className="h-10 w-36" />
+          </div>
+
+          {/* Skeleton Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div>
+                      <Skeleton className="h-7 w-10 mb-1" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Skeleton Table */}
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-24" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-9 w-[200px]" />
+                  <Skeleton className="h-9 w-[140px]" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="hidden md:block">
+                <div className="border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                ))}
+              </div>
+              {/* Mobile skeleton cards */}
+              <div className="md:hidden p-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-3 rounded-xl border border-[#E5E7EB] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-24" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4]">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header — stacks on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
               VaultSign
@@ -181,7 +260,7 @@ export default function VaultSignDashboardPage() {
             <p className="text-sm text-[#6B7280] mt-0.5">Send, sign, and manage documents</p>
           </div>
           <Button
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-[#166534] hover:bg-[#14532D] text-white w-full sm:w-auto"
             onClick={() => router.push("/recruiter/vaultsign/new")}
           >
             <Plus className="h-4 w-4 mr-1" /> New Document
@@ -189,7 +268,7 @@ export default function VaultSignDashboardPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-vaultsign-fade-in">
           <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -254,7 +333,7 @@ export default function VaultSignDashboardPage() {
               {templates.slice(0, 4).map((template: any) => (
                 <Card
                   key={template.id}
-                  className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB]"
+                  className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
                   onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                 >
                   <CardContent className="p-4">
@@ -273,23 +352,23 @@ export default function VaultSignDashboardPage() {
           </div>
         )}
 
-        {/* Documents table */}
+        {/* Documents */}
         <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle className="text-lg">Documents</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                   <Input
                     placeholder="Search documents..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8 h-9 w-[200px] text-sm"
+                    className="pl-8 h-9 w-full sm:w-[200px] text-sm"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9 w-[140px] text-sm">
+                  <SelectTrigger className="h-9 w-full sm:w-[140px] text-sm">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -307,56 +386,58 @@ export default function VaultSignDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Signers</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocs.length === 0 ? (
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="text-[#9CA3AF]">
-                        <FileText className="h-8 w-8 mx-auto mb-2" />
-                        <p>No documents found</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 border-[#166534] text-[#166534]"
-                          onClick={() => router.push("/recruiter/vaultsign/new")}
-                        >
-                          Create your first document
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead>Document</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Signers</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
-                ) : (
-                  filteredDocs.map((doc) => {
-                    const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
-                    return (
-                      <TableRow key={doc.id} className="cursor-pointer hover:bg-[#F8F7F4]" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
-                            <p className="text-xs text-[#6B7280]">
-                              {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>
-                            {statusConf.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {doc.signers?.slice(0, 3).map((s: any, i: number) => (
+                </TableHeader>
+                <TableBody>
+                  {filteredDocs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="text-[#9CA3AF]">
+                          <FileText className="h-8 w-8 mx-auto mb-2" />
+                          <p>No documents found</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 border-[#166534] text-[#166534]"
+                            onClick={() => router.push("/recruiter/vaultsign/new")}
+                          >
+                            Create your first document
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredDocs.map((doc) => {
+                      const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
+                      return (
+                        <TableRow key={doc.id} className="cursor-pointer hover:bg-[#F8F7F4]" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
+                              <p className="text-xs text-[#6B7280]">
+                                {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>
+                              {statusConf.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {doc.signers?.slice(0, 3).map((s: any, i: number) => (
                               <div
                                 key={i}
                                 className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
@@ -372,66 +453,171 @@ export default function VaultSignDashboardPage() {
                             {doc.signers?.length > 3 && (
                               <span className="text-xs text-[#6B7280]">+{doc.signers.length - 3}</span>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-[#6B7280]">
-                          {new Date(doc.expiry_date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-xs text-[#6B7280]">
-                          {new Date(doc.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
-                                <Eye className="h-4 w-4 mr-2" /> View Details
-                              </DropdownMenuItem>
-                              {doc.status === "draft" && (
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  const route = doc.source_type === "pdf"
-                                    ? `/recruiter/vaultsign/signer/${doc.id}`
-                                    : `/recruiter/vaultsign/editor/${doc.id}`;
-                                  router.push(route);
-                                }}>
-                                  <FileText className="h-4 w-4 mr-2" /> Edit
-                                </DropdownMenuItem>
-                              )}
-                              {doc.status === "draft" && (
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-[#6B7280]">
+                            {new Date(doc.expiry_date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-xs text-[#6B7280]">
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
-                                  <Send className="h-4 w-4 mr-2" /> Send
+                                  <Eye className="h-4 w-4 mr-2" /> View Details
                                 </DropdownMenuItem>
-                              )}
-                              {["sent", "partially_signed"].includes(doc.status) && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleVoid(doc.id); }}>
-                                  <Ban className="h-4 w-4 mr-2" /> Void
+                                {doc.status === "draft" && (
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    const route = doc.source_type === "pdf"
+                                      ? `/recruiter/vaultsign/signer/${doc.id}`
+                                      : `/recruiter/vaultsign/editor/${doc.id}`;
+                                    router.push(route);
+                                  }}>
+                                    <FileText className="h-4 w-4 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {doc.status === "draft" && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
+                                    <Send className="h-4 w-4 mr-2" /> Send
+                                  </DropdownMenuItem>
+                                )}
+                                {["sent", "partially_signed"].includes(doc.status) && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleVoid(doc.id); }}>
+                                    <Ban className="h-4 w-4 mr-2" /> Void
+                                  </DropdownMenuItem>
+                                )}
+                                {doc.status === "declined" && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRevise(doc.id); }}>
+                                    <RefreshCw className="h-4 w-4 mr-2" /> Revise
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
+                                  <FileText className="h-4 w-4 mr-2" /> Duplicate
                                 </DropdownMenuItem>
-                              )}
-                              {doc.status === "declined" && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRevise(doc.id); }}>
-                                  <RefreshCw className="h-4 w-4 mr-2" /> Revise
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card List */}
+            <div className="md:hidden">
+              {filteredDocs.length === 0 ? (
+                <div className="text-center py-8 px-4">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-[#9CA3AF]" />
+                  <p className="text-[#9CA3AF]">No documents found</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 border-[#166534] text-[#166534]"
+                    onClick={() => router.push("/recruiter/vaultsign/new")}
+                  >
+                    Create your first document
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#E5E7EB] vaultsign-stagger animate-vaultsign-fade-in">
+                  {filteredDocs.map((doc) => {
+                    const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
+                    return (
+                      <div
+                        key={doc.id}
+                        className="p-4 cursor-pointer hover:bg-[#F8F7F4] active:bg-[#F3F4F6] transition-colors"
+                        onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm text-[#111827] truncate">{doc.document_name}</p>
+                            <p className="text-xs text-[#6B7280] mt-0.5">
+                              {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
+                            </p>
+                          </div>
+                          <Badge className={`${statusConf.bg} ${statusConf.color} border-0 flex-shrink-0`}>
+                            {statusConf.label}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-1">
+                            {doc.signers?.slice(0, 3).map((s: any, i: number) => (
+                              <div
+                                key={i}
+                                className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-bold"
+                                style={{
+                                  backgroundColor: s.status === "signed" ? "#DCFCE7" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
+                                  color: s.status === "signed" ? "#166534" : s.status === "declined" ? "#DC2626" : "#6B7280",
+                                }}
+                                title={`${s.name} - ${s.status}`}
+                              >
+                                {s.name?.charAt(0)?.toUpperCase() || "?"}
+                              </div>
+                            ))}
+                            {doc.signers?.length > 3 && (
+                              <span className="text-[10px] text-[#6B7280]">+{doc.signers.length - 3}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] text-[#9CA3AF]">
+                            <span>Exp: {new Date(doc.expiry_date).toLocaleDateString()}</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
+                                  <Eye className="h-4 w-4 mr-2" /> View
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
-                                <FileText className="h-4 w-4 mr-2" /> Duplicate
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                                {doc.status === "draft" && (
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    const route = doc.source_type === "pdf"
+                                      ? `/recruiter/vaultsign/signer/${doc.id}`
+                                      : `/recruiter/vaultsign/editor/${doc.id}`;
+                                    router.push(route);
+                                  }}>
+                                    <FileText className="h-4 w-4 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {["sent", "partially_signed"].includes(doc.status) && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleVoid(doc.id); }}>
+                                    <Ban className="h-4 w-4 mr-2" /> Void
+                                  </DropdownMenuItem>
+                                )}
+                                {doc.status === "declined" && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRevise(doc.id); }}>
+                                    <RefreshCw className="h-4 w-4 mr-2" /> Revise
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
+                                  <FileText className="h-4 w-4 mr-2" /> Duplicate
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                  })}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

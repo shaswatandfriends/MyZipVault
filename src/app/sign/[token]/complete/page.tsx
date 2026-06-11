@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import {
   CheckCircle2, Download, FileText, Loader2, Shield, Clock
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SigningCompletePage() {
   const params = useParams();
@@ -34,17 +36,37 @@ export default function SigningCompletePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center">
+          {/* Skeleton Success Icon */}
+          <Skeleton className="w-16 h-16 rounded-full mx-auto mb-6" />
+
+          {/* Skeleton Title */}
+          <Skeleton className="h-7 w-56 mx-auto mb-2" />
+
+          {/* Skeleton Lines */}
+          <Skeleton className="h-4 w-full mx-auto mb-2" />
+          <Skeleton className="h-4 w-3/4 mx-auto mb-6" />
+
+          {/* Skeleton Info Box */}
+          <Skeleton className="h-24 w-full rounded-xl mb-6" />
+
+          {/* Skeleton Buttons */}
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center">
+      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center animate-vaultsign-fade-in">
         {/* Success icon */}
-        <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-6 animate-vaultsign-success-bounce">
           <CheckCircle2 className="h-8 w-8 text-[#166534]" />
         </div>
 
@@ -124,5 +146,6 @@ export default function SigningCompletePage() {
         </div>
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

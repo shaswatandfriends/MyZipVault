@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, FileSignature, Download, CheckCircle2, Clock, ExternalLink } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CandidateVaultSignDetailPage() {
   const router = useRouter();
@@ -38,13 +40,47 @@ export default function CandidateVaultSignDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {/* Skeleton Back Button */}
+          <Skeleton className="h-8 w-32 mb-4" />
+
+          {/* Skeleton Card */}
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Skeleton className="h-6 w-48 mb-1" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4]">
       <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Button variant="ghost" size="sm" onClick={() => router.push("/vaultsign")} className="text-[#6B7280] mb-4">
@@ -108,5 +144,6 @@ export default function CandidateVaultSignDetailPage() {
         </Card>
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

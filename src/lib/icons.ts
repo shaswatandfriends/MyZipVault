@@ -183,6 +183,9 @@ import {
   CheckSquare,
   Subscript,
   Superscript,
+  Menu,
+  PanelRight as PanelRightIcon,
+  MoreVertical,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -360,6 +363,9 @@ export {
   CheckSquare,
   Subscript,
   Superscript,
+  Menu,
+  PanelRightIcon,
+  MoreVertical,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────

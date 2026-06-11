@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import {
   LayoutTemplate, Activity, Building2, Plus, Loader2, Edit3,
   Trash2, Search, FileText, Eye, X, Save, FileSignature
@@ -16,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -224,13 +226,49 @@ export default function SuperAdminVaultSignPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {/* Skeleton Header */}
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-1" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+
+          {/* Skeleton Tabs */}
+          <Skeleton className="h-10 w-72 rounded-xl mb-6" />
+
+          {/* Skeleton Template Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <Skeleton className="h-5 w-32 mb-1" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                    <Skeleton className="h-5 w-12 rounded" />
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded" />
+                  </div>
+                  <Skeleton className="h-3 w-28 mt-2" />
+                  <div className="flex items-center gap-1 mt-3">
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="h-7 w-7" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4]">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
@@ -262,8 +300,20 @@ export default function SuperAdminVaultSignPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map((template: any) => (
+            {templates.length === 0 ? (
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardContent className="p-12 text-center">
+                  <LayoutTemplate className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
+                  <h3 className="font-medium text-[#111827] mb-1">No Templates Yet</h3>
+                  <p className="text-sm text-[#6B7280] mb-4">Create your first template to get started</p>
+                  <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={openNewTemplate}>
+                    <Plus className="h-4 w-4 mr-1" /> Create Template
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 vaultsign-stagger animate-vaultsign-fade-in">
+                {templates.map((template: any) => (
                 <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -305,11 +355,21 @@ export default function SuperAdminVaultSignPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Activity Tab */}
           <TabsContent value="activity" className="mt-6">
+            {documents.length === 0 ? (
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <CardContent className="p-12 text-center">
+                  <Activity className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
+                  <h3 className="font-medium text-[#111827] mb-1">No Activity Yet</h3>
+                  <p className="text-sm text-[#6B7280]">Document activity will appear here once documents are created</p>
+                </CardContent>
+              </Card>
+            ) : (
             <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <CardHeader>
                 <CardTitle className="text-lg">All Documents</CardTitle>
@@ -372,6 +432,7 @@ export default function SuperAdminVaultSignPage() {
                 </Table>
               </CardContent>
             </Card>
+            )}
           </TabsContent>
 
           {/* Org Settings Tab */}
@@ -534,5 +595,6 @@ export default function SuperAdminVaultSignPage() {
         </Dialog>
       </div>
     </div>
+    </VaultSignErrorBoundary>
   );
 }

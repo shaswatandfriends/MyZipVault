@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Send, Plus, Trash2, X, Loader2,
-  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MousePointer2, Move
+  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, MousePointer2, Move,
+  PanelRightIcon
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SIGNER_COLORS, FIELD_TYPE_LABELS, FIELD_TYPE_ICONS, type SignField, type SignFieldType } from "@/lib/vaultsign/types";
 
 export default function PdfSignerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,6 +39,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
 
@@ -250,32 +255,240 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+        {/* Skeleton Top Bar */}
+        <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-3">
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-6 w-px" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-28" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-32" />
+          </div>
+        </div>
+        {/* Skeleton Main Content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Skeleton PDF Canvas */}
+          <div className="flex-1 flex flex-col">
+            <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-center gap-3">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-6 w-px" />
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+            <div className="flex-1 p-6 flex items-start justify-center">
+              <Skeleton className="w-full max-w-[800px] h-[600px] rounded-lg" />
+            </div>
+          </div>
+          {/* Skeleton Right Panel */}
+          <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
+            <div className="p-3 border-b border-[#E5E7EB]">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-48 mt-1" />
+            </div>
+            <div className="p-3 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Right panel content (shared between inline and Sheet)
+  const rightPanelContent = (
+    <>
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-4">
+          {/* Signers */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-[#6B7280] uppercase">Signers</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-[#166534]"
+                onClick={() => setShowAddSigner(true)}
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
+            </div>
+
+            {signers.map((signer, index) => (
+              <div
+                key={signer.id || index}
+                className="flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] mb-1.5"
+              >
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[#111827] truncate">{signer.name}</p>
+                  <p className="text-[10px] text-[#6B7280] truncate">{signer.email}</p>
+                </div>
+                <Badge variant="outline" className="text-[10px] h-5">{signer.role}</Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+                  onClick={() => removeSigner(index)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+
+            {showAddSigner && (
+              <div className="p-2 rounded-lg border border-[#166534]/20 bg-[#F0FDF4] space-y-1.5">
+                <Input
+                  placeholder="Name"
+                  value={newSignerName}
+                  onChange={(e) => setNewSignerName(e.target.value)}
+                  className="h-7 text-xs"
+                />
+                <Input
+                  placeholder="Email"
+                  type="email"
+                  value={newSignerEmail}
+                  onChange={(e) => setNewSignerEmail(e.target.value)}
+                  className="h-7 text-xs"
+                />
+                <Select value={newSignerRole} onValueChange={setNewSignerRole}>
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Candidate">Candidate</SelectItem>
+                    <SelectItem value="Recruiter">Recruiter</SelectItem>
+                    <SelectItem value="Client Employer">Client Employer</SelectItem>
+                    <SelectItem value="Witness">Witness</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-1.5">
+                  <Button size="sm" className="flex-1 h-7 text-xs bg-[#166534] hover:bg-[#14532D]" onClick={addSigner}>Add</Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSigner(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Field Palette */}
+          <div>
+            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Add Fields</h4>
+            {signers.length === 0 ? (
+              <p className="text-xs text-[#9CA3AF] p-2">Add signers first</p>
+            ) : (
+              signers.map((signer, index) => (
+                <div key={index} className="mb-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
+                    />
+                    <span className="text-xs font-medium text-[#111827]">{signer.name}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
+                      <Button
+                        key={type}
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] px-1.5 border-[#E5E7EB]"
+                        onClick={() => addFieldToPdf(type, index)}
+                      >
+                        {FIELD_TYPE_ICONS[type]} {FIELD_TYPE_LABELS[type]}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Field list */}
+          <div>
+            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Placed Fields</h4>
+            {signFields.length === 0 ? (
+              <p className="text-xs text-[#9CA3AF] p-2">No fields placed yet</p>
+            ) : (
+              signFields.map((field) => {
+                const color = SIGNER_COLORS[field.assigned_to_signer_index % SIGNER_COLORS.length];
+                return (
+                  <div
+                    key={field.id}
+                    className={`flex items-center justify-between p-1.5 rounded border mb-1 cursor-pointer transition-colors ${
+                      selectedField === field.id ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB]"
+                    }`}
+                    onClick={() => {
+                      setSelectedField(field.id);
+                      setCurrentPage(field.page);
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <span className="text-[10px] text-[#374151]">
+                        {FIELD_TYPE_ICONS[field.type]} {field.label} — p{field.page}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeField(field.id);
+                      }}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </ScrollArea>
+    </>
+  );
+
   return (
+    <VaultSignErrorBoundary>
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       {/* Top Bar */}
-      <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Mobile panel toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-[#6B7280] lg:hidden"
+            onClick={() => setShowRightPanel(true)}
+          >
+            <PanelRightIcon className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/recruiter/vaultsign")}
             className="text-[#6B7280] hover:text-[#111827]"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back</span>
           </Button>
           <Separator orientation="vertical" className="h-6" />
-          <h1 className="font-semibold text-[#111827]">{docName}</h1>
-          <Badge variant="outline" className="text-xs bg-[#F8F7F4]">
+          <h1 className="font-semibold text-[#111827] truncate">{docName}</h1>
+          <Badge variant="outline" className="text-xs bg-[#F8F7F4] hidden sm:inline-flex">
             PDF Document — Read Only
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -284,22 +497,22 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             className="border-[#E5E7EB] text-[#166534]"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-            Save Fields
+            <span className="hidden sm:inline">Save Fields</span>
           </Button>
           <Button
             size="sm"
             className="bg-[#166534] hover:bg-[#14532D] text-white"
             onClick={handleSend}
           >
-            <Send className="h-4 w-4 mr-1" /> Send for Signature
+            <Send className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Send for Signature</span>
           </Button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* PDF Canvas */}
-        <div className="flex-1 flex flex-col">
+        {/* PDF Canvas — full width on mobile */}
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Page navigation */}
           <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-center gap-3">
             <Button
@@ -332,7 +545,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
           </div>
 
           {/* Canvas area */}
-          <div className="flex-1 overflow-auto p-6" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+          <div className="flex-1 overflow-auto p-4 lg:p-6" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={canvasContainerRef} className="relative mx-auto" style={{ maxWidth: "800px" }}>
               {/* PDF Canvas */}
               <canvas
@@ -351,7 +564,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   return (
                     <div
                       key={field.id}
-                      className={`absolute cursor-move flex items-center justify-center text-xs font-medium rounded border-2 transition-shadow ${
+                      className={`absolute cursor-move vaultsign-field-drag flex items-center justify-center text-xs font-medium rounded border-2 transition-shadow ${
                         isSelected ? "shadow-lg ring-2 ring-offset-1" : "shadow-sm hover:shadow-md"
                       }`}
                       style={{
@@ -391,166 +604,27 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
 
-        {/* Right Panel — Signers & Fields */}
-        <div className="w-72 border-l border-[#E5E7EB] bg-white flex flex-col">
+        {/* Right Panel — Signers & Fields (desktop only) */}
+        <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
           <div className="p-3 border-b border-[#E5E7EB]">
             <h3 className="font-semibold text-sm text-[#111827]">Signers & Fields</h3>
             <p className="text-xs text-[#6B7280] mt-0.5">Add signers, then drag fields onto the PDF</p>
           </div>
-          <ScrollArea className="flex-1">
-            <div className="p-3 space-y-4">
-              {/* Signers */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-semibold text-[#6B7280] uppercase">Signers</h4>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs text-[#166534]"
-                    onClick={() => setShowAddSigner(true)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" /> Add
-                  </Button>
-                </div>
-
-                {signers.map((signer, index) => (
-                  <div
-                    key={signer.id || index}
-                    className="flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] mb-1.5"
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[#111827] truncate">{signer.name}</p>
-                      <p className="text-[10px] text-[#6B7280] truncate">{signer.email}</p>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] h-5">{signer.role}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
-                      onClick={() => removeSigner(index)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-
-                {showAddSigner && (
-                  <div className="p-2 rounded-lg border border-[#166534]/20 bg-[#F0FDF4] space-y-1.5">
-                    <Input
-                      placeholder="Name"
-                      value={newSignerName}
-                      onChange={(e) => setNewSignerName(e.target.value)}
-                      className="h-7 text-xs"
-                    />
-                    <Input
-                      placeholder="Email"
-                      type="email"
-                      value={newSignerEmail}
-                      onChange={(e) => setNewSignerEmail(e.target.value)}
-                      className="h-7 text-xs"
-                    />
-                    <Select value={newSignerRole} onValueChange={setNewSignerRole}>
-                      <SelectTrigger className="h-7 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Candidate">Candidate</SelectItem>
-                        <SelectItem value="Recruiter">Recruiter</SelectItem>
-                        <SelectItem value="Client Employer">Client Employer</SelectItem>
-                        <SelectItem value="Witness">Witness</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="flex gap-1.5">
-                      <Button size="sm" className="flex-1 h-7 text-xs bg-[#166534] hover:bg-[#14532D]" onClick={addSigner}>Add</Button>
-                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSigner(false)}>Cancel</Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Field Palette */}
-              <div>
-                <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Add Fields</h4>
-                {signers.length === 0 ? (
-                  <p className="text-xs text-[#9CA3AF] p-2">Add signers first</p>
-                ) : (
-                  signers.map((signer, index) => (
-                    <div key={index} className="mb-3">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
-                        />
-                        <span className="text-xs font-medium text-[#111827]">{signer.name}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1">
-                        {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
-                          <Button
-                            key={type}
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[10px] px-1.5 border-[#E5E7EB]"
-                            onClick={() => addFieldToPdf(type, index)}
-                          >
-                            {FIELD_TYPE_ICONS[type]} {FIELD_TYPE_LABELS[type]}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Field list */}
-              <div>
-                <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Placed Fields</h4>
-                {signFields.length === 0 ? (
-                  <p className="text-xs text-[#9CA3AF] p-2">No fields placed yet</p>
-                ) : (
-                  signFields.map((field) => {
-                    const color = SIGNER_COLORS[field.assigned_to_signer_index % SIGNER_COLORS.length];
-                    return (
-                      <div
-                        key={field.id}
-                        className={`flex items-center justify-between p-1.5 rounded border mb-1 cursor-pointer transition-colors ${
-                          selectedField === field.id ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB]"
-                        }`}
-                        onClick={() => {
-                          setSelectedField(field.id);
-                          setCurrentPage(field.page);
-                        }}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                          <span className="text-[10px] text-[#374151]">
-                            {FIELD_TYPE_ICONS[field.type]} {field.label} — p{field.page}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeField(field.id);
-                          }}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </ScrollArea>
+          {rightPanelContent}
         </div>
       </div>
+
+      {/* Mobile: Right panel as bottom Sheet */}
+      <Sheet open={showRightPanel} onOpenChange={setShowRightPanel}>
+        <SheetContent side="bottom" className="h-[70vh] p-0 flex flex-col rounded-t-lg">
+          <SheetHeader className="p-3 border-b border-[#E5E7EB]">
+            <SheetTitle className="text-sm">Signers & Fields</SheetTitle>
+            <SheetDescription className="text-xs">Add signers, then drag fields onto the PDF</SheetDescription>
+          </SheetHeader>
+          {rightPanelContent}
+        </SheetContent>
+      </Sheet>
     </div>
+    </VaultSignErrorBoundary>
   );
 }
