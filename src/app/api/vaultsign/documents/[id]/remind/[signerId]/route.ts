@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendReminderEmail, generateSigningLink } from "@/lib/vaultsign/email";
+import type { AuditTrailEntry } from "@/lib/vaultsign/types";
 
+// POST: Send reminder email to a specific signer
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; signerId: string }> }
 ) {
   try {
@@ -14,120 +16,84 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id, signerId } = await params;
-    const documentId = parseInt(id, 10);
-    const signerIdNum = parseInt(signerId, 10);
+    const docId = parseInt(id);
+    const sId = parseInt(signerId);
 
-    if (isNaN(documentId) || isNaN(signerIdNum)) {
-      return NextResponse.json(
-        { error: "Invalid document or signer ID" },
-        { status: 400 }
-      );
+    if (isNaN(docId) || isNaN(sId)) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const document = await db.vaultSignDocument.findUnique({
-      where: { id: documentId },
-      include: {
-        signers: true,
-        creator: {
-          select: { id: true, first_name: true, last_name: true, email: true },
-        },
-        organization: {
-          select: { id: true, name: true },
-        },
-      },
+      where: { id: docId },
+      include: { signers: true, organization: { select: { name: true } } },
     });
 
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    if (document.created_by_user_id !== userId) {
-      return NextResponse.json(
-        { error: "Only the document creator can send reminders" },
-        { status: 403 }
-      );
+    // Check access
+    const role = (session.user as Record<string, unknown>).role as string;
+    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    if (role !== "super_admin" && document.organization_id !== orgId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const signer = document.signers.find((s) => s.id === signerIdNum);
+    const signer = document.signers.find((s) => s.id === sId);
     if (!signer) {
       return NextResponse.json({ error: "Signer not found" }, { status: 404 });
     }
 
-    // Check signer is in a pending state
-    if (signer.status !== "sent" && signer.status !== "viewed") {
-      return NextResponse.json(
-        { error: "Signer is not in a pending state" },
-        { status: 400 }
-      );
+    // Can only remind pending or sent signers
+    if (signer.status === "signed" || signer.status === "declined") {
+      return NextResponse.json({ error: `Signer already ${signer.status}` }, { status: 400 });
     }
-
-    // Check if a reminder was sent within the last 24 hours
-    const lastReminder = await db.vaultSignReminder.findFirst({
-      where: { signer_id: signerIdNum },
-      orderBy: { sent_at: "desc" },
-    });
-
-    if (lastReminder) {
-      const hoursSinceLastReminder =
-        (Date.now() - new Date(lastReminder.sent_at).getTime()) / (1000 * 60 * 60);
-      if (hoursSinceLastReminder < 24) {
-        return NextResponse.json(
-          { error: "A reminder was already sent within the last 24 hours" },
-          { status: 429 }
-        );
-      }
-    }
-
-    const recruiterName = `${document.creator.first_name || ""} ${document.creator.last_name || ""}`.trim() || document.creator.email;
-    const orgName = document.organization.name;
 
     // Send reminder email
-    await sendEmail({
-      to: signer.email,
-      templateKey: "vaultsign_reminder",
-      variables: {
-        sender_name: recruiterName,
-        agency_name: orgName,
-        document_name: document.document_name,
-        personal_message: document.personal_message || "",
-        expiry_date: new Date(document.expiry_date).toLocaleDateString(),
-        signing_url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign/${signer.sign_token}`,
-      },
+    const senderName = `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email;
+    const orgName = document.organization?.name || "MyZipVault";
+
+    await sendReminderEmail({
+      signerName: signer.name,
+      signerEmail: signer.email,
+      documentName: document.document_name,
+      senderName,
+      organizationName: orgName,
+      signingLink: generateSigningLink(signer.sign_token),
+      reminderType: "manual",
+      expiryDate: document.expiry_date.toISOString().split("T")[0],
     });
 
     // Create reminder record
     await db.vaultSignReminder.create({
       data: {
-        document_id: documentId,
-        signer_id: signerIdNum,
+        document_id: docId,
+        signer_id: sId,
         reminder_type: "manual",
-        sent_at: new Date(),
       },
     });
 
-    await db.auditLog.create({
+    // Update audit trail
+    const auditTrail: AuditTrailEntry[] = JSON.parse(document.audit_trail || "[]");
+    auditTrail.push({
+      event: "reminder_sent",
+      user_name: senderName,
+      ip_address: request.headers.get("x-forwarded-for") || "unknown",
+      timestamp: new Date().toISOString(),
+    });
+
+    await db.vaultSignDocument.update({
+      where: { id: docId },
       data: {
-        user_id: userId,
-        role: "client_recruiter",
-        action: "send_vaultsign_reminder",
-        entity_type: "vaultsign_signer",
-        entity_id: signerIdNum,
+        audit_trail: JSON.stringify(auditTrail),
+        updated_at: new Date(),
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[VAULTSIGN_DOCUMENT_REMIND]", error);
-    return NextResponse.json(
-      { error: "Failed to send reminder" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Remind signer error:", error);
+    return NextResponse.json({ error: "Failed to send reminder" }, { status: 500 });
   }
 }

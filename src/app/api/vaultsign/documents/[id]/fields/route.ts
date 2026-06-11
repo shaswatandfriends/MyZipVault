@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import crypto from "crypto";
 
+// PUT: Update sign fields for a document
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -13,61 +15,83 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter" && userRole !== "platform_admin" && userRole !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { id } = await params;
-    const documentId = parseInt(id, 10);
-    if (isNaN(documentId)) {
+    const docId = parseInt(id);
+    if (isNaN(docId)) {
       return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { sign_fields } = body;
-
-    if (!Array.isArray(sign_fields)) {
-      return NextResponse.json({ error: "sign_fields must be an array" }, { status: 400 });
-    }
-
-    // Verify document exists and user has access
     const document = await db.vaultSignDocument.findUnique({
-      where: { id: documentId },
+      where: { id: docId },
     });
 
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Verify the user is the creator (admins can bypass)
-    const userId = parseInt(String((session.user as Record<string, unknown>).id), 10);
-    if (document.created_by_user_id !== userId && userRole !== "platform_admin" && userRole !== "super_admin") {
-      return NextResponse.json({ error: "You can only edit your own documents" }, { status: 403 });
+    if (document.status !== "draft") {
+      return NextResponse.json({ error: "Only draft documents can be modified" }, { status: 400 });
     }
 
-    // Add audit trail event and update sign_fields in a single atomic operation
-    const auditTrail = JSON.parse(document.audit_trail || "[]");
-    auditTrail.push({
-      event: "sign_fields_saved",
-      user_id: userId,
-      timestamp: new Date().toISOString(),
-    });
+    const role = (session.user as Record<string, unknown>).role as string;
+    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    if (role !== "super_admin" && document.organization_id !== orgId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { sign_fields, signers } = body;
+
+    const updateData: any = { updated_at: new Date() };
+
+    if (sign_fields !== undefined) {
+      updateData.sign_fields = typeof sign_fields === "string" ? sign_fields : JSON.stringify(sign_fields);
+    }
+
     await db.vaultSignDocument.update({
-      where: { id: documentId },
-      data: {
-        sign_fields: JSON.stringify(sign_fields),
-        audit_trail: JSON.stringify(auditTrail),
-        updated_at: new Date(),
-      },
+      where: { id: docId },
+      data: updateData,
     });
+
+    // Update signers if provided
+    if (signers && Array.isArray(signers)) {
+      for (const signer of signers) {
+        if (signer.id) {
+          await db.vaultSignSigner.update({
+            where: { id: signer.id },
+            data: {
+              name: signer.name,
+              email: signer.email,
+              role: signer.role,
+              signer_index: signer.signer_index,
+              signing_order_position: signer.signing_order_position,
+            },
+          });
+        }
+      }
+    }
+
+    // Add new signers (those without id)
+    const newSigners = (signers || []).filter((s: any) => !s.id);
+    if (newSigners.length > 0) {
+      await db.vaultSignSigner.createMany({
+        data: newSigners.map((signer: any) => ({
+          document_id: docId,
+          user_id: signer.user_id || null,
+          name: signer.name,
+          email: signer.email,
+          role: signer.role || "Candidate",
+          signer_index: signer.signer_index,
+          signing_order_position: signer.signing_order_position || 1,
+          status: "pending",
+          sign_token: crypto.randomBytes(32).toString("hex"),
+        })),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[VAULTSIGN_DOCUMENT_FIELDS_PUT]", error);
-    return NextResponse.json(
-      { error: "Failed to save sign fields" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Update fields error:", error);
+    return NextResponse.json({ error: "Failed to update fields" }, { status: 500 });
   }
 }

@@ -1,35 +1,90 @@
 ---
 Task ID: 3
 Agent: full-stack-developer
-Task: Rewrite VaultSign PDF editor with TipTap rich text approach
+Task: Complete VaultSign 2.0 rebuild
 
 Work Log:
-- Read the existing page.tsx (2195 lines) and worklog.md to understand the current broken PDF editor
-- Installed TipTap packages: @tiptap/react, @tiptap/starter-kit, @tiptap/extension-text-align, @tiptap/extension-underline, @tiptap/extension-highlight, @tiptap/extension-text-style, @tiptap/extension-color, @tiptap/extension-font-family, @tiptap/extension-placeholder, @tiptap/core
-- Installed html2canvas-pro for capturing editor content as image when saving
-- Created custom FontSize TipTap extension since there's no official one
-- Wrote convertTextContentToHtml() function to convert pdfjs-dist extracted text to HTML
-- Created PdfPageEditor component using TipTap with full extension set
-- Created PdfEditorToolbar component with Word-like formatting controls
-- Removed old TextAnnotation, ExtractedTextItem interfaces, EditorTool type, fontFamilies/fontSizes constants
-- Removed old saveEditedPdf function, DraggableTextAnnotation component, EditablePdfPageRenderer component, EditablePdfViewer component
-- Removed old toolbar (select/text/draw/highlight/shape/eraser buttons + format bar)
-- Removed old annotation state management (annotations, selectedAnnotation, activeTool, drawingData, undo/redo stacks)
-- Removed old annotation handlers (handleAddAnnotation, handleAddAnnotationAt, handleMoveAnnotation, handleRemoveAnnotation, handleUpdateAnnotation, handleApplyFormat, handleDrawEnd, pushUndo, handleUndo, handleRedo)
-- Added new state variables: editedPages, originalPages, pageImages, pageDimensions, totalPages, isExtracting, extractionError, editorMode, activeEditorPage
-- Added PDF extraction effect using pdfjs-dist to render pages as images and extract text
-- Added new save function using html2canvas-pro + pdf-lib to capture edited pages and overlay on PDF
-- Kept all of Step 2 (Document Details & Signers) UI and logic intact
-- Kept all of Step 3 (Place Fields) UI and logic intact
-- Kept all of Step 4 (Review & Send) UI and logic intact
-- Kept DraggableField component, handleSubmit function, navigation buttons, step indicator, upload area
-- Added Edit/Preview mode toggle
-- Added zoom controls that scale page containers via CSS
-- Fixed TypeScript errors: TextStyle named import, StarterKit config, pdfjs render type cast, Uint8Array to BlobPart cast
-- Verified: npx tsc --noEmit shows no errors for our file, npx next build succeeds
+- Initialized fullstack development environment
+- Phase 1: Deleted all old VaultSign page and API files (27 files deleted)
+- Phase 3: Created 4 core library files:
+  - `src/lib/vaultsign/pdf-sign.ts` — PDF signing engine using pdf-lib with SHA-256 hashing, audit trail page generation
+  - `src/lib/vaultsign/tiptap-to-pdfmake.ts` — TipTap JSON → pdfmake docDefinition transformer with header/footer support
+  - `src/lib/vaultsign/supabase-storage.ts` — Supabase Storage helper for upload/download/signed URLs
+  - `src/lib/vaultsign/email.ts` — Email sending for VaultSign notifications (sent, reminder, completed, declined, voided)
+  - `src/lib/vaultsign/types.ts` — Shared types, constants, system variables, signer colors, field type labels
+- Phase 2: Created 17 API route files:
+  - `/api/vaultsign/documents/upload` — File upload (.docx → mammoth HTML, .pdf → URL)
+  - `/api/vaultsign/documents` — GET list + POST create draft
+  - `/api/vaultsign/documents/[id]` — GET detail + PATCH update
+  - `/api/vaultsign/documents/[id]/save-draft` — PUT auto-save
+  - `/api/vaultsign/documents/[id]/export-pdf` — POST export to PDF (pdfmake for Word, original for PDF)
+  - `/api/vaultsign/documents/[id]/send` — POST send for signature with email notifications
+  - `/api/vaultsign/documents/[id]/void` — POST void document
+  - `/api/vaultsign/documents/[id]/revise` — POST create revised copy from declined doc
+  - `/api/vaultsign/documents/[id]/remind/[signerId]` — POST send reminder
+  - `/api/vaultsign/documents/[id]/fields` — PUT update sign fields and signers
+  - `/api/vaultsign/sign/[token]` — GET public signing info (no auth)
+  - `/api/vaultsign/sign/[token]/submit` — POST submit signature, generate final PDF
+  - `/api/vaultsign/sign/[token]/decline` — POST decline to sign
+  - `/api/vaultsign/templates` — GET list templates for recruiters
+  - `/api/superadmin/vaultsign/templates` — GET list + POST create (super_admin)
+  - `/api/superadmin/vaultsign/templates/[id]` — GET, PATCH, DELETE template
+  - `/api/superadmin/vaultsign/templates/[id]/preview` — POST preview PDF
+  - `/api/superadmin/vaultsign/activity` — GET all activity across orgs
+  - `/api/superadmin/vaultsign/organization/[orgId]` — GET/PATCH org settings
+  - `/api/candidate/vaultsign` — GET list documents for candidate
+  - `/api/candidate/vaultsign/[id]` — GET specific document for candidate
+  - `/api/cron/vaultsign-reminders` — GET cron for auto-reminders
+  - `/api/cron/vaultsign-expiry` — GET cron for expiring documents
+- Phase 4: Built Word Editor page with full TipTap editor
+  - 3-column layout: Variables panel | TipTap Editor | Signers & Fields panel
+  - Full toolbar: bold, italic, underline, strikethrough, font family, color, highlight, alignment, lists, tables, images, undo/redo
+  - System and custom variables with click-to-insert
+  - Signer management (add/remove)
+  - Sign field assignment per signer with field type palette
+  - Auto-save debounced at 3000ms
+  - Export PDF and Save Draft buttons
+- Phase 5: Built PDF Signer page
+  - PDF rendering with pdfjs-dist on canvas
+  - Sign field overlays positioned by percentage
+  - Drag-to-reposition fields
+  - Page navigation and zoom controls
+  - Signer and field management right panel
+  - Send for Signature button
+- Phase 6: Built Public Signing page
+  - PDF viewer with field overlays
+  - Signature modal with 3 tabs: Draw (signature_pad), Type (4 Google Fonts), Upload
+  - Date/full_name/email fields auto-filled
+  - Electronic agreement checkbox
+  - Submit and Decline actions
+- Phase 7: Built Recruiter pages
+  - Dashboard: stats cards, template quick-start, documents table with search/filter/status
+  - New Document: 4-step wizard (Source → Details → Signers → Review)
+  - Document Detail: status timeline, signer list with status, actions, audit trail
+- Phase 8: Built SuperAdmin page with 3 tabs
+  - Templates tab: CRUD with create/edit dialog
+  - Activity tab: all documents table across organizations
+  - Organization Settings tab: select org → edit logo, address, phone, email, website
+- Phase 9: Built Candidate page
+  - List of documents where candidate is a signer
+  - Status badges and Sign button linking to /sign/[token]
+  - Detail page with signer list and download
+- Phase 10: Built Signing Complete page
+  - Success confirmation with signer status list
+  - Legal notice about electronic signatures
+  - Download signed document button
 
 Stage Summary:
-- Completely replaced the broken canvas-based annotation system with a TipTap rich text editor approach
-- The new Step 1 flow: Upload PDF → pdfjs renders pages as background images + extracts text → TipTap editors overlay each page with extracted text → users can freely edit text → save uses html2canvas-pro to capture editors as images + pdf-lib to embed on PDF
-- All Steps 2, 3, 4 remain intact and functional
-- Build compiles successfully with zero TypeScript errors in our file
+- Complete VaultSign 2.0 rebuild with 2-mode architecture: Word Editor (TipTap) and PDF Signer
+- 17+ API routes covering full document lifecycle (upload → create → edit → send → sign → complete)
+- Full TipTap rich text editor with variables, signers, sign fields
+- PDF viewer with field overlay and drag positioning
+- Public signing page with signature pad, typed signatures (4 Google Fonts), upload
+- Recruiter dashboard with stats, templates, document management
+- SuperAdmin management with templates, activity monitoring, org settings
+- Candidate view for their signing documents
+- PDF signing engine using pdf-lib with SHA-256 hashing and audit trail
+- TipTap to pdfmake transformer for Word → PDF conversion
+- Supabase Storage integration for document uploads
+- Email notification system for document sent, reminder, completed, declined, voided
+- All files pass lint with no errors (6 pre-existing errors are in third-party code)

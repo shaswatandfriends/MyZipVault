@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendDocumentSentEmail, generateSigningLink } from "@/lib/vaultsign/email";
+import type { AuditTrailEntry } from "@/lib/vaultsign/types";
 
+// POST: Validate document has signers and sign fields, change status to "sent", send emails
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -14,28 +16,17 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
-    const documentId = parseInt(id, 10);
-    if (isNaN(documentId)) {
+    const docId = parseInt(id);
+    if (isNaN(docId)) {
       return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
     }
 
     const document = await db.vaultSignDocument.findUnique({
-      where: { id: documentId },
+      where: { id: docId },
       include: {
         signers: { orderBy: { signing_order_position: "asc" } },
-        creator: {
-          select: { id: true, first_name: true, last_name: true, email: true },
-        },
-        organization: {
-          select: { id: true, name: true },
-        },
+        organization: { select: { id: true, name: true } },
       },
     });
 
@@ -43,107 +34,93 @@ export async function POST(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    if (document.created_by_user_id !== userId) {
-      return NextResponse.json(
-        { error: "Only the document creator can send it" },
-        { status: 403 }
-      );
-    }
-
+    // Only draft documents can be sent
     if (document.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft documents can be sent" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Only draft documents can be sent" }, { status: 400 });
     }
 
-    if (!document.original_document_url) {
-      return NextResponse.json(
-        { error: "Document must have a PDF uploaded before sending" },
-        { status: 400 }
-      );
+    // Check access
+    const role = (session.user as Record<string, unknown>).role as string;
+    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    if (role !== "super_admin" && document.organization_id !== orgId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const recruiterName = `${document.creator.first_name || ""} ${document.creator.last_name || ""}`.trim() || document.creator.email;
-    const orgName = document.organization.name;
+    // Validate signers
+    if (!document.signers || document.signers.length === 0) {
+      return NextResponse.json({ error: "At least one signer is required" }, { status: 400 });
+    }
 
-    // Update document status
+    // Validate sign fields
+    const signFields = JSON.parse(document.sign_fields || "[]");
+    if (signFields.length === 0) {
+      return NextResponse.json({ error: "At least one sign field is required" }, { status: 400 });
+    }
+
+    // Check that every signer has at least one field assigned
+    const signerIndices = new Set(signFields.map((f: any) => f.assigned_to_signer_index));
+    for (const signer of document.signers) {
+      if (!signerIndices.has(signer.signer_index)) {
+        return NextResponse.json({
+          error: `Signer "${signer.name}" has no fields assigned`,
+        }, { status: 400 });
+      }
+    }
+
+    // Update document status to "sent"
+    const auditTrail: AuditTrailEntry[] = JSON.parse(document.audit_trail || "[]");
+    auditTrail.push({
+      event: "document_sent",
+      user_name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email,
+      ip_address: request.headers.get("x-forwarded-for") || "unknown",
+      timestamp: new Date().toISOString(),
+    });
+
     await db.vaultSignDocument.update({
-      where: { id: documentId },
+      where: { id: docId },
       data: {
         status: "sent",
+        audit_trail: JSON.stringify(auditTrail),
         updated_at: new Date(),
       },
     });
 
-    // Update only recipient signers (party_number > 1) to 'sent' status.
-    // Party 1 (sender) is auto-signed and should retain their "signed" status.
-    await db.vaultSignSigner.updateMany({
-      where: { document_id: documentId, party_number: { gt: 1 } },
-      data: { status: "sent", updated_at: new Date() },
-    });
+    // Determine which signers should receive emails based on signing order
+    const signersToNotify = document.signing_order === "sequential"
+      ? [document.signers[0]] // Only first signer in sequential
+      : document.signers; // All signers in parallel
 
-    // Determine which signers to email based on signing order.
-    // Only consider recipients (party_number > 1) — the sender doesn't need an email.
-    const recipientSigners = document.signers.filter((s: any) => s.party_number > 1);
-    let signersToEmail: typeof recipientSigners;
+    // Send emails to relevant signers
+    const senderName = `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email;
+    const orgName = document.organization?.name || "MyZipVault";
 
-    if (document.signing_order === "sequential") {
-      // Only send to the recipient with the lowest signing_order_position
-      const minPosition = Math.min(...recipientSigners.map((s: any) => s.signing_order_position));
-      signersToEmail = recipientSigners.filter(
-        (s: any) => s.signing_order_position === minPosition
-      );
-    } else {
-      // Parallel: send to all recipients
-      signersToEmail = recipientSigners;
-    }
+    for (const signer of signersToNotify) {
+      if (!signer) continue;
 
-    // Send invitation emails
-    for (const signer of signersToEmail) {
-      await sendEmail({
-        to: signer.email,
-        templateKey: "vaultsign_invitation",
-        variables: {
-          sender_name: recruiterName,
-          agency_name: orgName,
-          document_name: document.document_name,
-          personal_message: document.personal_message || "",
-          expiry_date: new Date(document.expiry_date).toLocaleDateString(),
-          signing_url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign/${signer.sign_token}`,
-        },
+      const signingLink = generateSigningLink(signer.sign_token);
+
+      // Update signer status to "sent"
+      await db.vaultSignSigner.update({
+        where: { id: signer.id },
+        data: { status: "sent" },
+      });
+
+      // Send email
+      await sendDocumentSentEmail({
+        signerName: signer.name,
+        signerEmail: signer.email,
+        documentName: document.document_name,
+        senderName,
+        organizationName: orgName,
+        signingLink,
+        personalMessage: document.personal_message || undefined,
+        expiryDate: document.expiry_date.toISOString().split("T")[0],
       });
     }
 
-    // Add audit trail event
-    const auditTrail = JSON.parse(document.audit_trail || "[]");
-    auditTrail.push({
-      event: "document_sent",
-      user_id: userId,
-      name: recruiterName,
-      timestamp: new Date().toISOString(),
-    });
-    await db.vaultSignDocument.update({
-      where: { id: documentId },
-      data: { audit_trail: JSON.stringify(auditTrail) },
-    });
-
-    await db.auditLog.create({
-      data: {
-        user_id: userId,
-        role: "client_recruiter",
-        action: "send_vaultsign_document",
-        entity_type: "vaultsign_document",
-        entity_id: documentId,
-      },
-    });
-
-    return NextResponse.json({ success: true, signersEmailed: signersToEmail.length });
+    return NextResponse.json({ success: true, status: "sent" });
   } catch (error) {
-    console.error("[VAULTSIGN_DOCUMENT_SEND]", error);
-    return NextResponse.json(
-      { error: "Failed to send document" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Send document error:", error);
+    return NextResponse.json({ error: "Failed to send document" }, { status: 500 });
   }
 }

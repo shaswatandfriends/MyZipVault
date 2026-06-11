@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getSignedUrl } from "@/lib/storage";
+import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 
+// GET: Get specific document for candidate signer
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -14,153 +15,84 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "candidate") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const role = (session.user as Record<string, unknown>).role as string;
+    if (role !== "candidate") {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
     const { id } = await params;
-    const docId = parseInt(id, 10);
+    const docId = parseInt(id);
     if (isNaN(docId)) {
       return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
+    // Find the signer for this document that matches the candidate
+    const userId = parseInt(session.user.id);
+    const signer = await db.vaultSignSigner.findFirst({
+      where: {
+        document_id: docId,
+        OR: [
+          { user_id: userId },
+          { email: session.user.email },
+        ],
+      },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!signer) {
+      return NextResponse.json({ error: "You are not a signer on this document" }, { status: 403 });
     }
 
-    const doc = await db.vaultSignDocument.findUnique({
+    const document = await db.vaultSignDocument.findUnique({
       where: { id: docId },
       include: {
         signers: {
-          orderBy: { signing_order_position: "asc" },
-        },
-        creator: {
           select: {
             id: true,
-            first_name: true,
-            last_name: true,
+            name: true,
             email: true,
-            organization: {
-              select: { name: true },
-            },
+            role: true,
+            signer_index: true,
+            status: true,
+            signed_at: true,
           },
         },
-        template: {
-          select: { id: true, name: true },
+        organization: {
+          select: { id: true, name: true, company_logo_url: true },
         },
       },
     });
 
-    if (!doc) {
+    if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Block access to draft documents — candidates cannot view or act on documents
-    // that haven't been sent for signing yet
-    if (doc.status === "draft") {
-      return NextResponse.json({ error: "Document not available" }, { status: 404 });
-    }
-
-    // Verify this candidate is a signer on this document (exclude party_1/sender)
-    const mySigner = doc.signers.find(
-      (s) => s.party_number > 1 && (s.user_id === userId || s.email === user.email)
-    );
-
-    if (!mySigner) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    // Generate signed URL for document preview (if available)
-    let documentUrl: string | null = null;
-    if (doc.original_document_url) {
-      try {
-        documentUrl = await getSignedUrl(
-          "vaultsign-documents",
-          doc.original_document_url,
-          900
-        );
-      } catch {
-        // If storage URL generation fails, return null
-      }
-    }
-
-    let finalDocumentUrl: string | null = null;
-    if (doc.final_document_url && doc.status === "completed") {
-      try {
-        finalDocumentUrl = await getSignedUrl(
-          "vaultsign-documents",
-          doc.final_document_url,
-          900
-        );
-      } catch {
-        // If storage URL generation fails, return null
-      }
-    }
-
-    // Parse audit trail
-    let auditEvents: any[] = [];
-    try {
-      auditEvents = JSON.parse(doc.audit_trail || "[]");
-    } catch {
-      auditEvents = [];
+    // Get PDF URL if completed
+    let pdfUrl: string | null = null;
+    if (document.final_document_url) {
+      pdfUrl = await getDocumentSignedUrl(document.final_document_url);
     }
 
     return NextResponse.json({
       document: {
-        id: doc.id,
-        document_name: doc.document_name,
-        document_type: doc.document_type,
-        status: doc.status,
-        signing_order: doc.signing_order,
-        expiry_date: doc.expiry_date,
-        personal_message: doc.personal_message,
-        created_at: doc.created_at,
-        document_url: documentUrl,
-        final_document_url: finalDocumentUrl,
-        my_signer: {
-          id: mySigner.id,
-          name: mySigner.name,
-          email: mySigner.email,
-          role: mySigner.role,
-          status: mySigner.status,
-          signed_at: mySigner.signed_at,
-          declined_at: mySigner.declined_at,
-          decline_reason: mySigner.decline_reason,
-          sign_token: mySigner.sign_token,
-        },
-        signers: doc.signers.map((s) => ({
-          id: s.id,
-          name: s.name,
-          email: s.email,
-          role: s.role,
-          party_number: s.party_number,
-          status: s.status,
-          signed_at: s.signed_at,
-          declined_at: s.declined_at,
-        })),
-        creator: doc.creator
-          ? {
-              name: `${doc.creator.first_name || ""} ${doc.creator.last_name || ""}`.trim(),
-              email: doc.creator.email,
-              organization: (doc.creator as any).organization?.name || null,
-            }
-          : null,
-        template: doc.template,
-        audit_trail: auditEvents,
+        ...document,
+        sign_fields: JSON.parse(document.sign_fields || "[]"),
+        placeholder_values: JSON.parse(document.placeholder_values || "{}"),
+        audit_trail: JSON.parse(document.audit_trail || "[]"),
+        pdf_url: pdfUrl,
+      },
+      signer: {
+        id: signer.id,
+        name: signer.name,
+        email: signer.email,
+        role: signer.role,
+        signer_index: signer.signer_index,
+        status: signer.status,
+        sign_token: signer.sign_token,
+        signed_at: signer.signed_at,
       },
     });
   } catch (error) {
-    console.error("[CANDIDATE_VAULTSIGN_DETAIL_GET]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch document" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Candidate get document error:", error);
+    return NextResponse.json({ error: "Failed to get document" }, { status: 500 });
   }
 }

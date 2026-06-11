@@ -1,30 +1,30 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import { createHash } from "crypto";
+import SHA256 from "crypto-js/sha256";
 
 interface SignField {
   id: string;
-  type: string;
-  page: number;
-  x: number; // percentage of page width
-  y: number; // percentage of page height
-  width: number; // percentage
-  height: number; // percentage
-  assigned_to_signer_id: string;
+  type: string; // signature, date, full_name, initials, email, text, checkbox
+  page: number; // 1-based
+  x_percent: number;
+  y_percent: number;
+  width_percent: number;
+  height_percent: number;
+  assigned_to_signer_index: number;
   label: string;
   required: boolean;
   value: string | null;
 }
 
 interface SignatureData {
-  type: string;
-  font: string;
-  text: string;
-  image_base64: string;
+  type: string; // drawn, typed, uploaded
+  font?: string;
+  text?: string;
+  image_base64?: string;
 }
 
 interface SignerRecord {
   id: number;
-  party_number: number;
+  signer_index: number;
   name: string;
   email: string;
   status: string;
@@ -33,16 +33,18 @@ interface SignerRecord {
 
 /**
  * Generate the final signed PDF by baking all signatures and field values into the original PDF.
+ * Uses pdf-lib to embed signatures at the correct positions.
  */
 export async function generateSignedPdf(
   originalPdfBuffer: Buffer,
   signFields: SignField[],
   signers: SignerRecord[]
-): Promise<Buffer> {
+): Promise<{ pdfBuffer: Buffer; hash: string }> {
   const pdfDoc = await PDFDocument.load(originalPdfBuffer);
   const pages = pdfDoc.getPages();
   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const helveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
   for (const field of signFields) {
     const pageIndex = field.page - 1;
@@ -52,17 +54,15 @@ export async function generateSignedPdf(
     const { width: pageWidth, height: pageHeight } = page.getSize();
 
     // Convert percentage positions to absolute coordinates
-    const x = (field.x / 100) * pageWidth;
-    const y = pageHeight - ((field.y / 100) * pageHeight); // PDF y-axis is bottom-up
-    const fieldWidth = (field.width / 100) * pageWidth;
-    const fieldHeight = (field.height / 100) * pageHeight;
+    const x = (field.x_percent / 100) * pageWidth;
+    const y = pageHeight - ((field.y_percent / 100) * pageHeight); // PDF y-axis is bottom-up
+    const fieldWidth = (field.width_percent / 100) * pageWidth;
+    const fieldHeight = (field.height_percent / 100) * pageHeight;
 
     if (field.type === "signature" && field.value === "signed") {
       // Find the signer who signed this field
       const signer = signers.find(
-        (s) =>
-          `party_${s.party_number}` === field.assigned_to_signer_id ||
-          String(s.id) === field.assigned_to_signer_id
+        (s) => s.signer_index === field.assigned_to_signer_index
       );
 
       if (signer?.signature_data) {
@@ -80,15 +80,13 @@ export async function generateSignedPdf(
             sigData = parsedSigData.per_field[field.id];
           } else if (parsedSigData.primary) {
             sigData = parsedSigData.primary;
-          } else if (parsedSigData.image_base64) {
-            // Legacy format: signature_data was the SignatureData object directly
+          } else if (parsedSigData.image_base64 || parsedSigData.text) {
             sigData = parsedSigData;
           } else {
             continue;
           }
 
           if (sigData.image_base64) {
-            // Extract base64 data
             let base64Data = sigData.image_base64;
             if (base64Data.includes(",")) {
               base64Data = base64Data.split(",")[1];
@@ -100,31 +98,29 @@ export async function generateSignedPdf(
               // Try PNG first
               const pngImage = await pdfDoc.embedPng(imageBytes);
               const imgDims = pngImage.scale(1);
-              // Scale to fit within the field box
               const scale = Math.min(
                 fieldWidth / imgDims.width,
                 fieldHeight / imgDims.height
-              ) * 0.9;
+              ) * 0.85;
 
               page.drawImage(pngImage, {
-                x: x + 2,
-                y: y - fieldHeight + 2,
+                x: x + (fieldWidth - imgDims.width * scale) / 2,
+                y: y - fieldHeight + (fieldHeight - imgDims.height * scale) / 2,
                 width: imgDims.width * scale,
                 height: imgDims.height * scale,
               });
             } catch {
-              // Try JPEG
               try {
                 const jpgImage = await pdfDoc.embedJpg(imageBytes);
                 const imgDims = jpgImage.scale(1);
                 const scale = Math.min(
                   fieldWidth / imgDims.width,
                   fieldHeight / imgDims.height
-                ) * 0.9;
+                ) * 0.85;
 
                 page.drawImage(jpgImage, {
-                  x: x + 2,
-                  y: y - fieldHeight + 2,
+                  x: x + (fieldWidth - imgDims.width * scale) / 2,
+                  y: y - fieldHeight + (fieldHeight - imgDims.height * scale) / 2,
                   width: imgDims.width * scale,
                   height: imgDims.height * scale,
                 });
@@ -134,110 +130,219 @@ export async function generateSignedPdf(
                   x: x + 4,
                   y: y - fieldHeight / 2 - 4,
                   size: Math.min(fieldHeight * 0.5, 14),
-                  font: helveticaFont,
+                  font: helveticaOblique,
                   color: rgb(0, 0, 0),
                 });
               }
             }
           } else if (sigData.text) {
-            // Typed signature - render as italic text
+            // Typed signature — render in italic style
+            const fontSize = Math.min(fieldHeight * 0.55, 18);
             page.drawText(sigData.text, {
               x: x + 4,
-              y: y - fieldHeight / 2 - 4,
-              size: Math.min(fieldHeight * 0.6, 16),
-              font: helveticaFont,
+              y: y - fieldHeight / 2 - fontSize / 3,
+              size: fontSize,
+              font: helveticaOblique,
               color: rgb(0, 0, 0),
             });
           }
         } catch (err) {
-          console.error("[PDF_GEN] Error embedding signature:", err);
+          console.error("[VAULTSIGN] Error embedding signature:", err);
         }
       }
 
-      // Draw field border
+      // Draw subtle field border for signature fields
       page.drawRectangle({
         x,
         y: y - fieldHeight,
         width: fieldWidth,
         height: fieldHeight,
-        borderColor: rgb(0.09, 0.09, 0.09),
+        borderColor: rgb(0.75, 0.75, 0.75),
         borderWidth: 0.5,
         opacity: 0,
       });
 
     } else if (field.type === "date" && field.value) {
+      const fontSize = Math.min(fieldHeight * 0.5, 11);
       page.drawText(field.value, {
         x: x + 4,
-        y: y - fieldHeight / 2 - 3,
-        size: Math.min(fieldHeight * 0.5, 10),
+        y: y - fieldHeight / 2 - fontSize / 3,
+        size: fontSize,
         font: helveticaFont,
-        color: rgb(0, 0, 0),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
     } else if (field.type === "full_name" && field.value) {
+      const fontSize = Math.min(fieldHeight * 0.5, 12);
       page.drawText(field.value, {
         x: x + 4,
-        y: y - fieldHeight / 2 - 3,
-        size: Math.min(fieldHeight * 0.5, 10),
+        y: y - fieldHeight / 2 - fontSize / 3,
+        size: fontSize,
         font: helveticaFont,
-        color: rgb(0, 0, 0),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
     } else if (field.type === "initials" && field.value) {
+      const fontSize = Math.min(fieldHeight * 0.55, 13);
       page.drawText(field.value, {
         x: x + 4,
-        y: y - fieldHeight / 2 - 3,
-        size: Math.min(fieldHeight * 0.5, 10),
+        y: y - fieldHeight / 2 - fontSize / 3,
+        size: fontSize,
         font: helveticaBold,
-        color: rgb(0, 0, 0),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
     } else if (field.type === "email" && field.value) {
+      const fontSize = Math.min(fieldHeight * 0.45, 10);
       page.drawText(field.value, {
         x: x + 4,
-        y: y - fieldHeight / 2 - 3,
-        size: Math.min(fieldHeight * 0.45, 9),
+        y: y - fieldHeight / 2 - fontSize / 3,
+        size: fontSize,
         font: helveticaFont,
-        color: rgb(0, 0, 0),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
     } else if (field.type === "text" && field.value) {
+      const fontSize = Math.min(fieldHeight * 0.5, 11);
       page.drawText(field.value, {
         x: x + 4,
-        y: y - fieldHeight / 2 - 3,
-        size: Math.min(fieldHeight * 0.5, 10),
+        y: y - fieldHeight / 2 - fontSize / 3,
+        size: fontSize,
         font: helveticaFont,
-        color: rgb(0, 0, 0),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
     } else if (field.type === "checkbox" && field.value === "checked") {
-      // Draw a checkmark using lines (Helvetica doesn't support ✓ character)
+      // Draw a checkmark using lines
       const checkSize = Math.min(fieldWidth, fieldHeight) * 0.6;
       const checkX = x + (fieldWidth - checkSize) / 2;
       const checkY = y - fieldHeight + (fieldHeight - checkSize) / 2;
-      // Draw checkmark using simple lines
       page.drawLine({
         start: { x: checkX, y: checkY + checkSize * 0.3 },
         end: { x: checkX + checkSize * 0.35, y: checkY },
         thickness: 1.5,
-        color: rgb(0.09, 0.4, 0.2),
+        color: rgb(0.09, 0.58, 0.2),
       });
       page.drawLine({
         start: { x: checkX + checkSize * 0.35, y: checkY },
         end: { x: checkX + checkSize, y: checkY + checkSize * 0.7 },
         thickness: 1.5,
-        color: rgb(0.09, 0.4, 0.2),
+        color: rgb(0.09, 0.58, 0.2),
       });
     }
   }
 
   const pdfBytes = await pdfDoc.save();
-  return Buffer.from(pdfBytes);
+  const pdfBuffer = Buffer.from(pdfBytes);
+  const hash = computeDocumentHash(pdfBuffer);
+
+  return { pdfBuffer, hash };
 }
 
 /**
  * Compute SHA-256 hash of a PDF buffer for tamper detection.
  */
 export function computeDocumentHash(pdfBuffer: Buffer): string {
-  return createHash("sha256").update(pdfBuffer).digest("hex");
+  const hash = SHA256(pdfBuffer.toString("base64"));
+  return hash.toString();
+}
+
+/**
+ * Add an audit trail page to the PDF.
+ */
+export async function addAuditTrailPage(
+  pdfBuffer: Buffer,
+  auditEntries: Array<{
+    event: string;
+    user_name: string;
+    ip_address?: string;
+    device_info?: string;
+    timestamp: string;
+  }>,
+  documentName: string
+): Promise<Buffer> {
+  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const { width, height } = page.getSize();
+
+  // Title
+  page.drawText("Audit Trail — VaultSign", {
+    x: 40,
+    y: height - 50,
+    size: 18,
+    font: fontBold,
+    color: rgb(0.09, 0.4, 0.2),
+  });
+
+  page.drawText(`Document: ${documentName}`, {
+    x: 40,
+    y: height - 75,
+    size: 11,
+    font,
+    color: rgb(0.3, 0.3, 0.3),
+  });
+
+  page.drawText(`Generated: ${new Date().toISOString()}`, {
+    x: 40,
+    y: height - 92,
+    size: 10,
+    font,
+    color: rgb(0.5, 0.5, 0.5),
+  });
+
+  // Divider
+  page.drawLine({
+    start: { x: 40, y: height - 105 },
+    end: { x: width - 40, y: height - 105 },
+    thickness: 0.5,
+    color: rgb(0.8, 0.8, 0.8),
+  });
+
+  let y = height - 130;
+  for (const entry of auditEntries) {
+    if (y < 60) break;
+
+    const dateStr = new Date(entry.timestamp).toLocaleString();
+    page.drawText(`${entry.event}`, {
+      x: 40,
+      y,
+      size: 11,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+    y -= 16;
+    page.drawText(`By: ${entry.user_name}  |  IP: ${entry.ip_address || "N/A"}  |  ${dateStr}`, {
+      x: 40,
+      y,
+      size: 9,
+      font,
+      color: rgb(0.5, 0.5, 0.5),
+    });
+    if (entry.device_info) {
+      y -= 14;
+      page.drawText(`Device: ${entry.device_info.substring(0, 80)}`, {
+        x: 40,
+        y,
+        size: 8,
+        font,
+        color: rgb(0.6, 0.6, 0.6),
+      });
+    }
+    y -= 24;
+  }
+
+  // Footer
+  page.drawText("This document was signed using VaultSign by MyZipVault. Electronic signatures are legally binding.", {
+    x: 40,
+    y: 30,
+    size: 8,
+    font,
+    color: rgb(0.6, 0.6, 0.6),
+  });
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes);
 }

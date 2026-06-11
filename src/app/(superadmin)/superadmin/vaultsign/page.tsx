@@ -1,467 +1,538 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
-  FileSignature, Plus, Trash2, Pencil, Eye, Upload, X,
-  Loader2, LayoutTemplate, ToggleLeft, Building2, Users as UsersIcon,
-  Search, Filter, CheckCircle2, XCircle, Clock, AlertCircle, FileText
+  LayoutTemplate, Activity, Building2, Plus, Loader2, Edit3,
+  Trash2, Search, FileText, Eye, X, Save, FileSignature
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 
-// ─── Types ──────────────────────────────────────────────────────────
-interface Template {
-  id: number;
-  name: string;
-  description: string | null;
-  document_url: string;
-  document_type: string;
-  placeholder_fields: string;
-  predefined_sign_fields: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface ActivityDocument {
-  id: number;
-  document_name: string;
-  document_type: string;
-  status: string;
-  expiry_date: string;
-  created_at: string;
-  organization: { id: number; name: string };
-  creator: { id: number; first_name: string | null; last_name: string | null; email: string };
-  signers: { id: number; name: string; status: string }[];
-}
-
-const typeLabels: Record<string, string> = {
-  right_to_represent: "Right to Represent",
-  pre_offer_acceptance: "Pre-Offer Acceptance",
-  offer_letter: "Offer Letter",
-  nda: "NDA",
-  background_check_authorization: "Background Check Auth",
-  employment_contract: "Employment Contract",
-  onboarding_form: "Onboarding Form",
-  custom: "Custom",
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
+  partially_signed: { label: "In Progress", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
+  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
+  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
 };
 
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  draft: { label: "Draft", bg: "bg-[#F3F4F6]", text: "text-[#6B7280]" },
-  sent: { label: "Sent", bg: "bg-blue-50", text: "text-blue-700" },
-  partially_signed: { label: "Partially Signed", bg: "bg-[#FEF9C3]", text: "text-[#CA8A04]" },
-  completed: { label: "Completed", bg: "bg-[#DCFCE7]", text: "text-[#166534]" },
-  declined: { label: "Declined", bg: "bg-[#FEE2E2]", text: "text-[#DC2626]" },
-  expired: { label: "Expired", bg: "bg-orange-50", text: "text-orange-700" },
-  voided: { label: "Voided", bg: "bg-[#F3F4F6]", text: "text-[#9CA3AF]" },
-};
+const DOCUMENT_TYPES = [
+  { value: "right_to_represent", label: "Right to Represent" },
+  { value: "pre_offer_acceptance", label: "Pre-Offer Acceptance" },
+  { value: "offer_letter", label: "Offer Letter" },
+  { value: "nda", label: "NDA" },
+  { value: "background_check_authorization", label: "Background Check Authorization" },
+  { value: "employment_contract", label: "Employment Contract" },
+  { value: "onboarding_form", label: "Onboarding Form" },
+  { value: "custom", label: "Custom" },
+];
 
-// ─── Component ──────────────────────────────────────────────────────
-export default function SuperAdminVaultSign() {
-  const [tab, setTab] = useState<"templates" | "activity">("templates");
+export default function SuperAdminVaultSignPage() {
+  const [activeTab, setActiveTab] = useState("templates");
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [orgSettings, setOrgSettings] = useState<any>(null);
+  const [templateForm, setTemplateForm] = useState({
+    name: "",
+    description: "",
+    document_type: "custom",
+    source_type: "word",
+    is_active: true,
+    tiptap_content: "",
+    predefined_sign_fields: "[]",
+    placeholder_variables: "[]",
+    header_config: "{}",
+    footer_config: "{}",
+  });
+  const [saving, setSaving] = useState(false);
 
-  // Templates state
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [templatesLoading, setTemplatesLoading] = useState(true);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [templatesRes, activityRes, orgsRes] = await Promise.all([
+          fetch("/api/superadmin/vaultsign/templates"),
+          fetch("/api/superadmin/vaultsign/activity?limit=50"),
+          fetch("/api/organizations"),
+        ]);
 
-  // Template form
-  const [tplName, setTplName] = useState("");
-  const [tplDescription, setTplDescription] = useState("");
-  const [tplDocumentType, setTplDocumentType] = useState("custom");
-  const [tplFile, setTplFile] = useState<File | null>(null);
-  const [tplPlaceholders, setTplPlaceholders] = useState<{ key: string; label: string }[]>([]);
-  const [tplSaving, setTplSaving] = useState(false);
-
-  // Activity state
-  const [documents, setDocuments] = useState<ActivityDocument[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-  const [activityStats, setActivityStats] = useState({ total_sent: 0, completed_this_month: 0, pending_signatures: 0, declined_this_month: 0 });
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  // Fetch templates
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const res = await fetch("/api/superadmin/vaultsign/templates");
-      if (res.ok) {
-        const data = await res.json();
-        setTemplates(data.templates || data || []);
+        if (templatesRes.ok) {
+          const data = await templatesRes.json();
+          setTemplates(data.templates || []);
+        }
+        if (activityRes.ok) {
+          const data = await activityRes.json();
+          setDocuments(data.documents || []);
+        }
+        if (orgsRes.ok) {
+          const data = await orgsRes.json();
+          setOrganizations(data.organizations || data || []);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch {} finally {
-      setTemplatesLoading(false);
-    }
+    };
+    fetchData();
   }, []);
 
-  // Fetch activity
-  const fetchActivity = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      const res = await fetch(`/api/superadmin/vaultsign/activity?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setDocuments(data.documents || []);
-        setActivityStats(data.stats || activityStats);
-      }
-    } catch {} finally {
-      setActivityLoading(false);
-    }
-  }, [statusFilter]);
-
+  // Fetch org settings when selected
   useEffect(() => {
-    if (tab === "templates") fetchTemplates();
-    else fetchActivity();
-  }, [tab, fetchTemplates, fetchActivity]);
+    if (!selectedOrgId) return;
+    const fetchOrgSettings = async () => {
+      try {
+        const res = await fetch(`/api/superadmin/vaultsign/organization/${selectedOrgId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setOrgSettings(data);
+        }
+      } catch (err) {
+        console.error("Org settings fetch error:", err);
+      }
+    };
+    fetchOrgSettings();
+  }, [selectedOrgId]);
 
-  // ─── Template Handlers ────────────────────────────────────────────
-  const openCreateTemplate = () => {
+  // Template CRUD
+  const openNewTemplate = () => {
     setEditingTemplate(null);
-    setTplName("");
-    setTplDescription("");
-    setTplDocumentType("custom");
-    setTplFile(null);
-    setTplPlaceholders([]);
-    setShowTemplateModal(true);
+    setTemplateForm({
+      name: "",
+      description: "",
+      document_type: "custom",
+      source_type: "word",
+      is_active: true,
+      tiptap_content: "",
+      predefined_sign_fields: "[]",
+      placeholder_variables: "[]",
+      header_config: "{}",
+      footer_config: "{}",
+    });
+    setShowTemplateDialog(true);
   };
 
-  const openEditTemplate = (t: Template) => {
-    setEditingTemplate(t);
-    setTplName(t.name);
-    setTplDescription(t.description || "");
-    setTplDocumentType(t.document_type);
-    setTplFile(null);
-    try { setTplPlaceholders(JSON.parse(t.placeholder_fields || "[]")); } catch { setTplPlaceholders([]); }
-    setShowTemplateModal(true);
+  const openEditTemplate = (template: any) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      name: template.name,
+      description: template.description || "",
+      document_type: template.document_type,
+      source_type: template.source_type,
+      is_active: template.is_active,
+      tiptap_content: template.tiptap_content || "",
+      predefined_sign_fields: typeof template.predefined_sign_fields === "string" ? template.predefined_sign_fields : JSON.stringify(template.predefined_sign_fields || []),
+      placeholder_variables: typeof template.placeholder_variables === "string" ? template.placeholder_variables : JSON.stringify(template.placeholder_variables || []),
+      header_config: typeof template.header_config === "string" ? template.header_config : JSON.stringify(template.header_config || {}),
+      footer_config: typeof template.footer_config === "string" ? template.footer_config : JSON.stringify(template.footer_config || {}),
+    });
+    setShowTemplateDialog(true);
   };
 
-  const handleSaveTemplate = async () => {
-    if (!tplName.trim()) return toast.error("Template name is required");
-    if (!editingTemplate && !tplFile) return toast.error("PDF file is required");
-    setTplSaving(true);
+  const saveTemplate = async () => {
     try {
-      const formData = new FormData();
-      formData.append("name", tplName);
-      formData.append("description", tplDescription);
-      formData.append("document_type", tplDocumentType);
-      formData.append("placeholder_fields", JSON.stringify(tplPlaceholders));
-      formData.append("predefined_sign_fields", JSON.stringify([]));
-      if (tplFile) formData.append("file", tplFile);
-
+      setSaving(true);
       const url = editingTemplate
         ? `/api/superadmin/vaultsign/templates/${editingTemplate.id}`
         : "/api/superadmin/vaultsign/templates";
-      const method = editingTemplate ? "PUT" : "POST";
+      const method = editingTemplate ? "PATCH" : "POST";
 
-      const res = await fetch(url, { method, body: formData });
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templateForm),
+      });
+
       if (res.ok) {
         toast.success(editingTemplate ? "Template updated" : "Template created");
-        setShowTemplateModal(false);
-        fetchTemplates();
+        setShowTemplateDialog(false);
+        // Refresh templates
+        const refreshRes = await fetch("/api/superadmin/vaultsign/templates");
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          setTemplates(data.templates || []);
+        }
       } else {
-        const d = await res.json();
-        toast.error(d.error || "Failed to save template");
+        const data = await res.json();
+        toast.error(data.error || "Failed to save template");
       }
     } catch {
       toast.error("Failed to save template");
     } finally {
-      setTplSaving(false);
+      setSaving(false);
     }
   };
 
-  const handleDeleteTemplate = async (id: number) => {
-    if (!confirm("Delete this template?")) return;
+  const deleteTemplate = async (id: number) => {
+    if (!confirm("Are you sure you want to deactivate this template?")) return;
     try {
       const res = await fetch(`/api/superadmin/vaultsign/templates/${id}`, { method: "DELETE" });
-      if (res.ok) { toast.success("Template deleted"); fetchTemplates(); }
-      else { toast.error("Failed to delete"); }
-    } catch { toast.error("Failed to delete"); }
+      if (res.ok) {
+        toast.success("Template deactivated");
+        setTemplates(templates.map((t) => t.id === id ? { ...t, is_active: false } : t));
+      }
+    } catch {
+      toast.error("Failed to delete template");
+    }
   };
 
-  const handleToggleActive = async (t: Template) => {
+  // Save org settings
+  const saveOrgSettings = async () => {
+    if (!selectedOrgId || !orgSettings) return;
     try {
-      const res = await fetch(`/api/superadmin/vaultsign/templates/${t.id}`, {
-        method: "PUT",
+      setSaving(true);
+      const res = await fetch(`/api/superadmin/vaultsign/organization/${selectedOrgId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: !t.is_active }),
+        body: JSON.stringify({
+          company_logo_url: orgSettings.company_logo_url,
+          company_address: orgSettings.company_address,
+          company_phone: orgSettings.company_phone,
+          company_email: orgSettings.company_email,
+          company_website: orgSettings.company_website,
+        }),
       });
-      if (res.ok) { fetchTemplates(); }
-    } catch {}
+      if (res.ok) {
+        toast.success("Organization settings saved");
+      }
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>VaultSign</h1>
-          <p className="text-sm text-[#6B7280]">Manage document signing templates and monitor activity.</p>
+    <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            VaultSign Management
+          </h1>
+          <p className="text-sm text-[#6B7280] mt-0.5">Manage templates, monitor activity, and configure organizations</p>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-[#F3F4F6] rounded-xl p-1 w-fit">
-        <button
-          onClick={() => setTab("templates")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            tab === "templates" ? "bg-white text-[#111827] shadow-sm" : "text-[#6B7280] hover:text-[#111827]"
-          }`}
-        >
-          Templates
-        </button>
-        <button
-          onClick={() => setTab("activity")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            tab === "activity" ? "bg-white text-[#111827] shadow-sm" : "text-[#6B7280] hover:text-[#111827]"
-          }`}
-        >
-          Activity
-        </button>
-      </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-white border border-[#E5E7EB] rounded-xl p-1">
+            <TabsTrigger value="templates" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white">
+              <LayoutTemplate className="h-4 w-4 mr-1" /> Templates
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white">
+              <Activity className="h-4 w-4 mr-1" /> Activity
+            </TabsTrigger>
+            <TabsTrigger value="org-settings" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white">
+              <Building2 className="h-4 w-4 mr-1" /> Org Settings
+            </TabsTrigger>
+          </TabsList>
 
-      {/* ── Templates Tab ──────────────────────────────────────────── */}
-      {tab === "templates" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={openCreateTemplate} className="bg-[#166534] hover:bg-[#14532D]">
-              <Plus className="size-4 mr-2" /> Add Template
-            </Button>
-          </div>
-
-          {templatesLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="size-6 animate-spin text-[#166534]" />
+          {/* Templates Tab */}
+          <TabsContent value="templates" className="mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[#111827]">Templates</h2>
+              <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={openNewTemplate}>
+                <Plus className="h-4 w-4 mr-1" /> New Template
+              </Button>
             </div>
-          ) : templates.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl border border-[#E5E7EB]">
-              <LayoutTemplate className="size-12 mx-auto text-[#9CA3AF] mb-3" />
-              <h3 className="text-lg font-medium text-[#111827]">No templates yet</h3>
-              <p className="text-sm text-[#6B7280] mt-1">Create a template for recruiters to use.</p>
-            </div>
-          ) : (
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map((t) => {
-                let fieldCount = 0;
-                try { fieldCount = JSON.parse(t.predefined_sign_fields || "[]").length; } catch {}
-                return (
-                  <div key={t.id} className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              {templates.map((template: any) => (
+                <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
+                  <CardContent className="p-4">
                     <div className="flex items-start justify-between">
-                      <FileSignature className="size-8 text-[#166534]" />
-                      <div className="flex items-center gap-2">
-                        <Switch checked={t.is_active} onCheckedChange={() => handleToggleActive(t)} />
+                      <div>
+                        <h3 className="font-medium text-[#111827]">{template.name}</h3>
+                        <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-2">{template.description || "No description"}</p>
                       </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {template.source_type === "word" ? "Word" : "PDF"}
+                      </Badge>
                     </div>
-                    <h3 className="font-medium text-[#111827] mt-3">{t.name}</h3>
-                    <p className="text-sm text-[#6B7280] mt-1 line-clamp-2">{t.description || "No description"}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <Badge className="bg-[#F3F4F6] text-[#6B7280] border-0 text-xs">{typeLabels[t.document_type] || t.document_type}</Badge>
-                      {fieldCount > 0 && (
-                        <Badge className="bg-[#DCFCE7] text-[#166534] border-0 text-xs">{fieldCount} fields preset</Badge>
-                      )}
+                      <Badge className={`${template.is_active ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#F3F4F6] text-[#6B7280]"} border-0`}>
+                        {template.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">{template.document_type}</Badge>
                     </div>
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#E5E7EB]">
-                      <Button variant="ghost" size="sm" onClick={() => openEditTemplate(t)} className="text-[#6B7280]">
-                        <Pencil className="size-3 mr-1" /> Edit
+                    {template._count?.documents !== undefined && (
+                      <p className="text-xs text-[#9CA3AF] mt-2">{template._count.documents} documents created</p>
+                    )}
+                    <div className="flex items-center gap-1 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-[#E5E7EB] flex-1"
+                        onClick={() => openEditTemplate(template)}
+                      >
+                        <Edit3 className="h-3 w-3 mr-1" /> Edit
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(t.id)} className="text-[#DC2626]">
-                        <Trash2 className="size-3 mr-1" /> Delete
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Template Modal */}
-          {showTemplateModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
-                    {editingTemplate ? "Edit Template" : "Add Template"}
-                  </h2>
-                  <button onClick={() => setShowTemplateModal(false)} className="text-[#9CA3AF] hover:text-[#111827]">
-                    <X className="size-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label>Template Name</Label>
-                    <Input value={tplName} onChange={(e) => setTplName(e.target.value)} className="mt-1 border-[#E5E7EB]" />
-                  </div>
-                  <div>
-                    <Label>Document Type</Label>
-                    <Select value={tplDocumentType} onValueChange={setTplDocumentType}>
-                      <SelectTrigger className="mt-1 border-[#E5E7EB]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea value={tplDescription} onChange={(e) => setTplDescription(e.target.value)} className="mt-1 border-[#E5E7EB]" rows={3} />
-                  </div>
-                  <div>
-                    <Label>Upload PDF</Label>
-                    <label className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed mt-1 cursor-pointer transition-all ${
-                      tplFile ? "border-[#166534] bg-[#DCFCE7]/20" : "border-[#E5E7EB] hover:border-[#166534]/50"
-                    }`}>
-                      <Upload className="size-6 text-[#9CA3AF] mb-1" />
-                      <p className="text-sm text-[#111827]">{tplFile ? tplFile.name : "Click to upload PDF"}</p>
-                      <input type="file" accept=".pdf" className="hidden" onChange={(e) => setTplFile(e.target.files?.[0] || null)} />
-                    </label>
-                    {editingTemplate && !tplFile && <p className="text-xs text-[#9CA3AF] mt-1">Leave empty to keep existing PDF</p>}
-                  </div>
-
-                  {/* Placeholder Variables */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Template Variables</Label>
-                      <Button variant="ghost" size="sm" onClick={() => setTplPlaceholders((prev) => [...prev, { key: "", label: "" }])} className="text-[#166534]">
-                        <Plus className="size-3 mr-1" /> Add Variable
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-[#9CA3AF] hover:text-[#DC2626]"
+                        onClick={() => deleteTemplate(template.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
-                    {tplPlaceholders.map((p, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2">
-                        <Input
-                          value={p.key}
-                          onChange={(e) => {
-                            const updated = [...tplPlaceholders];
-                            updated[i] = { ...updated[i], key: e.target.value.replace(/\s/g, "_") };
-                            setTplPlaceholders(updated);
-                          }}
-                          placeholder="key_name"
-                          className="border-[#E5E7EB] flex-1"
-                        />
-                        <Input
-                          value={p.label}
-                          onChange={(e) => {
-                            const updated = [...tplPlaceholders];
-                            updated[i] = { ...updated[i], label: e.target.value };
-                            setTplPlaceholders(updated);
-                          }}
-                          placeholder="Display Label"
-                          className="border-[#E5E7EB] flex-1"
-                        />
-                        <button onClick={() => setTplPlaceholders((prev) => prev.filter((_, idx) => idx !== i))} className="text-[#9CA3AF] hover:text-[#DC2626]">
-                          <X className="size-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-4 border-t border-[#E5E7EB]">
-                  <Button variant="ghost" onClick={() => setShowTemplateModal(false)} className="flex-1">Cancel</Button>
-                  <Button onClick={handleSaveTemplate} disabled={tplSaving} className="flex-1 bg-[#166534] hover:bg-[#14532D]">
-                    {tplSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                    Save Template
-                  </Button>
-                </div>
-              </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </TabsContent>
 
-      {/* ── Activity Tab ────────────────────────────────────────────── */}
-      {tab === "activity" && (
-        <div className="space-y-4">
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: "Total Documents", value: activityStats.total_sent, icon: FileText, color: "text-[#111827]" },
-              { label: "Completed This Month", value: activityStats.completed_this_month, icon: CheckCircle2, color: "text-[#166534]" },
-              { label: "Pending Signatures", value: activityStats.pending_signatures, icon: Clock, color: "text-blue-600" },
-              { label: "Declined This Month", value: activityStats.declined_this_month, icon: XCircle, color: "text-[#DC2626]" },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-[#6B7280]">{s.label}</p>
-                  <s.icon className={`size-5 ${s.color}`} />
-                </div>
-                <p className="text-2xl font-semibold text-[#111827] mt-1">{s.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-3 items-center">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px] border-[#E5E7EB] bg-white"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(statusConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Table */}
-          {activityLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="size-6 animate-spin text-[#166534]" />
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl border border-[#E5E7EB]">
-              <FileSignature className="size-12 mx-auto text-[#9CA3AF] mb-3" />
-              <h3 className="text-lg font-medium text-[#111827]">No documents yet</h3>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#E5E7EB]">
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Document</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Organization</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Recruiter</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Status</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {documents.map((doc) => {
-                      const sc = statusConfig[doc.status] || statusConfig.draft;
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="mt-6">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <CardHeader>
+                <CardTitle className="text-lg">All Documents</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Document</TableHead>
+                      <TableHead>Organization</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Signers</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {documents.map((doc: any) => {
+                      const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
                       return (
-                        <tr key={doc.id} className="border-b border-[#E5E7EB] hover:bg-[#F8F7F4]">
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-[#111827]">{doc.document_name}</div>
-                            <Badge className="mt-1 text-[10px] bg-[#F3F4F6] text-[#6B7280] border-0">{typeLabels[doc.document_type]}</Badge>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-[#6B7280]">
-                            <div className="flex items-center gap-1"><Building2 className="size-3" />{doc.organization.name}</div>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-[#6B7280]">
-                            {doc.creator.first_name} {doc.creator.last_name}
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge className={`${sc.bg} ${sc.text} border-0`}>{sc.label}</Badge>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-[#6B7280]">{new Date(doc.created_at).toLocaleDateString()}</td>
-                        </tr>
+                        <TableRow key={doc.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
+                              <p className="text-xs text-[#6B7280]">{doc.document_type}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-[#6B7280]">
+                            {doc.organization?.name || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>
+                              {statusConf.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {doc.signers?.slice(0, 3).map((s: any, i: number) => (
+                                <div
+                                  key={i}
+                                  className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[7px] font-bold"
+                                  style={{
+                                    backgroundColor: s.status === "signed" ? "#DCFCE7" : "#F3F4F6",
+                                    color: s.status === "signed" ? "#166534" : "#6B7280",
+                                  }}
+                                  title={s.name}
+                                >
+                                  {s.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                              ))}
+                              {doc.signers?.length > 3 && <span className="text-xs text-[#6B7280]">+{doc.signers.length - 3}</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-[#6B7280]">
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Org Settings Tab */}
+          <TabsContent value="org-settings" className="mt-6">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <CardHeader>
+                <CardTitle className="text-lg">Organization Document Settings</CardTitle>
+                <p className="text-sm text-[#6B7280]">Configure company details that appear in document headers and footers</p>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="mb-4">
+                  <Label className="text-sm font-medium">Select Organization</Label>
+                  <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+                    <SelectTrigger className="mt-1 max-w-sm">
+                      <SelectValue placeholder="Choose an organization..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(organizations) && organizations.map((org: any) => (
+                        <SelectItem key={org.id} value={org.id.toString()}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {orgSettings && (
+                  <div className="space-y-3 max-w-lg mt-4">
+                    <div>
+                      <Label className="text-sm">Company Logo URL</Label>
+                      <Input
+                        value={orgSettings.company_logo_url || ""}
+                        onChange={(e) => setOrgSettings({ ...orgSettings, company_logo_url: e.target.value })}
+                        placeholder="https://example.com/logo.png"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Company Address</Label>
+                      <Textarea
+                        value={orgSettings.company_address || ""}
+                        onChange={(e) => setOrgSettings({ ...orgSettings, company_address: e.target.value })}
+                        placeholder="123 Main St, City, State"
+                        rows={2}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm">Phone</Label>
+                        <Input
+                          value={orgSettings.company_phone || ""}
+                          onChange={(e) => setOrgSettings({ ...orgSettings, company_phone: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Email</Label>
+                        <Input
+                          value={orgSettings.company_email || ""}
+                          onChange={(e) => setOrgSettings({ ...orgSettings, company_email: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Website</Label>
+                      <Input
+                        value={orgSettings.company_website || ""}
+                        onChange={(e) => setOrgSettings({ ...orgSettings, company_website: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button
+                      className="bg-[#166534] hover:bg-[#14532D] text-white mt-2"
+                      onClick={saveOrgSettings}
+                      disabled={saving}
+                    >
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                      Save Settings
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Template Create/Edit Dialog */}
+        <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Name</Label>
+                <Input
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                  placeholder="Template name"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Description</Label>
+                <Textarea
+                  value={templateForm.description}
+                  onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                  placeholder="Optional description"
+                  rows={2}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Document Type</Label>
+                  <Select value={templateForm.document_type} onValueChange={(val) => setTemplateForm({ ...templateForm, document_type: val })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Source Type</Label>
+                  <Select value={templateForm.source_type} onValueChange={(val) => setTemplateForm({ ...templateForm, source_type: val })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="word">Word (.docx)</SelectItem>
+                      <SelectItem value="pdf">PDF (.pdf)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={templateForm.is_active}
+                  onChange={(e) => setTemplateForm({ ...templateForm, is_active: e.target.checked })}
+                  className="rounded"
+                />
+                <Label className="text-sm">Active</Label>
               </div>
             </div>
-          )}
-        </div>
-      )}
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
+              <Button className="bg-[#166534] hover:bg-[#14532D]" onClick={saveTemplate} disabled={saving || !templateForm.name}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                {editingTemplate ? "Update" : "Create"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

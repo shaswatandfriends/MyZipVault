@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { randomUUID } from "crypto";
+import crypto from "crypto";
+import type { AuditTrailEntry } from "@/lib/vaultsign/types";
 
+// POST: Create a new document from a declined one
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -14,104 +16,101 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "client_recruiter") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
-    const documentId = parseInt(id, 10);
-    if (isNaN(documentId)) {
+    const docId = parseInt(id);
+    if (isNaN(docId)) {
       return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
     }
 
     const originalDoc = await db.vaultSignDocument.findUnique({
-      where: { id: documentId },
-      include: {
-        signers: true,
-        creator: {
-          select: { id: true, first_name: true, last_name: true, email: true },
-        },
-      },
+      where: { id: docId },
+      include: { signers: true },
     });
 
     if (!originalDoc) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    if (originalDoc.created_by_user_id !== userId) {
-      return NextResponse.json(
-        { error: "Only the document creator can revise it" },
-        { status: 403 }
-      );
-    }
-
+    // Only declined documents can be revised
     if (originalDoc.status !== "declined") {
-      return NextResponse.json(
-        { error: "Only declined documents can be revised" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Only declined documents can be revised" }, { status: 400 });
     }
 
-    // Create a new document copying from the original
-    const revisedDoc = await db.vaultSignDocument.create({
+    // Check access
+    const role = (session.user as Record<string, unknown>).role as string;
+    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    if (role !== "super_admin" && originalDoc.organization_id !== orgId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Create a new document based on the original
+    const newDoc = await db.vaultSignDocument.create({
       data: {
         organization_id: originalDoc.organization_id,
-        created_by_user_id: userId,
+        created_by_user_id: parseInt(session.user.id),
         template_id: originalDoc.template_id,
         document_name: `${originalDoc.document_name} (Revised)`,
         document_type: originalDoc.document_type,
-        original_document_url: originalDoc.original_document_url,
+        source_type: originalDoc.source_type,
+        original_file_url: originalDoc.original_file_url,
+        tiptap_content: originalDoc.tiptap_content,
+        edited_pdf_url: originalDoc.edited_pdf_url,
         signing_order: originalDoc.signing_order,
-        expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         personal_message: originalDoc.personal_message,
+        status: "draft",
         placeholder_values: originalDoc.placeholder_values,
         sign_fields: originalDoc.sign_fields,
         audit_trail: JSON.stringify([
           {
-            event: "document_revised",
-            user_id: userId,
-            name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim(),
+            event: "document_created",
+            user_name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email,
+            ip_address: request.headers.get("x-forwarded-for") || "unknown",
             timestamp: new Date().toISOString(),
-            revised_from: documentId,
           },
-        ]),
-        status: "draft",
-        revised_from_document_id: documentId,
-        signers: {
-          create: originalDoc.signers.map((s) => ({
-            name: s.name,
-            email: s.email,
-            role: s.role,
-            party_number: s.party_number,
-            signing_order_position: s.signing_order_position,
-            status: "pending",
-            sign_token: randomUUID(),
-          })),
-        },
+          {
+            event: "document_revised_from",
+            user_name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email,
+            ip_address: request.headers.get("x-forwarded-for") || "unknown",
+            timestamp: new Date().toISOString(),
+          },
+        ] as AuditTrailEntry[]),
+        revised_from_document_id: originalDoc.id,
       },
+    });
+
+    // Copy signers with new tokens
+    const signerData = originalDoc.signers.map((signer, index) => ({
+      document_id: newDoc.id,
+      user_id: signer.user_id,
+      name: signer.name,
+      email: signer.email,
+      role: signer.role,
+      signer_index: signer.signer_index,
+      signing_order_position: signer.signing_order_position,
+      status: "pending",
+      sign_token: crypto.randomBytes(32).toString("hex"),
+    }));
+
+    await db.vaultSignSigner.createMany({ data: signerData });
+
+    // Return the new document with signers
+    const fullDoc = await db.vaultSignDocument.findUnique({
+      where: { id: newDoc.id },
       include: {
         signers: true,
+        template: { select: { id: true, name: true } },
       },
     });
 
-    await db.auditLog.create({
-      data: {
-        user_id: userId,
-        role: "client_recruiter",
-        action: "revise_vaultsign_document",
-        entity_type: "vaultsign_document",
-        entity_id: revisedDoc.id,
-      },
-    });
-
-    return NextResponse.json({ document: revisedDoc }, { status: 201 });
+    return NextResponse.json({
+      ...fullDoc,
+      sign_fields: JSON.parse(fullDoc?.sign_fields || "[]"),
+      placeholder_values: JSON.parse(fullDoc?.placeholder_values || "{}"),
+      audit_trail: JSON.parse(fullDoc?.audit_trail || "[]"),
+    }, { status: 201 });
   } catch (error) {
-    console.error("[VAULTSIGN_DOCUMENT_REVISE]", error);
-    return NextResponse.json(
-      { error: "Failed to revise document" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Revise document error:", error);
+    return NextResponse.json({ error: "Failed to revise document" }, { status: 500 });
   }
 }

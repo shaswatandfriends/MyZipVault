@@ -1,25 +1,36 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSignedUrl } from "@/lib/storage";
+import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
+import type { AuditTrailEntry } from "@/lib/vaultsign/types";
 
+// GET: Get document info for signing page (by signer token — no auth required)
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
 
-    // Find signer by sign_token
+    // Find the signer by token
     const signer = await db.vaultSignSigner.findUnique({
       where: { sign_token: token },
       include: {
         document: {
           include: {
             signers: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                signer_index: true,
+                status: true,
+                signed_at: true,
+              },
               orderBy: { signing_order_position: "asc" },
             },
-            creator: {
-              select: { id: true, first_name: true, last_name: true, email: true },
+            organization: {
+              select: { name: true, company_logo_url: true },
             },
           },
         },
@@ -27,130 +38,119 @@ export async function GET(
     });
 
     if (!signer) {
-      return NextResponse.json(
-        { error: "Invalid signing token" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invalid signing link" }, { status: 404 });
     }
 
-    const doc = signer.document;
+    const document = signer.document;
 
-    // Check if token has already been used (signer has already signed or declined)
-    if (signer.token_used && (signer.status === "signed" || signer.status === "declined")) {
-      return NextResponse.json(
-        { error: signer.status === "signed" ? "This signing link has already been used" : "This signing link is no longer valid" },
-        { status: 410 }
-      );
+    // Check if document is still actionable
+    if (document.status === "voided") {
+      return NextResponse.json({ error: "This document has been voided" }, { status: 410 });
+    }
+    if (document.status === "expired") {
+      return NextResponse.json({ error: "This document has expired" }, { status: 410 });
+    }
+    if (document.status === "completed") {
+      return NextResponse.json({ error: "This document has already been completed" }, { status: 410 });
     }
 
-    // Check document status — only sent/partially_signed documents can be signed
-    // Draft documents have not been sent yet, so signers cannot act on them
-    const blockedStatuses = ["draft", "expired", "voided", "declined", "completed"];
-    if (blockedStatuses.includes(doc.status)) {
-      const messages: Record<string, string> = {
-        draft: "This document has not been sent for signing yet",
-        expired: "This document has expired",
-        voided: "This document has been voided",
-        declined: "This document has been declined",
-        completed: "This document has already been completed",
-      };
-      return NextResponse.json(
-        { error: messages[doc.status] || "This document is no longer available for signing" },
-        { status: 410 }
-      );
+    // Check if this signer has already signed
+    if (signer.status === "signed") {
+      return NextResponse.json({ error: "You have already signed this document", already_signed: true }, { status: 400 });
     }
 
-    // If sequential signing: check if it's this signer's turn
-    if (doc.signing_order === "sequential") {
-      const signerPosition = signer.signing_order_position;
-      const previousSigners = doc.signers.filter(
-        (s) => s.signing_order_position < signerPosition
+    // Check if this signer's turn (for sequential signing)
+    if (document.signing_order === "sequential") {
+      const signersOrdered = document.signers.sort((a: any, b: any) =>
+        (a.signing_order_position || 1) - (b.signing_order_position || 1)
       );
-      const unsignedPrevious = previousSigners.filter(
-        (s) => s.status !== "signed"
-      );
+      const currentSignerIndex = signersOrdered.findIndex((s: any) => s.id === signer.id);
+      const previousSigners = signersOrdered.slice(0, currentSignerIndex);
+      const allPreviousSigned = previousSigners.every((s: any) => s.status === "signed");
 
-      if (unsignedPrevious.length > 0) {
-        const waitingFor = unsignedPrevious[0];
+      if (!allPreviousSigned) {
         return NextResponse.json({
-          waitingFor: waitingFor.name,
-          message: `This document requires ${waitingFor.name} to sign before you.`,
-        });
+          error: "It is not your turn to sign yet. Previous signers must sign first.",
+          waiting_for_others: true,
+        }, { status: 400 });
       }
     }
 
-    // Generate signed URL for the document PDF (15 min)
-    let documentUrl: string | null = null;
-    if (doc.original_document_url) {
-      documentUrl = await getSignedUrl(
-        "vaultsign-documents",
-        doc.original_document_url,
-        900
-      );
+    // Get the PDF URL for the document
+    let pdfUrl = "";
+    if (document.source_type === "pdf" && document.original_file_url) {
+      pdfUrl = await getDocumentSignedUrl(document.original_file_url);
+    } else if (document.edited_pdf_url) {
+      pdfUrl = await getDocumentSignedUrl(document.edited_pdf_url);
+    } else if (document.original_file_url) {
+      pdfUrl = await getDocumentSignedUrl(document.original_file_url);
     }
 
-    // Filter sign_fields to only include this signer's fields
-    // Fields are assigned using party-based IDs (e.g. "party_2") or numeric signer IDs
-    const allSignFields = JSON.parse(doc.sign_fields || "[]");
-    const signerPartyId = `party_${signer.party_number}`;
-    const signerFields = allSignFields.filter(
-      (f: Record<string, unknown>) =>
-        f.assigned_to_signer_id === signerPartyId ||
-        f.assigned_to_signer_id === String(signer.id) ||
-        f.assigned_to_signer_id === signer.id
-    );
+    // Filter sign fields to only show this signer's fields
+    const allFields = JSON.parse(document.sign_fields || "[]");
+    const myFields = allFields.filter((f: any) => f.assigned_to_signer_index === signer.signer_index);
 
-    // Build other signers info (name + status only)
-    const otherSigners = doc.signers
-      .filter((s) => s.id !== signer.id)
-      .map((s) => ({
-        name: s.name,
-        role: s.role,
-        status: s.status,
-      }));
-
-    // Update signer status to 'viewed' if currently 'sent'
+    // Update signer status to "viewed" if still "sent"
     if (signer.status === "sent") {
       await db.vaultSignSigner.update({
         where: { id: signer.id },
-        data: {
-          status: "viewed",
-          updated_at: new Date(),
-        },
+        data: { status: "viewed" },
       });
 
-      // Add audit trail event
-      const auditTrail = JSON.parse(doc.audit_trail || "[]");
+      // Add audit trail entry
+      const auditTrail: AuditTrailEntry[] = JSON.parse(document.audit_trail || "[]");
       auditTrail.push({
         event: "document_viewed",
-        signer_id: signer.id,
-        signer_name: signer.name,
-        signer_email: signer.email,
+        user_name: signer.name,
+        ip_address: request.headers.get("x-forwarded-for") || "unknown",
         timestamp: new Date().toISOString(),
       });
+
       await db.vaultSignDocument.update({
-        where: { id: doc.id },
-        data: { audit_trail: JSON.stringify(auditTrail) },
+        where: { id: document.id },
+        data: {
+          audit_trail: JSON.stringify(auditTrail),
+          updated_at: new Date(),
+        },
       });
     }
 
     return NextResponse.json({
-      document_name: doc.document_name,
-      document_url: documentUrl,
-      signer_name: signer.name,
-      signer_email: signer.email,
-      signer_role: signer.role,
-      sign_fields: signerFields,
-      personal_message: doc.personal_message,
-      other_signers: otherSigners,
-      signing_order: doc.signing_order,
-      expiry_date: doc.expiry_date,
+      document: {
+        id: document.id,
+        document_name: document.document_name,
+        document_type: document.document_type,
+        source_type: document.source_type,
+        signing_order: document.signing_order,
+        expiry_date: document.expiry_date,
+        status: document.status,
+        personal_message: document.personal_message,
+        sign_fields: myFields,
+        all_sign_fields: allFields,
+        placeholder_values: JSON.parse(document.placeholder_values || "{}"),
+        pdf_url: pdfUrl,
+        organization: document.organization,
+      },
+      signer: {
+        id: signer.id,
+        name: signer.name,
+        email: signer.email,
+        role: signer.role,
+        signer_index: signer.signer_index,
+        status: signer.status === "sent" ? "viewed" : signer.status,
+      },
+      all_signers: document.signers.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        role: s.role,
+        signer_index: s.signer_index,
+        status: s.status,
+        signed_at: s.signed_at,
+      })),
     });
   } catch (error) {
-    console.error("[VAULTSIGN_SIGN_GET]", error);
-    return NextResponse.json(
-      { error: "Failed to validate signing token" },
-      { status: 500 }
-    );
+    console.error("[VAULTSIGN] Get signing info error:", error);
+    return NextResponse.json({ error: "Failed to get signing info" }, { status: 500 });
   }
 }

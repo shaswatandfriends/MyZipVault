@@ -1,181 +1,139 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
-  FileSignature, Plus, Search, Eye, Send, Ban, Copy, RotateCcw,
-  Clock, CheckCircle2, XCircle, AlertCircle, FileText, Loader2,
-  ArrowRight, Filter, Upload, LayoutTemplate, Sparkles, ChevronRight,
+  Plus, Search, FileText, Clock, CheckCircle2, XCircle, AlertTriangle,
+  Send, Ban, RefreshCw, MoreHorizontal, Loader2, Download, Eye,
+  FileSignature, LayoutTemplate
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/components/providers/auth-provider";
-import { toast } from "sonner";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 
-// ─── Types ──────────────────────────────────────────────────────────
-interface Signer {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  party_number: number;
-  status: string;
-}
-
-interface Document {
-  id: number;
-  document_name: string;
-  document_type: string;
-  status: string;
-  signing_order: string;
-  expiry_date: string;
-  created_at: string;
-  signers: Signer[];
-}
-
-interface Stats {
-  pending: number;
-  completed_this_month: number;
-  declined: number;
-  expiring_soon: number;
-}
-
-interface Template {
-  id: number;
-  name: string;
-  description: string | null;
-  document_type: string;
-  document_url: string;
-  placeholder_fields: string;
-  predefined_sign_fields: string;
-  is_active: boolean;
-  created_by: number;
-  created_at: string;
-  updated_at: string;
-  preview_url?: string;
-}
-
-// ─── Helpers ────────────────────────────────────────────────────────
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  draft: { label: "Draft", bg: "bg-[#F3F4F6]", text: "text-[#6B7280]" },
-  sent: { label: "Sent", bg: "bg-blue-50", text: "text-blue-700" },
-  partially_signed: { label: "Partially Signed", bg: "bg-[#FEF9C3]", text: "text-[#CA8A04]" },
-  completed: { label: "Completed", bg: "bg-[#DCFCE7]", text: "text-[#166534]" },
-  declined: { label: "Declined", bg: "bg-[#FEE2E2]", text: "text-[#DC2626]" },
-  expired: { label: "Expired", bg: "bg-orange-50", text: "text-orange-700" },
-  voided: { label: "Voided", bg: "bg-[#F3F4F6]", text: "text-[#9CA3AF]" },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
+  partially_signed: { label: "Partially Signed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
+  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
+  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
 };
 
-const typeLabels: Record<string, string> = {
-  right_to_represent: "Right to Represent",
-  pre_offer_acceptance: "Pre-Offer Acceptance",
-  offer_letter: "Offer Letter",
-  nda: "NDA",
-  background_check_authorization: "Background Check Auth",
-  employment_contract: "Employment Contract",
-  onboarding_form: "Onboarding Form",
-  custom: "Custom",
-};
-
-const typeBadgeColors: Record<string, { bg: string; text: string; icon: string }> = {
-  right_to_represent: { bg: "bg-emerald-50", text: "text-emerald-700", icon: "🤝" },
-  pre_offer_acceptance: { bg: "bg-teal-50", text: "text-teal-700", icon: "📋" },
-  offer_letter: { bg: "bg-green-50", text: "text-green-700", icon: "✉️" },
-  nda: { bg: "bg-amber-50", text: "text-amber-700", icon: "🔒" },
-  background_check_authorization: { bg: "bg-purple-50", text: "text-purple-700", icon: "🔍" },
-  employment_contract: { bg: "bg-blue-50", text: "text-blue-700", icon: "📝" },
-  onboarding_form: { bg: "bg-cyan-50", text: "text-cyan-700", icon: "📄" },
-  custom: { bg: "bg-gray-50", text: "text-gray-700", icon: "📎" },
-};
-
-const partyColors = ["#166534", "#0D9488", "#7C3AED", "#D97706"];
-
-function getInitials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function getSignerColor(status: string) {
-  switch (status) {
-    case "signed": return "#166534";
-    case "declined": return "#DC2626";
-    default: return "#9CA3AF";
-  }
-}
-
-// ─── Component ──────────────────────────────────────────────────────
-export default function VaultSignDashboard() {
-  const { user } = useAuth();
+export default function VaultSignDashboardPage() {
   const router = useRouter();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [stats, setStats] = useState<Stats>({ pending: 0, completed_this_month: 0, declined: 0, expiring_soon: 0 });
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [stats, setStats] = useState({
+    pending: 0,
+    completed: 0,
+    declined: 0,
+    expiring_soon: 0,
+  });
 
-  // Templates state
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [templatesLoading, setTemplatesLoading] = useState(true);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [docsRes, templatesRes] = await Promise.all([
+          fetch(`/api/vaultsign/documents?limit=50`),
+          fetch(`/api/vaultsign/templates`),
+        ]);
 
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const res = await fetch("/api/vaultsign/templates");
-      if (res.ok) {
-        const data = await res.json();
-        setTemplates(data.templates || []);
+        if (docsRes.ok) {
+          const docsData = await docsRes.json();
+          setDocuments(docsData.documents || []);
+          // Compute stats
+          const allDocs = docsData.documents || [];
+          setStats({
+            pending: allDocs.filter((d: any) => ["sent", "partially_signed"].includes(d.status)).length,
+            completed: allDocs.filter((d: any) => d.status === "completed").length,
+            declined: allDocs.filter((d: any) => d.status === "declined").length,
+            expiring_soon: allDocs.filter((d: any) => {
+              if (d.status !== "sent" && d.status !== "partially_signed") return false;
+              const expiry = new Date(d.expiry_date);
+              const threeDays = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+              return expiry < threeDays;
+            }).length,
+          });
+        }
+
+        if (templatesRes.ok) {
+          const tData = await templatesRes.json();
+          setTemplates(tData.templates || []);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        toast.error("Failed to load documents");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      // Silently fail for templates — not critical
-    } finally {
-      setTemplatesLoading(false);
-    }
+    };
+
+    fetchData();
   }, []);
 
-  const fetchDocuments = useCallback(async () => {
+  // Filter documents
+  const filteredDocs = documents.filter((doc) => {
+    const matchesSearch = !search || doc.document_name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Actions
+  const handleVoid = async (docId: number) => {
+    if (!confirm("Are you sure you want to void this document?")) return;
     try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      if (typeFilter !== "all") params.set("document_type", typeFilter);
-      const res = await fetch(`/api/vaultsign/documents?${params}`);
+      const res = await fetch(`/api/vaultsign/documents/${docId}/void`, { method: "POST" });
       if (res.ok) {
+        toast.success("Document voided");
+        setDocuments(documents.map((d) => d.id === docId ? { ...d, status: "voided" } : d));
+      } else {
         const data = await res.json();
-        setDocuments(data.documents || []);
-        setStats(data.stats || { pending: 0, completed_this_month: 0, declined: 0, expiring_soon: 0 });
+        toast.error(data.error || "Failed to void");
       }
     } catch {
-      toast.error("Failed to load documents");
-    } finally {
-      setLoading(false);
+      toast.error("Failed to void document");
     }
-  }, [search, statusFilter, typeFilter]);
-
-  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
-  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
-
-  const handleVoid = async (id: number) => {
-    if (!confirm("Are you sure you want to void this document? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/vaultsign/documents/${id}/void`, { method: "POST" });
-      if (res.ok) { toast.success("Document voided"); fetchDocuments(); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to void"); }
-    } catch { toast.error("Failed to void document"); }
   };
 
-  const handleSend = async (id: number) => {
+  const handleRemind = async (docId: number, signerId: number) => {
     try {
-      const res = await fetch(`/api/vaultsign/documents/${id}/send`, { method: "POST" });
-      if (res.ok) { toast.success("Document sent for signature"); fetchDocuments(); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to send"); }
-    } catch { toast.error("Failed to send document"); }
+      const res = await fetch(`/api/vaultsign/documents/${docId}/remind/${signerId}`, { method: "POST" });
+      if (res.ok) {
+        toast.success("Reminder sent");
+      }
+    } catch {
+      toast.error("Failed to send reminder");
+    }
   };
 
-  const handleDuplicate = async (doc: Document) => {
+  const handleRevise = async (docId: number) => {
+    try {
+      const res = await fetch(`/api/vaultsign/documents/${docId}/revise`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success("Document revised — redirecting to editor");
+        router.push(`/recruiter/vaultsign/editor/${data.id}`);
+      }
+    } catch {
+      toast.error("Failed to revise document");
+    }
+  };
+
+  const handleDuplicate = async (doc: any) => {
     try {
       const res = await fetch(`/api/vaultsign/documents`, {
         method: "POST",
@@ -183,328 +141,297 @@ export default function VaultSignDashboard() {
         body: JSON.stringify({
           document_name: `${doc.document_name} (Copy)`,
           document_type: doc.document_type,
-          signing_order: doc.signing_order,
-          expiry_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-          signers: doc.signers.filter((s) => s.party_number > 1).map((s) => ({
-            name: s.name, email: s.email, role: s.role,
-            party_number: s.party_number, signing_order_position: 2,
-          })),
+          source_type: doc.source_type,
+          original_file_url: doc.original_file_url,
+          tiptap_content: doc.tiptap_content,
+          sign_fields: doc.sign_fields,
+          signers: doc.signers?.map((s: any) => ({
+            name: s.name,
+            email: s.email,
+            role: s.role,
+          })) || [],
         }),
       });
-      if (res.ok) { toast.success("Document duplicated"); fetchDocuments(); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to duplicate"); }
-    } catch { toast.error("Failed to duplicate"); }
+      if (res.ok) {
+        toast.success("Document duplicated");
+        router.refresh();
+      }
+    } catch {
+      toast.error("Failed to duplicate document");
+    }
   };
 
-  const getExpiryColor = (date: string) => {
-    const diff = (new Date(date).getTime() - Date.now()) / 86400000;
-    if (diff < 7) return "text-[#DC2626]";
-    if (diff < 14) return "text-orange-600";
-    return "text-[#6B7280]";
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* ═══════════════════════════════════════════════════════════════════
-          HEADER — Title left, two buttons right
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
-            VaultSign
-          </h1>
-          <p className="text-sm text-[#6B7280]">Send, track, and manage signed documents.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="border-[#E5E7EB] text-[#374151] hover:bg-[#F8F7F4] hover:border-[#D1D5DB]"
-            asChild
-          >
-            <Link href="/recruiter/vaultsign/upload">
-              <Upload className="size-4 mr-2" /> Upload Custom PDF
-            </Link>
-          </Button>
-          <Button asChild className="bg-[#166534] hover:bg-[#14532D]">
-            <Link href="/recruiter/vaultsign/new">
-              <Plus className="size-4 mr-2" /> New Document
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 1: Start with a Template (PRIMARY — shown first)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section>
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center justify-center size-9 rounded-lg bg-[#DCFCE7]">
-            <LayoutTemplate className="size-5 text-[#166534]" />
-          </div>
+    <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-[#111827]">Start with a Template</h2>
-            <p className="text-sm text-[#6B7280]">Choose a pre-built template to get started quickly.</p>
+            <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              VaultSign
+            </h1>
+            <p className="text-sm text-[#6B7280] mt-0.5">Send, sign, and manage documents</p>
           </div>
+          <Button
+            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            onClick={() => router.push("/recruiter/vaultsign/new")}
+          >
+            <Plus className="h-4 w-4 mr-1" /> New Document
+          </Button>
         </div>
 
-        {templatesLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl border border-[#E5E7EB] p-5 animate-pulse"
-              >
-                <div className="h-4 bg-[#F3F4F6] rounded w-2/3 mb-3" />
-                <div className="h-3 bg-[#F3F4F6] rounded w-full mb-2" />
-                <div className="h-3 bg-[#F3F4F6] rounded w-4/5 mb-4" />
-                <div className="h-6 bg-[#F3F4F6] rounded w-1/3" />
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-[#2563EB]" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#111827]">{stats.pending}</p>
+                  <p className="text-xs text-[#6B7280]">Pending</p>
+                </div>
               </div>
-            ))}
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#D1D5DB]">
-            <LayoutTemplate className="size-12 mx-auto text-[#9CA3AF] mb-3" />
-            <h3 className="text-lg font-medium text-[#111827]">No templates available yet</h3>
-            <p className="text-sm text-[#6B7280] mt-1 mb-5">
-              Templates will appear here once they are created by your organization.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button asChild className="bg-[#166534] hover:bg-[#14532D]">
-                <Link href="/recruiter/vaultsign/new">
-                  <Plus className="size-4 mr-2" /> Create from Scratch
-                </Link>
-              </Button>
-              <Button variant="outline" className="border-[#E5E7EB]" asChild>
-                <Link href="/recruiter/vaultsign/upload">
-                  <Upload className="size-4 mr-2" /> Upload PDF
-                </Link>
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => {
-              const badge = typeBadgeColors[template.document_type] || typeBadgeColors.custom;
-              return (
-                <Link
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-[#166534]" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#111827]">{stats.completed}</p>
+                  <p className="text-xs text-[#6B7280]">Completed</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#FEF2F2] flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-[#DC2626]" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#111827]">{stats.declined}</p>
+                  <p className="text-xs text-[#6B7280]">Declined</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#FFFBEB] flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-[#D97706]" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#111827]">{stats.expiring_soon}</p>
+                  <p className="text-xs text-[#6B7280]">Expiring Soon</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Templates quick start */}
+        {templates.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5 text-[#166534]" /> Start with Template
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {templates.slice(0, 4).map((template: any) => (
+                <Card
                   key={template.id}
-                  href={`/recruiter/vaultsign/new?template=${template.id}`}
-                  className="group bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-[#166534]/30 hover:ring-1 hover:ring-[#166534]/10 transition-all duration-200 cursor-pointer"
+                  className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB]"
+                  onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                 >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3 className="font-medium text-[#111827] group-hover:text-[#166534] transition-colors line-clamp-1">
-                      {template.name}
-                    </h3>
-                    <ChevronRight className="size-4 text-[#9CA3AF] group-hover:text-[#166534] shrink-0 mt-0.5 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                  <p className="text-sm text-[#6B7280] line-clamp-2 mb-4 min-h-[2.5rem]">
-                    {template.description || `Use this ${typeLabels[template.document_type] || "document"} template to get started.`}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <Badge
-                      className={`${badge.bg} ${badge.text} border-0 text-xs font-medium`}
-                    >
-                      <span className="mr-1">{badge.icon}</span>
-                      {typeLabels[template.document_type] || "Custom"}
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileSignature className="h-4 w-4 text-[#166534]" />
+                      <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
+                    </div>
+                    <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
+                    <Badge variant="outline" className="text-[10px] mt-2">
+                      {template.source_type === "word" ? "Word" : "PDF"}
                     </Badge>
-                    <span className="text-xs text-[#9CA3AF] flex items-center gap-1 group-hover:text-[#0D9488] transition-colors">
-                      Use template
-                      <ArrowRight className="size-3 group-hover:translate-x-0.5 transition-transform" />
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
-      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          DIVIDER between sections
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-[#E5E7EB]" />
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 2: Your Documents
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-9 rounded-lg bg-[#F0FDFA]">
-            <FileSignature className="size-5 text-[#0D9488]" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#111827]">Your Documents</h2>
-            <p className="text-sm text-[#6B7280]">View and manage all your sent and received documents.</p>
-          </div>
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: "Pending Signatures", value: stats.pending, icon: Clock, color: "text-blue-600" },
-            { label: "Completed This Month", value: stats.completed_this_month, icon: CheckCircle2, color: "text-[#166534]" },
-            { label: "Declined", value: stats.declined, icon: XCircle, color: "text-[#DC2626]" },
-            { label: "Expiring Soon", value: stats.expiring_soon, icon: AlertCircle, color: "text-orange-600" },
-          ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-[#6B7280]">{s.label}</p>
-                <s.icon className={`size-5 ${s.color}`} />
+        {/* Documents table */}
+        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle className="text-lg">Documents</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#9CA3AF]" />
+                  <Input
+                    placeholder="Search documents..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-8 h-9 w-[200px] text-sm"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 w-[140px] text-sm">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="partially_signed">Partially Signed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="voided">Voided</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-2xl font-semibold text-[#111827] mt-1">{s.value}</p>
             </div>
-          ))}
-        </div>
-
-        {/* Filter Bar */}
-        <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-[#E5E7EB] p-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]" />
-            <Input
-              placeholder="Search documents..."
-              className="pl-9 border-[#E5E7EB]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px] border-[#E5E7EB]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="sent">Sent</SelectItem>
-              <SelectItem value="partially_signed">Partially Signed</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="declined">Declined</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-              <SelectItem value="voided">Voided</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[200px] border-[#E5E7EB]">
-              <SelectValue placeholder="Document Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {Object.entries(typeLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Documents Table */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="size-6 animate-spin text-[#166534]" />
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-[#D1D5DB]">
-            <FileSignature className="size-12 mx-auto text-[#9CA3AF] mb-3" />
-            <h3 className="text-lg font-medium text-[#111827]">No documents yet</h3>
-            <p className="text-sm text-[#6B7280] mt-1">Create your first document to get started.</p>
-            <Button asChild className="mt-4 bg-[#166534] hover:bg-[#14532D]">
-              <Link href="/recruiter/vaultsign/new"><Plus className="size-4 mr-2" /> New Document</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#E5E7EB]">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Document</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Signers</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Status</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Expiry</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Created</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {documents.map((doc) => {
-                    const sc = statusConfig[doc.status] || statusConfig.draft;
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Document</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Signers</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDocs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="text-[#9CA3AF]">
+                        <FileText className="h-8 w-8 mx-auto mb-2" />
+                        <p>No documents found</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 border-[#166534] text-[#166534]"
+                          onClick={() => router.push("/recruiter/vaultsign/new")}
+                        >
+                          Create your first document
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredDocs.map((doc) => {
+                    const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
                     return (
-                      <tr key={doc.id} className="border-b border-[#E5E7EB] hover:bg-[#F8F7F4] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-[#111827]">{doc.document_name}</div>
-                          <Badge variant="secondary" className="mt-1 text-[10px] bg-[#F3F4F6] text-[#6B7280]">
-                            {typeLabels[doc.document_type] || doc.document_type}
+                      <TableRow key={doc.id} className="cursor-pointer hover:bg-[#F8F7F4]" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
+                            <p className="text-xs text-[#6B7280]">
+                              {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>
+                            {statusConf.label}
                           </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex -space-x-2">
-                            {doc.signers.slice(0, 4).map((s, i) => (
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {doc.signers?.slice(0, 3).map((s: any, i: number) => (
                               <div
-                                key={s.id}
-                                className="size-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-medium"
+                                key={i}
+                                className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
                                 style={{
-                                  backgroundColor: `${getSignerColor(s.status)}20`,
-                                  color: getSignerColor(s.status),
+                                  backgroundColor: s.status === "signed" ? "#DCFCE7" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
+                                  color: s.status === "signed" ? "#166534" : s.status === "declined" ? "#DC2626" : "#6B7280",
                                 }}
-                                title={`${s.name} — ${s.status}`}
+                                title={`${s.name} - ${s.status}`}
                               >
-                                {getInitials(s.name)}
+                                {s.name?.charAt(0)?.toUpperCase() || "?"}
                               </div>
                             ))}
-                            {doc.signers.length > 4 && (
-                              <div className="size-7 rounded-full border-2 border-white bg-[#F3F4F6] flex items-center justify-center text-[10px] text-[#6B7280]">
-                                +{doc.signers.length - 4}
-                              </div>
+                            {doc.signers?.length > 3 && (
+                              <span className="text-xs text-[#6B7280]">+{doc.signers.length - 3}</span>
                             )}
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge className={`${sc.bg} ${sc.text} border-0`}>{sc.label}</Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`text-sm ${getExpiryColor(doc.expiry_date)}`}>
-                            {new Date(doc.expiry_date).toLocaleDateString()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-[#6B7280]">
+                        </TableCell>
+                        <TableCell className="text-xs text-[#6B7280]">
+                          {new Date(doc.expiry_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-xs text-[#6B7280]">
                           {new Date(doc.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="size-8" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
-                              <Eye className="size-4 text-[#6B7280]" />
-                            </Button>
-                            {doc.status === "draft" && (
-                              <Button variant="ghost" size="icon" className="size-8" onClick={() => handleSend(doc.id)}>
-                                <Send className="size-4 text-[#166534]" />
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
-                            )}
-                            {(doc.status === "sent" || doc.status === "partially_signed") && (
-                              <Button variant="ghost" size="icon" className="size-8" onClick={() => handleVoid(doc.id)}>
-                                <Ban className="size-4 text-[#DC2626]" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="icon" className="size-8" onClick={() => handleDuplicate(doc)}>
-                              <Copy className="size-4 text-[#6B7280]" />
-                            </Button>
-                            {doc.status === "declined" && (
-                              <Button variant="ghost" size="icon" className="size-8" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
-                                <RotateCcw className="size-4 text-[#0D9488]" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
+                                <Eye className="h-4 w-4 mr-2" /> View Details
+                              </DropdownMenuItem>
+                              {doc.status === "draft" && (
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  const route = doc.source_type === "pdf"
+                                    ? `/recruiter/vaultsign/signer/${doc.id}`
+                                    : `/recruiter/vaultsign/editor/${doc.id}`;
+                                  router.push(route);
+                                }}>
+                                  <FileText className="h-4 w-4 mr-2" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {doc.status === "draft" && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/recruiter/vaultsign/${doc.id}`); }}>
+                                  <Send className="h-4 w-4 mr-2" /> Send
+                                </DropdownMenuItem>
+                              )}
+                              {["sent", "partially_signed"].includes(doc.status) && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleVoid(doc.id); }}>
+                                  <Ban className="h-4 w-4 mr-2" /> Void
+                                </DropdownMenuItem>
+                              )}
+                              {doc.status === "declined" && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRevise(doc.id); }}>
+                                  <RefreshCw className="h-4 w-4 mr-2" /> Revise
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
+                                <FileText className="h-4 w-4 mr-2" /> Duplicate
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </section>
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

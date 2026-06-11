@@ -1,62 +1,126 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { CheckCircle2, Clock } from "@/lib/icons";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import {
+  CheckCircle2, Download, FileText, Loader2, Shield, Clock
+} from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function SigningCompletePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const token = params.token as string;
-  const allSigned = searchParams.get("allSigned") === "true";
-  const [showCheck, setShowCheck] = useState(false);
+  const [signingData, setSigningData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowCheck(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/vaultsign/sign/${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSigningData(data);
+        }
+      } catch {
+        // Ignore errors — we just show a generic completion page
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token) fetchData();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center p-4">
-      <div className="max-w-[600px] w-full text-center space-y-6">
-        {/* Animated Checkmark */}
-        <div className={`flex items-center justify-center transition-all duration-500 ${showCheck ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
-          <div className="size-20 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-            <CheckCircle2 className="size-10 text-[#166534]" />
-          </div>
+      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center">
+        {/* Success icon */}
+        <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 className="h-8 w-8 text-[#166534]" />
         </div>
 
-        {/* Heading */}
-        <h1 className="text-2xl font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
-          Document Signed!
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">
+          Document Signed Successfully!
         </h1>
 
-        {/* Body */}
-        <div className="space-y-2">
-          <p className="text-[#6B7280]">
-            Thank you. Your signature has been recorded.
-          </p>
-          {allSigned ? (
-            <p className="text-[#6B7280]">
-              All parties have signed. You will receive a copy of the completed document shortly.
-            </p>
-          ) : (
-            <div className="flex items-center justify-center gap-2 text-[#6B7280]">
-              <Clock className="size-4" />
-              <p>Other parties still need to sign. You will receive a copy once everyone has signed.</p>
+        <p className="text-[#6B7280] mb-6">
+          Your signature has been applied to the document. {signingData?.document?.status === "completed"
+            ? "All parties have signed — the document is now complete."
+            : "Other signers may still need to sign."}
+        </p>
+
+        {/* Document info */}
+        <div className="bg-[#F8F7F4] rounded-xl p-4 mb-6 text-left">
+          <div className="flex items-center gap-3 mb-3">
+            <FileText className="h-5 w-5 text-[#166534]" />
+            <div>
+              <p className="font-medium text-[#111827]">
+                {signingData?.document?.document_name || "Document"}
+              </p>
+              <p className="text-xs text-[#6B7280]">
+                Signed on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+
+          {signingData?.all_signers && (
+            <div className="space-y-2 mt-3">
+              {signingData.all_signers.map((signer: any, index: number) => (
+                <div key={index} className="flex items-center gap-2 text-sm">
+                  {signer.status === "signed" ? (
+                    <CheckCircle2 className="h-4 w-4 text-[#166534]" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-[#D97706]" />
+                  )}
+                  <span className={signer.status === "signed" ? "text-[#166534]" : "text-[#6B7280]"}>
+                    {signer.name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] h-4">
+                    {signer.status === "signed" ? "Signed" : "Pending"}
+                  </Badge>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Close */}
-        <p className="text-sm text-[#9CA3AF]">You may close this window.</p>
+        {/* Legal notice */}
+        <div className="flex items-start gap-2 text-left mb-6 p-3 bg-[#F0FDF4] rounded-lg">
+          <Shield className="h-4 w-4 text-[#166534] mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-[#374151]">
+            This document was signed using VaultSign by MyZipVault. Your electronic signature is legally binding
+            under the ESIGN Act and UETA. A copy of the signed document will be emailed to all parties.
+          </p>
+        </div>
 
-        {/* Branding */}
-        <div className="pt-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="size-6 rounded-md bg-[#166534] flex items-center justify-center text-[10px] font-bold text-white">ZV</div>
-            <span className="text-xs text-[#9CA3AF]">Secured by MyZipVault VaultSign</span>
-          </div>
+        {/* Actions */}
+        <div className="flex flex-col gap-2">
+          <Button
+            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            onClick={() => {
+              if (signingData?.document?.pdf_url) {
+                window.open(signingData.document.pdf_url, "_blank");
+              }
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" /> Download Signed Document
+          </Button>
+          <Button
+            variant="outline"
+            className="border-[#E5E7EB]"
+            onClick={() => window.location.href = "/"}
+          >
+            Return to Home
+          </Button>
         </div>
       </div>
     </div>

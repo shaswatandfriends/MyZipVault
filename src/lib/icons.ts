@@ -98,6 +98,7 @@ import {
   Megaphone,
   MessageCircle,
   MessageSquare,
+  Minus,
   Minus as MinusIcon,
   Monitor,
   MoreHorizontal,
@@ -178,6 +179,10 @@ import {
   Scissors,
   Move,
   ZoomInIcon,
+  TableIcon,
+  CheckSquare,
+  Subscript,
+  Superscript,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -271,6 +276,7 @@ export {
   MessageCircle,
   MessageSquare,
   MinusIcon,
+  Minus,
   Monitor,
   MoreHorizontal,
   Palette,
@@ -350,6 +356,10 @@ export {
   Scissors,
   Move,
   ZoomInIcon,
+  TableIcon,
+  CheckSquare,
+  Subscript,
+  Superscript,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────
