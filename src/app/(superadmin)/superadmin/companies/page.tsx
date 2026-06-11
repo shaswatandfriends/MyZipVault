@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -129,6 +130,11 @@ interface Company {
   customPricingNotes: string | null;
   accountStatus: string;
   createdAt: string;
+  companyLogoUrl: string | null;
+  companyAddress: string | null;
+  companyPhone: string | null;
+  companyEmail: string | null;
+  companyWebsite: string | null;
   members: Member[];
   transactions: Transaction[];
 }
@@ -274,6 +280,11 @@ export default function SuperadminCompaniesPage() {
   // Edit form
   const [editName, setEditName] = useState("");
   const [editPricingNotes, setEditPricingNotes] = useState("");
+  const [editCompanyLogoUrl, setEditCompanyLogoUrl] = useState("");
+  const [editCompanyAddress, setEditCompanyAddress] = useState("");
+  const [editCompanyPhone, setEditCompanyPhone] = useState("");
+  const [editCompanyEmail, setEditCompanyEmail] = useState("");
+  const [editCompanyWebsite, setEditCompanyWebsite] = useState("");
 
   // Credits form
   const [creditAmount, setCreditAmount] = useState("");
@@ -452,6 +463,11 @@ export default function SuperadminCompaniesPage() {
       organizationId: selectedCompany.id,
       name: editName,
       customPricingNotes: editPricingNotes,
+      companyLogoUrl: editCompanyLogoUrl,
+      companyAddress: editCompanyAddress,
+      companyPhone: editCompanyPhone,
+      companyEmail: editCompanyEmail,
+      companyWebsite: editCompanyWebsite,
     });
     if (result?.success) {
       setShowEditDialog(false);
@@ -551,6 +567,11 @@ export default function SuperadminCompaniesPage() {
     setSelectedCompany(company);
     setEditName(company.name);
     setEditPricingNotes(company.customPricingNotes ?? "");
+    setEditCompanyLogoUrl(company.companyLogoUrl ?? "");
+    setEditCompanyAddress(company.companyAddress ?? "");
+    setEditCompanyPhone(company.companyPhone ?? "");
+    setEditCompanyEmail(company.companyEmail ?? "");
+    setEditCompanyWebsite(company.companyWebsite ?? "");
     setShowEditDialog(true);
   };
 
@@ -1401,10 +1422,10 @@ export default function SuperadminCompaniesPage() {
 
       {/* ── Edit Company Dialog ─────────────────────────────────────── */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Company</DialogTitle>
-            <DialogDescription>Update organization details and pricing notes.</DialogDescription>
+            <DialogDescription>Update organization details, pricing notes, and VaultSign document header info.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1414,6 +1435,61 @@ export default function SuperadminCompaniesPage() {
             <div className="space-y-2">
               <Label>Custom Pricing Notes</Label>
               <Textarea value={editPricingNotes} onChange={(e) => setEditPricingNotes(e.target.value)} />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FileText className="size-4 text-emerald-600" />
+                <p className="text-sm font-semibold">VaultSign Document Header</p>
+              </div>
+              <p className="text-xs text-muted-foreground">These fields appear in the header/footer of VaultSign PDF documents.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Company Logo URL</Label>
+              <Input
+                value={editCompanyLogoUrl}
+                onChange={(e) => setEditCompanyLogoUrl(e.target.value)}
+                placeholder="https://example.com/logo.png"
+              />
+              <p className="text-xs text-muted-foreground">URL to the company logo image (displayed in document headers).</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Company Address</Label>
+              <Input
+                value={editCompanyAddress}
+                onChange={(e) => setEditCompanyAddress(e.target.value)}
+                placeholder="123 Business Ave, Suite 100, New York, NY 10001"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={editCompanyPhone}
+                  onChange={(e) => setEditCompanyPhone(e.target.value)}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={editCompanyEmail}
+                  onChange={(e) => setEditCompanyEmail(e.target.value)}
+                  placeholder="contact@company.com"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input
+                value={editCompanyWebsite}
+                onChange={(e) => setEditCompanyWebsite(e.target.value)}
+                placeholder="https://www.company.com"
+              />
             </div>
           </div>
           <DialogFooter>

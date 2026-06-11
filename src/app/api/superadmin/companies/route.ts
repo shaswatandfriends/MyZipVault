@@ -46,6 +46,11 @@ export async function GET() {
           customPricingNotes: org.custom_pricing_notes,
           accountStatus: org.account_status,
           createdAt: org.created_at,
+          companyLogoUrl: org.company_logo_url,
+          companyAddress: org.company_address,
+          companyPhone: org.company_phone,
+          companyEmail: org.company_email,
+          companyWebsite: org.company_website,
           members: org.users
             .filter((u) => u.role === "client_recruiter" || u.role === "client_admin")
           .map((u) => ({
@@ -131,13 +136,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, organizationId: org.id });
       }
       case "edit": {
-        const { organizationId, name, customPricingNotes } = body;
+        const { organizationId, name, customPricingNotes, companyLogoUrl, companyAddress, companyPhone, companyEmail, companyWebsite } = body;
         if (!organizationId) {
           return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
         }
         const data: Record<string, unknown> = {};
         if (name) data.name = name;
         if (customPricingNotes !== undefined) data.custom_pricing_notes = customPricingNotes;
+        if (companyLogoUrl !== undefined) data.company_logo_url = companyLogoUrl || null;
+        if (companyAddress !== undefined) data.company_address = companyAddress || null;
+        if (companyPhone !== undefined) data.company_phone = companyPhone || null;
+        if (companyEmail !== undefined) data.company_email = companyEmail || null;
+        if (companyWebsite !== undefined) data.company_website = companyWebsite || null;
         await db.organization.update({
           where: { id: organizationId },
           data,

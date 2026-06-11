@@ -144,6 +144,7 @@ export function tiptapToPdfmake(
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
+      if (options.organization.website) contactParts.push(options.organization.website);
       if (contactParts.length > 0) {
         companyDetailsStack.push({
           text: contactParts.join(" | "),
@@ -168,6 +169,7 @@ export function tiptapToPdfmake(
       });
     }
 
+    // Always show document title in header when header/footer is enabled
     if (options.documentTitle) {
       rightParts.push({
         text: options.documentTitle,
@@ -179,19 +181,19 @@ export function tiptapToPdfmake(
       });
     }
 
-    if (leftParts.length > 0 || rightParts.length > 0) {
-      headerContent.push({
-        columns: [
-          { stack: leftParts, width: "*" },
-          { stack: rightParts, width: "auto", alignment: "right" },
-        ],
-        margin: [40, 20, 40, 5] as any,
-      });
-      headerContent.push({
-        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
-        margin: [40, 0, 40, 10] as any,
-      });
-    }
+    // Always render the header section when header/footer is enabled,
+    // even if leftParts is empty — the document title should always appear
+    headerContent.push({
+      columns: [
+        { stack: leftParts.length > 0 ? leftParts : [{ text: "" }], width: "*" },
+        { stack: rightParts.length > 0 ? rightParts : [{ text: "" }], width: "auto", alignment: "right" },
+      ],
+      margin: [40, 20, 40, 5] as any,
+    });
+    headerContent.push({
+      canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
+      margin: [40, 0, 40, 10] as any,
+    });
   }
 
   // Build footer (same condition as header)
@@ -679,6 +681,7 @@ export function htmlToPdfmake(
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
+      if (options.organization.website) contactParts.push(options.organization.website);
       if (contactParts.length > 0) {
         companyDetailsStack.push({ text: contactParts.join(" | "), fontSize: 8, color: "#6B7280" });
       }
@@ -689,13 +692,13 @@ export function htmlToPdfmake(
     if (companyDetailsStack.length > 0) {
       leftParts.push({ stack: companyDetailsStack });
     }
+    // Always show document title in header when header/footer is enabled
     if (options.documentTitle) {
       rightParts.push({ text: options.documentTitle, fontSize: 10, bold: true, color: "#374151", alignment: "right", margin: [0, 8, 0, 0] as any });
     }
-    if (leftParts.length > 0 || rightParts.length > 0) {
-      headerContent.push({ columns: [{ stack: leftParts, width: "*" }, { stack: rightParts, width: "auto", alignment: "right" }], margin: [40, 20, 40, 5] as any });
-      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
-    }
+    // Always render the header section when header/footer is enabled
+    headerContent.push({ columns: [{ stack: leftParts.length > 0 ? leftParts : [{ text: "" }], width: "*" }, { stack: rightParts.length > 0 ? rightParts : [{ text: "" }], width: "auto", alignment: "right" }], margin: [40, 20, 40, 5] as any });
+    headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
   }
 
   // Build footer (same condition as header)
