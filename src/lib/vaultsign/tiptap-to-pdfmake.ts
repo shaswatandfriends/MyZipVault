@@ -308,6 +308,9 @@ function transformNode(node: TipTapNode, placeholders: Record<string, string>): 
     case "hardBreak":
       return { text: "\n", fontSize: 11 };
 
+    case "pageBreak":
+      return { text: "", pageBreak: "after" };
+
     case "variable": {
       const varName = node.attrs?.id || node.attrs?.name || "";
       const displayText = placeholders[varName] || `{{${varName}}}`;
@@ -697,7 +700,7 @@ function parseHtmlToPdfmakeContent(html: string, placeholders: Record<string, st
 }
 
 interface HtmlBlock {
-  type: "heading" | "paragraph" | "list" | "table" | "raw";
+  type: "heading" | "paragraph" | "list" | "table" | "pageBreak" | "raw";
   tag: string;
   content: string;
   style: string;
@@ -752,6 +755,28 @@ function extractTopLevelBlocks(html: string): HtmlBlock[] {
         else break;
       }
       remaining = liRemaining;
+      continue;
+    }
+
+    // Match hr (page break)
+    const hrMatch = remaining.match(/^<hr([^>]*)>/i);
+    if (hrMatch) {
+      const attrs = hrMatch[1];
+      if (attrs.includes('page-break') || attrs.includes('page_break') || (attrs.includes('style') && attrs.match(/page-break/i))) {
+        blocks.push({ type: "pageBreak", tag: "hr", content: "", style: "" });
+      } else {
+        // Regular hr - treat as separator
+        blocks.push({ type: "paragraph", tag: "p", content: "", style: "" });
+      }
+      remaining = remaining.slice(hrMatch[0].length).trim();
+      continue;
+    }
+
+    // Match div with page-break-after style (legacy format from older docx-to-html converter)
+    const divPageBreakMatch = remaining.match(/^<div([^>]*)page-break-after[^>]*>([\s\S]*?)<\/div>/i);
+    if (divPageBreakMatch) {
+      blocks.push({ type: "pageBreak", tag: "div", content: "", style: "" });
+      remaining = remaining.slice(divPageBreakMatch[0].length).trim();
       continue;
     }
 
@@ -873,6 +898,9 @@ function convertHtmlBlock(block: HtmlBlock, placeholders: Record<string, string>
         margin: [0, 8, 0, 8] as any,
       };
     }
+
+    case "pageBreak":
+      return { text: "", pageBreak: "after" };
 
     default:
       return null;

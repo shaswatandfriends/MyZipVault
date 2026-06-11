@@ -497,7 +497,7 @@ export async function docxToFormattedHtml(buffer: Buffer): Promise<string> {
       if (localName === "p") {
         const { html, paraFmt } = convertParagraph(child, styleMap);
         if (paraFmt?.isPageBreak || paraFmt?.isSectionBreak) {
-          rawElements.push({ type: "break", html: '<div style="page-break-after: always; border-top: 2px solid #e5e7eb; margin: 32px 0; padding-top: 8px; text-align: center;"><span style="font-size: 10px; color: #9CA3AF;">— Page Break —</span></div>' });
+          rawElements.push({ type: "break", html: '<hr data-page-break class="page-break" style="page-break-after: always;">' });
         }
         if (html) {
           rawElements.push({ type: "paragraph", html, paraFmt });

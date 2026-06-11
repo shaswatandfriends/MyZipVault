@@ -25,6 +25,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { FontSize } from "@/lib/vaultsign/tiptap-font-size";
 import { LineHeight } from "@/lib/vaultsign/tiptap-line-height";
 import { ParagraphSpacing } from "@/lib/vaultsign/tiptap-paragraph-spacing";
+import { PageBreak } from "@/lib/vaultsign/tiptap-page-break";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, FileDown, Send, Bold, Italic, Underline as UnderlineIcon,
@@ -32,7 +33,7 @@ import {
   List, ListOrdered, CheckSquare, Undo2, Redo2, Type, Palette,
   Highlighter, Subscript as SubIcon, Superscript as SupIcon, Plus, Trash2,
   Variable, ChevronDown, X, Loader2, TableIcon, ImagePlus, Minus,
-  Menu, PanelLeftIcon, PanelRightIcon, MoreVertical
+  Menu, PanelLeftIcon, PanelRightIcon, MoreVertical, ArrowUpDown, FileText
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       FontSize,         // Preserves font-size from docx inline styles
       LineHeight,        // Preserves line-height from docx inline styles
       ParagraphSpacing,  // Preserves margin-top/margin-bottom from docx inline styles
+      PageBreak,          // Insert page breaks that carry through to PDF
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
@@ -728,217 +730,229 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Toolbar — Desktop */}
-      <div className="hidden lg:flex bg-white border-b border-[#E5E7EB] px-4 py-2 items-center gap-1">
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          isActive={editor?.isActive("bold")}
-          title="Bold"
-        >
-          <Bold className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          isActive={editor?.isActive("italic")}
-          title="Italic"
-        >
-          <Italic className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
-          isActive={editor?.isActive("underline")}
-          title="Underline"
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleStrike().run()}
-          isActive={editor?.isActive("strike")}
-          title="Strikethrough"
-        >
-          <Strikethrough className="h-4 w-4" />
-        </ToolbarButton>
+      {/* Toolbar — Desktop (Word-like Ribbon) */}
+      <div className="hidden lg:flex bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex-wrap gap-y-1">
+        {/* Clipboard Group */}
+        <div className="flex flex-col items-center px-2">
+          <div className="flex items-center gap-0.5">
+            <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo">
+              <Undo2 className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo">
+              <Redo2 className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
+          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Clipboard</span>
+        </div>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
 
-        <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
-          if (val === "Default") {
-            editor?.chain().focus().unsetFontFamily().run();
-          } else {
-            editor?.chain().focus().setFontFamily(val).run();
-          }
-        }}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
-            <SelectValue placeholder="Font" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Default">Default</SelectItem>
-            <SelectItem value="Arial">Arial</SelectItem>
-            <SelectItem value="Georgia">Georgia</SelectItem>
-            <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-            <SelectItem value="Courier New">Courier New</SelectItem>
-            <SelectItem value="Verdana">Verdana</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Styles Group */}
+        <div className="flex flex-col items-center px-2">
+          <Select value={
+            editor?.isActive("heading", { level: 1 }) ? "1"
+            : editor?.isActive("heading", { level: 2 }) ? "2"
+            : editor?.isActive("heading", { level: 3 }) ? "3"
+            : "0"
+          } onValueChange={(val) => {
+            if (val === "0") {
+              editor?.chain().focus().setParagraph().run();
+            } else {
+              editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
+            }
+          }}>
+            <SelectTrigger className="w-[110px] h-7 text-[11px]">
+              <SelectValue placeholder="Style" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Normal Text</SelectItem>
+              <SelectItem value="1">Heading 1</SelectItem>
+              <SelectItem value="2">Heading 2</SelectItem>
+              <SelectItem value="3">Heading 3</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Styles</span>
+        </div>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <Palette className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-2" align="start">
-            <div className="grid grid-cols-6 gap-1">
-              {["#000000", "#374151", "#6B7280", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
-                <button
-                  key={color}
-                  className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
-                  style={{ backgroundColor: color }}
-                  onClick={() => editor?.chain().focus().setColor(color).run()}
-                />
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <Highlighter className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-2" align="start">
-            <div className="grid grid-cols-5 gap-1">
-              {[
-                { color: "#FEF08A", label: "Yellow" },
-                { color: "#BBF7D0", label: "Green" },
-                { color: "#BFDBFE", label: "Blue" },
-                { color: "#FECACA", label: "Red" },
-                { color: "#E9D5FF", label: "Purple" },
-              ].map(({ color, label }) => (
-                <button
-                  key={color}
-                  className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
-                  style={{ backgroundColor: color }}
-                  onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()}
-                  title={label}
-                />
-              ))}
-              <button
-                className="w-6 h-6 rounded border border-[#E5E7EB] text-xs flex items-center justify-center hover:scale-110 transition-transform"
-                onClick={() => editor?.chain().focus().unsetHighlight().run()}
-                title="Remove highlight"
-              >
-                <Minus className="h-3 w-3" />
-              </button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Font Group */}
+        <div className="flex flex-col items-center px-2">
+          <div className="flex items-center gap-0.5 flex-wrap">
+            <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
+              if (val === "Default") {
+                editor?.chain().focus().unsetFontFamily().run();
+              } else {
+                editor?.chain().focus().setFontFamily(val).run();
+              }
+            }}>
+              <SelectTrigger className="w-[110px] h-7 text-[11px]">
+                <SelectValue placeholder="Font" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Default">Default</SelectItem>
+                <SelectItem value="Arial">Arial</SelectItem>
+                <SelectItem value="Georgia">Georgia</SelectItem>
+                <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                <SelectItem value="Courier New">Courier New</SelectItem>
+                <SelectItem value="Verdana">Verdana</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Select value={((): string => {
+              const fs = editor?.getAttributes("textStyle").fontSize;
+              if (!fs) return "11";
+              const num = parseInt(String(fs));
+              return isNaN(num) ? "11" : String(num);
+            })()} onValueChange={(val) => {
+              editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
+            }}>
+              <SelectTrigger className="w-[60px] h-7 text-[11px]">
+                <SelectValue placeholder="Size" />
+              </SelectTrigger>
+              <SelectContent>
+                {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
+                  <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("left").run()}
-          isActive={editor?.isActive({ textAlign: "left" })}
-          title="Align Left"
-        >
-          <AlignLeft className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("center").run()}
-          isActive={editor?.isActive({ textAlign: "center" })}
-          title="Align Center"
-        >
-          <AlignCenter className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("right").run()}
-          isActive={editor?.isActive({ textAlign: "right" })}
-          title="Align Right"
-        >
-          <AlignRight className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
-          isActive={editor?.isActive({ textAlign: "justify" })}
-          title="Justify"
-        >
-          <AlignJustify className="h-4 w-4" />
-        </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold">
+              <Bold className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic">
+              <Italic className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline">
+              <UnderlineIcon className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+              <Strikethrough className="h-4 w-4" />
+            </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Font Color">
+                  <Palette className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="grid grid-cols-6 gap-1">
+                  {["#000000", "#374151", "#6B7280", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
+                    <button
+                      key={color}
+                      className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() => editor?.chain().focus().setColor(color).run()}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
 
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          isActive={editor?.isActive("bulletList")}
-          title="Bullet List"
-        >
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          isActive={editor?.isActive("orderedList")}
-          title="Numbered List"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleTaskList().run()}
-          isActive={editor?.isActive("taskList")}
-          title="Task List"
-        >
-          <CheckSquare className="h-4 w-4" />
-        </ToolbarButton>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Highlight">
+                  <Highlighter className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="grid grid-cols-5 gap-1">
+                  {[
+                    { color: "#FEF08A", label: "Yellow" },
+                    { color: "#BBF7D0", label: "Green" },
+                    { color: "#BFDBFE", label: "Blue" },
+                    { color: "#FECACA", label: "Red" },
+                    { color: "#E9D5FF", label: "Purple" },
+                  ].map(({ color, label }) => (
+                    <button
+                      key={color}
+                      className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()}
+                      title={label}
+                    />
+                  ))}
+                  <button
+                    className="w-6 h-6 rounded border border-[#E5E7EB] text-xs flex items-center justify-center hover:scale-110 transition-transform"
+                    onClick={() => editor?.chain().focus().unsetHighlight().run()}
+                    title="Remove highlight"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Font</span>
+        </div>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
 
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleSubscript().run()}
-          isActive={editor?.isActive("subscript")}
-          title="Subscript"
-        >
-          <SubIcon className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleSuperscript().run()}
-          isActive={editor?.isActive("superscript")}
-          title="Superscript"
-        >
-          <SupIcon className="h-4 w-4" />
-        </ToolbarButton>
+        {/* Paragraph Group */}
+        <div className="flex flex-col items-center px-2">
+          <div className="flex items-center gap-0.5 flex-wrap">
+            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+              <AlignLeft className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
+              <AlignCenter className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
+              <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
+              <AlignJustify className="h-4 w-4" />
+            </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="vertical" className="h-5 mx-0.5" />
 
-        <ToolbarButton
-          onClick={() => {
-            const url = prompt("Enter image URL:");
-            if (url) editor?.chain().focus().setImage({ src: url }).run();
-          }}
-          title="Insert Image"
-        >
-          <ImagePlus className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          title="Insert Table"
-        >
-          <TableIcon className="h-4 w-4" />
-        </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+              <List className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+              <ListOrdered className="h-4 w-4" />
+            </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="vertical" className="h-5 mx-0.5" />
 
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().undo().run()}
-          title="Undo"
-        >
-          <Undo2 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().redo().run()}
-          title="Redo"
-        >
-          <Redo2 className="h-4 w-4" />
-        </ToolbarButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#6B7280]" title="Line Spacing">
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-32">
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Paragraph</span>
+        </div>
+
+        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+
+        {/* Insert Group */}
+        <div className="flex flex-col items-center px-2">
+          <div className="flex items-center gap-0.5">
+            <ToolbarButton onClick={() => {
+              const url = prompt("Enter image URL:");
+              if (url) editor?.chain().focus().setImage({ src: url }).run();
+            }} title="Insert Image">
+              <ImagePlus className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
+              <TableIcon className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Insert Page Break">
+              <FileText className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
+          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Insert</span>
+        </div>
       </div>
 
       {/* Toolbar — Mobile (simplified) */}
@@ -1191,6 +1205,23 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         .tiptap-editor .tiptap .task-list li label {
           display: flex;
           align-items: center;
+        }
+        .tiptap-editor .tiptap hr.page-break {
+          border: none;
+          border-top: 2px dashed #9CA3AF;
+          margin: 24px 0;
+          position: relative;
+        }
+        .tiptap-editor .tiptap hr.page-break::after {
+          content: "Page Break";
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 10px;
+          color: #9CA3AF;
+          background: white;
+          padding: 0 8px;
         }
       `}</style>
     </div>
