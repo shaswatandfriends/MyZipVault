@@ -134,6 +134,10 @@ interface ParagraphFormatting {
   headingLevel?: number;
   isPageBreak?: boolean;
   isSectionBreak?: boolean;
+  borderLeft?: { color: string; size: number; style: string };
+  borderTop?: { color: string; size: number; style: string };
+  borderBottom?: { color: string; size: number; style: string };
+  borderRight?: { color: string; size: number; style: string };
 }
 
 // Map common OOXML theme color values
@@ -314,6 +318,28 @@ function extractParagraphFormatting(pPr: XElem | undefined): ParagraphFormatting
     fmt.isSectionBreak = true;
   }
 
+  // Paragraph borders (w:pBdr)
+  const pBdr = findChild(pPr, "w:pBdr");
+  if (pBdr) {
+    const borderSides = [
+      { elem: findChild(pBdr, "w:left"), prop: "borderLeft" },
+      { elem: findChild(pBdr, "w:top"), prop: "borderTop" },
+      { elem: findChild(pBdr, "w:bottom"), prop: "borderBottom" },
+      { elem: findChild(pBdr, "w:right"), prop: "borderRight" },
+    ];
+    for (const { elem, prop } of borderSides) {
+      if (elem && elem.attrs["w:val"] && elem.attrs["w:val"] !== "none") {
+        const color = elem.attrs["w:color"] || "000000";
+        const size = parseInt(elem.attrs["w:sz"] || "4") / 8; // w:sz is in 1/8 pt
+        (fmt as any)[prop] = {
+          color: color.startsWith("#") ? color : `#${color}`,
+          size: Math.max(size, 1),
+          style: elem.attrs["w:val"],
+        };
+      }
+    }
+  }
+
   return fmt;
 }
 
@@ -337,6 +363,11 @@ function paragraphFormatToStyles(fmt: ParagraphFormatting): string {
   if (fmt.indentationLeft) styles.push(`margin-left: ${Math.round(fmt.indentationLeft / 1440 * 96)}px`);
   if (fmt.indentationRight) styles.push(`margin-right: ${Math.round(fmt.indentationRight / 1440 * 96)}px`);
   if (fmt.indentationFirstLine) styles.push(`text-indent: ${Math.round(fmt.indentationFirstLine / 1440 * 96)}px`);
+  // Paragraph borders
+  if (fmt.borderLeft) styles.push(`border-left: ${fmt.borderLeft.size}pt ${fmt.borderLeft.style} ${fmt.borderLeft.color}`);
+  if (fmt.borderTop) styles.push(`border-top: ${fmt.borderTop.size}pt ${fmt.borderTop.style} ${fmt.borderTop.color}`);
+  if (fmt.borderBottom) styles.push(`border-bottom: ${fmt.borderBottom.size}pt ${fmt.borderBottom.style} ${fmt.borderBottom.color}`);
+  if (fmt.borderRight) styles.push(`border-right: ${fmt.borderRight.size}pt ${fmt.borderRight.style} ${fmt.borderRight.color}`);
   return styles.join("; ");
 }
 
@@ -466,7 +497,7 @@ export async function docxToFormattedHtml(buffer: Buffer): Promise<string> {
       if (localName === "p") {
         const { html, paraFmt } = convertParagraph(child, styleMap);
         if (paraFmt?.isPageBreak || paraFmt?.isSectionBreak) {
-          rawElements.push({ type: "break", html: '<hr style="page-break-after: always; border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />' });
+          rawElements.push({ type: "break", html: '<div style="page-break-after: always; border-top: 2px solid #e5e7eb; margin: 32px 0; padding-top: 8px; text-align: center;"><span style="font-size: 10px; color: #9CA3AF;">— Page Break —</span></div>' });
         }
         if (html) {
           rawElements.push({ type: "paragraph", html, paraFmt });
@@ -475,6 +506,26 @@ export async function docxToFormattedHtml(buffer: Buffer): Promise<string> {
         const tableHtml = convertTable(child, styleMap);
         if (tableHtml) {
           rawElements.push({ type: "table", html: tableHtml });
+        }
+      } else if (localName === "sdt") {
+        // Structured document tag (e.g., Table of Contents) - extract content from w:sdtContent
+        const sdtContent = findChild(child, "w:sdtContent");
+        if (sdtContent) {
+          // Process paragraphs inside the SDT content
+          for (const sdtChild of sdtContent.children) {
+            const sdtLocal = sdtChild.tag.includes(":") ? sdtChild.tag.split(":").pop()! : sdtChild.tag;
+            if (sdtLocal === "p") {
+              const { html, paraFmt } = convertParagraph(sdtChild, styleMap);
+              if (html) {
+                rawElements.push({ type: "paragraph", html, paraFmt });
+              }
+            } else if (sdtLocal === "tbl") {
+              const tableHtml = convertTable(sdtChild, styleMap);
+              if (tableHtml) {
+                rawElements.push({ type: "table", html: tableHtml });
+              }
+            }
+          }
         }
       }
     }
@@ -729,12 +780,14 @@ function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): { html
       // Merge with paragraph style run formatting (direct overrides style)
       const mergedFmt: RunFormatting = { ...pStyleRunFmt, ...runFmt };
 
-      // Get text content - handle w:t and w:br and w:tab
+      // Get text content - handle w:t, w:br, w:tab, and skip field codes
       const textParts: string[] = [];
+      let skipFieldCode = false;
       for (const runChild of child.children) {
         const rcLocal = runChild.tag.includes(":") ? runChild.tag.split(":").pop()! : runChild.tag;
 
         if (rcLocal === "t") {
+          if (skipFieldCode) continue; // Skip text inside field codes (PAGEREF, etc.)
           const text = runChild.text || "";
           if (text) textParts.push(text);
         } else if (rcLocal === "br") {
@@ -747,6 +800,21 @@ function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): { html
           textParts.push("&nbsp;&nbsp;&nbsp;&nbsp;");
         } else if (rcLocal === "cr") {
           textParts.push("<br>");
+        } else if (rcLocal === "fldChar") {
+          // Field character (begin/separate/end) - used for TOC, PAGEREF, etc.
+          const fldType = runChild.attrs["w:fldCharType"];
+          if (fldType === "begin") {
+            skipFieldCode = true;
+          } else if (fldType === "separate") {
+            // After separate, the next w:t will contain the display text (e.g., page number)
+            // For TOC entries, we want the text before "separate" but not the PAGEREF text after
+            skipFieldCode = false; // Allow text after separate for display
+          } else if (fldType === "end") {
+            skipFieldCode = false;
+          }
+        } else if (rcLocal === "instrText") {
+          // Instruction text (e.g., ' TOC \h \o "1-3" ', ' PAGEREF _Toc... \h ')
+          // Skip - this is Word field code, not display text
         } else if (rcLocal === "sym") {
           // Symbol character - skip for now
         }
@@ -861,6 +929,21 @@ function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): { html
 function convertTable(tblElem: XElem, styleMap: Map<string, StyleDef>): string {
   const rows = findChildren(tblElem, "w:tr");
   const rowHtmlParts: string[] = [];
+
+  // Detect if this is a borderless/layout table (cover page, etc.)
+  let isBorderless = false;
+  const tblPr = findChild(tblElem, "w:tblPr");
+  if (tblPr) {
+    const tblBorders = findChild(tblPr, "w:tblBorders");
+    if (tblBorders) {
+      const borders = ["top", "left", "bottom", "right", "insideH", "insideV"];
+      const allNone = borders.every(side => {
+        const border = findChild(tblBorders, `w:${side}`);
+        return border && border.attrs["w:val"] === "none";
+      });
+      if (allNone) isBorderless = true;
+    }
+  }
 
   // Parse table grid (column widths)
   const tblGrid = findChild(tblElem, "w:tblGrid");
@@ -996,6 +1079,14 @@ function convertTable(tblElem: XElem, styleMap: Map<string, StyleDef>): string {
     }
 
     rowHtmlParts.push(`<tr>${cellHtmlParts.join("")}</tr>`);
+  }
+
+  if (isBorderless) {
+    // Borderless/layout table - use no borders, preserve as layout container
+    return `<div style="margin: 12px 0;">${rowHtmlParts.map(row => {
+      // For borderless tables, render cells as divs without table styling
+      return row.replace(/<t[hd]/g, '<div').replace(/<\/t[hd]>/g, '</div>').replace(/<tr>/g, '<div style="display: flex; gap: 8px;">').replace(/<\/tr>/g, '</div>');
+    }).join('')}</div>`;
   }
 
   return `<table style="border-collapse: collapse; width: 100%; border: 1px solid #d1d5db; margin: 12px 0;">${rowHtmlParts.join("")}</table>`;

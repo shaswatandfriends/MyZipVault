@@ -8,7 +8,7 @@ import {
   Plus, Search, FileText, Clock, CheckCircle2, XCircle, AlertTriangle,
   Send, Ban, RefreshCw, MoreHorizontal, Loader2, Download, Eye,
   FileSignature, LayoutTemplate, Settings, Save, Building2, Upload,
-  Globe, Phone, Mail
+  Globe, Phone, Mail, Trash2
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,6 +241,22 @@ export default function VaultSignDashboardPage() {
     }
   };
 
+  const handleDelete = async (doc: any) => {
+    if (!confirm(`Are you sure you want to delete '${doc.document_name}'? This action cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/vaultsign/documents/${doc.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDocuments(documents.filter((d) => d.id !== doc.id));
+        toast.success("Document deleted");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete");
+      }
+    } catch {
+      toast.error("Failed to delete document");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F7F4]">
@@ -358,7 +374,13 @@ export default function VaultSignDashboardPage() {
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-vaultsign-fade-in">
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+              statusFilter === "sent" || statusFilter === "partially_signed" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "sent" || statusFilter === "partially_signed" ? "all" : "sent")}
+            title="Click to filter by pending documents"
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
@@ -366,12 +388,18 @@ export default function VaultSignDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-[#111827]">{stats.pending}</p>
-                  <p className="text-xs text-[#6B7280]">Pending</p>
+                  <p className="text-xs text-[#6B7280]">Pending <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">— click to filter</span></p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+              statusFilter === "completed" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "completed" ? "all" : "completed")}
+            title="Click to filter by completed documents"
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
@@ -384,7 +412,13 @@ export default function VaultSignDashboardPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+              statusFilter === "declined" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "declined" ? "all" : "declined")}
+            title="Click to filter by declined documents"
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#FEF2F2] flex items-center justify-center">
@@ -397,7 +431,13 @@ export default function VaultSignDashboardPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+              statusFilter === "sent" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "sent" ? "all" : "sent")}
+            title="Click to filter by expiring documents"
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#FFFBEB] flex items-center justify-center">
@@ -590,6 +630,14 @@ export default function VaultSignDashboardPage() {
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
                                   <FileText className="h-4 w-4 mr-2" /> Duplicate
                                 </DropdownMenuItem>
+                                {["draft", "completed", "expired", "voided"].includes(doc.status) && (
+                                  <DropdownMenuItem
+                                    className="text-[#DC2626] focus:text-[#DC2626]"
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -693,6 +741,14 @@ export default function VaultSignDashboardPage() {
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(doc); }}>
                                   <FileText className="h-4 w-4 mr-2" /> Duplicate
                                 </DropdownMenuItem>
+                                {["draft", "completed", "expired", "voided"].includes(doc.status) && (
+                                  <DropdownMenuItem
+                                    className="text-[#DC2626] focus:text-[#DC2626]"
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>

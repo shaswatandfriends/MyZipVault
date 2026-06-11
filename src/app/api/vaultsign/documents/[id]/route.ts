@@ -146,3 +146,57 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
   }
 }
+
+// DELETE: Delete a document (only draft, completed, expired, or voided)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const docId = parseInt(id);
+    if (isNaN(docId)) {
+      return NextResponse.json({ error: "Invalid document ID" }, { status: 400 });
+    }
+
+    const document = await db.vaultSignDocument.findUnique({
+      where: { id: docId },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    // Only allow deleting documents that aren't actively being signed
+    if (document.status === "sent" || document.status === "partially_signed") {
+      return NextResponse.json({ error: "Cannot delete a document that is out for signature. Void it first." }, { status: 400 });
+    }
+
+    // Check access
+    const role = (session.user as Record<string, unknown>).role as string;
+    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    if (role !== "super_admin" && document.organization_id !== orgId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Delete signers first (foreign key constraint)
+    await db.vaultSignSigner.deleteMany({
+      where: { document_id: docId },
+    });
+
+    // Delete the document
+    await db.vaultSignDocument.delete({
+      where: { id: docId },
+    });
+
+    return NextResponse.json({ success: true, message: "Document deleted" });
+  } catch (error) {
+    console.error("[VAULTSIGN] Delete document error:", error);
+    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
+  }
+}
