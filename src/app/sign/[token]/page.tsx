@@ -52,7 +52,11 @@ export default function PublicSigningPage() {
 
   const sigCanvasRef = useRef<HTMLCanvasElement>(null);
   const sigPadRef = useRef<SignaturePad | null>(null);
-  const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const renderTaskRef = useRef<any>(null);
+
+  // Store PDF document object for page-by-page rendering
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
 
   // Fetch signing data
   useEffect(() => {
@@ -96,13 +100,14 @@ export default function PublicSigningPage() {
     if (token) fetchData();
   }, [token]);
 
-  // Render PDF
+  // Load PDF document object
   useEffect(() => {
     if (!pdfUrl || typeof window === "undefined") return;
 
     let cancelled = false;
-    const renderPdf = async () => {
+    const loadPdf = async () => {
       try {
+        setPdfDoc(null);
         const pdfjsLib = await import("pdfjs-dist");
 
         // Ensure worker is configured
@@ -135,44 +140,70 @@ export default function PublicSigningPage() {
 
         const pdf = await loadingTask.promise;
         if (cancelled) return;
+        setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-
-        // Wait a tick for canvas refs to be available
-        await new Promise((r) => setTimeout(r, 100));
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          if (cancelled) return;
-          const page = await pdf.getPage(i);
-          const canvas = canvasRefs.current.get(i);
-          if (!canvas) continue;
-
-          const context = canvas.getContext("2d");
-          if (!context) continue;
-
-          const viewport = page.getViewport({ scale: scale * 1.5 });
-
-          // Set canvas pixel dimensions for sharp rendering
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          // Set CSS display dimensions
-          canvas.style.width = `${viewport.width / 1.5}px`;
-          canvas.style.height = `${viewport.height / 1.5}px`;
-
-          await page.render({
-            canvasContext: context,
-            viewport: viewport,
-          }).promise;
-        }
+        setCurrentPage(1);
       } catch (err: any) {
-        if (err?.name === "RenderingCancelledException" || cancelled) return;
-        console.error("PDF render error:", err);
+        if (cancelled) return;
+        console.error("PDF load error:", err);
       }
     };
 
-    renderPdf();
+    loadPdf();
     return () => { cancelled = true; };
-  }, [pdfUrl, scale]);
+  }, [pdfUrl]);
+
+  // Render current page when page or scale changes
+  useEffect(() => {
+    if (!pdfDoc) return;
+
+    let cancelled = false;
+    const renderPage = async () => {
+      try {
+        // Cancel any in-progress render
+        if (renderTaskRef.current) {
+          try { renderTaskRef.current.cancel(); } catch {}
+        }
+
+        const page = await pdfDoc.getPage(currentPage);
+        if (cancelled) return;
+
+        // Wait a tick for the canvas ref to be available
+        await new Promise((r) => setTimeout(r, 50));
+
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        const viewport = page.getViewport({ scale: scale * 1.5 });
+
+        // Set canvas pixel dimensions for sharp rendering
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        // Set CSS display dimensions explicitly based on viewport to avoid distortion
+        canvas.style.width = `${viewport.width / 1.5}px`;
+        canvas.style.height = `${viewport.height / 1.5}px`;
+
+        const renderTask = page.render({
+          canvasContext: context,
+          viewport: viewport,
+        });
+        renderTaskRef.current = renderTask;
+
+        await renderTask.promise;
+        renderTaskRef.current = null;
+      } catch (err: any) {
+        if (err?.name === "RenderingCancelledException" || cancelled) return;
+        console.error("PDF page render error:", err);
+      }
+    };
+
+    renderPage();
+    return () => { cancelled = true; };
+  }, [pdfDoc, currentPage, scale]);
 
   // Initialize signature pad
   useEffect(() => {
@@ -405,9 +436,7 @@ export default function PublicSigningPage() {
           <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
             <div className="relative mx-auto" style={{ maxWidth: "800px" }}>
               <canvas
-                ref={(el) => {
-                  if (el) canvasRefs.current.set(currentPage, el);
-                }}
+                ref={(el) => { canvasRef.current = el; }}
                 className="shadow-lg rounded-lg border border-[#E5E7EB]"
                 style={{ maxWidth: "100%", height: "auto" }}
               />

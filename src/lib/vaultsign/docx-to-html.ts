@@ -30,12 +30,10 @@ interface XElem {
 }
 
 function parseXml(xmlStr: string): XElem {
-  // Use our custom XML parser since Node.js doesn't have DOMParser natively
   return buildTree(xmlStr);
 }
 
 function buildTree(xml: string): XElem {
-  // Simple recursive XML parser
   const root: XElem = { tag: "root", attrs: {}, children: [], text: "" };
   let current = root;
   const stack: XElem[] = [root];
@@ -47,7 +45,6 @@ function buildTree(xml: string): XElem {
       if (xml[i + 1] === "/") {
         const end = xml.indexOf(">", i);
         if (end === -1) break;
-        // Pop the stack
         stack.pop();
         current = stack[stack.length - 1] || root;
         i = end + 1;
@@ -68,7 +65,7 @@ function buildTree(xml: string): XElem {
       const attrStr = spaceIdx > 0 ? trimmed.substring(spaceIdx + 1) : "";
 
       const attrs: Record<string, string> = {};
-      // Simple attribute parser
+      // Enhanced attribute parser - handles namespaced attributes
       const attrRegex = /(\w[:\w]*)="([^"]*)"/g;
       let match;
       while ((match = attrRegex.exec(attrStr)) !== null) {
@@ -131,9 +128,12 @@ interface ParagraphFormatting {
   lineHeight?: number; // multiplier
   indentationLeft?: number; // in twips
   indentationRight?: number;
+  indentationFirstLine?: number; // in twips
   bulletLevel?: number;
   numberingId?: string;
   headingLevel?: number;
+  isPageBreak?: boolean;
+  isSectionBreak?: boolean;
 }
 
 // Map common OOXML theme color values
@@ -263,7 +263,6 @@ function extractParagraphFormatting(pPr: XElem | undefined): ParagraphFormatting
       if (lineRule === "auto") {
         fmt.lineHeight = lineVal / 240; // OOXML auto line spacing: 240 = single
       } else {
-        // AtLeast or Exact: convert twips to approximate multiplier
         fmt.lineHeight = lineVal / 240;
       }
     }
@@ -274,6 +273,7 @@ function extractParagraphFormatting(pPr: XElem | undefined): ParagraphFormatting
   if (ind) {
     if (ind.attrs["w:left"]) fmt.indentationLeft = parseInt(ind.attrs["w:left"]);
     if (ind.attrs["w:right"]) fmt.indentationRight = parseInt(ind.attrs["w:right"]);
+    if (ind.attrs["w:firstLine"]) fmt.indentationFirstLine = parseInt(ind.attrs["w:firstLine"]);
   }
 
   // Numbering (for lists)
@@ -298,6 +298,20 @@ function extractParagraphFormatting(pPr: XElem | undefined): ParagraphFormatting
     // Common Word heading styles
     if (styleVal === "Title") fmt.headingLevel = 1;
     if (styleVal === "Subtitle") fmt.headingLevel = 2;
+    // Numeric style IDs that map to headings (common in Word)
+    // These will be resolved via styles.xml if available
+  }
+
+  // Page break before
+  const pageBreakBefore = findChild(pPr, "w:pageBreakBefore");
+  if (pageBreakBefore) {
+    fmt.isPageBreak = true;
+  }
+
+  // Section properties within paragraph (sectPr)
+  const sectPr = findChild(pPr, "w:sectPr");
+  if (sectPr) {
+    fmt.isSectionBreak = true;
   }
 
   return fmt;
@@ -321,6 +335,8 @@ function paragraphFormatToStyles(fmt: ParagraphFormatting): string {
   if (fmt.spacingAfter) styles.push(`margin-bottom: ${Math.round(fmt.spacingAfter / 20)}pt`);
   if (fmt.lineHeight) styles.push(`line-height: ${fmt.lineHeight.toFixed(2)}`);
   if (fmt.indentationLeft) styles.push(`margin-left: ${Math.round(fmt.indentationLeft / 1440 * 96)}px`);
+  if (fmt.indentationRight) styles.push(`margin-right: ${Math.round(fmt.indentationRight / 1440 * 96)}px`);
+  if (fmt.indentationFirstLine) styles.push(`text-indent: ${Math.round(fmt.indentationFirstLine / 1440 * 96)}px`);
   return styles.join("; ");
 }
 
@@ -331,6 +347,81 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+// ── Numbering / List handling ──────────────────────────────────────────────
+
+interface NumberingDef {
+  isOrdered: boolean;
+  levels: Map<number, { numFmt?: string; lvlText?: string; start?: number }>;
+}
+
+function parseNumberingXml(xml: string | undefined): Map<string, NumberingDef> {
+  const numMap = new Map<string, NumberingDef>();
+  if (!xml) return numMap;
+
+  try {
+    const tree = buildTree(xml);
+
+    // Parse abstract numbering definitions first
+    const abstractNums = findDescendants(tree, "w:abstractNum");
+    const abstractDefs = new Map<string, NumberingDef>();
+
+    for (const absNum of abstractNums) {
+      const absId = absNum.attrs["w:abstractNumId"];
+      if (!absId) continue;
+
+      const def: NumberingDef = { isOrdered: false, levels: new Map() };
+
+      // Parse levels
+      const levels = findChildren(absNum, "w:lvl");
+      for (const lvl of levels) {
+        const ilvl = lvl.attrs["w:ilvl"];
+        if (ilvl === undefined) continue;
+        const levelNum = parseInt(ilvl);
+
+        const numFmtElem = findChild(lvl, "w:numFmt");
+        const lvlTextElem = findChild(lvl, "w:lvlText");
+        const startElem = findChild(lvl, "w:start");
+
+        const levelInfo: { numFmt?: string; lvlText?: string; start?: number } = {};
+        if (numFmtElem) levelInfo.numFmt = numFmtElem.attrs["w:val"];
+        if (lvlTextElem) levelInfo.lvlText = lvlTextElem.attrs["w:val"];
+        if (startElem) levelInfo.start = parseInt(startElem.attrs["w:val"] || "1");
+
+        def.levels.set(levelNum, levelInfo);
+
+        // Determine if this is an ordered list based on numFmt
+        if (levelNum === 0) {
+          const fmt = levelInfo.numFmt || "bullet";
+          def.isOrdered = !["bullet", "none"].includes(fmt);
+        }
+      }
+
+      abstractDefs.set(absId, def);
+    }
+
+    // Map concrete numbering IDs to abstract definitions
+    const nums = findDescendants(tree, "w:num");
+    for (const num of nums) {
+      const numId = num.attrs["w:numId"];
+      if (!numId) continue;
+
+      const abstractRef = findChild(num, "w:abstractNumId");
+      if (abstractRef && abstractRef.attrs["w:val"]) {
+        const absDef = abstractDefs.get(abstractRef.attrs["w:val"]);
+        if (absDef) {
+          numMap.set(numId, absDef);
+        }
+      }
+    }
+
+    return numMap;
+  } catch {
+    return numMap;
+  }
+}
+
+// ── Main converter ─────────────────────────────────────────────────────────
 
 /**
  * Convert a .docx Buffer to HTML preserving formatting (colors, fonts, sizes, spacing, alignment).
@@ -347,11 +438,15 @@ export async function docxToFormattedHtml(buffer: Buffer): Promise<string> {
       return mammothFallback(buffer);
     }
 
-    // 2. Also try to get styles.xml for style definitions
+    // 2. Get styles.xml for style definitions
     const stylesXml = await zip.file("word/styles.xml")?.async("string");
     const styleMap = parseStylesXml(stylesXml);
 
-    // 3. Parse the document XML
+    // 3. Get numbering.xml for list type definitions
+    const numberingXml = await zip.file("word/numbering.xml")?.async("string");
+    const numberingMap = parseNumberingXml(numberingXml);
+
+    // 4. Parse the document XML
     const tree = buildTree(documentXml);
     const body = findDescendant(tree, "w:body");
 
@@ -360,25 +455,104 @@ export async function docxToFormattedHtml(buffer: Buffer): Promise<string> {
       return mammothFallback(buffer);
     }
 
-    // 4. Convert paragraphs and runs to HTML
-    const htmlParts: string[] = [];
-    let listStack: string[] = []; // Track open list elements
+    // 5. Convert paragraphs and runs to HTML
+    // First pass: collect all body children and process them
+    const rawElements: Array<{ type: "paragraph" | "table" | "break"; html: string; paraFmt?: ParagraphFormatting }> = [];
 
     for (const child of body.children) {
       const tag = child.tag;
       const localName = tag.includes(":") ? tag.split(":").pop()! : tag;
 
       if (localName === "p") {
-        const paragraphHtml = convertParagraph(child, styleMap);
-        if (paragraphHtml) {
-          htmlParts.push(paragraphHtml);
+        const { html, paraFmt } = convertParagraph(child, styleMap);
+        if (paraFmt?.isPageBreak || paraFmt?.isSectionBreak) {
+          rawElements.push({ type: "break", html: '<hr style="page-break-after: always; border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />' });
+        }
+        if (html) {
+          rawElements.push({ type: "paragraph", html, paraFmt });
         }
       } else if (localName === "tbl") {
         const tableHtml = convertTable(child, styleMap);
         if (tableHtml) {
-          htmlParts.push(tableHtml);
+          rawElements.push({ type: "table", html: tableHtml });
         }
       }
+    }
+
+    // Second pass: wrap consecutive list items in <ul> or <ol> tags
+    const htmlParts: string[] = [];
+    let listStack: Array<{ tag: string; numberingId: string; level: number }> = [];
+
+    for (let i = 0; i < rawElements.length; i++) {
+      const elem = rawElements[i];
+
+      if (elem.type === "break") {
+        // Close any open lists
+        while (listStack.length > 0) {
+          const closed = listStack.pop()!;
+          htmlParts.push(`</${closed.tag}>`);
+        }
+        htmlParts.push(elem.html);
+        continue;
+      }
+
+      if (elem.type === "paragraph" && elem.paraFmt?.numberingId !== undefined) {
+        const numberingId = elem.paraFmt.numberingId;
+        const level = elem.paraFmt.bulletLevel || 0;
+        const numDef = numberingMap.get(numberingId);
+        const isOrdered = numDef?.isOrdered ?? false;
+        const listTag = isOrdered ? "ol" : "ul";
+
+        // Check if we need to open, close, or continue a list
+        if (listStack.length === 0) {
+          // Start a new list
+          htmlParts.push(`<${listTag} style="margin-left: ${level * 20}px; padding-left: 20px;">`);
+          listStack.push({ tag: listTag, numberingId, level });
+        } else {
+          const currentList = listStack[listStack.length - 1];
+
+          // Different numbering ID = close current list and start new one
+          if (currentList.numberingId !== numberingId) {
+            while (listStack.length > 0) {
+              const closed = listStack.pop()!;
+              htmlParts.push(`</${closed.tag}>`);
+            }
+            htmlParts.push(`<${listTag} style="margin-left: ${level * 20}px; padding-left: 20px;">`);
+            listStack.push({ tag: listTag, numberingId, level });
+          }
+          // Different level (nested list)
+          else if (level > currentList.level) {
+            htmlParts.push(`<${listTag} style="margin-left: ${(level - currentList.level - 1) * 20}px; padding-left: 20px;">`);
+            listStack.push({ tag: listTag, numberingId, level });
+          } else if (level < currentList.level) {
+            // Close nested lists until we match the level
+            while (listStack.length > 1 && listStack[listStack.length - 1].level > level) {
+              const closed = listStack.pop()!;
+              htmlParts.push(`</${closed.tag}>`);
+            }
+          }
+          // Same level, same numbering = just add the item (no list tag change needed)
+        }
+
+        // Add the list item
+        htmlParts.push(elem.html);
+      } else {
+        // Non-list element: close any open lists first
+        while (listStack.length > 0) {
+          const closed = listStack.pop()!;
+          htmlParts.push(`</${closed.tag}>`);
+        }
+
+        if (elem.html) {
+          htmlParts.push(elem.html);
+        }
+      }
+    }
+
+    // Close any remaining open lists
+    while (listStack.length > 0) {
+      const closed = listStack.pop()!;
+      htmlParts.push(`</${closed.tag}>`);
     }
 
     const html = htmlParts.join("\n");
@@ -404,6 +578,8 @@ async function mammothFallback(buffer: Buffer): Promise<string> {
 // ── Style map from styles.xml ──────────────────────────────────────────────
 
 interface StyleDef {
+  styleId?: string;
+  name?: string;
   basedOn?: string;
   runFormatting?: RunFormatting;
   paragraphFormatting?: ParagraphFormatting;
@@ -421,7 +597,11 @@ function parseStylesXml(xml: string | undefined): Map<string, StyleDef> {
       const styleId = style.attrs["w:styleId"];
       if (!styleId) continue;
 
-      const def: StyleDef = {};
+      const def: StyleDef = { styleId };
+
+      // Style name
+      const nameElem = findChild(style, "w:name");
+      if (nameElem) def.name = nameElem.attrs["w:val"];
 
       // Based on
       const basedOn = findChild(style, "w:basedOn");
@@ -438,6 +618,19 @@ function parseStylesXml(xml: string | undefined): Map<string, StyleDef> {
       styleMap.set(styleId, def);
     }
 
+    // Build a secondary index by name for lookup
+    // Many Word documents use style names like "heading 1" instead of "Heading1"
+    const byName = new Map<string, string>();
+    for (const [id, def] of styleMap) {
+      if (def.name) {
+        byName.set(def.name.toLowerCase(), id);
+        // Also map common heading names
+        if (def.name.toLowerCase().startsWith("heading")) {
+          byName.set(def.name.toLowerCase().replace(/\s+/g, ""), id);
+        }
+      }
+    }
+
     return styleMap;
   } catch {
     return styleMap;
@@ -452,10 +645,27 @@ function resolveStyle(pPr: XElem | undefined, styleMap: Map<string, StyleDef>): 
     const pStyle = findChild(pPr, "w:pStyle");
     if (pStyle && pStyle.attrs["w:val"]) {
       const styleId = pStyle.attrs["w:val"];
-      // Resolve style chain (simplified: only one level of basedOn)
+      // Resolve style chain (handles basedOn inheritance)
       const resolved = resolveStyleChain(styleId, styleMap);
       runFmt = { ...resolved.runFmt };
       paraFmt = { ...resolved.paraFmt };
+
+      // If the style has a name that indicates a heading but no headingLevel was set,
+      // try to infer it from the style name
+      if (!paraFmt.headingLevel) {
+        const styleDef = styleMap.get(styleId);
+        if (styleDef?.name) {
+          const nameLower = styleDef.name.toLowerCase().replace(/\s+/g, "");
+          // Match "heading1", "heading2", etc.
+          const headingMatch = nameLower.match(/^heading(\d)$/);
+          if (headingMatch) {
+            paraFmt.headingLevel = parseInt(headingMatch[1]);
+          }
+          // Also check for common heading style names
+          if (nameLower === "title") paraFmt.headingLevel = 1;
+          if (nameLower === "subtitle") paraFmt.headingLevel = 2;
+        }
+      }
     }
 
     // Direct formatting overrides style
@@ -491,70 +701,159 @@ function resolveStyleChain(styleId: string, styleMap: Map<string, StyleDef>): { 
 
 // ── Paragraph conversion ───────────────────────────────────────────────────
 
-function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): string {
+function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): { html: string; paraFmt: ParagraphFormatting } {
   const pPr = findChild(pElem, "w:pPr");
-  const { paraFmt } = resolveStyle(pPr, styleMap);
+  const { runFmt: pStyleRunFmt, paraFmt } = resolveStyle(pPr, styleMap);
 
-  // Extract run-level default formatting from paragraph style
-  const pStyleRunFmt = resolveStyle(pPr, styleMap).runFmt;
+  // Check for page break within runs (w:br type="page")
+  let hasPageBreak = paraFmt.isPageBreak || paraFmt.isSectionBreak;
 
-  // Collect runs
-  const runs = findChildren(pElem, "w:r");
+  // Collect runs and special elements
   const contentParts: string[] = [];
 
-  for (const run of runs) {
-    const rPr = findChild(run, "w:rPr");
-    let runFmt = extractRunFormatting(rPr);
+  for (const child of pElem.children) {
+    const localName = child.tag.includes(":") ? child.tag.split(":").pop()! : child.tag;
 
-    // Merge with paragraph style run formatting (direct overrides style)
-    const mergedFmt: RunFormatting = { ...pStyleRunFmt, ...runFmt };
+    if (localName === "r") {
+      // Regular run
+      const rPr = findChild(child, "w:rPr");
 
-    // Get text content
-    const tElem = findChild(run, "w:t");
-    const text = tElem?.text || "";
+      // Check for page break in run
+      const br = findChild(child, "w:br");
+      if (br && br.attrs["w:type"] === "page") {
+        hasPageBreak = true;
+      }
 
-    if (!text) continue;
+      let runFmt = extractRunFormatting(rPr);
 
-    // Build the formatted text span
-    const styleStr = runFormatToStyles(mergedFmt);
-    let html = escapeHtml(text);
+      // Merge with paragraph style run formatting (direct overrides style)
+      const mergedFmt: RunFormatting = { ...pStyleRunFmt, ...runFmt };
 
-    if (mergedFmt.bold) html = `<strong>${html}</strong>`;
-    if (mergedFmt.italic) html = `<em>${html}</em>`;
-    if (mergedFmt.underline) html = `<u>${html}</u>`;
-    if (mergedFmt.strike) html = `<s>${html}</s>`;
-    if (mergedFmt.subscript) html = `<sub>${html}</sub>`;
-    if (mergedFmt.superscript) html = `<sup>${html}</sup>`;
+      // Get text content - handle w:t and w:br and w:tab
+      const textParts: string[] = [];
+      for (const runChild of child.children) {
+        const rcLocal = runChild.tag.includes(":") ? runChild.tag.split(":").pop()! : runChild.tag;
 
-    // Wrap in span with inline styles if any
-    if (styleStr) {
-      html = `<span style="${styleStr}">${html}</span>`;
+        if (rcLocal === "t") {
+          const text = runChild.text || "";
+          if (text) textParts.push(text);
+        } else if (rcLocal === "br") {
+          if (runChild.attrs["w:type"] === "page") {
+            hasPageBreak = true;
+          } else {
+            textParts.push("<br>");
+          }
+        } else if (rcLocal === "tab") {
+          textParts.push("&nbsp;&nbsp;&nbsp;&nbsp;");
+        } else if (rcLocal === "cr") {
+          textParts.push("<br>");
+        } else if (rcLocal === "sym") {
+          // Symbol character - skip for now
+        }
+      }
+
+      const text = textParts.join("");
+      if (!text && textParts.length === 0) continue;
+
+      // Build the formatted text span
+      const styleStr = runFormatToStyles(mergedFmt);
+      let html = text;
+
+      // Only wrap in strong/em/u/s tags if there's actual text content (not just <br>)
+      const hasTextContent = html.replace(/<br>/g, "").trim().length > 0;
+      if (hasTextContent) {
+        if (mergedFmt.bold) html = `<strong>${html}</strong>`;
+        if (mergedFmt.italic) html = `<em>${html}</em>`;
+        if (mergedFmt.underline) html = `<u>${html}</u>`;
+        if (mergedFmt.strike) html = `<s>${html}</s>`;
+        if (mergedFmt.subscript) html = `<sub>${html}</sub>`;
+        if (mergedFmt.superscript) html = `<sup>${html}</sup>`;
+      }
+
+      // Wrap in span with inline styles if any
+      if (styleStr && hasTextContent) {
+        html = `<span style="${styleStr}">${html}</span>`;
+      }
+
+      contentParts.push(html);
+    } else if (localName === "hyperlink") {
+      // Handle hyperlinks
+      const linkRuns = findChildren(child, "w:r");
+      const linkTextParts: string[] = [];
+
+      for (const run of linkRuns) {
+        const tElem = findChild(run, "w:t");
+        const text = tElem?.text || "";
+        if (!text) continue;
+
+        const rPr = findChild(run, "w:rPr");
+        let runFmt = extractRunFormatting(rPr);
+        const mergedFmt: RunFormatting = { ...pStyleRunFmt, ...runFmt };
+
+        const styleStr = runFormatToStyles(mergedFmt);
+        let html = escapeHtml(text);
+
+        if (mergedFmt.bold) html = `<strong>${html}</strong>`;
+        if (mergedFmt.italic) html = `<em>${html}</em>`;
+        if (mergedFmt.underline) html = `<u>${html}</u>`;
+        if (styleStr) html = `<span style="${styleStr}">${html}</span>`;
+
+        linkTextParts.push(html);
+      }
+
+      const linkContent = linkTextParts.join("");
+      if (linkContent) {
+        contentParts.push(`<a href="#" style="color: #2563EB; text-decoration: underline;">${linkContent}</a>`);
+      }
+    } else if (localName === "bookmarkStart" || localName === "bookmarkEnd") {
+      // Skip bookmarks
     }
-
-    contentParts.push(html);
   }
 
   const content = contentParts.join("");
-  if (!content && !paraFmt.headingLevel) return "";
+
+  // Update paraFmt with page break info
+  if (hasPageBreak) {
+    paraFmt.isPageBreak = true;
+  }
+
+  // For list items, only output <li> - the wrapping <ul>/<ol> is handled in the main loop
+  if (paraFmt.numberingId !== undefined) {
+    const styleStr = paragraphFormatToStyles(paraFmt);
+    const listStyle = paraFmt.bulletLevel && paraFmt.bulletLevel > 0
+      ? `margin-left: ${paraFmt.bulletLevel * 20}px;`
+      : "";
+    const fullStyle = [styleStr, listStyle].filter(Boolean).join(" ");
+
+    if (content) {
+      return { html: `<li style="${fullStyle || "margin-left: 20px;"}">${content}</li>`, paraFmt };
+    } else {
+      // Empty list item - still output to maintain list structure
+      return { html: `<li style="${fullStyle || "margin-left: 20px;"}">&nbsp;</li>`, paraFmt };
+    }
+  }
+
+  // Empty paragraph (but not empty list item)
+  if (!content && !paraFmt.headingLevel) {
+    // Check if this is an empty paragraph with spacing (should be preserved as blank line)
+    if (paraFmt.spacingAfter || paraFmt.spacingBefore) {
+      const styleStr = paragraphFormatToStyles(paraFmt);
+      return { html: styleStr ? `<p style="${styleStr}">&nbsp;</p>` : `<p>&nbsp;</p>`, paraFmt };
+    }
+    return { html: "", paraFmt };
+  }
 
   // Handle heading levels
   if (paraFmt.headingLevel) {
     const tag = `h${paraFmt.headingLevel}`;
     const styleStr = paragraphFormatToStyles(paraFmt);
-    return styleStr ? `<${tag} style="${styleStr}">${content}</${tag}>` : `<${tag}>${content}</${tag}>`;
-  }
-
-  // Handle list items
-  if (paraFmt.numberingId !== undefined) {
-    const styleStr = paragraphFormatToStyles(paraFmt);
-    const listStyle = paraFmt.bulletLevel && paraFmt.bulletLevel > 0 ? `margin-left: ${paraFmt.bulletLevel * 20}px;` : "";
-    const fullStyle = [styleStr, listStyle].filter(Boolean).join(" ");
-    return `<li style="${fullStyle || "margin-left: 20px;"}">${content}</li>`;
+    const headingContent = content || "&nbsp;";
+    return { html: styleStr ? `<${tag} style="${styleStr}">${headingContent}</${tag}>` : `<${tag}>${headingContent}</${tag}>`, paraFmt };
   }
 
   // Regular paragraph
   const styleStr = paragraphFormatToStyles(paraFmt);
-  return styleStr ? `<p style="${styleStr}">${content}</p>` : `<p>${content}</p>`;
+  return { html: styleStr ? `<p style="${styleStr}">${content || "&nbsp;"}</p>` : `<p>${content || "&nbsp;"}</p>`, paraFmt };
 }
 
 // ── Table conversion ───────────────────────────────────────────────────────
@@ -563,45 +862,143 @@ function convertTable(tblElem: XElem, styleMap: Map<string, StyleDef>): string {
   const rows = findChildren(tblElem, "w:tr");
   const rowHtmlParts: string[] = [];
 
-  for (const row of rows) {
+  // Parse table grid (column widths)
+  const tblGrid = findChild(tblElem, "w:tblGrid");
+  const colWidths: number[] = [];
+  if (tblGrid) {
+    const gridCols = findChildren(tblGrid, "w:gridCol");
+    for (const col of gridCols) {
+      if (col.attrs["w:w"]) {
+        colWidths.push(parseInt(col.attrs["w:w"]));
+      }
+    }
+  }
+
+  // Track vertical merges per column
+  const vMergeState: Map<number, { isContinuation: boolean; rowSpan: number; content: string; style: string }> = new Map();
+
+  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+    const row = rows[rowIdx];
     const cells = findChildren(row, "w:tc");
     const cellHtmlParts: string[] = [];
+    let colIdx = 0;
 
     for (const cell of cells) {
-      const cellContent = findChildren(cell, "w:p")
-        .map((p) => convertParagraph(p, styleMap))
-        .filter(Boolean)
-        .join("");
-
-      // Extract cell formatting
+      // Skip cells that are continuation of vertical merge
       const tcPr = findChild(cell, "w:tcPr");
-      let cellStyle = "";
+
+      // Handle horizontal merge (gridSpan)
+      let gridSpan = 1;
       if (tcPr) {
-        const shading = findChild(tcPr, "w:shd");
-        if (shading && shading.attrs["w:fill"] && shading.attrs["w:fill"] !== "auto") {
-          cellStyle += `background-color: #${shading.attrs["w:fill"]};`;
+        const gs = findChild(tcPr, "w:gridSpan");
+        if (gs && gs.attrs["w:val"]) {
+          gridSpan = parseInt(gs.attrs["w:val"]);
         }
-        const width = findChild(tcPr, "w:tcW");
-        if (width && width.attrs["w:w"]) {
-          const wVal = parseInt(width.attrs["w:w"]);
-          const wType = width.attrs["w:type"] || "dxa";
-          if (wType === "dxa") {
-            cellStyle += `width: ${Math.round(wVal / 20)}pt;`;
-          } else if (wType === "pct") {
-            cellStyle += `width: ${wVal / 50}%;`;
+      }
+
+      // Handle vertical merge (vMerge)
+      let isVMergeContinuation = false;
+      let isVMergeStart = false;
+      if (tcPr) {
+        const vMerge = findChild(tcPr, "w:vMerge");
+        if (vMerge) {
+          if (vMerge.attrs["w:val"] === "restart" || vMerge.attrs["w:val"] === "1") {
+            isVMergeStart = true;
+          } else {
+            isVMergeContinuation = true;
           }
         }
       }
 
+      if (isVMergeContinuation) {
+        // This cell is a continuation of a vertical merge - skip it in output
+        // but update the rowSpan of the originating cell
+        const mergeInfo = vMergeState.get(colIdx);
+        if (mergeInfo) {
+          mergeInfo.rowSpan++;
+        }
+        colIdx += gridSpan;
+        continue;
+      }
+
+      const cellContent = findChildren(cell, "w:p")
+        .map((p) => convertParagraph(p, styleMap).html)
+        .filter(Boolean)
+        .join("");
+
+      // Extract cell formatting
+      let cellStyle = "";
+      let cellAttrs = "";
+
+      if (tcPr) {
+        // Shading / background
+        const shading = findChild(tcPr, "w:shd");
+        if (shading && shading.attrs["w:fill"] && shading.attrs["w:fill"] !== "auto" && shading.attrs["w:fill"] !== "FFFFFF") {
+          cellStyle += `background-color: #${shading.attrs["w:fill"]};`;
+        }
+
+        // Width
+        const width = findChild(tcPr, "w:tcW");
+        if (width && width.attrs["w:w"]) {
+          const wVal = parseInt(width.attrs["w:w"]);
+          const wType = width.attrs["w:type"] || "dxa";
+          if (wType === "dxa" && wVal > 0) {
+            cellStyle += `width: ${Math.round(wVal / 20)}pt;`;
+          } else if (wType === "pct" && wVal > 0) {
+            cellStyle += `width: ${wVal / 50}%;`;
+          }
+        }
+
+        // Vertical alignment
+        const vAlign = findChild(tcPr, "w:vAlign");
+        if (vAlign && vAlign.attrs["w:val"]) {
+          const val = vAlign.attrs["w:val"];
+          if (val === "center") cellStyle += "vertical-align: middle;";
+          else if (val === "bottom") cellStyle += "vertical-align: bottom;";
+          else cellStyle += "vertical-align: top;";
+        }
+
+        // Borders
+        const tcBorders = findChild(tcPr, "w:tcBorders");
+        if (tcBorders) {
+          // Just use default borders - individual cell borders are complex
+        }
+
+        // GridSpan
+        if (gridSpan > 1) {
+          cellAttrs += ` colspan="${gridSpan}"`;
+        }
+      }
+
+      // Handle vMerge start
+      if (isVMergeStart) {
+        vMergeState.set(colIdx, { isContinuation: false, rowSpan: 1, content: cellContent, style: cellStyle });
+      }
+
+      // Check if there's a pending vMerge that needs rowSpan
+      const mergeInfo = vMergeState.get(colIdx);
+      if (isVMergeStart && mergeInfo && mergeInfo.rowSpan > 1) {
+        cellAttrs += ` rowspan="${mergeInfo.rowSpan}"`;
+      }
+
+      // Determine if this is a header cell (first row or has header style)
+      const isFirstRow = rowIdx === 0;
+      const isHeaderCell = isFirstRow && !cellContent.includes("</p>"); // Simple heuristic
+
+      const tag = isFirstRow ? "th" : "td";
+      const headerStyle = isFirstRow ? "font-weight: 600; background-color: #f9fafb;" : "";
+
       cellHtmlParts.push(
-        `<td style="border: 1px solid #d1d5db; padding: 6px 8px;${cellStyle ? " " + cellStyle : ""}">${cellContent}</td>`
+        `<${tag} style="border: 1px solid #d1d5db; padding: 6px 8px;${headerStyle ? " " + headerStyle : ""}${cellStyle ? " " + cellStyle : ""}"${cellAttrs}>${cellContent || "&nbsp;"}</${tag}>`
       );
+
+      colIdx += gridSpan;
     }
 
     rowHtmlParts.push(`<tr>${cellHtmlParts.join("")}</tr>`);
   }
 
-  return `<table style="border-collapse: collapse; width: 100%; border: 1px solid #d1d5db;">${rowHtmlParts.join("")}</table>`;
+  return `<table style="border-collapse: collapse; width: 100%; border: 1px solid #d1d5db; margin: 12px 0;">${rowHtmlParts.join("")}</table>`;
 }
 
 // ── Utility ────────────────────────────────────────────────────────────────

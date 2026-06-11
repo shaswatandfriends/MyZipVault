@@ -41,7 +41,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showRightPanel, setShowRightPanel] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Store PDF document object for page-by-page rendering (declared before fetchDocument)
   const [pdfDoc, setPdfDoc] = useState<any>(null);
@@ -235,9 +235,9 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         if (cancelled) return;
 
         // Wait a tick for the canvas ref to be available
-        await new Promise((r) => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 50));
 
-        const canvas = canvasRefs.current.get(currentPage);
+        const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
 
         const context = canvas.getContext("2d");
@@ -250,7 +250,6 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         canvas.width = viewport.width;
 
         // Set CSS display dimensions explicitly based on viewport to avoid distortion
-        // Do NOT use className="w-full" which conflicts with pixel dimensions
         canvas.style.width = `${viewport.width / 1.5}px`;
         canvas.style.height = `${viewport.height / 1.5}px`;
 
@@ -748,9 +747,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
               {/* PDF Canvas */}
               {pdfDoc && (
                 <canvas
-                  ref={(el) => {
-                    if (el) canvasRefs.current.set(currentPage, el);
-                  }}
+                  ref={(el) => { canvasRef.current = el; }}
                   className="shadow-lg rounded-lg border border-[#E5E7EB]"
                   style={{ maxWidth: "100%", height: "auto" }}
                 />
