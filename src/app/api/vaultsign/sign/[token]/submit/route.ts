@@ -125,13 +125,27 @@ export async function POST(
           pdfSourceUrl = refreshedDocument.original_file_url;
         }
 
-        let pdfBuffer: Buffer;
-
-        if (pdfSourceUrl && !pdfSourceUrl.startsWith("data:")) {
-          // Download the PDF
-          const pdfResponse = await fetch(pdfSourceUrl);
-          const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-          pdfBuffer = Buffer.from(pdfArrayBuffer);
+        if (pdfSourceUrl) {
+          // Handle data: URLs (base64 encoded PDFs)
+          let pdfBufferFromSource: Buffer;
+          if (pdfSourceUrl.startsWith("data:")) {
+            const base64 = pdfSourceUrl.split(",")[1];
+            if (!base64) throw new Error("Invalid data URL for PDF source");
+            pdfBufferFromSource = Buffer.from(base64, "base64");
+          } else {
+            // Download the PDF from URL
+            // Try to get a signed URL first for Supabase storage URLs
+            let fetchUrl = pdfSourceUrl;
+            try {
+              const { getDocumentSignedUrl: getSignedUrl } = await import("@/lib/vaultsign/supabase-storage");
+              fetchUrl = await getSignedUrl(pdfSourceUrl, 5);
+            } catch {
+              // Use original URL as-is
+            }
+            const pdfResponse = await fetch(fetchUrl);
+            const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+            pdfBufferFromSource = Buffer.from(pdfArrayBuffer);
+          }
 
           // Generate signed PDF
           const signFields: SignField[] = JSON.parse(refreshedDocument.sign_fields || "[]");
@@ -144,7 +158,7 @@ export async function POST(
             signature_data: s.signature_data,
           }));
 
-          const { pdfBuffer: signedPdfBuffer, hash } = await generateSignedPdf(pdfBuffer, signFields, signerRecords);
+          const { pdfBuffer: signedPdfBuffer, hash } = await generateSignedPdf(pdfBufferFromSource, signFields, signerRecords);
 
           // Add audit trail page
           const finalPdf = await addAuditTrailPage(signedPdfBuffer, auditTrail, refreshedDocument.document_name);
@@ -184,15 +198,99 @@ export async function POST(
             });
           }
         } else {
-          // No PDF to bake signatures into — just mark as completed
-          await db.vaultSignDocument.update({
-            where: { id: refreshedDocument.id },
-            data: {
-              status: "completed",
-              audit_trail: JSON.stringify(auditTrail),
-              updated_at: new Date(),
-            },
-          });
+          // No PDF source URL — try to generate from TipTap content for Word docs
+          if (refreshedDocument.source_type === "word" && refreshedDocument.tiptap_content) {
+            try {
+              const { tiptapToPdfmake, htmlToPdfmake } = await import("@/lib/vaultsign/tiptap-to-pdfmake");
+              const { generatePdfBuffer, HELVETICA_FONTS } = await import("@/lib/vaultsign/pdfmake-server");
+
+              const placeholderValues = JSON.parse(refreshedDocument.placeholder_values || "{}");
+              const pdfOptions = {
+                headerConfig: (() => { try { return JSON.parse((refreshedDocument as any).header_config || "{}"); } catch { return {}; } })(),
+                footerConfig: (() => { try { return JSON.parse((refreshedDocument as any).footer_config || "{}"); } catch { return {}; } })(),
+                organization: refreshedDocument.organization ? {
+                  name: refreshedDocument.organization.name || undefined,
+                  logo_url: (refreshedDocument.organization as any).company_logo_url || undefined,
+                  address: (refreshedDocument.organization as any).company_address || undefined,
+                  phone: (refreshedDocument.organization as any).company_phone || undefined,
+                  email: (refreshedDocument.organization as any).company_email || undefined,
+                } : undefined,
+                documentTitle: refreshedDocument.document_name,
+                placeholderValues,
+              };
+
+              let docDefinition;
+              const rawContent = refreshedDocument.tiptap_content;
+              try {
+                const parsed = JSON.parse(rawContent);
+                if (parsed.type === "doc" && parsed.content) {
+                  docDefinition = tiptapToPdfmake(rawContent, pdfOptions);
+                } else {
+                  docDefinition = htmlToPdfmake(rawContent, pdfOptions);
+                }
+              } catch {
+                docDefinition = htmlToPdfmake(rawContent, pdfOptions);
+              }
+
+              if (docDefinition && docDefinition.content && docDefinition.content.length > 0) {
+                const generatedBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 30000);
+                const uploadResult = await uploadGeneratedPdf(
+                  generatedBuffer,
+                  `org-${refreshedDocument.organization_id}/doc-${refreshedDocument.id}`,
+                  `final-${Date.now()}.pdf`
+                );
+
+                auditTrail.push({
+                  event: "document_completed",
+                  user_name: "System",
+                  timestamp: new Date().toISOString(),
+                });
+
+                await db.vaultSignDocument.update({
+                  where: { id: refreshedDocument.id },
+                  data: {
+                    status: "completed",
+                    final_document_url: uploadResult.url,
+                    audit_trail: JSON.stringify(auditTrail),
+                    updated_at: new Date(),
+                  },
+                });
+
+                // Send completion emails
+                for (const s of refreshedDocument.signers) {
+                  await sendDocumentCompletedEmail({
+                    recipientEmail: s.email,
+                    recipientName: s.name,
+                    documentName: refreshedDocument.document_name,
+                    organizationName: refreshedDocument.organization?.name || "MyZipVault",
+                  });
+                }
+              } else {
+                throw new Error("No printable content");
+              }
+            } catch (genErr) {
+              console.error("[VAULTSIGN] On-the-fly PDF generation for completed doc failed:", genErr);
+              // Just mark as completed without final_document_url
+              await db.vaultSignDocument.update({
+                where: { id: refreshedDocument.id },
+                data: {
+                  status: "completed",
+                  audit_trail: JSON.stringify(auditTrail),
+                  updated_at: new Date(),
+                },
+              });
+            }
+          } else {
+            // No PDF to bake signatures into — just mark as completed
+            await db.vaultSignDocument.update({
+              where: { id: refreshedDocument.id },
+              data: {
+                status: "completed",
+                audit_trail: JSON.stringify(auditTrail),
+                updated_at: new Date(),
+              },
+            });
+          }
         }
       } catch (err) {
         console.error("[VAULTSIGN] Final PDF generation error:", err);

@@ -155,6 +155,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Default header/footer config for blank documents
+    const defaultHeaderConfig = !template_id ? JSON.stringify({
+      show_logo: true,
+      show_company_name: true,
+      show_contact: true,
+      show_address: true,
+      show_document_title: true,
+    }) : templateHeaderConfig;
+
+    const defaultFooterConfig = !template_id ? JSON.stringify({
+      show_rights_reserved: true,
+      show_powered_by: true,
+      show_page_numbers: true,
+    }) : templateFooterConfig;
+
     // Create the document
     const document = await db.vaultSignDocument.create({
       data: {
@@ -172,6 +187,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
         placeholder_values: JSON.stringify(placeholder_values),
         sign_fields: JSON.stringify(templateSignFields),
+        header_config: defaultHeaderConfig,
+        footer_config: defaultFooterConfig,
         audit_trail: JSON.stringify([
           {
             event: "document_created",

@@ -52,6 +52,20 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
+    // ─── For completed documents with final_document_url ─────────────────────
+    if (document.status === "completed" && document.final_document_url) {
+      if (document.final_document_url.startsWith("data:")) {
+        return NextResponse.json({ pdf_url: document.final_document_url, source_type: document.source_type });
+      }
+      try {
+        const signedUrl = await getDocumentSignedUrl(document.final_document_url, 30);
+        return NextResponse.json({ pdf_url: signedUrl, source_type: document.source_type });
+      } catch (signErr) {
+        console.error("[VAULTSIGN] Final PDF signed URL error:", signErr);
+        return NextResponse.json({ pdf_url: document.final_document_url, source_type: document.source_type });
+      }
+    }
+
     // ─── For PDF source documents ─────────────────────────────────────────
     if (document.source_type === "pdf") {
       const fileUrl = document.original_file_url || document.edited_pdf_url;

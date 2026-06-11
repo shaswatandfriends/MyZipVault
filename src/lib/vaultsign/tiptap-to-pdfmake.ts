@@ -98,26 +98,39 @@ export function tiptapToPdfmake(
   const footerContent: Content[] = [];
 
   // Build header
+  // Layout: Left column = logo + company info stacked; Right column = document title
   if (options.headerConfig) {
     const headerParts: Content[] = [];
     const leftParts: Content[] = [];
     const rightParts: Content[] = [];
 
+    // Left column: Logo on top, company details below
+    const logoLine: Content[] = [];
+    const companyDetailsStack: Content[] = [];
+
     if (options.headerConfig.show_logo && options.organization?.logo_url) {
-      leftParts.push({
+      logoLine.push({
         image: options.organization.logo_url,
-        width: 40,
-        height: 40,
-        margin: [0, 0, 10, 0] as any,
+        width: 36,
+        height: 36,
+        margin: [0, 0, 8, 0] as any,
       });
     }
 
     if (options.headerConfig.show_company_name && options.organization?.name) {
-      leftParts.push({
+      logoLine.push({
         text: options.organization.name,
         fontSize: 14,
         bold: true,
         color: "#166534",
+        margin: [0, 4, 0, 0] as any,
+      });
+    }
+
+    if (logoLine.length > 0) {
+      leftParts.push({
+        columns: logoLine,
+        margin: [0, 0, 0, 2] as any,
       });
     }
 
@@ -126,21 +139,37 @@ export function tiptapToPdfmake(
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
       if (contactParts.length > 0) {
-        rightParts.push({
+        companyDetailsStack.push({
           text: contactParts.join(" | "),
           fontSize: 8,
           color: "#6B7280",
-          alignment: "right",
         });
       }
     }
 
     if (options.headerConfig.show_address && options.organization?.address) {
-      rightParts.push({
+      companyDetailsStack.push({
         text: options.organization.address,
         fontSize: 8,
         color: "#6B7280",
+      });
+    }
+
+    if (companyDetailsStack.length > 0) {
+      leftParts.push({
+        stack: companyDetailsStack,
+        margin: [0, 0, 0, 0] as any,
+      });
+    }
+
+    if (options.headerConfig.show_document_title && options.documentTitle) {
+      rightParts.push({
+        text: options.documentTitle,
+        fontSize: 10,
+        bold: true,
+        color: "#374151",
         alignment: "right",
+        margin: [0, 8, 0, 0] as any,
       });
     }
 
@@ -160,36 +189,53 @@ export function tiptapToPdfmake(
   }
 
   // Build footer
+  // Layout: Left/center = rights reserved + powered by; Right = page numbers
   if (options.footerConfig) {
-    const footerParts: Content[] = [];
-    if (options.footerConfig.show_page_numbers) {
-      footerParts.push({
-        text: "Page {currentPage} of {totalPages}",
-        alignment: "center",
-        fontSize: 8,
-        color: "#9CA3AF",
-      });
-    }
+    const footerLeftParts: Content[] = [];
+    const hasPageNumbers = options.footerConfig.show_page_numbers;
+
     if (options.footerConfig.show_rights_reserved) {
-      footerParts.push({
-        text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved.`,
+      footerLeftParts.push({
+        text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
         alignment: "center",
         fontSize: 7,
         color: "#9CA3AF",
       });
     }
     if (options.footerConfig.show_powered_by) {
-      footerParts.push({
-        text: "Powered by VaultSign — MyZipVault",
+      footerLeftParts.push({
+        text: "Powered by VaultSign",
         alignment: "center",
-        fontSize: 7,
-        color: "#9CA3AF",
+        fontSize: 6,
+        color: "#B0B0B0",
       });
     }
 
-    if (footerParts.length > 0) {
+    if (hasPageNumbers || footerLeftParts.length > 0) {
+      const footerColumns: Content[] = [];
+
+      // Center column: rights reserved + powered by
+      if (footerLeftParts.length > 0) {
+        footerColumns.push({
+          stack: footerLeftParts,
+          width: hasPageNumbers ? "*" : "*",
+        });
+      }
+
+      // Right column: page numbers
+      if (hasPageNumbers) {
+        footerColumns.push({
+          text: "Page {currentPage} of {totalPages}",
+          alignment: "right",
+          fontSize: 8,
+          color: "#9CA3AF",
+          width: "auto",
+        });
+      }
+
       footerContent.push({
-        stack: footerParts,
+        columns: footerColumns.length > 1 ? footerColumns : undefined,
+        stack: footerColumns.length <= 1 ? footerLeftParts : undefined,
         margin: [40, 0, 40, 20] as any,
       });
     }
@@ -615,27 +661,38 @@ export function htmlToPdfmake(
   const headerContent: Content[] = [];
   const footerContent: Content[] = [];
 
-  // Build header (same logic as tiptapToPdfmake)
+  // Build header (same layout as tiptapToPdfmake)
   if (options.headerConfig) {
     const leftParts: Content[] = [];
     const rightParts: Content[] = [];
+    const logoLine: Content[] = [];
+    const companyDetailsStack: Content[] = [];
 
     if (options.headerConfig.show_logo && options.organization?.logo_url) {
-      leftParts.push({ image: options.organization.logo_url, width: 40, height: 40, margin: [0, 0, 10, 0] as any });
+      logoLine.push({ image: options.organization.logo_url, width: 36, height: 36, margin: [0, 0, 8, 0] as any });
     }
     if (options.headerConfig.show_company_name && options.organization?.name) {
-      leftParts.push({ text: options.organization.name, fontSize: 14, bold: true, color: "#166534" });
+      logoLine.push({ text: options.organization.name, fontSize: 14, bold: true, color: "#166534", margin: [0, 4, 0, 0] as any });
+    }
+    if (logoLine.length > 0) {
+      leftParts.push({ columns: logoLine, margin: [0, 0, 0, 2] as any });
     }
     if (options.headerConfig.show_contact && options.organization) {
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
       if (contactParts.length > 0) {
-        rightParts.push({ text: contactParts.join(" | "), fontSize: 8, color: "#6B7280", alignment: "right" });
+        companyDetailsStack.push({ text: contactParts.join(" | "), fontSize: 8, color: "#6B7280" });
       }
     }
     if (options.headerConfig.show_address && options.organization?.address) {
-      rightParts.push({ text: options.organization.address, fontSize: 8, color: "#6B7280", alignment: "right" });
+      companyDetailsStack.push({ text: options.organization.address, fontSize: 8, color: "#6B7280" });
+    }
+    if (companyDetailsStack.length > 0) {
+      leftParts.push({ stack: companyDetailsStack });
+    }
+    if (options.headerConfig.show_document_title && options.documentTitle) {
+      rightParts.push({ text: options.documentTitle, fontSize: 10, bold: true, color: "#374151", alignment: "right", margin: [0, 8, 0, 0] as any });
     }
     if (leftParts.length > 0 || rightParts.length > 0) {
       headerContent.push({ columns: [{ stack: leftParts, width: "*" }, { stack: rightParts, width: "auto", alignment: "right" }], margin: [40, 20, 40, 5] as any });
@@ -643,17 +700,31 @@ export function htmlToPdfmake(
     }
   }
 
-  // Build footer
+  // Build footer (same layout as tiptapToPdfmake)
   if (options.footerConfig) {
-    const footerParts: Content[] = [];
-    if (options.footerConfig.show_page_numbers) {
-      footerParts.push({ text: "Page {currentPage} of {totalPages}", alignment: "center", fontSize: 8, color: "#9CA3AF" });
-    }
+    const footerLeftParts: Content[] = [];
+    const hasPageNumbers = options.footerConfig.show_page_numbers;
+
     if (options.footerConfig.show_rights_reserved) {
-      footerParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
+      footerLeftParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
     }
-    if (footerParts.length > 0) {
-      footerContent.push({ stack: footerParts, margin: [40, 0, 40, 20] as any });
+    if (options.footerConfig.show_powered_by) {
+      footerLeftParts.push({ text: "Powered by VaultSign", alignment: "center", fontSize: 6, color: "#B0B0B0" });
+    }
+
+    if (hasPageNumbers || footerLeftParts.length > 0) {
+      const footerColumns: Content[] = [];
+      if (footerLeftParts.length > 0) {
+        footerColumns.push({ stack: footerLeftParts, width: hasPageNumbers ? "*" : "*" });
+      }
+      if (hasPageNumbers) {
+        footerColumns.push({ text: "Page {currentPage} of {totalPages}", alignment: "right", fontSize: 8, color: "#9CA3AF", width: "auto" });
+      }
+      footerContent.push({
+        columns: footerColumns.length > 1 ? footerColumns : undefined,
+        stack: footerColumns.length <= 1 ? footerLeftParts : undefined,
+        margin: [40, 0, 40, 20] as any,
+      });
     }
   }
 

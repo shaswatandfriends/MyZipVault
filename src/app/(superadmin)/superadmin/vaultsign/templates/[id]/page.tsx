@@ -26,6 +26,7 @@ import { FontSize } from "@/lib/vaultsign/tiptap-font-size";
 import { LineHeight } from "@/lib/vaultsign/tiptap-line-height";
 import { ParagraphSpacing } from "@/lib/vaultsign/tiptap-paragraph-spacing";
 import { PageBreak } from "@/lib/vaultsign/tiptap-page-break";
+import { SignFieldExtension } from "@/lib/vaultsign/tiptap-sign-field";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Bold, Italic, Underline as UnderlineIcon,
@@ -84,6 +85,18 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
   ]);
   const [showVariablesPanel, setShowVariablesPanel] = useState(false);
   const [showSignersPanel, setShowSignersPanel] = useState(false);
+  const [headerConfig, setHeaderConfig] = useState({
+    show_logo: true,
+    show_company_name: true,
+    show_contact: true,
+    show_address: true,
+    show_document_title: true,
+  });
+  const [footerConfig, setFooterConfig] = useState({
+    show_rights_reserved: true,
+    show_powered_by: true,
+    show_page_numbers: true,
+  });
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Unwrap params
@@ -104,6 +117,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
       LineHeight,
       ParagraphSpacing,
       PageBreak,
+      SignFieldExtension,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
@@ -159,6 +173,22 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
           ? JSON.parse(data.placeholder_variables)
           : data.placeholder_variables;
         setCustomVariables(vars.filter((v: any) => v.category === "custom"));
+      }
+
+      // Parse header config
+      if (data.header_config) {
+        try {
+          const parsed = typeof data.header_config === "string" ? JSON.parse(data.header_config) : data.header_config;
+          setHeaderConfig(parsed);
+        } catch {}
+      }
+
+      // Parse footer config
+      if (data.footer_config) {
+        try {
+          const parsed = typeof data.footer_config === "string" ? JSON.parse(data.footer_config) : data.footer_config;
+          setFooterConfig(parsed);
+        } catch {}
       }
 
       // Set editor content
@@ -217,6 +247,8 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
             ...SYSTEM_VARIABLES,
             ...customVariables.map((v) => ({ ...v, category: "custom" as const })),
           ],
+          header_config: headerConfig,
+          footer_config: footerConfig,
         }),
       });
     } catch (err) {
@@ -244,6 +276,8 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
             ...SYSTEM_VARIABLES,
             ...customVariables.map((v) => ({ ...v, category: "custom" as const })),
           ],
+          header_config: headerConfig,
+          footer_config: footerConfig,
         }),
       });
       if (res.ok) {
@@ -283,8 +317,12 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
     setSignFields([...signFields, newField]);
 
     if (editor) {
-      const marker = `[${FIELD_TYPE_LABELS[type].toUpperCase()} — Signer ${signerIndex + 1}]`;
-      editor.chain().focus().insertContent(marker).run();
+      editor.chain().focus().insertSignField({
+        fieldType: type,
+        assignedToSignerIndex: signerIndex,
+        signerLabel: signerSlots.find(s => s.index === signerIndex)?.label || `Signer ${signerIndex + 1}`,
+        fieldId: newField.id,
+      }).run();
     }
   };
 
@@ -457,6 +495,132 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
     <>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
+          {/* Header & Footer Settings */}
+          <div>
+            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Header &amp; Footer Settings</h4>
+            <p className="text-[10px] text-[#9CA3AF] mb-2">Configure what appears in the document header and footer</p>
+
+            {/* Header Settings */}
+            <div className="mb-2">
+              <span className="text-[10px] font-semibold text-[#374151] uppercase tracking-wide">Header</span>
+              <div className="space-y-1.5 mt-1.5">
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Logo</span>
+                    <p className="text-[9px] text-[#9CA3AF]">Company logo will appear here</p>
+                  </div>
+                  <button
+                    onClick={() => setHeaderConfig({ ...headerConfig, show_logo: !headerConfig.show_logo })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${headerConfig.show_logo ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_logo ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Company Name</span>
+                    <p className="text-[9px] text-[#9CA3AF]">{"{{company_name}}"}</p>
+                  </div>
+                  <button
+                    onClick={() => setHeaderConfig({ ...headerConfig, show_company_name: !headerConfig.show_company_name })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${headerConfig.show_company_name ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_company_name ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Contact / Phone+Email</span>
+                    <p className="text-[9px] text-[#9CA3AF]">{"{{company_phone}}"} | {"{{company_email}}"}</p>
+                  </div>
+                  <button
+                    onClick={() => setHeaderConfig({ ...headerConfig, show_contact: !headerConfig.show_contact })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${headerConfig.show_contact ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_contact ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Address</span>
+                    <p className="text-[9px] text-[#9CA3AF]">{"{{company_address}}"}</p>
+                  </div>
+                  <button
+                    onClick={() => setHeaderConfig({ ...headerConfig, show_address: !headerConfig.show_address })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${headerConfig.show_address ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_address ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Document Title</span>
+                    <p className="text-[9px] text-[#9CA3AF]">Document title will appear here</p>
+                  </div>
+                  <button
+                    onClick={() => setHeaderConfig({ ...headerConfig, show_document_title: !headerConfig.show_document_title })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${headerConfig.show_document_title ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_document_title ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-2" />
+
+            {/* Footer Settings */}
+            <div>
+              <span className="text-[10px] font-semibold text-[#374151] uppercase tracking-wide">Footer</span>
+              <div className="space-y-1.5 mt-1.5">
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Rights Reserved</span>
+                    <p className="text-[9px] text-[#9CA3AF]">© 2025 {"{{company_name}}"}. All rights reserved.</p>
+                  </div>
+                  <button
+                    onClick={() => setFooterConfig({ ...footerConfig, show_rights_reserved: !footerConfig.show_rights_reserved })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${footerConfig.show_rights_reserved ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_rights_reserved ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Powered by VaultSign</span>
+                    <p className="text-[9px] text-[#9CA3AF]">Powered by VaultSign</p>
+                  </div>
+                  <button
+                    onClick={() => setFooterConfig({ ...footerConfig, show_powered_by: !footerConfig.show_powered_by })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${footerConfig.show_powered_by ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_powered_by ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                  <div>
+                    <span className="text-xs text-[#374151]">Show Page Numbers</span>
+                    <p className="text-[9px] text-[#9CA3AF]">Page X of Y</p>
+                  </div>
+                  <button
+                    onClick={() => setFooterConfig({ ...footerConfig, show_page_numbers: !footerConfig.show_page_numbers })}
+                    className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${footerConfig.show_page_numbers ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_page_numbers ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Signer Slots */}
           <div>
             <div className="flex items-center justify-between mb-2">

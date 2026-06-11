@@ -132,10 +132,36 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDownload = async () => {
-    if (document?.final_document_url) {
-      window.open(document.final_document_url, "_blank");
-    } else if (document?.edited_pdf_url) {
-      window.open(document.edited_pdf_url, "_blank");
+    try {
+      // Try export-pdf API first (handles signed URL generation and PDF generation from content)
+      const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, {
+        method: "POST",
+        signal: AbortSignal.timeout(30000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.pdf_url) {
+          window.open(data.pdf_url, "_blank");
+          return;
+        }
+      }
+      // Fallback: open the final_document_url or edited_pdf_url directly
+      if (document?.final_document_url) {
+        window.open(document.final_document_url, "_blank");
+      } else if (document?.edited_pdf_url) {
+        window.open(document.edited_pdf_url, "_blank");
+      } else {
+        toast.error("No PDF available for download");
+      }
+    } catch (err: any) {
+      // Fallback to direct URLs
+      if (document?.final_document_url) {
+        window.open(document.final_document_url, "_blank");
+      } else if (document?.edited_pdf_url) {
+        window.open(document.edited_pdf_url, "_blank");
+      } else {
+        toast.error(err.message || "Failed to download PDF");
+      }
     }
   };
 

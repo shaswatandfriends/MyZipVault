@@ -65,6 +65,18 @@ export async function PUT(
       updateData.document_name = body.document_name;
     }
 
+    if (body.header_config !== undefined) {
+      updateData.header_config = typeof body.header_config === "string"
+        ? body.header_config
+        : JSON.stringify(body.header_config);
+    }
+
+    if (body.footer_config !== undefined) {
+      updateData.footer_config = typeof body.footer_config === "string"
+        ? body.footer_config
+        : JSON.stringify(body.footer_config);
+    }
+
     await db.vaultSignDocument.update({
       where: { id: docId },
       data: updateData,

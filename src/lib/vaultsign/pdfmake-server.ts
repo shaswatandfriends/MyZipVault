@@ -8,43 +8,55 @@
  * 4. `createPdf()` returns an OutputDocumentServer with `.getBuffer()` and `.getBase64()` methods
  *
  * We use the high-level API for robustness — it manages virtualfs and URLResolver internally.
+ *
+ * IMPORTANT: We do NOT call pdfmake.setFonts() with string names like "Helvetica" because
+ * that causes pdfmake/PDFKit to look for .afm font metric files on the filesystem. In
+ * deployment environments (Vercel, Docker), these files may not be available, causing crashes.
+ *
+ * Instead, we use PdfPrinter directly with the PDFKit built-in font descriptors,
+ * which are embedded in the PDFKit binary and don't require file system access.
  */
 
-let _pdfmakeInstance: any = null;
+import type { TDocumentDefinitions } from "pdfmake/interfaces";
+
+let _pdfPrinter: any = null;
 
 /**
- * Get the pdfmake singleton with proper initialization.
- * Caches the instance for subsequent calls.
+ * Get the PdfPrinter instance with proper font configuration.
+ * Uses PDFKit's 14 standard fonts (Helvetica, Courier, Times-Roman) which are
+ * embedded in the PDFKit binary and don't need file system access.
  */
-export async function getPdfmakeInstance(): Promise<any> {
-  if (_pdfmakeInstance) return _pdfmakeInstance;
+function getPdfPrinter(): any {
+  if (_pdfPrinter) return _pdfPrinter;
 
-  // Use require() for CommonJS compatibility in Next.js server environment
-  const pdfmake = require('pdfmake');
+  const PdfPrinter = require("pdfmake");
 
-  // Set fonts using the built-in Helvetica (no file system access needed)
-  // These are PDFKit's 14 standard fonts — they don't need file system access
-  pdfmake.setFonts({
+  // Define fonts using PDFKit's built-in standard font names.
+  // These are the 14 standard PDF fonts that PDFKit knows about natively.
+  // They don't require .afm files or any file system access.
+  const fonts = {
     Helvetica: {
       normal: "Helvetica",
       bold: "Helvetica-Bold",
       italics: "Helvetica-Oblique",
       bolditalics: "Helvetica-BoldOblique",
     },
-  });
+    Courier: {
+      normal: "Courier",
+      bold: "Courier-Bold",
+      italics: "Courier-Oblique",
+      bolditalics: "Courier-BoldOblique",
+    },
+    "Times-Roman": {
+      normal: "Times-Roman",
+      bold: "Times-Bold",
+      italics: "Times-Italic",
+      bolditalics: "Times-BoldItalic",
+    },
+  };
 
-  // Set URL access policy to deny external resources (security best practice)
-  // We don't want PDF generation to make outbound network requests
-  pdfmake.setUrlAccessPolicy(() => false);
-
-  // IMPORTANT: We do NOT set a restrictive localAccessPolicy here because
-  // pdfmake v0.3.x considers the built-in PDFKit fonts (Helvetica, Courier, etc.)
-  // as "local resources" and will deny access to them if the policy returns false.
-  // Since we only use built-in fonts (no file system fonts), there's no security risk
-  // in allowing local access — the built-in fonts are embedded in PDFKit itself.
-
-  _pdfmakeInstance = pdfmake;
-  return _pdfmakeInstance;
+  _pdfPrinter = new PdfPrinter(fonts);
+  return _pdfPrinter;
 }
 
 /**
@@ -63,27 +75,37 @@ export const HELVETICA_FONTS = {
 /**
  * Generate a PDF buffer from a pdfmake docDefinition.
  *
- * Uses pdfmake 0.3.x high-level API which:
- * - Handles virtualfs and URL resolution internally
- * - Returns a Promise<Buffer> via getBuffer()
- * - Properly manages the PDFKit document lifecycle
+ * Uses PdfPrinter directly to avoid the pdfmake.setFonts() issue where
+ * font name strings cause .afm file lookups on the filesystem.
  *
  * @param docDefinition - pdfmake document definition object
- * @param fonts - Font definitions (unused in high-level API, kept for API compatibility)
+ * @param fonts - Font definitions (unused, kept for API compatibility)
  * @param timeoutMs - Timeout in milliseconds (default: 30000)
  */
 export async function generatePdfBuffer(
-  docDefinition: any,
+  docDefinition: TDocumentDefinitions,
   fonts: Record<string, any> = HELVETICA_FONTS,
   timeoutMs: number = 30000
 ): Promise<Buffer> {
-  const pdfmake = await getPdfmakeInstance();
+  const printer = getPdfPrinter();
 
-  // Create the PDF document using the high-level API
-  const pdfDoc = pdfmake.createPdf(docDefinition);
+  // Create the PDF document using PdfPrinter
+  const pdfDoc = printer.createPdfKitDocument(docDefinition);
 
-  // Generate buffer with timeout protection
-  const bufferPromise = pdfDoc.getBuffer();
+  // Collect chunks into a buffer
+  const bufferPromise = new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    pdfDoc.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+    pdfDoc.on("end", () => {
+      resolve(Buffer.concat(chunks));
+    });
+    pdfDoc.on("error", (err: Error) => {
+      reject(err);
+    });
+    pdfDoc.end();
+  });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
@@ -98,4 +120,14 @@ export async function generatePdfBuffer(
   }
 
   return buffer;
+}
+
+/**
+ * @deprecated Use generatePdfBuffer instead. This function is kept for backward compatibility
+ * but the pdfmake singleton approach with setFonts() causes deployment crashes.
+ */
+export async function getPdfmakeInstance(): Promise<any> {
+  console.warn("[VAULTSIGN] getPdfmakeInstance() is deprecated. Use generatePdfBuffer() directly.");
+  const pdfmake = require("pdfmake");
+  return pdfmake;
 }

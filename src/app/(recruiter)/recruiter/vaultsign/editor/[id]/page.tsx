@@ -26,6 +26,7 @@ import { FontSize } from "@/lib/vaultsign/tiptap-font-size";
 import { LineHeight } from "@/lib/vaultsign/tiptap-line-height";
 import { ParagraphSpacing } from "@/lib/vaultsign/tiptap-paragraph-spacing";
 import { PageBreak } from "@/lib/vaultsign/tiptap-page-break";
+import { SignFieldExtension } from "@/lib/vaultsign/tiptap-sign-field";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, FileDown, Send, Bold, Italic, Underline as UnderlineIcon,
@@ -83,9 +84,26 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const pdfDocRef = useRef<any>(null);
 
+  // Header & Footer config
+  const [headerConfig, setHeaderConfig] = useState({
+    show_logo: true,
+    show_company_name: true,
+    show_contact: true,
+    show_address: true,
+    show_document_title: true,
+  });
+  const [footerConfig, setFooterConfig] = useState({
+    show_rights_reserved: true,
+    show_powered_by: true,
+    show_page_numbers: true,
+  });
+
   // Delete dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Send for signature
+  const [sending, setSending] = useState(false);
 
   // Unwrap params
   useEffect(() => {
@@ -105,6 +123,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       LineHeight,
       ParagraphSpacing,
       PageBreak,
+      SignFieldExtension,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
@@ -147,6 +166,19 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       setSigners(data.signers || []);
       setSignFields(data.sign_fields || []);
       setPlaceholderValues(data.placeholder_values || {});
+
+      if (data.header_config) {
+        try {
+          const parsed = typeof data.header_config === "string" ? JSON.parse(data.header_config) : data.header_config;
+          setHeaderConfig(parsed);
+        } catch {}
+      }
+      if (data.footer_config) {
+        try {
+          const parsed = typeof data.footer_config === "string" ? JSON.parse(data.footer_config) : data.footer_config;
+          setFooterConfig(parsed);
+        } catch {}
+      }
 
       if (data.template?.placeholder_variables) {
         const vars = typeof data.template.placeholder_variables === "string"
@@ -212,6 +244,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           placeholder_values: placeholderValues,
           sign_fields: signFields,
           document_name: docName,
+          header_config: headerConfig,
+          footer_config: footerConfig,
         }),
       });
       if (res.ok) {
@@ -396,6 +430,27 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  // Send for signature
+  const handleSendForSignature = async () => {
+    if (!docId) return;
+    try {
+      setSending(true);
+      await handleSave(); // Save first
+      const res = await fetch(`/api/vaultsign/documents/${docId}/send`, { method: "POST" });
+      if (res.ok) {
+        toast.success("Document sent for signature");
+        router.push(`/recruiter/vaultsign/${docId}`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to send");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send for signature");
+    } finally {
+      setSending(false);
+    }
+  };
+
   // Insert variable at cursor
   const insertVariable = (varKey: string) => {
     if (!editor) return;
@@ -472,8 +527,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     setSignFields(updated);
 
     if (editor) {
-      const marker = `[${FIELD_TYPE_LABELS[type].toUpperCase()} — Signer ${signerIndex + 1}]`;
-      editor.chain().focus().insertContent(marker).run();
+      editor.chain().focus().insertSignField({
+        fieldType: type,
+        assignedToSignerIndex: signerIndex,
+        signerLabel: signers[signerIndex]?.name || `Signer ${signerIndex + 1}`,
+        fieldId: newField.id,
+      }).run();
     }
   };
 
@@ -643,6 +702,62 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     <>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
+          {/* Header & Footer Settings */}
+          <div>
+            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Header & Footer</h4>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Logo</span>
+                <button onClick={() => setHeaderConfig({...headerConfig, show_logo: !headerConfig.show_logo})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_logo ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_logo ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Company Name</span>
+                <button onClick={() => setHeaderConfig({...headerConfig, show_company_name: !headerConfig.show_company_name})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_company_name ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_company_name ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Contact</span>
+                <button onClick={() => setHeaderConfig({...headerConfig, show_contact: !headerConfig.show_contact})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_contact ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_contact ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Address</span>
+                <button onClick={() => setHeaderConfig({...headerConfig, show_address: !headerConfig.show_address})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_address ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_address ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Doc Title</span>
+                <button onClick={() => setHeaderConfig({...headerConfig, show_document_title: !headerConfig.show_document_title})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_document_title ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_document_title ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <Separator className="my-1" />
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Rights Reserved</span>
+                <button onClick={() => setFooterConfig({...footerConfig, show_rights_reserved: !footerConfig.show_rights_reserved})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_rights_reserved ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_rights_reserved ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Powered by</span>
+                <button onClick={() => setFooterConfig({...footerConfig, show_powered_by: !footerConfig.show_powered_by})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_powered_by ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_powered_by ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+                <span className="text-xs text-[#374151]">Show Page Numbers</span>
+                <button onClick={() => setFooterConfig({...footerConfig, show_page_numbers: !footerConfig.show_page_numbers})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_page_numbers ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_page_numbers ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Signers */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -858,6 +973,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-[#E5E7EB] text-[#111827]">
             <FileDown className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Export PDF</span>
+          </Button>
+          <Button size="sm" className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={handleSendForSignature} disabled={sending || document?.status !== "draft"}>
+            {sending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+            <span className="hidden sm:inline">Send for Signature</span>
           </Button>
 
           {/* More actions dropdown */}
