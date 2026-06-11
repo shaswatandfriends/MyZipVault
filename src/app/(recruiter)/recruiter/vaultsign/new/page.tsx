@@ -163,7 +163,7 @@ function NewDocumentContent() {
       const body: any = {
         document_name: docName,
         document_type: docType,
-        source_type: source === "template" ? "word" : uploadedSourceType || "pdf",
+        source_type: source === "template" || source === "blank" ? "word" : uploadedSourceType || "pdf",
         template_id: selectedTemplateId,
         original_file_url: uploadedFileUrl,
         signing_order: signingOrder,
@@ -193,8 +193,14 @@ function NewDocumentContent() {
 
       const doc = await res.json();
 
-      // Redirect to signer page where user can place sign fields on the PDF
-      router.push(`/recruiter/vaultsign/signer/${doc.id}`);
+      // Redirect to appropriate page:
+      // - PDF uploads → signer page (place sign fields on the PDF)
+      // - Blank/Template → Word editor (compose or edit content first)
+      const route = doc.source_type === "pdf"
+        ? `/recruiter/vaultsign/signer/${doc.id}`
+        : `/recruiter/vaultsign/editor/${doc.id}`;
+
+      router.push(route);
     } catch (err: any) {
       toast.error(err.message || "Failed to create document");
     } finally {
@@ -279,7 +285,7 @@ function NewDocumentContent() {
                 <CardContent className="p-4 text-center">
                   <Plus className="h-8 w-8 mx-auto text-[#166534] mb-2" />
                   <p className="font-medium text-[#111827]">Blank Document</p>
-                  <p className="text-xs text-[#6B7280]">Start from scratch</p>
+                  <p className="text-xs text-[#6B7280]">Create your own template (RTR, offer letter, etc.)</p>
                 </CardContent>
               </Card>
             </div>
