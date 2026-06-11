@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ArrowRight, Upload, FileText, FileSignature,
+  ArrowLeft, ArrowRight, Upload, FileSignature,
   LayoutTemplate, Loader2, Plus, Trash2, X, Check
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ function NewDocumentContent() {
   const templateIdParam = searchParams.get("template_id");
 
   const [step, setStep] = useState(1);
-  const [source, setSource] = useState<"template" | "upload_docx" | "upload_pdf" | "blank" | null>(null);
+  const [source, setSource] = useState<"template" | "upload_pdf" | "blank" | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
     templateIdParam ? parseInt(templateIdParam) : null
   );
@@ -63,8 +63,7 @@ function NewDocumentContent() {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
-  const [uploadedHtmlContent, setUploadedHtmlContent] = useState<string | null>(null);
-  const [uploadedSourceType, setUploadedSourceType] = useState<"word" | "pdf" | null>(null);
+  const [uploadedSourceType, setUploadedSourceType] = useState<"pdf" | null>(null);
 
   // Fetch templates
   useEffect(() => {
@@ -95,16 +94,12 @@ function NewDocumentContent() {
   }, [selectedTemplateId, templates]);
 
   // Handle file upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, expectedType: "docx" | "pdf") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (expectedType === "docx" && ext !== "docx" && ext !== "doc") {
-      toast.error("Please upload a .docx file");
-      return;
-    }
-    if (expectedType === "pdf" && ext !== "pdf") {
+    if (ext !== "pdf") {
       toast.error("Please upload a .pdf file");
       return;
     }
@@ -127,9 +122,6 @@ function NewDocumentContent() {
       const data = await res.json();
       setUploadedFileUrl(data.document_url);
       setUploadedSourceType(data.source_type);
-      if (data.html_content) {
-        setUploadedHtmlContent(data.html_content);
-      }
       if (!docName) {
         setDocName(file.name.replace(/\.[^.]+$/, ""));
       }
@@ -171,10 +163,9 @@ function NewDocumentContent() {
       const body: any = {
         document_name: docName,
         document_type: docType,
-        source_type: source === "template" ? "word" : uploadedSourceType || "word",
+        source_type: source === "template" ? "word" : uploadedSourceType || "pdf",
         template_id: selectedTemplateId,
         original_file_url: uploadedFileUrl,
-        tiptap_content: uploadedHtmlContent || undefined,
         signing_order: signingOrder,
         expiry_date: new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString(),
         personal_message: personalMessage || undefined,
@@ -202,12 +193,8 @@ function NewDocumentContent() {
 
       const doc = await res.json();
 
-      // Redirect to appropriate editor
-      const route = doc.source_type === "pdf"
-        ? `/recruiter/vaultsign/signer/${doc.id}`
-        : `/recruiter/vaultsign/editor/${doc.id}`;
-
-      router.push(route);
+      // Redirect to signer page where user can place sign fields on the PDF
+      router.push(`/recruiter/vaultsign/signer/${doc.id}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to create document");
     } finally {
@@ -272,27 +259,14 @@ function NewDocumentContent() {
 
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "upload_docx" ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB] hover:border-[#166534]/30"
-                }`}
-                onClick={() => setSource("upload_docx")}
-              >
-                <CardContent className="p-4 text-center">
-                  <FileText className="h-8 w-8 mx-auto text-[#166534] mb-2" />
-                  <p className="font-medium text-[#111827]">Upload .docx</p>
-                  <p className="text-xs text-[#6B7280]">Full rich text editing</p>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={`rounded-2xl cursor-pointer transition-all border-2 ${
                   source === "upload_pdf" ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB] hover:border-[#166534]/30"
                 }`}
                 onClick={() => setSource("upload_pdf")}
               >
                 <CardContent className="p-4 text-center">
                   <FileSignature className="h-8 w-8 mx-auto text-[#166534] mb-2" />
-                  <p className="font-medium text-[#111827]">Upload .pdf</p>
-                  <p className="text-xs text-[#6B7280]">Place fields on read-only PDF</p>
+                  <p className="font-medium text-[#111827]">Upload PDF</p>
+                  <p className="text-xs text-[#6B7280]">Edit your Word file, save as PDF, then upload for signing</p>
                 </CardContent>
               </Card>
 
@@ -333,16 +307,16 @@ function NewDocumentContent() {
             )}
 
             {/* File upload */}
-            {(source === "upload_docx" || source === "upload_pdf") && (
+            {source === "upload_pdf" && (
               <div className="mt-4">
                 <Label className="text-sm font-medium text-[#111827]">
-                  Upload {source === "upload_docx" ? ".docx" : ".pdf"} File
+                  Upload PDF File
                 </Label>
                 <div className="mt-1">
                   <Input
                     type="file"
-                    accept={source === "upload_docx" ? ".docx,.doc" : ".pdf"}
-                    onChange={(e) => handleFileUpload(e, source === "upload_docx" ? "docx" : "pdf")}
+                    accept=".pdf"
+                    onChange={(e) => handleFileUpload(e)}
                     disabled={uploading}
                     className="max-w-md"
                   />
@@ -356,7 +330,7 @@ function NewDocumentContent() {
               <Button
                 className="bg-[#166534] hover:bg-[#14532D] text-white"
                 onClick={() => setStep(2)}
-                disabled={!source || ((source === "upload_docx" || source === "upload_pdf") && !uploadedFileUrl) || (source === "template" && !selectedTemplateId)}
+                disabled={!source || (source === "upload_pdf" && !uploadedFileUrl) || (source === "template" && !selectedTemplateId)}
               >
                 Next <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
@@ -519,7 +493,7 @@ function NewDocumentContent() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-[#6B7280]">Source</span>
-                  <Badge variant="outline">{source === "template" ? "Template" : source === "upload_docx" ? "Word Upload" : source === "upload_pdf" ? "PDF Upload" : "Blank"}</Badge>
+                  <Badge variant="outline">{source === "template" ? "Template" : source === "upload_pdf" ? "PDF Upload" : "Blank"}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-[#6B7280]">Type</span>

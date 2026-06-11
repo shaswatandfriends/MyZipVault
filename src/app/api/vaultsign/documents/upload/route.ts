@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { uploadDocument } from "@/lib/vaultsign/supabase-storage";
-import { docxToFormattedHtml } from "@/lib/vaultsign/docx-to-html";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,11 +23,10 @@ export async function POST(request: NextRequest) {
     }
 
     const fileName = file.name.toLowerCase();
-    const isDocx = fileName.endsWith(".docx") || fileName.endsWith(".doc");
     const isPdf = fileName.endsWith(".pdf");
 
-    if (!isDocx && !isPdf) {
-      return NextResponse.json({ error: "Only .docx and .pdf files are supported" }, { status: 400 });
+    if (!isPdf) {
+      return NextResponse.json({ error: "Only .pdf files are supported. Please edit your Word document and save as PDF before uploading." }, { status: 400 });
     }
 
     // Read file as buffer
@@ -40,28 +38,10 @@ export async function POST(request: NextRequest) {
     const folder = `org-${orgId}/uploads`;
     const uploadResult = await uploadDocument(buffer, folder, file.name, file.type);
 
-    if (isDocx) {
-      // Convert .docx to HTML preserving formatting (colors, fonts, sizes, spacing)
-      let htmlContent = "";
-      try {
-        htmlContent = await docxToFormattedHtml(buffer);
-      } catch (err) {
-        console.error("[VAULTSIGN] docx-to-html conversion error:", err);
-        htmlContent = "<p>Document content could not be converted. Please edit manually.</p>";
-      }
-
-      return NextResponse.json({
-        document_url: uploadResult.url,
-        html_content: htmlContent,
-        source_type: "word",
-      });
-    } else {
-      // PDF — just return the URL
-      return NextResponse.json({
-        document_url: uploadResult.url,
-        source_type: "pdf",
-      });
-    }
+    return NextResponse.json({
+      document_url: uploadResult.url,
+      source_type: "pdf",
+    });
   } catch (error) {
     console.error("[VAULTSIGN] Upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
