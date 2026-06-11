@@ -50,3 +50,49 @@ Stage Summary:
 - Word format: Added FontSize, LineHeight, ParagraphSpacing TipTap extensions to preserve colors, fonts, sizes, spacing from docx-to-html conversion
 - New files created: /src/lib/vaultsign/tiptap-font-size.ts, /src/lib/vaultsign/tiptap-line-height.ts, /src/lib/vaultsign/tiptap-paragraph-spacing.ts
 - Modified files: signer/[id]/page.tsx, editor/[id]/page.tsx, export-pdf/route.ts, tiptap-to-pdfmake.ts
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix all remaining VaultSign issues - SS1 PDF export error, SS2 format fidelity/page breaks/toolbar, SS4 clickable buttons, delete option
+
+Work Log:
+- Investigated all remaining issues from prior sessions
+- Created LibreOffice headless DOCX→PDF conversion utility (/src/lib/vaultsign/libreoffice-convert.ts) with:
+  - convertDocxToPdf() for buffer-based conversion
+  - isLibreOfficeAvailable() check
+  - Proper temp file handling with cleanup
+  - Timeout protection (30s default)
+  - Lock conflict prevention with separate user profiles
+- Created /api/vaultsign/documents/[id]/convert-pdf route for generating exact-format PDF previews
+- Rewrote export-pdf route to use LibreOffice as primary conversion method with pdfmake fallback
+  - Strategy 1: LibreOffice headless for exact DOCX→PDF fidelity (pixel-perfect)
+  - Strategy 2: pdfmake fallback if LibreOffice unavailable or fails
+  - Returns conversion_method in response for debugging
+- Updated PageBreak TipTap extension to:
+  - Parse legacy <hr style="page-break-after: always;"> from docx-to-html
+  - Render as <hr data-page-break> with contenteditable="false"
+  - Add keyboard shortcut Ctrl+Enter for page break insertion
+  - Insert paragraph after page break for better cursor behavior
+- Completely rewrote editor page with major improvements:
+  - Added Edit/Preview toggle — Preview mode shows LibreOffice-converted PDF with exact formatting
+  - PDF preview with page navigation, zoom controls, and canvas rendering via pdfjs-dist
+  - Improved toolbar with Tooltips on all buttons
+  - Reorganized toolbar groups: Undo, Font, Paragraph, Insert, Styles
+  - Sign field buttons are now clickable with emoji icons AND text labels in 2-column grid
+  - Tooltip on each sign field button explaining what it does
+  - Delete document dialog with confirmation
+  - More actions dropdown (⋯) with Generate Preview and Delete options
+  - Page break visual styling improved with "— Page Break —" label and dashed line
+  - Legacy page-break-after HR elements now also get visual treatment
+  - "Exact Format Preview" badge in PDF preview toolbar
+
+Stage Summary:
+- SS1 (PDF export error): Fixed with LibreOffice headless as primary, pdfmake as fallback
+- SS2 (format fidelity): LibreOffice gives exact format in PDF preview and export; Edit mode preserves formatting with TipTap extensions
+- SS2 (page breaks): Visual page break styling in editor; LibreOffice preserves actual page breaks in PDF
+- SS2 (toolbar): Improved with tooltips, reorganized groups, cleaner layout
+- SS4 (clickable buttons): Sign field buttons now have icons + labels, are clickable, with tooltips
+- Delete option: Added delete dialog accessible from ⋯ menu
+- New files: /src/lib/vaultsign/libreoffice-convert.ts, /src/app/api/vaultsign/documents/[id]/convert-pdf/route.ts
+- Modified files: /src/lib/vaultsign/tiptap-page-break.ts, /src/app/api/vaultsign/documents/[id]/export-pdf/route.ts, /src/app/(recruiter)/recruiter/vaultsign/editor/[id]/page.tsx
+- Build verified successful

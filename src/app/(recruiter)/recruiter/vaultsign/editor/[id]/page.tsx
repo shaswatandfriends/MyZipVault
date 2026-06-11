@@ -33,7 +33,8 @@ import {
   List, ListOrdered, CheckSquare, Undo2, Redo2, Type, Palette,
   Highlighter, Subscript as SubIcon, Superscript as SupIcon, Plus, Trash2,
   Variable, ChevronDown, X, Loader2, TableIcon, ImagePlus, Minus,
-  Menu, PanelLeftIcon, PanelRightIcon, MoreVertical, ArrowUpDown, FileText
+  Menu, PanelLeftIcon, PanelRightIcon, MoreVertical, ArrowUpDown, FileText,
+  Eye, Edit3, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, AlertTriangle
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +43,11 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SYSTEM_VARIABLES, SIGNER_COLORS, FIELD_TYPE_LABELS, FIELD_TYPE_ICONS, type SignField, type SignFieldType } from "@/lib/vaultsign/types";
 
 export default function WordEditorPage({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +72,21 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const lastSaved = useRef<string>("");
 
+  // PDF Preview state
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfPage, setPdfPage] = useState(1);
+  const [pdfTotalPages, setPdfTotalPages] = useState(0);
+  const [pdfZoom, setPdfZoom] = useState(1.0);
+  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pdfDocRef = useRef<any>(null);
+
+  // Delete dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   // Unwrap params
   useEffect(() => {
     params.then((p) => setDocId(p.id));
@@ -84,10 +101,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       FontFamily,
       TextStyle,
       Color,
-      FontSize,         // Preserves font-size from docx inline styles
-      LineHeight,        // Preserves line-height from docx inline styles
-      ParagraphSpacing,  // Preserves margin-top/margin-bottom from docx inline styles
-      PageBreak,          // Insert page breaks that carry through to PDF
+      FontSize,
+      LineHeight,
+      ParagraphSpacing,
+      PageBreak,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
@@ -105,7 +122,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     ],
     content: "",
     onUpdate: ({ editor }) => {
-      // Debounced auto-save
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
       autoSaveTimer.current = setTimeout(() => {
         handleAutoSave(editor.getJSON());
@@ -132,7 +148,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       setSignFields(data.sign_fields || []);
       setPlaceholderValues(data.placeholder_values || {});
 
-      // Parse custom variables from template or existing data
       if (data.template?.placeholder_variables) {
         const vars = typeof data.template.placeholder_variables === "string"
           ? JSON.parse(data.template.placeholder_variables)
@@ -147,29 +162,29 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             ? data.tiptap_content
             : JSON.stringify(data.tiptap_content);
 
-          // Try parsing as TipTap JSON first
           try {
             const parsed = JSON.parse(rawContent);
             if (parsed.type === "doc" && parsed.content) {
               editor.commands.setContent(parsed);
             } else {
-              // Valid JSON but not TipTap format — treat as HTML string
               editor.commands.setContent(rawContent);
             }
           } catch {
-            // Not valid JSON — treat as HTML string
-            // This handles HTML from our docx-to-html converter
             editor.commands.setContent(rawContent);
           }
         } catch (setContentErr) {
           console.error("Failed to set editor content:", setContentErr);
-          // Last resort: try setting as raw HTML
           try {
             editor.commands.setContent(data.tiptap_content);
           } catch {
             // Give up silently
           }
         }
+      }
+
+      // If document has an edited_pdf_url, we can use it for preview
+      if (data.edited_pdf_url) {
+        setPdfUrl(data.edited_pdf_url);
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -217,12 +232,48 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     toast.success("Draft saved");
   };
 
+  // Generate PDF Preview using LibreOffice
+  const handleGeneratePreview = useCallback(async () => {
+    if (!docId) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      await handleSave();
+      const res = await fetch(`/api/vaultsign/documents/${docId}/convert-pdf`, {
+        method: "POST",
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Conversion failed");
+      }
+      const data = await res.json();
+      if (data.pdf_url) {
+        setPdfUrl(data.pdf_url);
+        setPdfPage(1);
+        setPdfTotalPages(0);
+        setViewMode("preview");
+        toast.success("PDF preview generated with exact formatting");
+      } else {
+        throw new Error("No PDF URL returned");
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        setPdfError("PDF generation timed out. Please try again.");
+      } else {
+        setPdfError(err.message || "Failed to generate PDF preview");
+      }
+      toast.error(err.message || "Failed to generate PDF preview");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [docId]);
+
   // Export PDF
   const handleExportPdf = async () => {
     const loadingToast = toast.loading("Generating PDF...");
     try {
       await handleSave();
-      // Use AbortController with 45s timeout to prevent infinite buffering
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 45000);
       const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, {
@@ -250,6 +301,96 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  // Render PDF page on canvas
+  const renderPdfPage = useCallback(async () => {
+    if (!pdfUrl || !pdfCanvasRef.current) return;
+
+    try {
+      // Dynamically import pdfjs-dist
+      const pdfjsLib = await import("pdfjs-dist");
+
+      // Set worker source
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+      }
+
+      let docToRender = pdfDocRef.current;
+
+      if (!docToRender) {
+        let loadingTask;
+        if (pdfUrl.startsWith("data:")) {
+          const base64 = pdfUrl.split(",")[1];
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          loadingTask = pdfjsLib.getDocument({ data: bytes });
+        } else {
+          loadingTask = pdfjsLib.getDocument(pdfUrl);
+        }
+
+        docToRender = await loadingTask.promise;
+        pdfDocRef.current = docToRender;
+        setPdfTotalPages(docToRender.numPages);
+      }
+
+      const page = await docToRender.getPage(pdfPage);
+      const viewport = page.getViewport({ scale: pdfZoom * 1.5 });
+      const canvas = pdfCanvasRef.current;
+      const context = canvas.getContext("2d");
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+      }).promise;
+    } catch (err) {
+      console.error("PDF render error:", err);
+      setPdfError("Failed to render PDF page");
+    }
+  }, [pdfUrl, pdfPage, pdfZoom]);
+
+  // Load and render PDF when switching to preview mode
+  useEffect(() => {
+    if (viewMode === "preview" && pdfUrl) {
+      pdfDocRef.current = null; // Reset when switching
+      renderPdfPage();
+    }
+  }, [viewMode, pdfUrl, pdfPage, pdfZoom, renderPdfPage]);
+
+  // Cleanup PDF doc on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfDocRef.current) {
+        pdfDocRef.current.destroy();
+        pdfDocRef.current = null;
+      }
+    };
+  }, []);
+
+  // Delete document
+  const handleDelete = async () => {
+    if (!docId) return;
+    try {
+      setDeleting(true);
+      const res = await fetch(`/api/vaultsign/documents/${docId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Delete failed");
+      }
+      toast.success("Document deleted");
+      router.push("/recruiter/vaultsign");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete document");
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   // Insert variable at cursor
   const insertVariable = (varKey: string) => {
     if (!editor) return;
@@ -274,13 +415,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     };
 
     try {
-      // Update fields API
       const res = await fetch(`/api/vaultsign/documents/${docId}/fields`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          signers: [...signers, newSigner],
-        }),
+        body: JSON.stringify({ signers: [...signers, newSigner] }),
       });
       if (res.ok) {
         setSigners([...signers, { ...newSigner, id: Date.now() }]);
@@ -298,7 +436,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const removeSigner = async (index: number) => {
     const updated = signers.filter((_, i) => i !== index);
     setSigners(updated);
-    // Update fields that were assigned to this signer
     const updatedFields = signFields
       .filter((f) => f.assigned_to_signer_index !== index)
       .map((f) => ({
@@ -311,7 +448,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     toast.success("Signer removed");
   };
 
-  // Add sign field (inline for Word editor)
+  // Add sign field
   const addSignField = (type: SignFieldType, signerIndex: number) => {
     const newField: SignField = {
       id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -329,7 +466,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     const updated = [...signFields, newField];
     setSignFields(updated);
 
-    // Insert marker in editor
     if (editor) {
       const marker = `[${FIELD_TYPE_LABELS[type].toUpperCase()} — Signer ${signerIndex + 1}]`;
       editor.chain().focus().insertContent(marker).run();
@@ -357,7 +493,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
-        {/* Skeleton Top Bar */}
         <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-3">
           <Skeleton className="h-8 w-16" />
           <Skeleton className="h-6 w-px" />
@@ -368,16 +503,13 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             <Skeleton className="h-8 w-24" />
           </div>
         </div>
-        {/* Skeleton Toolbar */}
         <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center gap-1">
           {Array.from({ length: 14 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-8 rounded" />
           ))}
           <Skeleton className="h-8 w-[120px] rounded ml-1" />
         </div>
-        {/* Skeleton Main Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Skeleton Left Panel */}
           <div className="hidden lg:flex w-64 border-r border-[#E5E7EB] bg-white flex-col">
             <div className="p-3 border-b border-[#E5E7EB]">
               <Skeleton className="h-5 w-24" />
@@ -389,7 +521,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               ))}
             </div>
           </div>
-          {/* Skeleton Editor Area */}
           <div className="flex-1 overflow-y-auto bg-white p-6">
             <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-[#E5E7EB] shadow-sm min-h-[800px] p-8 space-y-4">
               <Skeleton className="h-8 w-3/4" />
@@ -399,15 +530,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <Skeleton className="h-6 w-1/2 mt-4" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-4/5" />
-              <Skeleton className="h-4 w-full mt-4" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3 mt-4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
             </div>
           </div>
-          {/* Skeleton Right Panel */}
           <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
             <div className="p-3 border-b border-[#E5E7EB]">
               <Skeleton className="h-5 w-32" />
@@ -423,7 +547,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  // Variables panel content (shared between inline and Sheet)
+  // Variables panel content
   const variablesPanelContent = (
     <>
       <ScrollArea className="flex-1">
@@ -509,7 +633,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     </>
   );
 
-  // Signers panel content (shared between inline and Sheet)
+  // Signers panel content
   const signersPanelContent = (
     <>
       <ScrollArea className="flex-1">
@@ -581,19 +705,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   </SelectContent>
                 </Select>
                 <div className="flex gap-1.5">
-                  <Button
-                    size="sm"
-                    className="flex-1 h-7 text-xs bg-[#166534] hover:bg-[#14532D]"
-                    onClick={addSigner}
-                  >
+                  <Button size="sm" className="flex-1 h-7 text-xs bg-[#166534] hover:bg-[#14532D]" onClick={addSigner}>
                     Add
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setShowAddSigner(false)}
-                  >
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSigner(false)}>
                     Cancel
                   </Button>
                 </div>
@@ -601,14 +716,13 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
 
-          {/* Sign Fields */}
+          {/* Sign Fields — with clickable labeled buttons */}
           <div>
             <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Sign Fields</h4>
             {signers.length === 0 ? (
               <p className="text-xs text-[#9CA3AF] p-2">Add signers first to assign fields</p>
             ) : (
               <>
-                {/* Field type buttons per signer */}
                 {signers.map((signer, index) => (
                   <div key={index} className="mb-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
@@ -618,17 +732,24 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       />
                       <span className="text-xs font-medium text-[#111827]">{signer.name}</span>
                     </div>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="grid grid-cols-2 gap-1">
                       {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
-                        <Button
-                          key={type}
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-[10px] px-2 border-[#E5E7EB]"
-                          onClick={() => addSignField(type, index)}
-                        >
-                          {FIELD_TYPE_ICONS[type]} {FIELD_TYPE_LABELS[type]}
-                        </Button>
+                        <TooltipProvider key={type}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-[#E5E7EB] hover:border-[#166534]/30 hover:bg-[#F0FDF4] transition-colors text-[#374151] cursor-pointer"
+                                onClick={() => addSignField(type, index)}
+                              >
+                                <span className="text-sm">{FIELD_TYPE_ICONS[type]}</span>
+                                <span className="truncate">{FIELD_TYPE_LABELS[type]}</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              Add {FIELD_TYPE_LABELS[type]} field for {signer.name}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ))}
                     </div>
 
@@ -663,35 +784,21 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   return (
     <VaultSignErrorBoundary>
+    <TooltipProvider>
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       {/* Top Bar */}
       <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Mobile panel toggle buttons */}
           <div className="flex items-center gap-1 lg:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-[#6B7280]"
-              onClick={() => setShowVariablesPanel(true)}
-            >
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]" onClick={() => setShowVariablesPanel(true)}>
               <PanelLeftIcon className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-[#6B7280]"
-              onClick={() => setShowSignersPanel(true)}
-            >
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]" onClick={() => setShowSignersPanel(true)}>
               <PanelRightIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/recruiter/vaultsign")}
-            className="text-[#6B7280] hover:text-[#111827]"
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-[#6B7280] hover:text-[#111827]">
             <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back</span>
           </Button>
           <Separator orientation="vertical" className="h-6" />
@@ -711,357 +818,364 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <Loader2 className="h-3 w-3 animate-spin" /> <span className="hidden sm:inline">Saving...</span>
             </span>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            className="border-[#E5E7EB] text-[#166534]"
-          >
-            <Save className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save Draft</span>
+
+          {/* View Mode Toggle */}
+          <div className="hidden sm:flex items-center bg-[#F3F4F6] rounded-lg p-0.5">
+            <button
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "edit" ? "bg-white text-[#111827] shadow-sm" : "text-[#6B7280] hover:text-[#111827]"
+              }`}
+              onClick={() => setViewMode("edit")}
+            >
+              <Edit3 className="h-3.5 w-3.5" /> Edit
+            </button>
+            <button
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "preview" ? "bg-white text-[#111827] shadow-sm" : "text-[#6B7280] hover:text-[#111827]"
+              }`}
+              onClick={() => {
+                if (viewMode !== "preview") {
+                  if (pdfUrl) {
+                    setViewMode("preview");
+                  } else {
+                    handleGeneratePreview();
+                  }
+                }
+              }}
+              disabled={pdfLoading}
+            >
+              {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />} Preview
+            </button>
+          </div>
+
+          <Button variant="outline" size="sm" onClick={handleSave} className="border-[#E5E7EB] text-[#166534]">
+            <Save className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save</span>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPdf}
-            className="border-[#E5E7EB] text-[#111827]"
-          >
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-[#E5E7EB] text-[#111827]">
             <FileDown className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Export PDF</span>
           </Button>
+
+          {/* More actions dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleGeneratePreview} disabled={pdfLoading}>
+                <Eye className="h-4 w-4 mr-2" /> Generate PDF Preview
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-[#DC2626] focus:text-[#DC2626]" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-2" /> Delete Document
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Toolbar — Desktop (Word-like Ribbon) */}
-      <div className="hidden lg:flex bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex-wrap gap-y-1">
-        {/* Clipboard Group */}
-        <div className="flex flex-col items-center px-2">
-          <div className="flex items-center gap-0.5">
-            <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo">
-              <Undo2 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo">
-              <Redo2 className="h-4 w-4" />
-            </ToolbarButton>
+      {/* Toolbar — Only show in Edit mode, Desktop */}
+      {viewMode === "edit" && (
+        <div className="hidden lg:flex bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex-wrap gap-y-1">
+          {/* Clipboard Group */}
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-0.5">
+              <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo" isActive={false}>
+                <Undo2 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo" isActive={false}>
+                <Redo2 className="h-4 w-4" />
+              </ToolbarButton>
+            </div>
+            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Undo</span>
           </div>
-          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Clipboard</span>
-        </div>
 
-        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
 
-        {/* Styles Group */}
-        <div className="flex flex-col items-center px-2">
-          <Select value={
-            editor?.isActive("heading", { level: 1 }) ? "1"
-            : editor?.isActive("heading", { level: 2 }) ? "2"
-            : editor?.isActive("heading", { level: 3 }) ? "3"
-            : "0"
-          } onValueChange={(val) => {
-            if (val === "0") {
-              editor?.chain().focus().setParagraph().run();
-            } else {
-              editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
-            }
-          }}>
-            <SelectTrigger className="w-[110px] h-7 text-[11px]">
-              <SelectValue placeholder="Style" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Normal Text</SelectItem>
-              <SelectItem value="1">Heading 1</SelectItem>
-              <SelectItem value="2">Heading 2</SelectItem>
-              <SelectItem value="3">Heading 3</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Styles</span>
-        </div>
+          {/* Font Group */}
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-0.5 flex-wrap">
+              <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
+                if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
+                else editor?.chain().focus().setFontFamily(val).run();
+              }}>
+                <SelectTrigger className="w-[110px] h-7 text-[11px]">
+                  <SelectValue placeholder="Font" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Default">Default</SelectItem>
+                  <SelectItem value="Arial">Arial</SelectItem>
+                  <SelectItem value="Georgia">Georgia</SelectItem>
+                  <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                  <SelectItem value="Courier New">Courier New</SelectItem>
+                  <SelectItem value="Verdana">Verdana</SelectItem>
+                </SelectContent>
+              </Select>
 
-        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+              <Select value={((): string => {
+                const fs = editor?.getAttributes("textStyle").fontSize;
+                if (!fs) return "11";
+                const num = parseInt(String(fs));
+                return isNaN(num) ? "11" : String(num);
+              })()} onValueChange={(val) => {
+                editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
+              }}>
+                <SelectTrigger className="w-[60px] h-7 text-[11px]">
+                  <SelectValue placeholder="Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
+                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        {/* Font Group */}
-        <div className="flex flex-col items-center px-2">
-          <div className="flex items-center gap-0.5 flex-wrap">
-            <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
-              if (val === "Default") {
-                editor?.chain().focus().unsetFontFamily().run();
-              } else {
-                editor?.chain().focus().setFontFamily(val).run();
-              }
+              <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold (Ctrl+B)">
+                <Bold className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic (Ctrl+I)">
+                <Italic className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline (Ctrl+U)">
+                <UnderlineIcon className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+                <Strikethrough className="h-4 w-4" />
+              </ToolbarButton>
+
+              <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Font Color">
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="start">
+                  <div className="grid grid-cols-6 gap-1">
+                    {["#000000", "#374151", "#6B7280", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
+                      <button key={color} className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Highlight">
+                    <Highlighter className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="start">
+                  <div className="grid grid-cols-5 gap-1">
+                    {[
+                      { color: "#FEF08A", label: "Yellow" },
+                      { color: "#BBF7D0", label: "Green" },
+                      { color: "#BFDBFE", label: "Blue" },
+                      { color: "#FECACA", label: "Red" },
+                      { color: "#E9D5FF", label: "Purple" },
+                    ].map(({ color, label }) => (
+                      <button key={color} className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
+                    ))}
+                    <button className="w-6 h-6 rounded border border-[#E5E7EB] text-xs flex items-center justify-center hover:scale-110 transition-transform" onClick={() => editor?.chain().focus().unsetHighlight().run()} title="Remove highlight">
+                      <Minus className="h-3 w-3" />
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Font</span>
+          </div>
+
+          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+
+          {/* Paragraph Group */}
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-0.5 flex-wrap">
+              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+                <AlignLeft className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
+                <AlignCenter className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
+                <AlignRight className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
+                <AlignJustify className="h-4 w-4" />
+              </ToolbarButton>
+
+              <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+                <List className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+                <ListOrdered className="h-4 w-4" />
+              </ToolbarButton>
+
+              <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#6B7280]" title="Line Spacing">
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-32">
+                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Paragraph</span>
+          </div>
+
+          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+
+          {/* Insert Group */}
+          <div className="flex flex-col items-center px-2">
+            <div className="flex items-center gap-0.5">
+              <ToolbarButton onClick={() => {
+                const url = prompt("Enter image URL:");
+                if (url) editor?.chain().focus().setImage({ src: url }).run();
+              }} title="Insert Image">
+                <ImagePlus className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
+                <TableIcon className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Insert Page Break (Ctrl+Enter)">
+                <FileText className="h-4 w-4" />
+              </ToolbarButton>
+            </div>
+            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Insert</span>
+          </div>
+
+          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
+
+          {/* Styles Group */}
+          <div className="flex flex-col items-center px-2">
+            <Select value={
+              editor?.isActive("heading", { level: 1 }) ? "1"
+              : editor?.isActive("heading", { level: 2 }) ? "2"
+              : editor?.isActive("heading", { level: 3 }) ? "3"
+              : "0"
+            } onValueChange={(val) => {
+              if (val === "0") editor?.chain().focus().setParagraph().run();
+              else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
             }}>
               <SelectTrigger className="w-[110px] h-7 text-[11px]">
-                <SelectValue placeholder="Font" />
+                <SelectValue placeholder="Style" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Default">Default</SelectItem>
-                <SelectItem value="Arial">Arial</SelectItem>
-                <SelectItem value="Georgia">Georgia</SelectItem>
-                <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                <SelectItem value="Courier New">Courier New</SelectItem>
-                <SelectItem value="Verdana">Verdana</SelectItem>
+                <SelectItem value="0">Normal Text</SelectItem>
+                <SelectItem value="1">Heading 1</SelectItem>
+                <SelectItem value="2">Heading 2</SelectItem>
+                <SelectItem value="3">Heading 3</SelectItem>
               </SelectContent>
             </Select>
-
-            <Select value={((): string => {
-              const fs = editor?.getAttributes("textStyle").fontSize;
-              if (!fs) return "11";
-              const num = parseInt(String(fs));
-              return isNaN(num) ? "11" : String(num);
-            })()} onValueChange={(val) => {
-              editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
-            }}>
-              <SelectTrigger className="w-[60px] h-7 text-[11px]">
-                <SelectValue placeholder="Size" />
-              </SelectTrigger>
-              <SelectContent>
-                {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
-                  <SelectItem key={s} value={String(s)}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold">
-              <Bold className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic">
-              <Italic className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline">
-              <UnderlineIcon className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
-              <Strikethrough className="h-4 w-4" />
-            </ToolbarButton>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Font Color">
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="start">
-                <div className="grid grid-cols-6 gap-1">
-                  {["#000000", "#374151", "#6B7280", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
-                    <button
-                      key={color}
-                      className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
-                      style={{ backgroundColor: color }}
-                      onClick={() => editor?.chain().focus().setColor(color).run()}
-                    />
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Highlight">
-                  <Highlighter className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="start">
-                <div className="grid grid-cols-5 gap-1">
-                  {[
-                    { color: "#FEF08A", label: "Yellow" },
-                    { color: "#BBF7D0", label: "Green" },
-                    { color: "#BFDBFE", label: "Blue" },
-                    { color: "#FECACA", label: "Red" },
-                    { color: "#E9D5FF", label: "Purple" },
-                  ].map(({ color, label }) => (
-                    <button
-                      key={color}
-                      className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform"
-                      style={{ backgroundColor: color }}
-                      onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()}
-                      title={label}
-                    />
-                  ))}
-                  <button
-                    className="w-6 h-6 rounded border border-[#E5E7EB] text-xs flex items-center justify-center hover:scale-110 transition-transform"
-                    onClick={() => editor?.chain().focus().unsetHighlight().run()}
-                    title="Remove highlight"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Styles</span>
           </div>
-          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Font</span>
         </div>
+      )}
 
-        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
-        {/* Paragraph Group */}
-        <div className="flex flex-col items-center px-2">
-          <div className="flex items-center gap-0.5 flex-wrap">
-            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
-              <AlignLeft className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
-              <AlignCenter className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
-              <AlignRight className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
-              <AlignJustify className="h-4 w-4" />
-            </ToolbarButton>
-
-            <Separator orientation="vertical" className="h-5 mx-0.5" />
-
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
-              <List className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
-              <ListOrdered className="h-4 w-4" />
-            </ToolbarButton>
-
-            <Separator orientation="vertical" className="h-5 mx-0.5" />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#6B7280]" title="Line Spacing">
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-32">
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Paragraph</span>
+      {/* Mobile Toolbar (simplified) — only in edit mode */}
+      {viewMode === "edit" && (
+        <div className="lg:hidden bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex items-center gap-1 overflow-x-auto">
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold">
+            <Bold className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic">
+            <Italic className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline">
+            <UnderlineIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+            <Strikethrough className="h-4 w-4" />
+          </ToolbarButton>
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+            <AlignLeft className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Center">
+            <AlignCenter className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
+          <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo">
+            <Undo2 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo">
+            <Redo2 className="h-4 w-4" />
+          </ToolbarButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("right").run()}>
+                <AlignRight className="h-4 w-4 mr-2" /> Align Right
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("justify").run()}>
+                <AlignJustify className="h-4 w-4 mr-2" /> Justify
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().insertPageBreak().run()}>
+                <FileText className="h-4 w-4 mr-2" /> Page Break
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+                <TableIcon className="h-4 w-4 mr-2" /> Insert Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const url = prompt("Enter image URL:"); if (url) editor?.chain().focus().setImage({ src: url }).run(); }}>
+                <ImagePlus className="h-4 w-4 mr-2" /> Insert Image
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      )}
 
-        <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
-        {/* Insert Group */}
-        <div className="flex flex-col items-center px-2">
-          <div className="flex items-center gap-0.5">
-            <ToolbarButton onClick={() => {
-              const url = prompt("Enter image URL:");
-              if (url) editor?.chain().focus().setImage({ src: url }).run();
-            }} title="Insert Image">
-              <ImagePlus className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
-              <TableIcon className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Insert Page Break">
-              <FileText className="h-4 w-4" />
-            </ToolbarButton>
-          </div>
-          <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Insert</span>
-        </div>
-      </div>
-
-      {/* Toolbar — Mobile (simplified) */}
-      <div className="lg:hidden bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex items-center gap-1 overflow-x-auto">
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          isActive={editor?.isActive("bold")}
-          title="Bold"
-        >
-          <Bold className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          isActive={editor?.isActive("italic")}
-          title="Italic"
-        >
-          <Italic className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
-          isActive={editor?.isActive("underline")}
-          title="Underline"
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleStrike().run()}
-          isActive={editor?.isActive("strike")}
-          title="Strikethrough"
-        >
-          <Strikethrough className="h-4 w-4" />
-        </ToolbarButton>
-        <Separator orientation="vertical" className="h-6 mx-0.5" />
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("left").run()}
-          isActive={editor?.isActive({ textAlign: "left" })}
-          title="Align Left"
-        >
-          <AlignLeft className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().setTextAlign("center").run()}
-          isActive={editor?.isActive({ textAlign: "center" })}
-          title="Center"
-        >
-          <AlignCenter className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          isActive={editor?.isActive("bulletList")}
-          title="Bullet List"
-        >
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          isActive={editor?.isActive("orderedList")}
-          title="Numbered List"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
-        <Separator orientation="vertical" className="h-6 mx-0.5" />
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().undo().run()}
-          title="Undo"
-        >
-          <Undo2 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor?.chain().focus().redo().run()}
-          title="Redo"
-        >
-          <Redo2 className="h-4 w-4" />
-        </ToolbarButton>
-        {/* More formatting dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]">
-              <MoreVertical className="h-4 w-4" />
+      {/* PDF Preview Toolbar — only in preview mode */}
+      {viewMode === "preview" && pdfUrl && (
+        <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (pdfPage > 1) { setPdfPage(pdfPage - 1); } }} disabled={pdfPage <= 1}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("right").run()}>
-              <AlignRight className="h-4 w-4 mr-2" /> Align Right
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("justify").run()}>
-              <AlignJustify className="h-4 w-4 mr-2" /> Justify
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor?.chain().focus().toggleTaskList().run()}>
-              <CheckSquare className="h-4 w-4 mr-2" /> Task List
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor?.chain().focus().toggleSubscript().run()}>
-              <SubIcon className="h-4 w-4 mr-2" /> Subscript
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor?.chain().focus().toggleSuperscript().run()}>
-              <SupIcon className="h-4 w-4 mr-2" /> Superscript
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              const url = prompt("Enter image URL:");
-              if (url) editor?.chain().focus().setImage({ src: url }).run();
-            }}>
-              <ImagePlus className="h-4 w-4 mr-2" /> Insert Image
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
-              <TableIcon className="h-4 w-4 mr-2" /> Insert Table
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+            <span className="text-sm text-[#6B7280] min-w-[80px] text-center">
+              Page {pdfPage} of {pdfTotalPages || "..."}
+            </span>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (pdfPage < pdfTotalPages) { setPdfPage(pdfPage + 1); } }} disabled={pdfPage >= pdfTotalPages}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setPdfZoom(Math.max(0.5, pdfZoom - 0.25))} disabled={pdfZoom <= 0.5}>
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-[#6B7280] min-w-[50px] text-center">{Math.round(pdfZoom * 100)}%</span>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setPdfZoom(Math.min(2.5, pdfZoom + 0.25))} disabled={pdfZoom >= 2.5}>
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Badge variant="outline" className="text-[10px] bg-[#F0FDF4] text-[#166534] border-[#166534]/20">
+              Exact Format Preview
+            </Badge>
+          </div>
+        </div>
+      )}
 
       {/* Main Content — Three Column Layout */}
       <div className="flex-1 flex overflow-hidden">
@@ -1076,11 +1190,44 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           {variablesPanelContent}
         </div>
 
-        {/* Center — TipTap Editor (full width on mobile) */}
+        {/* Center — Editor or PDF Preview */}
         <div className="flex-1 overflow-y-auto bg-white">
-          <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-[#E5E7EB] bg-white min-h-[800px]">
-            <EditorContent editor={editor} className="tiptap-editor" />
-          </div>
+          {viewMode === "edit" ? (
+            <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-[#E5E7EB] bg-white min-h-[800px]">
+              <EditorContent editor={editor} className="tiptap-editor" />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-6">
+              {pdfLoading ? (
+                <div className="flex flex-col items-center gap-3 py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+                  <p className="text-sm text-[#6B7280]">Converting DOCX to PDF with exact formatting...</p>
+                  <p className="text-xs text-[#9CA3AF]">This uses LibreOffice for pixel-perfect conversion</p>
+                </div>
+              ) : pdfError ? (
+                <div className="flex flex-col items-center gap-3 py-20 max-w-md text-center">
+                  <AlertTriangle className="h-8 w-8 text-[#D97706]" />
+                  <p className="text-sm font-medium text-[#111827]">PDF Preview Error</p>
+                  <p className="text-xs text-[#6B7280]">{pdfError}</p>
+                  <Button variant="outline" size="sm" onClick={handleGeneratePreview} className="mt-2">
+                    Try Again
+                  </Button>
+                </div>
+              ) : !pdfUrl ? (
+                <div className="flex flex-col items-center gap-3 py-20">
+                  <Eye className="h-8 w-8 text-[#9CA3AF]" />
+                  <p className="text-sm text-[#6B7280]">Click "Preview" to generate an exact-format PDF view</p>
+                  <Button variant="outline" size="sm" onClick={handleGeneratePreview}>
+                    Generate Preview
+                  </Button>
+                </div>
+              ) : (
+                <div className="shadow-lg border border-[#E5E7EB] rounded-lg overflow-hidden bg-[#F3F4F6]">
+                  <canvas ref={pdfCanvasRef} className="block" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Panel — Signers & Fields (desktop only) */}
@@ -1092,7 +1239,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Mobile: Variables Sheet (slide-over from left) */}
+      {/* Mobile: Variables Sheet */}
       <Sheet open={showVariablesPanel} onOpenChange={setShowVariablesPanel}>
         <SheetContent side="left" className="w-80 p-0 flex flex-col">
           <SheetHeader className="p-3 border-b border-[#E5E7EB]">
@@ -1105,7 +1252,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </SheetContent>
       </Sheet>
 
-      {/* Mobile: Signers Sheet (slide-over from right) */}
+      {/* Mobile: Signers Sheet */}
       <Sheet open={showSignersPanel} onOpenChange={setShowSignersPanel}>
         <SheetContent side="right" className="w-80 p-0 flex flex-col">
           <SheetHeader className="p-3 border-b border-[#E5E7EB]">
@@ -1114,6 +1261,29 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           {signersPanelContent}
         </SheetContent>
       </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#DC2626]">
+              <Trash2 className="h-5 w-5" /> Delete Document
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>"{docName}"</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* TipTap Editor Styles */}
       <style jsx global>{`
@@ -1206,14 +1376,18 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           display: flex;
           align-items: center;
         }
-        .tiptap-editor .tiptap hr.page-break {
+        /* Page break styling — clear visual divider */
+        .tiptap-editor .tiptap hr.page-break,
+        .tiptap-editor .tiptap hr[data-page-break] {
           border: none;
           border-top: 2px dashed #9CA3AF;
-          margin: 24px 0;
+          margin: 32px 0;
           position: relative;
+          min-height: 20px;
         }
-        .tiptap-editor .tiptap hr.page-break::after {
-          content: "Page Break";
+        .tiptap-editor .tiptap hr.page-break::after,
+        .tiptap-editor .tiptap hr[data-page-break]::after {
+          content: "— Page Break —";
           position: absolute;
           top: -10px;
           left: 50%;
@@ -1221,10 +1395,30 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           font-size: 10px;
           color: #9CA3AF;
           background: white;
-          padding: 0 8px;
+          padding: 0 12px;
+          white-space: nowrap;
+        }
+        /* Legacy page-break-after hr styling */
+        .tiptap-editor .tiptap hr[style*="page-break"] {
+          border: none;
+          border-top: 2px dashed #9CA3AF;
+          margin: 32px 0;
+          position: relative;
+        }
+        .tiptap-editor .tiptap hr[style*="page-break"]::after {
+          content: "— Page Break —";
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 10px;
+          color: #9CA3AF;
+          background: white;
+          padding: 0 12px;
         }
       `}</style>
     </div>
+    </TooltipProvider>
     </VaultSignErrorBoundary>
   );
 }
@@ -1242,14 +1436,23 @@ function ToolbarButton({
   title: string;
 }) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className={`h-8 w-8 p-0 transition-colors ${isActive ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`}
-      onClick={onClick}
-      title={title}
-    >
-      {children}
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 p-0 transition-colors ${isActive ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280] hover:text-[#111827]"}`}
+            onClick={onClick}
+            title={title}
+          >
+            {children}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          {title}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
