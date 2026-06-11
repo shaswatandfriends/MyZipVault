@@ -135,13 +135,32 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       // Set editor content
       if (editor && data.tiptap_content) {
         try {
-          const content = typeof data.tiptap_content === "string"
-            ? JSON.parse(data.tiptap_content)
-            : data.tiptap_content;
-          editor.commands.setContent(content);
-        } catch {
-          // If tiptap content is HTML from mammoth, just set it as HTML
-          editor.commands.setContent(data.tiptap_content);
+          const rawContent = typeof data.tiptap_content === "string"
+            ? data.tiptap_content
+            : JSON.stringify(data.tiptap_content);
+
+          // Try parsing as TipTap JSON first
+          try {
+            const parsed = JSON.parse(rawContent);
+            if (parsed.type === "doc" && parsed.content) {
+              editor.commands.setContent(parsed);
+            } else {
+              // Valid JSON but not TipTap format — treat as HTML string
+              editor.commands.setContent(rawContent);
+            }
+          } catch {
+            // Not valid JSON — treat as HTML string
+            // This handles HTML from our docx-to-html converter
+            editor.commands.setContent(rawContent);
+          }
+        } catch (setContentErr) {
+          console.error("Failed to set editor content:", setContentErr);
+          // Last resort: try setting as raw HTML
+          try {
+            editor.commands.setContent(data.tiptap_content);
+          } catch {
+            // Give up silently
+          }
         }
       }
     } catch (err) {
@@ -192,18 +211,23 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // Export PDF
   const handleExportPdf = async () => {
+    const loadingToast = toast.loading("Generating PDF...");
     try {
       await handleSave();
-      toast.loading("Generating PDF...");
       const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
-      if (!res.ok) throw new Error("Export failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Export failed");
+      }
       const data = await res.json();
       if (data.pdf_url) {
         window.open(data.pdf_url, "_blank");
-        toast.success("PDF generated");
+        toast.success("PDF generated", { id: loadingToast });
+      } else {
+        toast.error("No PDF URL returned", { id: loadingToast });
       }
-    } catch (err) {
-      toast.error("Failed to export PDF");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export PDF", { id: loadingToast });
     }
   };
 

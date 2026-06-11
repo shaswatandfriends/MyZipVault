@@ -61,30 +61,43 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       setSigners(data.signers || []);
       setSignFields(data.sign_fields || []);
 
-      // Get PDF URL — try export-pdf first (generates signed URL), fallback to direct URL
+      // Resolve PDF URL — prefer direct signed URL API, fallback to export-pdf
       let resolvedPdfUrl = "";
-      if (data.source_type === "pdf" && data.original_file_url) {
+
+      // Strategy 1: Try the direct signed URL API (lighter weight than export-pdf)
+      try {
+        const signedRes = await fetch(`/api/vaultsign/documents/${docId}/signed-url`);
+        if (signedRes.ok) {
+          const signedData = await signedRes.json();
+          if (signedData.signed_url) {
+            resolvedPdfUrl = signedData.signed_url;
+          }
+        }
+      } catch {
+        console.warn("Signed URL API failed, trying export-pdf...");
+      }
+
+      // Strategy 2: Try export-pdf API (generates + signs URL)
+      if (!resolvedPdfUrl) {
         try {
           const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
           if (pdfRes.ok) {
             const pdfData = await pdfRes.json();
             resolvedPdfUrl = pdfData.pdf_url;
+          } else {
+            const errBody = await pdfRes.json().catch(() => ({}));
+            console.warn("Export-PDF failed:", errBody.error);
           }
-        } catch {
-          // Fallback: try the original_file_url directly
-          console.warn("Export-PDF failed, trying original_file_url directly");
+        } catch (err) {
+          console.warn("Export-PDF request failed:", err);
         }
-        if (!resolvedPdfUrl && data.original_file_url) {
+      }
+
+      // Strategy 3: Fall back to the stored URL directly
+      if (!resolvedPdfUrl) {
+        if (data.source_type === "pdf" && data.original_file_url) {
           resolvedPdfUrl = data.original_file_url;
-        }
-      } else if (data.edited_pdf_url) {
-        try {
-          const pdfRes = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, { method: "POST" });
-          if (pdfRes.ok) {
-            const pdfData = await pdfRes.json();
-            resolvedPdfUrl = pdfData.pdf_url;
-          }
-        } catch {
+        } else if (data.edited_pdf_url) {
           resolvedPdfUrl = data.edited_pdf_url;
         }
       }
@@ -92,6 +105,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       if (resolvedPdfUrl) {
         setPdfUrl(resolvedPdfUrl);
       } else {
+        setPdfError("No PDF URL available for this document");
         toast.error("Could not load PDF file");
       }
     } catch (err) {
@@ -108,39 +122,74 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
   // Store PDF document object for page-by-page rendering
   const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [rendering, setRendering] = useState(false);
+  const renderTaskRef = useRef<any>(null);
 
   // Load PDF document object
   useEffect(() => {
     if (!pdfUrl || typeof window === "undefined") return;
 
+    let cancelled = false;
     const loadPdf = async () => {
       try {
+        setPdfError(null);
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Handle different URL types
+        let loadingTask;
+        if (pdfUrl.startsWith("data:")) {
+          // Base64 data URL — pdfjs-dist can load directly with string
+          loadingTask = pdfjsLib.getDocument(pdfUrl as any);
+        } else if (pdfUrl.startsWith("http")) {
+          // HTTP URL — try with CORS settings
+          loadingTask = pdfjsLib.getDocument({
+            url: pdfUrl,
+            withCredentials: false,
+          } as any);
+        } else {
+          loadingTask = pdfjsLib.getDocument(pdfUrl as any);
+        }
+
         const pdf = await loadingTask.promise;
+        if (cancelled) return;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(1);
-      } catch (err) {
+      } catch (err: any) {
+        if (cancelled) return;
         console.error("PDF load error:", err);
+        setPdfError(err.message || "Failed to load PDF");
         toast.error("Failed to render PDF");
       }
     };
 
     loadPdf();
+    return () => { cancelled = true; };
   }, [pdfUrl]);
 
   // Render current page when page or scale changes
   useEffect(() => {
     if (!pdfDoc) return;
 
+    let cancelled = false;
     const renderPage = async () => {
       try {
+        // Cancel any in-progress render
+        if (renderTaskRef.current) {
+          try { renderTaskRef.current.cancel(); } catch {}
+        }
+
+        setRendering(true);
         const page = await pdfDoc.getPage(currentPage);
+        if (cancelled) return;
+
+        // Wait a tick for the canvas ref to be available
+        await new Promise((r) => setTimeout(r, 50));
+
         const canvas = canvasRefs.current.get(currentPage);
-        if (!canvas) return;
+        if (!canvas || cancelled) return;
 
         const context = canvas.getContext("2d");
         if (!context) return;
@@ -149,16 +198,24 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        await page.render({
+        const renderTask = page.render({
           canvasContext: context,
           viewport: viewport,
-        }).promise;
-      } catch (err) {
+        });
+        renderTaskRef.current = renderTask;
+
+        await renderTask.promise;
+        renderTaskRef.current = null;
+      } catch (err: any) {
+        if (err?.name === "RenderingCancelledException" || cancelled) return;
         console.error("PDF page render error:", err);
+      } finally {
+        if (!cancelled) setRendering(false);
       }
     };
 
     renderPage();
+    return () => { cancelled = true; };
   }, [pdfDoc, currentPage, scale]);
 
   // Save fields
@@ -587,13 +644,68 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
           {/* Canvas area */}
           <div className="flex-1 overflow-auto p-4 lg:p-6" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={canvasContainerRef} className="relative mx-auto" style={{ maxWidth: "800px" }}>
+              {/* PDF Error State */}
+              {pdfError && !pdfDoc && (
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                  <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                    <X className="h-8 w-8 text-[#DC2626]" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-[#111827] mb-1">Failed to render PDF</h3>
+                    <p className="text-sm text-[#6B7280] max-w-md">{pdfError}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPdfError(null);
+                      fetchDocument();
+                    }}
+                    className="border-[#166534] text-[#166534]"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+
+              {/* PDF Loading State */}
+              {!pdfDoc && !pdfError && pdfUrl && (
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+                  <p className="text-sm text-[#6B7280]">Loading PDF...</p>
+                </div>
+              )}
+
+              {/* No PDF URL State */}
+              {!pdfUrl && !pdfError && (
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center">
+                    <MousePointer2 className="h-8 w-8 text-[#9CA3AF]" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-[#111827] mb-1">No PDF Available</h3>
+                    <p className="text-sm text-[#6B7280]">This document does not have a PDF file associated with it.</p>
+                  </div>
+                </div>
+              )}
+
               {/* PDF Canvas */}
-              <canvas
-                ref={(el) => {
-                  if (el) canvasRefs.current.set(currentPage, el);
-                }}
-                className="w-full shadow-lg rounded-lg border border-[#E5E7EB]"
-              />
+              {pdfDoc && (
+                <canvas
+                  ref={(el) => {
+                    if (el) canvasRefs.current.set(currentPage, el);
+                  }}
+                  className="w-full shadow-lg rounded-lg border border-[#E5E7EB]"
+                />
+              )}
+
+              {/* Rendering indicator */}
+              {rendering && pdfDoc && (
+                <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin text-[#166534]" />
+                  <span className="text-[10px] text-[#6B7280]">Rendering...</span>
+                </div>
+              )}
 
               {/* Sign field overlays */}
               {signFields
@@ -615,7 +727,6 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                         borderColor: color,
                         backgroundColor: `${color}15`,
                         color: color,
-                        ringColor: color,
                       }}
                       onMouseDown={(e) => handleMouseDown(e, field.id)}
                       onClick={(e) => {

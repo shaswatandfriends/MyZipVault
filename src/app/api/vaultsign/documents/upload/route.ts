@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { uploadDocument, generateFilePath } from "@/lib/vaultsign/supabase-storage";
-import mammoth from "mammoth";
+import { uploadDocument } from "@/lib/vaultsign/supabase-storage";
+import { docxToFormattedHtml } from "@/lib/vaultsign/docx-to-html";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,13 +41,12 @@ export async function POST(request: NextRequest) {
     const uploadResult = await uploadDocument(buffer, folder, file.name, file.type);
 
     if (isDocx) {
-      // Convert .docx to HTML via mammoth
+      // Convert .docx to HTML preserving formatting (colors, fonts, sizes, spacing)
       let htmlContent = "";
       try {
-        const result = await mammoth.convertToHtml({ buffer });
-        htmlContent = result.value;
+        htmlContent = await docxToFormattedHtml(buffer);
       } catch (err) {
-        console.error("[VAULTSIGN] mammoth conversion error:", err);
+        console.error("[VAULTSIGN] docx-to-html conversion error:", err);
         htmlContent = "<p>Document content could not be converted. Please edit manually.</p>";
       }
 

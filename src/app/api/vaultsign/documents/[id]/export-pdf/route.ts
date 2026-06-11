@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { tiptapToPdfmake } from "@/lib/vaultsign/tiptap-to-pdfmake";
+import { tiptapToPdfmake, htmlToPdfmake } from "@/lib/vaultsign/tiptap-to-pdfmake";
 import { uploadGeneratedPdf, getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 import PdfPrinter from "pdfmake";
 
-// POST: Export PDF — for Word docs, convert TipTap → pdfmake → PDF; for PDF docs, return original URL
+// POST: Export PDF — for Word docs, convert content → pdfmake → PDF; for PDF docs, return signed URL
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -51,35 +51,64 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // For PDF documents, just return the original file URL
+    // For PDF documents, just return the signed original file URL
     if (document.source_type === "pdf") {
-      const signedUrl = await getDocumentSignedUrl(document.original_file_url || "");
-      return NextResponse.json({ pdf_url: signedUrl, source_type: "pdf" });
+      const fileUrl = document.original_file_url || document.edited_pdf_url;
+      if (!fileUrl) {
+        return NextResponse.json({ error: "No PDF file URL" }, { status: 404 });
+      }
+      try {
+        const signedUrl = await getDocumentSignedUrl(fileUrl, 30);
+        return NextResponse.json({ pdf_url: signedUrl, source_type: "pdf" });
+      } catch (signErr) {
+        console.error("[VAULTSIGN] PDF signed URL error:", signErr);
+        // Return the URL as-is as fallback
+        return NextResponse.json({ pdf_url: fileUrl, source_type: "pdf" });
+      }
     }
 
-    // For Word documents, convert TipTap content to PDF using pdfmake
+    // For Word documents, convert content to PDF using pdfmake
     if (!document.tiptap_content) {
-      return NextResponse.json({ error: "No content to export" }, { status: 400 });
+      return NextResponse.json({ error: "No content to export. Save the document first." }, { status: 400 });
     }
 
     const placeholderValues = JSON.parse(document.placeholder_values || "{}");
     const org = document.organization;
 
-    // Generate pdfmake docDefinition
-    const docDefinition = tiptapToPdfmake(document.tiptap_content, {
-      headerConfig: JSON.parse(document.header_config || "{}"),
-      footerConfig: JSON.parse(document.footer_config || "{}"),
+    // Build common options for PDF generation
+    const pdfOptions = {
+      headerConfig: (() => { try { return JSON.parse((document as any).header_config || "{}"); } catch { return {}; } })(),
+      footerConfig: (() => { try { return JSON.parse((document as any).footer_config || "{}"); } catch { return {}; } })(),
       organization: {
-        name: org?.name,
-        logo_url: org?.company_logo_url,
-        address: org?.company_address,
-        phone: org?.company_phone,
-        email: org?.company_email,
-        website: org?.company_website,
+        name: org?.name || undefined,
+        logo_url: org?.company_logo_url || undefined,
+        address: org?.company_address || undefined,
+        phone: org?.company_phone || undefined,
+        email: org?.company_email || undefined,
+        website: org?.company_website || undefined,
       },
       documentTitle: document.document_name,
       placeholderValues,
-    });
+    };
+
+    // Determine content format and generate pdfmake docDefinition
+    let docDefinition;
+    const rawContent = document.tiptap_content;
+
+    try {
+      // Try parsing as TipTap JSON first
+      const parsed = JSON.parse(rawContent);
+      if (parsed.type === "doc" && parsed.content) {
+        // It's valid TipTap JSON
+        docDefinition = tiptapToPdfmake(rawContent, pdfOptions);
+      } else {
+        // Valid JSON but not TipTap — treat as HTML
+        docDefinition = htmlToPdfmake(rawContent, pdfOptions);
+      }
+    } catch {
+      // Not valid JSON — it's HTML content from our docx-to-html converter
+      docDefinition = htmlToPdfmake(rawContent, pdfOptions);
+    }
 
     // Generate PDF using pdfmake
     const fonts = {
@@ -91,7 +120,7 @@ export async function POST(
       },
     };
 
-    const printer = new PdfPrinter(fonts);
+    const printer = new (PdfPrinter as any)(fonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
 
     // Collect PDF into buffer

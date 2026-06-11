@@ -527,3 +527,515 @@ function transformTableRow(node: TipTapNode, placeholders: Record<string, string
 
   return rowCells as any;
 }
+
+// ── HTML to pdfmake converter ──────────────────────────────────────────────
+// Used when tiptap_content is HTML (from our enhanced docx-to-html converter)
+// rather than TipTap JSON format.
+
+interface HtmlToPdfmakeOptions {
+  headerConfig?: HeaderConfig;
+  footerConfig?: FooterConfig;
+  organization?: OrganizationInfo;
+  documentTitle?: string;
+  placeholderValues?: Record<string, string>;
+}
+
+/**
+ * Convert HTML content (from docx-to-html converter) to pdfmake docDefinition.
+ * Parses HTML elements and maps them to pdfmake structures, preserving
+ * inline styles (colors, fonts, sizes, alignment, etc.).
+ */
+export function htmlToPdfmake(
+  htmlContent: string,
+  options: HtmlToPdfmakeOptions = {}
+): TDocumentDefinitions {
+  const content = parseHtmlToPdfmakeContent(htmlContent, options.placeholderValues || {});
+
+  const styles: StyleDictionary = {
+    heading1: { fontSize: 24, bold: true, marginBottom: 8, color: "#111827" },
+    heading2: { fontSize: 20, bold: true, marginBottom: 6, color: "#111827" },
+    heading3: { fontSize: 16, bold: true, marginBottom: 4, color: "#111827" },
+    paragraph: { fontSize: 11, lineHeight: 1.5, color: "#374151", marginBottom: 4 },
+  };
+
+  const headerContent: Content[] = [];
+  const footerContent: Content[] = [];
+
+  // Build header (same logic as tiptapToPdfmake)
+  if (options.headerConfig) {
+    const leftParts: Content[] = [];
+    const rightParts: Content[] = [];
+
+    if (options.headerConfig.show_logo && options.organization?.logo_url) {
+      leftParts.push({ image: options.organization.logo_url, width: 40, height: 40, margin: [0, 0, 10, 0] as any });
+    }
+    if (options.headerConfig.show_company_name && options.organization?.name) {
+      leftParts.push({ text: options.organization.name, fontSize: 14, bold: true, color: "#166534" });
+    }
+    if (options.headerConfig.show_contact && options.organization) {
+      const contactParts: string[] = [];
+      if (options.organization.phone) contactParts.push(options.organization.phone);
+      if (options.organization.email) contactParts.push(options.organization.email);
+      if (contactParts.length > 0) {
+        rightParts.push({ text: contactParts.join(" | "), fontSize: 8, color: "#6B7280", alignment: "right" });
+      }
+    }
+    if (options.headerConfig.show_address && options.organization?.address) {
+      rightParts.push({ text: options.organization.address, fontSize: 8, color: "#6B7280", alignment: "right" });
+    }
+    if (leftParts.length > 0 || rightParts.length > 0) {
+      headerContent.push({ columns: [{ stack: leftParts, width: "*" }, { stack: rightParts, width: "auto", alignment: "right" }], margin: [40, 20, 40, 5] as any });
+      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
+    }
+  }
+
+  // Build footer
+  if (options.footerConfig) {
+    const footerParts: Content[] = [];
+    if (options.footerConfig.show_page_numbers) {
+      footerParts.push({ text: "Page {currentPage} of {totalPages}", alignment: "center", fontSize: 8, color: "#9CA3AF" });
+    }
+    if (options.footerConfig.show_rights_reserved) {
+      footerParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
+    }
+    if (footerParts.length > 0) {
+      footerContent.push({ stack: footerParts, margin: [40, 0, 40, 20] as any });
+    }
+  }
+
+  const docDefinition: TDocumentDefinitions = {
+    content: content as Content[],
+    styles,
+    defaultStyle: { font: "Helvetica", fontSize: 11, lineHeight: 1.4 },
+    pageSize: "A4",
+    pageMargins: [40, headerContent.length > 0 ? 80 : 40, 40, footerContent.length > 0 ? 60 : 40],
+  };
+
+  if (headerContent.length > 0) docDefinition.header = { stack: headerContent };
+  if (footerContent.length > 0) {
+    docDefinition.footer = (currentPage: number, pageCount: number) => ({
+      stack: footerContent.map((item: any) => {
+        if (item.stack) {
+          return { stack: item.stack.map((s: any) => (typeof s.text === "string" && s.text.includes("{currentPage}")) ? { ...s, text: s.text.replace("{currentPage}", String(currentPage)).replace("{totalPages}", String(pageCount)) } : s), margin: item.margin };
+        }
+        return item;
+      }),
+    });
+  }
+
+  return docDefinition;
+}
+
+function parseHtmlToPdfmakeContent(html: string, placeholders: Record<string, string>): any[] {
+  const result: any[] = [];
+
+  // Simple regex-based HTML parser for the common elements our docx-to-html produces
+  // This handles: <h1>-<h6>, <p>, <ul>/<ol>/<li>, <table>/<tr>/<td>, <strong>, <em>, <u>, <s>, <sub>, <sup>, <span style="...">
+
+  // Split into top-level blocks
+  const blocks = extractTopLevelBlocks(html);
+
+  for (const block of blocks) {
+    const converted = convertHtmlBlock(block, placeholders);
+    if (converted !== null) {
+      result.push(converted);
+    }
+  }
+
+  return result;
+}
+
+interface HtmlBlock {
+  type: "heading" | "paragraph" | "list" | "table" | "raw";
+  tag: string;
+  content: string;
+  style: string;
+}
+
+function extractTopLevelBlocks(html: string): HtmlBlock[] {
+  const blocks: HtmlBlock[] = [];
+  let remaining = html.trim();
+
+  while (remaining.length > 0) {
+    // Match heading tags
+    const headingMatch = remaining.match(/^<(h[1-6])([^>]*)>([\s\S]*?)<\/\1>/i);
+    if (headingMatch) {
+      blocks.push({ type: "heading", tag: headingMatch[1].toLowerCase(), content: headingMatch[3], style: extractTagStyle(headingMatch[2]) });
+      remaining = remaining.slice(headingMatch[0].length).trim();
+      continue;
+    }
+
+    // Match table
+    const tableMatch = remaining.match(/^<table([^>]*)>([\s\S]*?)<\/table>/i);
+    if (tableMatch) {
+      blocks.push({ type: "table", tag: "table", content: tableMatch[2], style: extractTagStyle(tableMatch[1]) });
+      remaining = remaining.slice(tableMatch[0].length).trim();
+      continue;
+    }
+
+    // Match ul/ol
+    const listMatch = remaining.match(/^<(ul|ol)([^>]*)>([\s\S]*?)<\/\1>/i);
+    if (listMatch) {
+      blocks.push({ type: "list", tag: listMatch[1].toLowerCase(), content: listMatch[3], style: extractTagStyle(listMatch[2]) });
+      remaining = remaining.slice(listMatch[0].length).trim();
+      continue;
+    }
+
+    // Match paragraph
+    const pMatch = remaining.match(/^<p([^>]*)>([\s\S]*?)<\/p>/i);
+    if (pMatch) {
+      blocks.push({ type: "paragraph", tag: "p", content: pMatch[2], style: extractTagStyle(pMatch[1]) });
+      remaining = remaining.slice(pMatch[0].length).trim();
+      continue;
+    }
+
+    // Match li (stray list items without parent ul/ol)
+    const liMatch = remaining.match(/^<li([^>]*)>([\s\S]*?)<\/li>/i);
+    if (liMatch) {
+      blocks.push({ type: "list", tag: "ul", content: remaining, style: "" });
+      // Consume all consecutive li items
+      let liRemaining = remaining;
+      while (liRemaining.match(/^<li/i)) {
+        const m = liRemaining.match(/^<li([^>]*)>([\s\S]*?)<\/li>/i);
+        if (m) liRemaining = liRemaining.slice(m[0].length).trim();
+        else break;
+      }
+      remaining = liRemaining;
+      continue;
+    }
+
+    // Skip unknown tags or whitespace
+    const tagMatch = remaining.match(/^<[^>]+>/);
+    if (tagMatch) {
+      remaining = remaining.slice(tagMatch[0].length).trim();
+      continue;
+    }
+
+    // Text content before any tag
+    const textMatch = remaining.match(/^[^<]+/);
+    if (textMatch) {
+      const text = textMatch[0].trim();
+      if (text) {
+        blocks.push({ type: "paragraph", tag: "p", content: text, style: "" });
+      }
+      remaining = remaining.slice(textMatch[0].length).trim();
+      continue;
+    }
+
+    break; // Safety exit
+  }
+
+  return blocks;
+}
+
+function extractTagStyle(attrStr: string): string {
+  const styleMatch = attrStr.match(/style="([^"]*)"/);
+  return styleMatch ? styleMatch[1] : "";
+}
+
+function convertHtmlBlock(block: HtmlBlock, placeholders: Record<string, string>): any {
+  switch (block.type) {
+    case "heading": {
+      const level = parseInt(block.tag.replace("h", ""));
+      const textContent = parseInlineHtml(block.content, placeholders);
+      const paraStyle = parseCssStyles(block.style);
+      const result: any = {
+        text: textContent,
+        style: `heading${level}`,
+        marginTop: level === 1 ? 16 : 10,
+        marginBottom: level === 1 ? 10 : 6,
+      };
+      if (paraStyle.alignment) result.alignment = paraStyle.alignment;
+      if (paraStyle.color) result.color = paraStyle.color;
+      return result;
+    }
+
+    case "paragraph": {
+      const textContent = parseInlineHtml(block.content, placeholders);
+      if (textContent.length === 0 || (textContent.length === 1 && typeof textContent[0] === "string" && !textContent[0].trim())) {
+        return { text: "", marginBottom: 2 };
+      }
+      const paraStyle = parseCssStyles(block.style);
+      const result: any = { text: textContent, style: "paragraph", marginBottom: 4 };
+      if (paraStyle.alignment) result.alignment = paraStyle.alignment;
+      if (paraStyle.color) result.color = paraStyle.color;
+      if (paraStyle.lineHeight) result.lineHeight = paraStyle.lineHeight;
+      if (paraStyle.marginTop) result.marginTop = paraStyle.marginTop;
+      if (paraStyle.marginBottom) result.marginBottom = paraStyle.marginBottom;
+      return result;
+    }
+
+    case "list": {
+      const items = block.content.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
+      const listItems = items.map((item) => {
+        const innerMatch = item.match(/<li[^>]*>([\s\S]*?)<\/li>/i);
+        const inner = innerMatch ? innerMatch[1] : "";
+        const liStyleMatch = item.match(/<li[^>]*style="([^"]*)"/i);
+        const liStyle = liStyleMatch ? parseCssStyles(liStyleMatch[1]) : {};
+        const content = parseInlineHtml(inner, placeholders);
+        return { stack: content, margin: [2, 2, 2, 2] as any };
+      });
+
+      const listKey = block.tag === "ol" ? "ol" : "ul";
+      return { [listKey]: listItems, marginBottom: 4 };
+    }
+
+    case "table": {
+      const rows = block.content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+      const tableBody: any[] = [];
+
+      for (const row of rows) {
+        const cells = row.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi) || [];
+        const rowCells: any[] = [];
+
+        for (const cell of cells) {
+          const innerMatch = cell.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/i);
+          const inner = innerMatch ? innerMatch[1] : "";
+          const isHeader = cell.match(/<th/i) !== null;
+
+          // Parse cell style
+          const styleMatch = cell.match(/style="([^"]*)"/i);
+          const cellStyle = styleMatch ? parseCssStyles(styleMatch[1]) : {};
+
+          // Remove HTML tags from cell content for simple text extraction
+          const cellText = inner.replace(/<[^>]+>/g, "").trim();
+          const cellContent: any = { text: cellText, margin: [4, 4, 4, 4] as any };
+          if (isHeader) { cellContent.bold = true; cellContent.fillColor = "#F3F4F6"; }
+          if (cellStyle.backgroundColor) cellContent.fillColor = cellStyle.backgroundColor;
+          if (cellStyle.color) cellContent.color = cellStyle.color;
+
+          rowCells.push(cellContent);
+        }
+
+        if (rowCells.length > 0) tableBody.push(rowCells);
+      }
+
+      if (tableBody.length === 0) return { text: "" };
+      return {
+        table: { headerRows: 1, body: tableBody },
+        layout: {
+          hLineWidth: () => 0.5, vLineWidth: () => 0.5,
+          hLineColor: () => "#E5E7EB", vLineColor: () => "#E5E7EB",
+          paddingLeft: () => 6, paddingRight: () => 6,
+          paddingTop: () => 4, paddingBottom: () => 4,
+        },
+        margin: [0, 8, 0, 8] as any,
+      };
+    }
+
+    default:
+      return null;
+  }
+}
+
+interface ParsedCssStyles {
+  alignment?: string;
+  color?: string;
+  backgroundColor?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  marginTop?: number;
+  marginBottom?: number;
+}
+
+function parseCssStyles(styleStr: string): ParsedCssStyles {
+  const result: ParsedCssStyles = {};
+  if (!styleStr) return result;
+
+  const pairs = styleStr.split(";").map((s) => s.trim()).filter(Boolean);
+  for (const pair of pairs) {
+    const [key, val] = pair.split(":").map((s) => s.trim());
+    if (!key || !val) continue;
+
+    switch (key.toLowerCase()) {
+      case "text-align":
+        if (["left", "center", "right", "justify"].includes(val)) result.alignment = val;
+        break;
+      case "color":
+        result.color = val;
+        break;
+      case "background-color":
+        result.backgroundColor = val;
+        break;
+      case "font-family":
+        result.fontFamily = val.replace(/['"]/g, "");
+        break;
+      case "font-size": {
+        const num = parseFloat(val);
+        if (!isNaN(num)) {
+          result.fontSize = val.includes("pt") ? num : val.includes("px") ? num * 0.75 : num;
+        }
+        break;
+      }
+      case "line-height": {
+        const lh = parseFloat(val);
+        if (!isNaN(lh)) result.lineHeight = lh;
+        break;
+      }
+      case "margin-top": {
+        const mt = parseFloat(val);
+        if (!isNaN(mt)) result.marginTop = val.includes("pt") ? mt : val.includes("px") ? mt * 0.75 : mt;
+        break;
+      }
+      case "margin-bottom": {
+        const mb = parseFloat(val);
+        if (!isNaN(mb)) result.marginBottom = val.includes("pt") ? mb : val.includes("px") ? mb * 0.75 : mb;
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+function parseInlineHtml(html: string, placeholders: Record<string, string>): any[] {
+  const result: any[] = [];
+  let remaining = html.trim();
+
+  while (remaining.length > 0) {
+    // Match <span style="...">...</span>
+    const spanMatch = remaining.match(/^<span([^>]*)>([\s\S]*?)<\/span>/i);
+    if (spanMatch) {
+      const styleAttr = spanMatch[1];
+      const innerContent = spanMatch[2];
+      const styleMatch = styleAttr.match(/style="([^"]*)"/i);
+      const cssStyles = styleMatch ? parseCssStyles(styleMatch[1]) : {};
+
+      // Parse the inner content recursively for nested formatting
+      const innerParts = parseInlineHtml(innerContent, placeholders);
+
+      // Apply span styles to inner content
+      for (const part of innerParts) {
+        if (typeof part === "string") {
+          const styledPart: any = { text: part };
+          if (cssStyles.color) styledPart.color = cssStyles.color;
+          if (cssStyles.backgroundColor) styledPart.background = cssStyles.backgroundColor;
+          if (cssStyles.fontFamily) styledPart.font = cssStyles.fontFamily;
+          if (cssStyles.fontSize) styledPart.fontSize = cssStyles.fontSize;
+          result.push(Object.keys(styledPart).length > 1 ? styledPart : part);
+        } else {
+          // Merge styles into existing object
+          if (cssStyles.color && !part.color) part.color = cssStyles.color;
+          if (cssStyles.backgroundColor && !part.background) part.background = cssStyles.backgroundColor;
+          if (cssStyles.fontFamily && !part.font) part.font = cssStyles.fontFamily;
+          if (cssStyles.fontSize && !part.fontSize) part.fontSize = cssStyles.fontSize;
+          result.push(part);
+        }
+      }
+
+      remaining = remaining.slice(spanMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <strong>...</strong>
+    const strongMatch = remaining.match(/^<strong>([\s\S]*?)<\/strong>/i);
+    if (strongMatch) {
+      const innerParts = parseInlineHtml(strongMatch[1], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") {
+          result.push({ text: part, bold: true });
+        } else {
+          part.bold = true;
+          result.push(part);
+        }
+      }
+      remaining = remaining.slice(strongMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <em>...</em>
+    const emMatch = remaining.match(/^<em>([\s\S]*?)<\/em>/i);
+    if (emMatch) {
+      const innerParts = parseInlineHtml(emMatch[1], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") {
+          result.push({ text: part, italics: true });
+        } else {
+          part.italics = true;
+          result.push(part);
+        }
+      }
+      remaining = remaining.slice(emMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <u>...</u>
+    const uMatch = remaining.match(/^<u>([\s\S]*?)<\/u>/i);
+    if (uMatch) {
+      const innerParts = parseInlineHtml(uMatch[1], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") {
+          result.push({ text: part, decoration: "underline" });
+        } else {
+          part.decoration = "underline";
+          result.push(part);
+        }
+      }
+      remaining = remaining.slice(uMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <s>...</s> or <strike>...</strike>
+    const sMatch = remaining.match(/^<(s|strike)>([\s\S]*?)<\/\1>/i);
+    if (sMatch) {
+      const innerParts = parseInlineHtml(sMatch[2], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") {
+          result.push({ text: part, decoration: "lineThrough" });
+        } else {
+          part.decoration = "lineThrough";
+          result.push(part);
+        }
+      }
+      remaining = remaining.slice(sMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <sub>...</sub>
+    const subMatch = remaining.match(/^<sub>([\s\S]*?)<\/sub>/i);
+    if (subMatch) {
+      const innerParts = parseInlineHtml(subMatch[1], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") { result.push({ text: part, subscript: true }); }
+        else { part.subscript = true; result.push(part); }
+      }
+      remaining = remaining.slice(subMatch[0].length).trim();
+      continue;
+    }
+
+    // Match <sup>...</sup>
+    const supMatch = remaining.match(/^<sup>([\s\S]*?)<\/sup>/i);
+    if (supMatch) {
+      const innerParts = parseInlineHtml(supMatch[1], placeholders);
+      for (const part of innerParts) {
+        if (typeof part === "string") { result.push({ text: part, superscript: true }); }
+        else { part.superscript = true; result.push(part); }
+      }
+      remaining = remaining.slice(supMatch[0].length).trim();
+      continue;
+    }
+
+    // Skip unknown tags
+    const unknownMatch = remaining.match(/^<[^>]+>/);
+    if (unknownMatch) {
+      remaining = remaining.slice(unknownMatch[0].length).trim();
+      continue;
+    }
+
+    // Plain text
+    const textMatch = remaining.match(/^[^<]+/);
+    if (textMatch) {
+      // Replace placeholder variables
+      let text = textMatch[0];
+      text = text.replace(/\{\{(\w+)\}\}/g, (_, key) => placeholders[key] || `{{${key}}}`);
+      result.push(text);
+      remaining = remaining.slice(textMatch[0].length).trim();
+      continue;
+    }
+
+    break;
+  }
+
+  return result;
+}
