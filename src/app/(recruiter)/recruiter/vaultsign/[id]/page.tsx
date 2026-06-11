@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -36,10 +37,10 @@ const SIGNER_STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
 };
 
 const TIMELINE_STEPS = [
-  { key: "draft", label: "Created" },
-  { key: "sent", label: "Sent" },
-  { key: "partially_signed", label: "In Progress" },
-  { key: "completed", label: "Completed" },
+  { key: "draft", label: "Created", description: "Click to view Created documents" },
+  { key: "sent", label: "Sent", description: "Click to view Sent documents" },
+  { key: "partially_signed", label: "In Progress", description: "Click to view In Progress documents" },
+  { key: "completed", label: "Completed", description: "Click to view Completed documents" },
 ];
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -321,16 +322,27 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center gap-1 overflow-x-auto pb-1">
               {TIMELINE_STEPS.map((step, i) => (
                 <React.Fragment key={step.key}>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i <= timelineProgress ? "bg-[#166534] text-white" : "bg-[#E5E7EB] text-[#9CA3AF]"
-                    }`}>
-                      {i <= timelineProgress ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                    </div>
-                    <span className={`text-xs font-medium whitespace-nowrap ${i <= timelineProgress ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
-                      {step.label}
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/recruiter/vaultsign?status=${step.key}`)}
+                        className="flex items-center gap-2 flex-shrink-0 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#F0FDF4] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-1"
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-transform hover:scale-110 ${
+                          i <= timelineProgress ? "bg-[#166534] text-white" : "bg-[#E5E7EB] text-[#9CA3AF]"
+                        }`}>
+                          {i <= timelineProgress ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                        </div>
+                        <span className={`text-sm font-semibold whitespace-nowrap ${i <= timelineProgress ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
+                          {step.label}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{step.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                   {i < TIMELINE_STEPS.length - 1 && (
                     <div className={`flex-1 h-0.5 mx-2 min-w-[20px] ${i < timelineProgress ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />
                   )}

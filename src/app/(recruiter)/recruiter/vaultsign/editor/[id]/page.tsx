@@ -875,26 +875,24 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Toolbar — Only show in Edit mode, Desktop */}
+      {/* Toolbar — Only show in Edit mode, Desktop — Word-style ribbon */}
       {viewMode === "edit" && (
-        <div className="hidden lg:flex bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex-wrap gap-y-1">
+        <div className="hidden lg:flex bg-[#F8F9FA] border-b border-[#E5E7EB] px-1 py-0.5 flex-wrap gap-y-0">
           {/* Clipboard Group */}
-          <div className="flex flex-col items-center px-2">
+          <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
             <div className="flex items-center gap-0.5">
-              <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo" isActive={false}>
+              <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)" isActive={false}>
                 <Undo2 className="h-4 w-4" />
               </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo" isActive={false}>
+              <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)" isActive={false}>
                 <Redo2 className="h-4 w-4" />
               </ToolbarButton>
             </div>
-            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Undo</span>
+            <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Undo</span>
           </div>
 
-          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
           {/* Font Group */}
-          <div className="flex flex-col items-center px-2">
+          <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
             <div className="flex items-center gap-0.5 flex-wrap">
               <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
                 if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
@@ -987,13 +985,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </PopoverContent>
               </Popover>
             </div>
-            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Font</span>
+            <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Font</span>
           </div>
 
-          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
           {/* Paragraph Group */}
-          <div className="flex flex-col items-center px-2">
+          <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
             <div className="flex items-center gap-0.5 flex-wrap">
               <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
                 <AlignLeft className="h-4 w-4" />
@@ -1033,13 +1029,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Paragraph</span>
+            <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Paragraph</span>
           </div>
 
-          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
           {/* Insert Group */}
-          <div className="flex flex-col items-center px-2">
+          <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
             <div className="flex items-center gap-0.5">
               <ToolbarButton onClick={() => {
                 const url = prompt("Enter image URL:");
@@ -1054,13 +1048,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 <FileText className="h-4 w-4" />
               </ToolbarButton>
             </div>
-            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Insert</span>
+            <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Insert</span>
           </div>
 
-          <Separator orientation="vertical" className="h-12 mx-0.5 self-center" />
-
           {/* Styles Group */}
-          <div className="flex flex-col items-center px-2">
+          <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
             <Select value={
               editor?.isActive("heading", { level: 1 }) ? "1"
               : editor?.isActive("heading", { level: 2 }) ? "2"
@@ -1080,7 +1072,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 <SelectItem value="3">Heading 3</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-[9px] text-[#9CA3AF] mt-0.5 select-none">Styles</span>
+            <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Styles</span>
           </div>
         </div>
       )}
@@ -1191,11 +1183,36 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Center — Editor or PDF Preview */}
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
           {viewMode === "edit" ? (
-            <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-[#E5E7EB] bg-white min-h-[800px]">
-              <EditorContent editor={editor} className="tiptap-editor" />
-            </div>
+            <>
+              {/* Info banner for Word documents */}
+              <div className="bg-[#EFF6FF] border-b border-[#BFDBFE] px-4 py-2 flex items-center gap-2">
+                <Eye className="h-4 w-4 text-[#2563EB] flex-shrink-0" />
+                <p className="text-xs text-[#1E40AF]">
+                  <strong>Tip:</strong> For exact Word formatting with real page breaks, use the <strong>Preview</strong> mode. The editor shows an approximate view.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-6 text-[10px] border-[#2563EB]/30 text-[#2563EB] hover:bg-[#DBEAFE] flex-shrink-0"
+                  onClick={() => {
+                    if (pdfUrl) {
+                      setViewMode("preview");
+                    } else {
+                      handleGeneratePreview();
+                    }
+                  }}
+                  disabled={pdfLoading}
+                >
+                  {pdfLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                  Preview
+                </Button>
+              </div>
+              <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-[#E5E7EB] bg-white min-h-[800px]">
+                <EditorContent editor={editor} className="tiptap-editor" />
+              </div>
+            </>
           ) : (
             <div className="flex flex-col items-center py-6">
               {pdfLoading ? (
@@ -1376,45 +1393,81 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           display: flex;
           align-items: center;
         }
-        /* Page break styling — clear visual divider */
+        /* Page break styling — looks like actual page boundary */
         .tiptap-editor .tiptap hr.page-break,
         .tiptap-editor .tiptap hr[data-page-break] {
           border: none;
-          border-top: 2px dashed #9CA3AF;
-          margin: 32px 0;
+          margin: 0;
+          padding: 24px 0;
           position: relative;
-          min-height: 20px;
+          min-height: 56px;
+          background: linear-gradient(to bottom,
+            #ffffff 0%,
+            #ffffff 38%,
+            #E5E7EB 38%,
+            #E5E7EB 40%,
+            #ffffff 40%,
+            #ffffff 60%,
+            #E5E7EB 60%,
+            #E5E7EB 62%,
+            #ffffff 62%,
+            #ffffff 100%
+          );
         }
-        .tiptap-editor .tiptap hr.page-break::after,
-        .tiptap-editor .tiptap hr[data-page-break]::after {
-          content: "— Page Break —";
+        .tiptap-editor .tiptap hr.page-break::before,
+        .tiptap-editor .tiptap hr[data-page-break]::before {
+          content: "PAGE BREAK";
           position: absolute;
-          top: -10px;
+          top: 50%;
           left: 50%;
-          transform: translateX(-50%);
-          font-size: 10px;
-          color: #9CA3AF;
-          background: white;
-          padding: 0 12px;
+          transform: translate(-50%, -50%);
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          color: #166534;
+          background: #F0FDF4;
+          border: 1px solid #166534/30;
+          padding: 3px 16px;
+          border-radius: 4px;
           white-space: nowrap;
+          z-index: 1;
         }
         /* Legacy page-break-after hr styling */
         .tiptap-editor .tiptap hr[style*="page-break"] {
           border: none;
-          border-top: 2px dashed #9CA3AF;
-          margin: 32px 0;
+          margin: 0;
+          padding: 24px 0;
           position: relative;
+          min-height: 56px;
+          background: linear-gradient(to bottom,
+            #ffffff 0%,
+            #ffffff 38%,
+            #E5E7EB 38%,
+            #E5E7EB 40%,
+            #ffffff 40%,
+            #ffffff 60%,
+            #E5E7EB 60%,
+            #E5E7EB 62%,
+            #ffffff 62%,
+            #ffffff 100%
+          );
         }
-        .tiptap-editor .tiptap hr[style*="page-break"]::after {
-          content: "— Page Break —";
+        .tiptap-editor .tiptap hr[style*="page-break"]::before {
+          content: "PAGE BREAK";
           position: absolute;
-          top: -10px;
+          top: 50%;
           left: 50%;
-          transform: translateX(-50%);
-          font-size: 10px;
-          color: #9CA3AF;
-          background: white;
-          padding: 0 12px;
+          transform: translate(-50%, -50%);
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          color: #166534;
+          background: #F0FDF4;
+          border: 1px solid #166534/30;
+          padding: 3px 16px;
+          border-radius: 4px;
+          white-space: nowrap;
+          z-index: 1;
         }
       `}</style>
     </div>
@@ -1423,7 +1476,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   );
 }
 
-// Toolbar button component
+// Toolbar button component — Word-style ribbon button
 function ToolbarButton({
   onClick,
   isActive,
@@ -1442,7 +1495,11 @@ function ToolbarButton({
           <Button
             variant="ghost"
             size="sm"
-            className={`h-8 w-8 p-0 transition-colors ${isActive ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280] hover:text-[#111827]"}`}
+            className={`h-7 w-7 p-0 transition-all rounded ${
+              isActive
+                ? "bg-[#DCFCE7] text-[#166534] shadow-[inset_0_0_0_1px_#166534/30]"
+                : "text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827] active:bg-[#E5E7EB]"
+            }`}
             onClick={onClick}
             title={title}
           >

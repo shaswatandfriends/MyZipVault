@@ -96,3 +96,31 @@ Stage Summary:
 - New files: /src/lib/vaultsign/libreoffice-convert.ts, /src/app/api/vaultsign/documents/[id]/convert-pdf/route.ts
 - Modified files: /src/lib/vaultsign/tiptap-page-break.ts, /src/app/api/vaultsign/documents/[id]/export-pdf/route.ts, /src/app/(recruiter)/recruiter/vaultsign/editor/[id]/page.tsx
 - Build verified successful
+---
+Task ID: 2 (SS4 Timeline Fix)
+Agent: Sub Agent
+Task: Make timeline steps clickable with labels, tooltips, and hover effects on VaultSign document detail page
+
+Work Log:
+- Read worklog from previous agents (Task 1-3, 1-5, 2)
+- Read the document detail page file at /src/app/(recruiter)/recruiter/vaultsign/[id]/page.tsx
+- Verified Tooltip component exists at /src/components/ui/tooltip.tsx
+- Added Tooltip, TooltipTrigger, TooltipContent imports
+- Extended TIMELINE_STEPS with description field for tooltip content
+- Rewrote timeline step rendering:
+  - Wrapped circle + label in a <button> with cursor-pointer, hover bg, transition, focus-visible ring
+  - Added hover:scale-110 transition-transform on step circles
+  - Increased circle from w-8 h-8 to w-9 h-9, text-xs to text-sm
+  - Upgraded labels from text-xs font-medium to text-sm font-semibold
+  - Added Tooltip wrapper with step.description on hover
+  - onClick navigates to /recruiter/vaultsign?status=${step.key}
+- Verified lint passes (no new errors in modified file)
+- Dev server running successfully
+
+Stage Summary:
+- Timeline steps are now clickable buttons that navigate to vaultsign dashboard with status filter
+- Step circles have hover zoom effect (hover:scale-110)
+- Labels are more prominent (text-sm font-semibold)
+- Tooltips show "Click to view [Status] documents" on hover
+- Larger clickable hit area with padding and rounded background on hover
+- Modified file: /src/app/(recruiter)/recruiter/vaultsign/[id]/page.tsx

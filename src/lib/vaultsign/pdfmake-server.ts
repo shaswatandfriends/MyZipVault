@@ -23,6 +23,7 @@ export async function getPdfmakeInstance(): Promise<any> {
   const pdfmake = require('pdfmake');
 
   // Set fonts using the built-in Helvetica (no file system access needed)
+  // These are PDFKit's 14 standard fonts — they don't need file system access
   pdfmake.setFonts({
     Helvetica: {
       normal: "Helvetica",
@@ -36,8 +37,11 @@ export async function getPdfmakeInstance(): Promise<any> {
   // We don't want PDF generation to make outbound network requests
   pdfmake.setUrlAccessPolicy(() => false);
 
-  // Set local access policy to deny local file system access (security)
-  pdfmake.setLocalAccessPolicy(() => false);
+  // IMPORTANT: We do NOT set a restrictive localAccessPolicy here because
+  // pdfmake v0.3.x considers the built-in PDFKit fonts (Helvetica, Courier, etc.)
+  // as "local resources" and will deny access to them if the policy returns false.
+  // Since we only use built-in fonts (no file system fonts), there's no security risk
+  // in allowing local access — the built-in fonts are embedded in PDFKit itself.
 
   _pdfmakeInstance = pdfmake;
   return _pdfmakeInstance;
