@@ -690,6 +690,7 @@ model VaultSignTemplate {
   placeholder_variables   String    @default("[]") // JSON array of {key, label, description, category}
   header_config           String    @default("{}") // JSON: {show_logo, show_company_name, show_contact, show_address, show_document_title}
   footer_config           String    @default("{}") // JSON: {show_rights_reserved, show_powered_by, show_page_numbers}
+  show_header_footer      Boolean   @default(true) // Combined toggle for header & footer
   is_active               Boolean   @default(true)
   created_by              Int
   created_at              DateTime  @default(now())
@@ -720,6 +721,7 @@ model VaultSignDocument {
   sign_fields              String    @default("[]") // JSON array of {id, type, page, x_percent, y_percent, width_percent, height_percent, assigned_to_signer_index, label, required, value}
   header_config            String    @default("{}") // JSON: {show_logo, show_company_name, show_contact, show_address, show_document_title, logo_url}
   footer_config            String    @default("{}") // JSON: {show_rights_reserved, show_powered_by, show_page_numbers}
+  show_header_footer       Boolean   @default(true) // Combined toggle for header & footer
   audit_trail              String    @default("[]") // JSON array of {event, user_name, ip_address, device_info, timestamp}
   document_hash            String?   // SHA-256 of final PDF
   revised_from_document_id Int?

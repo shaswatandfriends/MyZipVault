@@ -48,6 +48,7 @@ export async function GET(
       placeholder_variables: JSON.parse(template.placeholder_variables || "[]"),
       header_config: JSON.parse(template.header_config || "{}"),
       footer_config: JSON.parse(template.footer_config || "{}"),
+      show_header_footer: template.show_header_footer !== false,
     });
   } catch (error) {
     console.error("[VAULTSIGN] Get template error:", error);
@@ -97,6 +98,7 @@ export async function PATCH(
       "placeholder_variables",
       "header_config",
       "footer_config",
+      "show_header_footer",
       "is_active",
     ];
 

@@ -52,3 +52,50 @@ Stage Summary:
 - Fixed PDF download for 2nd party signers on the complete page by making the sign API return document info even for completed/signed documents
 - Fixed PDF download for recruiters (was already working via export-pdf API, confirmed the flow is correct)
 - Added graceful redirect from signing page to complete page for already-completed/already-signed cases
+
+---
+Task ID: feature-header-footer-and-templates
+Agent: full-stack-developer
+Task: Implement combined Header/Footer toggle and Save as Template with Shared/Platform template sections
+
+Work Log:
+- Updated Prisma schema to add `show_header_footer Boolean @default(true)` to both VaultSignTemplate and VaultSignDocument models
+- Ran `npx prisma db push` to sync the database schema changes
+- Added `addHeaderFooterToPdf` function to `/src/lib/vaultsign/pdf-sign.ts` — overlays header (company logo, name, contact, address, document title) and footer (rights reserved, powered by, page numbers) on each PDF page using pdf-lib
+- Updated `tiptapToPdfmake` and `htmlToPdfmake` in `/src/lib/vaultsign/tiptap-to-pdfmake.ts` to use `showHeaderFooter` boolean instead of individual `headerConfig`/`footerConfig` toggles — when true, ALL header/footer elements are included; when false, none
+- Updated save-draft route (`/src/app/api/vaultsign/documents/[id]/save-draft/route.ts`) to accept and store `show_header_footer` field
+- Updated submit route (`/src/app/api/vaultsign/sign/[token]/submit/route.ts`) to:
+  - Import `addHeaderFooterToPdf`
+  - Include organization details (logo_url, phone, email, address) in the query
+  - Run `addHeaderFooterToPdf` between `generateSignedPdf` and `addAuditTrailPage` for PDF source documents
+  - Pass `showHeaderFooter` option to `tiptapToPdfmake`/`htmlToPdfmake` for Word source documents
+- Updated recruiter editor page (`/src/app/(recruiter)/recruiter/vaultsign/editor/[id]/page.tsx`):
+  - Replaced 7 individual header/footer toggles with ONE combined toggle
+  - Replaced `headerConfig`/`footerConfig` state with `showHeaderFooter` boolean
+  - Added backward compatibility: derives `showHeaderFooter` from old `header_config`/`footer_config` if `show_header_footer` not set
+  - Auto-save sends `show_header_footer` instead of `header_config`/`footer_config`
+  - Added "Save as Template" button in the top bar
+  - Added Save as Template dialog with name input
+  - Added `handleSaveAsTemplate` handler that saves draft first, then POSTs to templates API
+- Updated superadmin template editor page (`/src/app/(superadmin)/superadmin/vaultsign/templates/[id]/page.tsx`):
+  - Replaced 7 individual header/footer toggles with ONE combined toggle
+  - Auto-save and manual save now send `show_header_footer` instead of `header_config`/`footer_config`
+  - Added backward compat for loading old template data
+- Updated templates API (`/src/app/api/vaultsign/templates/route.ts`):
+  - Added POST handler to create template from existing document
+  - Updated GET handler to include `source` field ("platform" for super_admin templates, "shared" for org templates)
+  - Added `show_header_footer` to parsed template data
+- Updated superadmin template PATCH route to allow `show_header_footer` field and return it in GET response
+- Updated VaultSign dashboard (`/src/app/(recruiter)/recruiter/vaultsign/page.tsx`):
+  - Split single "Start with Template" section into two: "Shared Templates" (with Building2 icon) and "Platform Templates" (with Globe icon)
+  - Shared Templates cards show creator name ("By John D.")
+  - Platform Templates use LayoutTemplate icon
+  - Each section only shows if it has templates
+
+Stage Summary:
+- Successfully implemented combined Header & Footer toggle replacing 7 individual toggles
+- Added PDF header/footer overlay function for uploaded PDFs using pdf-lib
+- Added "Save as Template" feature in recruiter editor
+- Split dashboard template sections into "Shared Templates" and "Platform Templates"
+- All lint errors are pre-existing (in minified vendor files) — no new errors introduced
+- Database schema updated and synced with new `show_header_footer` fields

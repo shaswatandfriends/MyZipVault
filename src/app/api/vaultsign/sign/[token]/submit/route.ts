@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { generateSignedPdf, addAuditTrailPage, computeDocumentHash } from "@/lib/vaultsign/pdf-sign";
+import { generateSignedPdf, addAuditTrailPage, addHeaderFooterToPdf, computeDocumentHash } from "@/lib/vaultsign/pdf-sign";
 import { uploadGeneratedPdf, getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 import { sendDocumentCompletedEmail, generateSigningLink, sendDocumentSentEmail } from "@/lib/vaultsign/email";
 import type { SignField, AuditTrailEntry, SignerSignatureStore } from "@/lib/vaultsign/types";
@@ -19,7 +19,7 @@ export async function POST(
         document: {
           include: {
             signers: { orderBy: { signing_order_position: "asc" } },
-            organization: { select: { id: true, name: true } },
+            organization: { select: { id: true, name: true, company_logo_url: true, company_phone: true, company_email: true, company_address: true } },
           },
         },
       },
@@ -168,8 +168,20 @@ export async function POST(
 
           const { pdfBuffer: signedPdfBuffer, hash } = await generateSignedPdf(pdfBufferFromSource, signFields, signerRecords);
 
+          // Add header/footer overlay for uploaded PDFs
+          const headerFooterOptions = {
+            companyName: refreshedDocument.organization?.name || undefined,
+            companyLogoUrl: (refreshedDocument.organization as any)?.company_logo_url || undefined,
+            companyPhone: (refreshedDocument.organization as any)?.company_phone || undefined,
+            companyEmail: (refreshedDocument.organization as any)?.company_email || undefined,
+            companyAddress: (refreshedDocument.organization as any)?.company_address || undefined,
+            documentTitle: refreshedDocument.document_name,
+            showHeaderFooter: (refreshedDocument as any).show_header_footer !== false,
+          };
+          const headerFooterBuffer = await addHeaderFooterToPdf(signedPdfBuffer, headerFooterOptions);
+
           // Add audit trail page
-          const finalPdf = await addAuditTrailPage(signedPdfBuffer, auditTrail, refreshedDocument.document_name);
+          const finalPdf = await addAuditTrailPage(headerFooterBuffer, auditTrail, refreshedDocument.document_name);
 
           // Upload final PDF
           const uploadResult = await uploadGeneratedPdf(
@@ -213,9 +225,11 @@ export async function POST(
               const { generatePdfBuffer, HELVETICA_FONTS } = await import("@/lib/vaultsign/pdfmake-server");
 
               const placeholderValues = JSON.parse(refreshedDocument.placeholder_values || "{}");
+              const showHeaderFooter = (refreshedDocument as any).show_header_footer !== false;
               const pdfOptions = {
                 headerConfig: (() => { try { return JSON.parse((refreshedDocument as any).header_config || "{}"); } catch { return {}; } })(),
                 footerConfig: (() => { try { return JSON.parse((refreshedDocument as any).footer_config || "{}"); } catch { return {}; } })(),
+                showHeaderFooter,
                 organization: refreshedDocument.organization ? {
                   name: refreshedDocument.organization.name || undefined,
                   logo_url: (refreshedDocument.organization as any).company_logo_url || undefined,

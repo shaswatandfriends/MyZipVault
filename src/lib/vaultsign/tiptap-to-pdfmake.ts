@@ -47,6 +47,7 @@ export function tiptapToPdfmake(
   options: {
     headerConfig?: HeaderConfig;
     footerConfig?: FooterConfig;
+    showHeaderFooter?: boolean;
     organization?: OrganizationInfo;
     documentTitle?: string;
     placeholderValues?: Record<string, string>;
@@ -97,9 +98,14 @@ export function tiptapToPdfmake(
   const headerContent: Content[] = [];
   const footerContent: Content[] = [];
 
+  // Build header and footer based on showHeaderFooter toggle
+  // If showHeaderFooter is explicitly false, skip all header/footer
+  // If true (or undefined for backward compat), include all header/footer elements
+  const includeHeaderFooter = options.showHeaderFooter !== false;
+
   // Build header
   // Layout: Left column = logo + company info stacked; Right column = document title
-  if (options.headerConfig) {
+  if (includeHeaderFooter) {
     const headerParts: Content[] = [];
     const leftParts: Content[] = [];
     const rightParts: Content[] = [];
@@ -108,7 +114,7 @@ export function tiptapToPdfmake(
     const logoLine: Content[] = [];
     const companyDetailsStack: Content[] = [];
 
-    if (options.headerConfig.show_logo && options.organization?.logo_url) {
+    if (options.organization?.logo_url) {
       logoLine.push({
         image: options.organization.logo_url,
         width: 36,
@@ -117,7 +123,7 @@ export function tiptapToPdfmake(
       });
     }
 
-    if (options.headerConfig.show_company_name && options.organization?.name) {
+    if (options.organization?.name) {
       logoLine.push({
         text: options.organization.name,
         fontSize: 14,
@@ -134,7 +140,7 @@ export function tiptapToPdfmake(
       });
     }
 
-    if (options.headerConfig.show_contact && options.organization) {
+    if (options.organization) {
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
@@ -147,7 +153,7 @@ export function tiptapToPdfmake(
       }
     }
 
-    if (options.headerConfig.show_address && options.organization?.address) {
+    if (options.organization?.address) {
       companyDetailsStack.push({
         text: options.organization.address,
         fontSize: 8,
@@ -162,7 +168,7 @@ export function tiptapToPdfmake(
       });
     }
 
-    if (options.headerConfig.show_document_title && options.documentTitle) {
+    if (options.documentTitle) {
       rightParts.push({
         text: options.documentTitle,
         fontSize: 10,
@@ -188,57 +194,45 @@ export function tiptapToPdfmake(
     }
   }
 
-  // Build footer
+  // Build footer (same condition as header)
   // Layout: Left/center = rights reserved + powered by; Right = page numbers
-  if (options.footerConfig) {
+  if (includeHeaderFooter) {
     const footerLeftParts: Content[] = [];
-    const hasPageNumbers = options.footerConfig.show_page_numbers;
 
-    if (options.footerConfig.show_rights_reserved) {
-      footerLeftParts.push({
-        text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
-        alignment: "center",
-        fontSize: 7,
-        color: "#9CA3AF",
-      });
-    }
-    if (options.footerConfig.show_powered_by) {
-      footerLeftParts.push({
-        text: "Powered by VaultSign",
-        alignment: "center",
-        fontSize: 6,
-        color: "#B0B0B0",
-      });
-    }
+    footerLeftParts.push({
+      text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
+      alignment: "center",
+      fontSize: 7,
+      color: "#9CA3AF",
+    });
+    footerLeftParts.push({
+      text: "Powered by VaultSign",
+      alignment: "center",
+      fontSize: 6,
+      color: "#B0B0B0",
+    });
 
-    if (hasPageNumbers || footerLeftParts.length > 0) {
-      const footerColumns: Content[] = [];
+    const footerColumns: Content[] = [];
 
-      // Center column: rights reserved + powered by
-      if (footerLeftParts.length > 0) {
-        footerColumns.push({
-          stack: footerLeftParts,
-          width: hasPageNumbers ? "*" : "*",
-        });
-      }
+    // Center column: rights reserved + powered by
+    footerColumns.push({
+      stack: footerLeftParts,
+      width: "*",
+    });
 
-      // Right column: page numbers
-      if (hasPageNumbers) {
-        footerColumns.push({
-          text: "Page {currentPage} of {totalPages}",
-          alignment: "right",
-          fontSize: 8,
-          color: "#9CA3AF",
-          width: "auto",
-        });
-      }
+    // Right column: page numbers
+    footerColumns.push({
+      text: "Page {currentPage} of {totalPages}",
+      alignment: "right",
+      fontSize: 8,
+      color: "#9CA3AF",
+      width: "auto",
+    });
 
-      footerContent.push({
-        columns: footerColumns.length > 1 ? footerColumns : undefined,
-        stack: footerColumns.length <= 1 ? footerLeftParts : undefined,
-        margin: [40, 0, 40, 20] as any,
-      });
-    }
+    footerContent.push({
+      columns: footerColumns,
+      margin: [40, 0, 40, 20] as any,
+    });
   }
 
   const docDefinition: TDocumentDefinitions = {
@@ -635,6 +629,7 @@ function transformTableRow(node: TipTapNode, placeholders: Record<string, string
 interface HtmlToPdfmakeOptions {
   headerConfig?: HeaderConfig;
   footerConfig?: FooterConfig;
+  showHeaderFooter?: boolean;
   organization?: OrganizationInfo;
   documentTitle?: string;
   placeholderValues?: Record<string, string>;
@@ -661,23 +656,26 @@ export function htmlToPdfmake(
   const headerContent: Content[] = [];
   const footerContent: Content[] = [];
 
+  // Build header and footer based on showHeaderFooter toggle
+  const includeHeaderFooter = options.showHeaderFooter !== false;
+
   // Build header (same layout as tiptapToPdfmake)
-  if (options.headerConfig) {
+  if (includeHeaderFooter) {
     const leftParts: Content[] = [];
     const rightParts: Content[] = [];
     const logoLine: Content[] = [];
     const companyDetailsStack: Content[] = [];
 
-    if (options.headerConfig.show_logo && options.organization?.logo_url) {
+    if (options.organization?.logo_url) {
       logoLine.push({ image: options.organization.logo_url, width: 36, height: 36, margin: [0, 0, 8, 0] as any });
     }
-    if (options.headerConfig.show_company_name && options.organization?.name) {
+    if (options.organization?.name) {
       logoLine.push({ text: options.organization.name, fontSize: 14, bold: true, color: "#166534", margin: [0, 4, 0, 0] as any });
     }
     if (logoLine.length > 0) {
       leftParts.push({ columns: logoLine, margin: [0, 0, 0, 2] as any });
     }
-    if (options.headerConfig.show_contact && options.organization) {
+    if (options.organization) {
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
@@ -685,13 +683,13 @@ export function htmlToPdfmake(
         companyDetailsStack.push({ text: contactParts.join(" | "), fontSize: 8, color: "#6B7280" });
       }
     }
-    if (options.headerConfig.show_address && options.organization?.address) {
+    if (options.organization?.address) {
       companyDetailsStack.push({ text: options.organization.address, fontSize: 8, color: "#6B7280" });
     }
     if (companyDetailsStack.length > 0) {
       leftParts.push({ stack: companyDetailsStack });
     }
-    if (options.headerConfig.show_document_title && options.documentTitle) {
+    if (options.documentTitle) {
       rightParts.push({ text: options.documentTitle, fontSize: 10, bold: true, color: "#374151", alignment: "right", margin: [0, 8, 0, 0] as any });
     }
     if (leftParts.length > 0 || rightParts.length > 0) {
@@ -700,32 +698,21 @@ export function htmlToPdfmake(
     }
   }
 
-  // Build footer (same layout as tiptapToPdfmake)
-  if (options.footerConfig) {
+  // Build footer (same condition as header)
+  if (includeHeaderFooter) {
     const footerLeftParts: Content[] = [];
-    const hasPageNumbers = options.footerConfig.show_page_numbers;
 
-    if (options.footerConfig.show_rights_reserved) {
-      footerLeftParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
-    }
-    if (options.footerConfig.show_powered_by) {
-      footerLeftParts.push({ text: "Powered by VaultSign", alignment: "center", fontSize: 6, color: "#B0B0B0" });
-    }
+    footerLeftParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
+    footerLeftParts.push({ text: "Powered by VaultSign", alignment: "center", fontSize: 6, color: "#B0B0B0" });
 
-    if (hasPageNumbers || footerLeftParts.length > 0) {
-      const footerColumns: Content[] = [];
-      if (footerLeftParts.length > 0) {
-        footerColumns.push({ stack: footerLeftParts, width: hasPageNumbers ? "*" : "*" });
-      }
-      if (hasPageNumbers) {
-        footerColumns.push({ text: "Page {currentPage} of {totalPages}", alignment: "right", fontSize: 8, color: "#9CA3AF", width: "auto" });
-      }
-      footerContent.push({
-        columns: footerColumns.length > 1 ? footerColumns : undefined,
-        stack: footerColumns.length <= 1 ? footerLeftParts : undefined,
-        margin: [40, 0, 40, 20] as any,
-      });
-    }
+    const footerColumns: Content[] = [];
+    footerColumns.push({ stack: footerLeftParts, width: "*" });
+    footerColumns.push({ text: "Page {currentPage} of {totalPages}", alignment: "right", fontSize: 8, color: "#9CA3AF", width: "auto" });
+
+    footerContent.push({
+      columns: footerColumns,
+      margin: [40, 0, 40, 20] as any,
+    });
   }
 
   const docDefinition: TDocumentDefinitions = {

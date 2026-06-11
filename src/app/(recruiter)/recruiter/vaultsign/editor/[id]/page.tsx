@@ -85,25 +85,44 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const pdfDocRef = useRef<any>(null);
 
   // Header & Footer config
-  const [headerConfig, setHeaderConfig] = useState({
-    show_logo: true,
-    show_company_name: true,
-    show_contact: true,
-    show_address: true,
-    show_document_title: true,
-  });
-  const [footerConfig, setFooterConfig] = useState({
-    show_rights_reserved: true,
-    show_powered_by: true,
-    show_page_numbers: true,
-  });
+  const [showHeaderFooter, setShowHeaderFooter] = useState(true);
 
   // Delete dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Save as Template
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   // Send for signature
   const [sending, setSending] = useState(false);
+
+  // Save as Template handler
+  const handleSaveAsTemplate = async () => {
+    if (!docId) return;
+    try {
+      setSavingTemplate(true);
+      await handleSave(); // Save draft first
+      const res = await fetch("/api/vaultsign/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document_id: docId, template_name: templateName || docName }),
+      });
+      if (res.ok) {
+        toast.success("Template saved! It will appear in your Shared Templates.");
+        setShowSaveTemplateDialog(false);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to save template");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save template");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
 
   // Unwrap params
   useEffect(() => {
@@ -167,17 +186,19 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       setSignFields(data.sign_fields || []);
       setPlaceholderValues(data.placeholder_values || {});
 
-      if (data.header_config) {
+      if (data.show_header_footer !== undefined) {
+        setShowHeaderFooter(data.show_header_footer);
+      } else if (data.header_config || data.footer_config) {
+        // Backward compat: derive from old config
         try {
-          const parsed = typeof data.header_config === "string" ? JSON.parse(data.header_config) : data.header_config;
-          setHeaderConfig(parsed);
-        } catch {}
-      }
-      if (data.footer_config) {
-        try {
-          const parsed = typeof data.footer_config === "string" ? JSON.parse(data.footer_config) : data.footer_config;
-          setFooterConfig(parsed);
-        } catch {}
+          const hc = typeof data.header_config === "string" ? JSON.parse(data.header_config) : data.header_config;
+          const fc = typeof data.footer_config === "string" ? JSON.parse(data.footer_config) : data.footer_config;
+          const anyHeaderOn = hc && (hc.show_logo || hc.show_company_name || hc.show_contact || hc.show_address || hc.show_document_title);
+          const anyFooterOn = fc && (fc.show_rights_reserved || fc.show_powered_by || fc.show_page_numbers);
+          setShowHeaderFooter(!!anyHeaderOn || !!anyFooterOn);
+        } catch {
+          setShowHeaderFooter(true);
+        }
       }
 
       if (data.template?.placeholder_variables) {
@@ -244,8 +265,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           placeholder_values: placeholderValues,
           sign_fields: signFields,
           document_name: docName,
-          header_config: headerConfig,
-          footer_config: footerConfig,
+          show_header_footer: showHeaderFooter,
         }),
       });
       if (res.ok) {
@@ -702,59 +722,19 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     <>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
-          {/* Header & Footer Settings */}
+          {/* Header & Footer */}
           <div>
-            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Header & Footer</h4>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Logo</span>
-                <button onClick={() => setHeaderConfig({...headerConfig, show_logo: !headerConfig.show_logo})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_logo ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_logo ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
+            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+              <div>
+                <span className="text-xs font-medium text-[#374151]">Header & Footer</span>
+                <p className="text-[9px] text-[#9CA3AF]">Company header and footer on document</p>
               </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Company Name</span>
-                <button onClick={() => setHeaderConfig({...headerConfig, show_company_name: !headerConfig.show_company_name})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_company_name ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_company_name ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Contact</span>
-                <button onClick={() => setHeaderConfig({...headerConfig, show_contact: !headerConfig.show_contact})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_contact ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_contact ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Address</span>
-                <button onClick={() => setHeaderConfig({...headerConfig, show_address: !headerConfig.show_address})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_address ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_address ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Doc Title</span>
-                <button onClick={() => setHeaderConfig({...headerConfig, show_document_title: !headerConfig.show_document_title})} className={`w-8 h-4 rounded-full transition-colors ${headerConfig.show_document_title ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${headerConfig.show_document_title ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <Separator className="my-1" />
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Rights Reserved</span>
-                <button onClick={() => setFooterConfig({...footerConfig, show_rights_reserved: !footerConfig.show_rights_reserved})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_rights_reserved ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_rights_reserved ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Powered by</span>
-                <button onClick={() => setFooterConfig({...footerConfig, show_powered_by: !footerConfig.show_powered_by})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_powered_by ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_powered_by ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
-                <span className="text-xs text-[#374151]">Show Page Numbers</span>
-                <button onClick={() => setFooterConfig({...footerConfig, show_page_numbers: !footerConfig.show_page_numbers})} className={`w-8 h-4 rounded-full transition-colors ${footerConfig.show_page_numbers ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}>
-                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${footerConfig.show_page_numbers ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
+              <button 
+                onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
             </div>
           </div>
 
@@ -970,6 +950,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
           <Button variant="outline" size="sm" onClick={handleSave} className="border-[#E5E7EB] text-[#166534]">
             <Save className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setTemplateName(docName); setShowSaveTemplateDialog(true); }} className="border-[#E5E7EB] text-[#166534]">
+            <FileText className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save as Template</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-[#E5E7EB] text-[#111827]">
             <FileDown className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Export PDF</span>
@@ -1421,6 +1404,29 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-[#6B7280]">Save this document as a reusable template for your company.</p>
+          <Input
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="Template name"
+            className="mt-2"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>Cancel</Button>
+            <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={handleSaveAsTemplate} disabled={savingTemplate}>
+              {savingTemplate ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+              Save Template
             </Button>
           </DialogFooter>
         </DialogContent>

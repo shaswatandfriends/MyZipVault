@@ -454,30 +454,71 @@ export default function VaultSignDashboardPage() {
 
         {/* Templates quick start */}
         {templates.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
-              <LayoutTemplate className="h-5 w-5 text-[#166534]" /> Start with Template
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {templates.slice(0, 4).map((template: any) => (
-                <Card
-                  key={template.id}
-                  className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
-                  onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FileSignature className="h-4 w-4 text-[#166534]" />
-                      <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
-                    </div>
-                    <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
-                    <Badge variant="outline" className="text-[10px] mt-2">
-                      {template.source_type === "word" ? "Word" : "PDF"}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          <div className="mb-6 space-y-4">
+            {/* Shared Templates */}
+            {templates.filter((t: any) => t.source === "shared").length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-[#166534]" /> Shared Templates
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {templates.filter((t: any) => t.source === "shared").slice(0, 4).map((template: any) => (
+                    <Card
+                      key={template.id}
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
+                      onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileSignature className="h-4 w-4 text-[#166534]" />
+                          <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
+                        </div>
+                        <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-[10px]">
+                            {template.source_type === "word" ? "Word" : "PDF"}
+                          </Badge>
+                          {template.creator && (
+                            <span className="text-[10px] text-[#9CA3AF]">
+                              By {template.creator.first_name || ""} {template.creator.last_name || ""}
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Platform Templates */}
+            {templates.filter((t: any) => t.source === "platform").length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-[#166534]" /> Platform Templates
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {templates.filter((t: any) => t.source === "platform").slice(0, 4).map((template: any) => (
+                    <Card
+                      key={template.id}
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
+                      onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <LayoutTemplate className="h-4 w-4 text-[#166534]" />
+                          <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
+                        </div>
+                        <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
+                        <Badge variant="outline" className="text-[10px] mt-2">
+                          {template.source_type === "word" ? "Word" : "PDF"}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

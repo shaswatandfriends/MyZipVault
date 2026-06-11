@@ -77,6 +77,10 @@ export async function PUT(
         : JSON.stringify(body.footer_config);
     }
 
+    if (body.show_header_footer !== undefined) {
+      updateData.show_header_footer = body.show_header_footer;
+    }
+
     await db.vaultSignDocument.update({
       where: { id: docId },
       data: updateData,
