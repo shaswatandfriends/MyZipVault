@@ -100,16 +100,48 @@ export default function PublicSigningPage() {
   useEffect(() => {
     if (!pdfUrl || typeof window === "undefined") return;
 
+    let cancelled = false;
     const renderPdf = async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Ensure worker is configured
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        }
+
+        let loadingTask;
+
+        // Handle different URL types
+        if (pdfUrl.startsWith("data:application/pdf;base64,")) {
+          // Base64 data URL — decode and use Uint8Array for reliable loading
+          const base64 = pdfUrl.split(",")[1];
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          loadingTask = pdfjsLib.getDocument({ data: bytes } as any);
+        } else if (pdfUrl.startsWith("data:")) {
+          loadingTask = pdfjsLib.getDocument(pdfUrl as any);
+        } else if (pdfUrl.startsWith("http") || pdfUrl.startsWith("/")) {
+          loadingTask = pdfjsLib.getDocument({
+            url: pdfUrl,
+            withCredentials: false,
+          } as any);
+        } else {
+          loadingTask = pdfjsLib.getDocument(pdfUrl as any);
+        }
+
         const pdf = await loadingTask.promise;
+        if (cancelled) return;
         setNumPages(pdf.numPages);
 
+        // Wait a tick for canvas refs to be available
+        await new Promise((r) => setTimeout(r, 100));
+
         for (let i = 1; i <= pdf.numPages; i++) {
+          if (cancelled) return;
           const page = await pdf.getPage(i);
           const canvas = canvasRefs.current.get(i);
           if (!canvas) continue;
@@ -118,20 +150,28 @@ export default function PublicSigningPage() {
           if (!context) continue;
 
           const viewport = page.getViewport({ scale: scale * 1.5 });
+
+          // Set canvas pixel dimensions for sharp rendering
           canvas.height = viewport.height;
           canvas.width = viewport.width;
+
+          // Set CSS display dimensions
+          canvas.style.width = `${viewport.width / 1.5}px`;
+          canvas.style.height = `${viewport.height / 1.5}px`;
 
           await page.render({
             canvasContext: context,
             viewport: viewport,
           }).promise;
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "RenderingCancelledException" || cancelled) return;
         console.error("PDF render error:", err);
       }
     };
 
     renderPdf();
+    return () => { cancelled = true; };
   }, [pdfUrl, scale]);
 
   // Initialize signature pad
@@ -368,7 +408,8 @@ export default function PublicSigningPage() {
                 ref={(el) => {
                   if (el) canvasRefs.current.set(currentPage, el);
                 }}
-                className="w-full shadow-lg rounded-lg border border-[#E5E7EB]"
+                className="shadow-lg rounded-lg border border-[#E5E7EB]"
+                style={{ maxWidth: "100%", height: "auto" }}
               />
 
               {/* Sign field overlays for this signer */}

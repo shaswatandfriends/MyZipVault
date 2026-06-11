@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tiptapToPdfmake, htmlToPdfmake } from "@/lib/vaultsign/tiptap-to-pdfmake";
 import { uploadGeneratedPdf, getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
-import PdfPrinter from "pdfmake";
+import { generatePdfBuffer, HELVETICA_FONTS } from "@/lib/vaultsign/pdfmake-server";
 
 // POST: Export PDF — for Word docs, convert content → pdfmake → PDF; for PDF docs, return signed URL
 export async function POST(
@@ -68,7 +68,6 @@ export async function POST(
         return NextResponse.json({ pdf_url: signedUrl, source_type: "pdf" });
       } catch (signErr) {
         console.error("[VAULTSIGN] PDF signed URL error:", signErr);
-        // Return the URL as-is as fallback
         return NextResponse.json({ pdf_url: fileUrl, source_type: "pdf" });
       }
     }
@@ -121,39 +120,10 @@ export async function POST(
       return NextResponse.json({ error: "No printable content found in document" }, { status: 400 });
     }
 
-    // Generate PDF using pdfmake with timeout protection
-    const fonts = {
-      Helvetica: {
-        normal: "Helvetica",
-        bold: "Helvetica-Bold",
-        italics: "Helvetica-Oblique",
-        bolditalics: "Helvetica-BoldOblique",
-      },
-    };
-
+    // Generate PDF buffer using shared utility (handles ESM/CJS interop + timeout)
     let pdfBuffer: Buffer;
     try {
-      const printer = new (PdfPrinter as any)(fonts);
-      const pdfDoc = printer.createPdfKitDocument(docDefinition);
-
-      // Collect PDF into buffer with timeout
-      const chunks: Buffer[] = [];
-      pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("PDF generation timed out after 30 seconds"));
-        }, 30000);
-
-        pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
-        pdfDoc.on("end", () => {
-          clearTimeout(timeout);
-          resolve(Buffer.concat(chunks));
-        });
-        pdfDoc.on("error", (err: Error) => {
-          clearTimeout(timeout);
-          reject(err);
-        });
-        pdfDoc.end();
-      });
+      pdfBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 30000);
     } catch (pdfErr: any) {
       console.error("[VAULTSIGN] PDF generation error:", pdfErr);
       return NextResponse.json({

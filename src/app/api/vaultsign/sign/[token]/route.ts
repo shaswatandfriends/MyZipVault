@@ -1,7 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
+import { getDocumentSignedUrl, uploadGeneratedPdf } from "@/lib/vaultsign/supabase-storage";
+import { tiptapToPdfmake, htmlToPdfmake } from "@/lib/vaultsign/tiptap-to-pdfmake";
+import { generatePdfBuffer, HELVETICA_FONTS } from "@/lib/vaultsign/pdfmake-server";
 import type { AuditTrailEntry } from "@/lib/vaultsign/types";
+
+/**
+ * Generate a PDF from Word document content (tiptap_content) on-the-fly.
+ * Used when edited_pdf_url is not available (e.g., export-pdf never ran successfully).
+ */
+async function generatePdfFromContent(doc: any): Promise<string | null> {
+  if (!doc.tiptap_content) return null;
+
+  const placeholderValues = JSON.parse(doc.placeholder_values || "{}");
+
+  // Build pdfmake docDefinition
+  let docDefinition;
+  const rawContent = doc.tiptap_content;
+
+  try {
+    const parsed = JSON.parse(rawContent);
+    if (parsed.type === "doc" && parsed.content) {
+      docDefinition = tiptapToPdfmake(rawContent, { placeholderValues });
+    } else {
+      docDefinition = htmlToPdfmake(rawContent, { placeholderValues });
+    }
+  } catch {
+    docDefinition = htmlToPdfmake(rawContent, { placeholderValues });
+  }
+
+  if (!docDefinition || !docDefinition.content || docDefinition.content.length === 0) {
+    return null;
+  }
+
+  // Generate PDF buffer using shared utility
+  let pdfBuffer: Buffer;
+  try {
+    pdfBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 30000);
+  } catch {
+    return null;
+  }
+
+  if (!pdfBuffer || pdfBuffer.length === 0) return null;
+
+  // Upload the generated PDF
+  let uploadResult;
+  try {
+    uploadResult = await uploadGeneratedPdf(
+      pdfBuffer,
+      `org-${doc.organization_id}/doc-${doc.id}`,
+      `edited-${Date.now()}.pdf`
+    );
+  } catch {
+    // Fallback to base64
+    const base64 = pdfBuffer.toString("base64");
+    uploadResult = { url: `data:application/pdf;base64,${base64}` };
+  }
+
+  // Save to DB for future use
+  try {
+    await db.vaultSignDocument.update({
+      where: { id: doc.id },
+      data: { edited_pdf_url: uploadResult.url, updated_at: new Date() },
+    });
+  } catch {
+    // Non-critical
+  }
+
+  return uploadResult.url;
+}
 
 // GET: Get document info for signing page (by signer token — no auth required)
 export async function GET(
@@ -79,11 +146,47 @@ export async function GET(
     // Get the PDF URL for the document
     let pdfUrl = "";
     if (document.source_type === "pdf" && document.original_file_url) {
-      pdfUrl = await getDocumentSignedUrl(document.original_file_url);
+      // PDF source — just sign the original URL
+      try {
+        pdfUrl = await getDocumentSignedUrl(document.original_file_url);
+      } catch {
+        pdfUrl = document.original_file_url;
+      }
     } else if (document.edited_pdf_url) {
-      pdfUrl = await getDocumentSignedUrl(document.edited_pdf_url);
-    } else if (document.original_file_url) {
-      pdfUrl = await getDocumentSignedUrl(document.original_file_url);
+      // Word doc that has already been converted to PDF
+      try {
+        pdfUrl = await getDocumentSignedUrl(document.edited_pdf_url);
+      } catch {
+        pdfUrl = document.edited_pdf_url;
+      }
+    } else if (document.source_type === "word" && document.tiptap_content) {
+      // Word doc that hasn't been converted to PDF yet — generate on-the-fly
+      console.log("[VAULTSIGN] No edited_pdf_url for Word doc, generating PDF on-the-fly for signing page");
+      try {
+        const generatedUrl = await generatePdfFromContent(document);
+        if (generatedUrl) {
+          if (generatedUrl.startsWith("data:")) {
+            pdfUrl = generatedUrl;
+          } else {
+            try {
+              pdfUrl = await getDocumentSignedUrl(generatedUrl);
+            } catch {
+              pdfUrl = generatedUrl;
+            }
+          }
+        }
+      } catch (genErr) {
+        console.error("[VAULTSIGN] On-the-fly PDF generation failed:", genErr);
+      }
+    }
+
+    // Fallback: try original_file_url (won't work for .docx but might for PDF)
+    if (!pdfUrl && document.original_file_url) {
+      try {
+        pdfUrl = await getDocumentSignedUrl(document.original_file_url);
+      } catch {
+        pdfUrl = document.original_file_url;
+      }
     }
 
     // Filter sign fields to only show this signer's fields

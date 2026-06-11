@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import PdfPrinter from "pdfmake";
+import { generatePdfBuffer } from "@/lib/vaultsign/pdfmake-server";
 
 const fonts = {
   Roboto: {
@@ -135,24 +135,14 @@ export async function GET(request: Request) {
       defaultStyle: { font: "Roboto" },
     };
 
-    const printer = new PdfPrinter(fonts);
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    // Use shared pdfmake utility with ESM/CJS interop handling
+    const pdfBuffer = await generatePdfBuffer(docDefinition, fonts, 15000);
 
-    const chunks: Buffer[] = [];
-    return new Promise<NextResponse>((resolve) => {
-      pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on("end", () => {
-        const pdfBuffer = Buffer.concat(chunks);
-        resolve(
-          new NextResponse(pdfBuffer, {
-            headers: {
-              "Content-Type": "application/pdf",
-              "Content-Disposition": `attachment; filename="daily-sheet-${dateStr}.pdf"`,
-            },
-          })
-        );
-      });
-      pdfDoc.end();
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="daily-sheet-${dateStr}.pdf"`,
+      },
     });
   } catch (error) {
     console.error("[CALENDAR_EXPORT_DAILY_SHEET_GET]", error);

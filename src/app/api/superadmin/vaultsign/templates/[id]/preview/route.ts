@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tiptapToPdfmake } from "@/lib/vaultsign/tiptap-to-pdfmake";
 import { uploadGeneratedPdf, getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
-import PdfPrinter from "pdfmake";
+import { generatePdfBuffer, HELVETICA_FONTS } from "@/lib/vaultsign/pdfmake-server";
 
 // POST: Generate a preview PDF for a template
 export async function POST(
@@ -54,27 +54,8 @@ export async function POST(
       placeholderValues: sampleValues,
     });
 
-    const fonts = {
-      Helvetica: {
-        normal: "Helvetica",
-        bold: "Helvetica-Bold",
-        italics: "Helvetica-Oblique",
-        bolditalics: "Helvetica-BoldOblique",
-      },
-    };
-
-    const printer = new PdfPrinter(fonts);
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
-
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on("end", resolve);
-      pdfDoc.on("error", reject);
-      pdfDoc.end();
-    });
-
-    const pdfBuffer = Buffer.concat(chunks);
+    // Generate PDF using shared utility with ESM/CJS interop handling
+    const pdfBuffer = await generatePdfBuffer(docDefinition, HELVETICA_FONTS, 30000);
 
     const uploadResult = await uploadGeneratedPdf(
       pdfBuffer,
