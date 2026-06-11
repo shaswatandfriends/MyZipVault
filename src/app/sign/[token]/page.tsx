@@ -64,12 +64,19 @@ export default function PublicSigningPage() {
       try {
         setLoading(true);
         const res = await fetch(`/api/vaultsign/sign/${token}`);
-        if (!res.ok) {
-          const data = await res.json();
+        const data = await res.json();
+        
+        if (!res.ok && !data.already_completed && !data.already_signed) {
           setError(data.error || "Failed to load signing data");
           return;
         }
-        const data = await res.json();
+
+        // If document is already completed or signer already signed, redirect to complete page
+        if (data.already_completed || data.already_signed) {
+          router.replace(`/sign/${token}/complete`);
+          return;
+        }
+
         setSigningData(data);
 
         if (data.document?.pdf_url) {

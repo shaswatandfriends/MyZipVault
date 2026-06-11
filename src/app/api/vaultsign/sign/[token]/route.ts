@@ -118,12 +118,122 @@ export async function GET(
       return NextResponse.json({ error: "This document has expired" }, { status: 410 });
     }
     if (document.status === "completed") {
-      return NextResponse.json({ error: "This document has already been completed" }, { status: 410 });
+      // Return document info with PDF URL so the complete page can show download button
+      let completedPdfUrl = "";
+      if (document.final_document_url) {
+        if (document.final_document_url.startsWith("data:")) {
+          completedPdfUrl = document.final_document_url;
+        } else {
+          try {
+            completedPdfUrl = await getDocumentSignedUrl(document.final_document_url, 60);
+          } catch {
+            completedPdfUrl = document.final_document_url;
+          }
+        }
+      } else if (document.edited_pdf_url) {
+        if (document.edited_pdf_url.startsWith("data:")) {
+          completedPdfUrl = document.edited_pdf_url;
+        } else {
+          try {
+            completedPdfUrl = await getDocumentSignedUrl(document.edited_pdf_url, 60);
+          } catch {
+            completedPdfUrl = document.edited_pdf_url;
+          }
+        }
+      }
+
+      return NextResponse.json({
+        error: "This document has already been completed",
+        already_completed: true,
+        document: {
+          id: document.id,
+          document_name: document.document_name,
+          document_type: document.document_type,
+          source_type: document.source_type,
+          status: document.status,
+          pdf_url: completedPdfUrl,
+          organization: document.organization,
+        },
+        signer: {
+          id: signer.id,
+          name: signer.name,
+          email: signer.email,
+          role: signer.role,
+          signer_index: signer.signer_index,
+          status: signer.status,
+          signed_at: signer.signed_at,
+          user_id: signer.user_id,
+        },
+        all_signers: document.signers.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          role: s.role,
+          signer_index: s.signer_index,
+          status: s.status,
+          signed_at: s.signed_at,
+        })),
+      }, { status: 200 });
     }
 
     // Check if this signer has already signed
     if (signer.status === "signed") {
-      return NextResponse.json({ error: "You have already signed this document", already_signed: true }, { status: 400 });
+      // Return document info with PDF URL so the complete page can show download button
+      let alreadySignedPdfUrl = "";
+      if (document.final_document_url) {
+        if (document.final_document_url.startsWith("data:")) {
+          alreadySignedPdfUrl = document.final_document_url;
+        } else {
+          try {
+            alreadySignedPdfUrl = await getDocumentSignedUrl(document.final_document_url, 60);
+          } catch {
+            alreadySignedPdfUrl = document.final_document_url;
+          }
+        }
+      } else if (document.edited_pdf_url) {
+        if (document.edited_pdf_url.startsWith("data:")) {
+          alreadySignedPdfUrl = document.edited_pdf_url;
+        } else {
+          try {
+            alreadySignedPdfUrl = await getDocumentSignedUrl(document.edited_pdf_url, 60);
+          } catch {
+            alreadySignedPdfUrl = document.edited_pdf_url;
+          }
+        }
+      }
+
+      return NextResponse.json({
+        error: "You have already signed this document",
+        already_signed: true,
+        document: {
+          id: document.id,
+          document_name: document.document_name,
+          document_type: document.document_type,
+          source_type: document.source_type,
+          status: document.status,
+          pdf_url: alreadySignedPdfUrl,
+          organization: document.organization,
+        },
+        signer: {
+          id: signer.id,
+          name: signer.name,
+          email: signer.email,
+          role: signer.role,
+          signer_index: signer.signer_index,
+          status: signer.status,
+          signed_at: signer.signed_at,
+          user_id: signer.user_id,
+        },
+        all_signers: document.signers.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          role: s.role,
+          signer_index: s.signer_index,
+          status: s.status,
+          signed_at: s.signed_at,
+        })),
+      }, { status: 200 });
     }
 
     // Check if this signer's turn (for sequential signing)

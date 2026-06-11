@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
+import { toast } from "sonner";
 import {
   CheckCircle2, Download, FileText, Loader2, Shield, Clock, UserPlus
 } from "@/lib/icons";
@@ -15,6 +16,7 @@ export default function SigningCompletePage() {
   const token = params.token as string;
   const [signingData, setSigningData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,6 +25,13 @@ export default function SigningCompletePage() {
         if (res.ok) {
           const data = await res.json();
           setSigningData(data);
+        } else {
+          // Even on error responses (e.g., already_completed), the API may return useful data
+          const data = await res.json().catch(() => null);
+          if (data && (data.already_completed || data.already_signed)) {
+            // Document is completed or signer already signed — still show completion page with download
+            setSigningData(data);
+          }
         }
       } catch {
         // Ignore errors — we just show a generic completion page
@@ -147,13 +156,47 @@ export default function SigningCompletePage() {
         <div className="flex flex-col gap-2">
           <Button
             className="bg-[#166534] hover:bg-[#14532D] text-white"
-            onClick={() => {
-              if (signingData?.document?.pdf_url) {
-                window.open(signingData.document.pdf_url, "_blank");
+            disabled={downloading}
+            onClick={async () => {
+              try {
+                setDownloading(true);
+                // First try the pdf_url from signing data
+                if (signingData?.document?.pdf_url) {
+                  window.open(signingData.document.pdf_url, "_blank");
+                  return;
+                }
+                // Fallback: try the export-pdf API using document ID
+                const docId = signingData?.document?.id;
+                if (docId) {
+                  const res = await fetch(`/api/vaultsign/documents/${docId}/export-pdf`, {
+                    method: "POST",
+                    signal: AbortSignal.timeout(30000),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.pdf_url) {
+                      window.open(data.pdf_url, "_blank");
+                      return;
+                    }
+                  }
+                }
+                // Final fallback: try final_document_url or edited_pdf_url
+                if (signingData?.document?.final_document_url) {
+                  window.open(signingData.document.final_document_url, "_blank");
+                } else if (signingData?.document?.edited_pdf_url) {
+                  window.open(signingData.document.edited_pdf_url, "_blank");
+                } else {
+                  toast.error("No PDF available for download");
+                }
+              } catch (err: any) {
+                toast.error(err.message || "Failed to download PDF");
+              } finally {
+                setDownloading(false);
               }
             }}
           >
-            <Download className="h-4 w-4 mr-2" /> Download Signed Document
+            {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Download Signed Document
           </Button>
           <Button
             variant="outline"

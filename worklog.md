@@ -32,3 +32,23 @@ Stage Summary:
 - PDF generation pipeline improved: PdfPrinter replaces pdfmake singleton, handles data: URLs, generates from content when needed
 - UI enhanced: header/footer settings panels, styled sign field markers, Send for Signature button
 - Download PDF flow fixed for completed documents via export-pdf API with signed URL support
+---
+Task ID: 10
+Agent: Main Agent
+Task: Fix Download PDF not working after completing signing (as 2nd party and recruiter)
+
+Work Log:
+- Investigated the Signing Complete page (/sign/[token]/complete/page.tsx)
+- Found that the sign API (/api/vaultsign/sign/[token]/route.ts) returns 410 error for completed documents, making pdf_url unavailable
+- Found that the "already_signed" case also returned 400 with no document info
+- Updated the sign API to return status 200 with full document info (including pdf_url) for both already_completed and already_signed cases
+- Updated the Signing Complete page to handle error responses that contain already_completed/already_signed data
+- Added robust download flow: tries pdf_url first, then export-pdf API, then direct URLs as fallbacks
+- Added downloading state and toast error handling for the download button
+- Added redirect on the signing page when the document is already completed or the signer has already signed
+- Added toast import to the complete page
+
+Stage Summary:
+- Fixed PDF download for 2nd party signers on the complete page by making the sign API return document info even for completed/signed documents
+- Fixed PDF download for recruiters (was already working via export-pdf API, confirmed the flow is correct)
+- Added graceful redirect from signing page to complete page for already-completed/already-signed cases
