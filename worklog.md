@@ -124,3 +124,42 @@ Stage Summary:
 - Tooltips show "Click to view [Status] documents" on hover
 - Larger clickable hit area with padding and rounded background on hover
 - Modified file: /src/app/(recruiter)/recruiter/vaultsign/[id]/page.tsx
+---
+Task ID: 1
+Agent: full-stack-developer
+Task: Create superadmin template editor and improve sidebar
+
+Work Log:
+- Read existing recruiter editor code at src/app/(recruiter)/recruiter/vaultsign/editor/[id]/page.tsx to understand TipTap setup, extensions, toolbar structure, and styling patterns
+- Read VaultSign types, custom TipTap extensions (font-size, line-height, paragraph-spacing, page-break), and error boundary component
+- Read superadmin VaultSign page and sidebar component to understand current structure
+- Read superadmin template API route to understand GET/PATCH endpoints
+- Created new template editor page at src/app/(superadmin)/superadmin/vaultsign/templates/[id]/page.tsx with:
+  - Full TipTap editor with same extensions as recruiter editor (StarterKit, FontFamily, TextStyle, Color, FontSize, LineHeight, ParagraphSpacing, PageBreak, Highlight, TextAlign, Underline, Subscript, Superscript, Table, Image, TaskList, TaskItem, CharacterCount, Placeholder)
+  - Word-style ribbon toolbar with Undo, Font (family/size/bold/italic/underline/strike/color/highlight), Paragraph (alignment/lists/line spacing), Insert (image/table/page break), Styles (heading levels)
+  - Mobile-friendly simplified toolbar with dropdown for extra options
+  - Template variables panel with template-specific variables ({{candidate_name}}, {{company_name}}, {{date}}, {{position}}, {{specialty}}, {{facility_name}}, {{recruiter_name}}, {{start_date}}, {{salary}}, {{manager_name}}) plus system and custom variables
+  - Sign field placement panel with signer slots, field types (Signature, Date, Full Name, Initials, Email, Checkbox, Text), and field management
+  - Editable template name in top bar
+  - Save button with auto-save functionality
+  - Back to VaultSign navigation button
+  - VaultSignErrorBoundary wrapper
+  - Same TipTap editor styling (page break visuals, table formatting, etc.)
+  - Responsive design with mobile Sheet panels for variables and signers
+- Updated sidebar (src/components/layout/sidebar.tsx) to:
+  - Reordered superAdminBottomNav into logical groups: Management, Communication, Configuration, Content, Monitoring
+  - Added superAdminSectionDividers mapping for section labels
+  - Added section dividers with uppercase labels (MANAGEMENT, COMMUNICATION, CONFIGURATION, CONTENT, MONITORING) rendered between groups
+  - Added React import for Fragment usage
+- Updated VaultSign page (src/app/(superadmin)/superadmin/vaultsign/page.tsx) to:
+  - Changed "Edit" button to "Open Editor" that navigates to /superadmin/vaultsign/templates/${template.id}
+  - Added small pencil icon button for quick name/description edit via dialog
+  - Added Link import from next/link
+- Verified build passes successfully
+- Verified dev server is running
+
+Stage Summary:
+- Created new file: src/app/(superadmin)/superadmin/vaultsign/templates/[id]/page.tsx
+- Updated: src/components/layout/sidebar.tsx (reordered nav, added section dividers)
+- Updated: src/app/(superadmin)/superadmin/vaultsign/page.tsx (Open Editor button + quick edit button)
+- Build passes

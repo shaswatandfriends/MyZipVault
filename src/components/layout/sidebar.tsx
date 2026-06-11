@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -194,21 +194,35 @@ const superAdminFlatNav: NavItem[] = [
 ];
 
 const superAdminBottomNav: NavItem[] = [
+  // Management
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
-  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
+  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
+  // Communication
+  { title: "Templates", href: "/superadmin/templates", icon: Mail },
+  { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
+  // Configuration
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
-  { title: "Templates", href: "/superadmin/templates", icon: Mail },
-  { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+  // Content
   { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
-  { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
+  // Monitoring
+  { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
   { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
 ];
+
+// Section divider positions for superadmin bottom nav
+const superAdminSectionDividers: Record<string, string> = {
+  "/superadmin/admins": "MANAGEMENT",
+  "/superadmin/templates": "COMMUNICATION",
+  "/superadmin/settings": "CONFIGURATION",
+  "/superadmin/landing-page-editor": "CONTENT",
+  "/superadmin/analytics": "MONITORING",
+};
 
 // ─── Super Admin Groups ──────────────────────────────────────────────
 const superAdminGroups: NavGroup[] = [skillsChecklistGroup, referenceGroup];
@@ -541,25 +555,35 @@ export function AppSidebar() {
                 ))}
                 <div className="my-1.5 h-px bg-[#E5E7EB]" />
 
-                {/* Bottom nav items for superadmin */}
-                {superAdminBottomNav.map((item) => {
+                {/* Bottom nav items for superadmin with section dividers */}
+                {superAdminBottomNav.map((item, index) => {
                   const isActive =
                     pathname === item.href ||
                     pathname.startsWith(item.href + "/");
+                  const sectionLabel = superAdminSectionDividers[item.href];
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
-                        isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                    <React.Fragment key={item.href}>
+                      {sectionLabel && (
+                        <>
+                          {index > 0 && <div className="my-1 h-px bg-[#E5E7EB]" />}
+                          <p className="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-[#9CA3AF] uppercase">
+                            {sectionLabel}
+                          </p>
+                        </>
                       )}
-                    >
-                      <item.icon className="size-5 shrink-0" />
-                      <span>{item.title}</span>
-                    </Link>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                          isActive
+                            ? "bg-[#DCFCE7] font-semibold text-[#166534]"
+                            : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                        )}
+                      >
+                        <item.icon className="size-5 shrink-0" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </React.Fragment>
                   );
                 })}
               </>

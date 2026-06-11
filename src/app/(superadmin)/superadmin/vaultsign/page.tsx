@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
 import {
@@ -463,9 +464,14 @@ export default function SuperAdminVaultSignPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1 mt-3">
-                        <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] flex-1 h-7"
-                          onClick={() => openEditTemplate(template)}>
-                          <Edit3 className="h-3 w-3 mr-1" /> Edit
+                        <Link href={`/superadmin/vaultsign/templates/${template.id}`} className="flex-1">
+                          <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] w-full h-7">
+                            <Edit3 className="h-3 w-3 mr-1" /> Open Editor
+                          </Button>
+                        </Link>
+                        <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] h-7 w-7 p-0"
+                          onClick={() => openEditTemplate(template)} title="Quick Edit Name">
+                          <FileSignature className="h-3 w-3" />
                         </Button>
                         <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] h-7"
                           onClick={() => duplicateTemplate(template)} title="Duplicate">
