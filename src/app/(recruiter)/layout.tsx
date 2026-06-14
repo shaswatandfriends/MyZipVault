@@ -19,7 +19,6 @@ export default function RecruiterLayout({
 }) {
   const { user } = useAuth();
   const isClientAdmin = user?.role === "client_admin";
-  const roleLabel = isClientAdmin ? "Client Admin Portal" : "Recruiter Portal";
 
   // Fetch credits balance for header
   const [credits, setCredits] = useState<number | null>(null);
@@ -56,10 +55,10 @@ export default function RecruiterLayout({
                 className="text-sm font-semibold text-[#111827] truncate"
                 style={{ fontFamily: "'Clash Display', sans-serif" }}
               >
-                {roleLabel}
+                Dashboard
               </h1>
               <p className="text-[11px] text-[#6B7280] truncate">
-                Manage verification requests & track activity
+                Manage your candidate verification requests and track your organization&apos;s activity
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
