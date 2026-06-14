@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/components/providers/auth-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,19 +10,14 @@ import {
   ShieldCheck,
   Users,
   FileText,
-  Bell,
   X,
-  ArrowRight,
   PartyPopper,
   CheckCircle2,
   Sparkles,
   CalendarDays,
-  Mail,
-  Loader2,
   FileSignature,
 } from "@/lib/icons";
 import Link from "next/link";
-import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 
 // ─── Dashboard Data Interface ─────────────────────────────────────
@@ -57,13 +51,9 @@ interface DashboardData {
 
 // ─── Main Dashboard Component ─────────────────────────────────────
 export default function CandidateDashboardPage() {
-  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showBanner, setShowBanner] = useState(true);
-  const [showEmailBanner, setShowEmailBanner] = useState(true);
-  const [isResending, setIsResending] = useState(false);
   const [thankYouState, setThankYouState] = useState<{
     show: boolean;
     pct: number;
@@ -94,44 +84,6 @@ export default function CandidateDashboardPage() {
       setThankYouState({ show: true, pct: data?.profile?.profileCompletionPct ?? 0 });
     }
   }, [data?.profile?.profileCompletionPct]);
-
-  // Check if email verification banner was dismissed this session
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem("emailBannerDismissed");
-    if (dismissed === "true") {
-      setShowEmailBanner(false);
-    }
-  }, []);
-
-  const handleResendVerification = async () => {
-    if (!user?.email) return;
-    setIsResending(true);
-    try {
-      const res = await fetch("/api/auth/send-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-      if (res.ok) {
-        toast.success("Verification email sent", {
-          description: "Check your inbox for the verification link.",
-        });
-      } else {
-        toast.error("Failed to send verification email. Please try again.");
-      }
-    } catch {
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  const dismissEmailBanner = () => {
-    setShowEmailBanner(false);
-    sessionStorage.setItem("emailBannerDismissed", "true");
-  };
-
-  const dismissBanner = () => setShowBanner(false);
 
   const dismissThankYou = () => setThankYouState(null);
 
@@ -231,97 +183,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* ── Email Verification Banner ── */}
-      {!data?.emailVerified && showEmailBanner && (
-        <Card className="border-green-300 bg-green-50 dark:bg-green-950/30 dark:border-green-800">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Mail className="size-5 text-green-700 dark:text-green-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                Please verify your email address
-              </p>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
-                Check your inbox or resend the verification email.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 border-green-300 text-green-800 hover:bg-green-100 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-900"
-                disabled={isResending}
-                onClick={handleResendVerification}
-              >
-                {isResending ? (
-                  <Loader2 className="size-3 animate-spin" />
-                ) : (
-                  "Resend"
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={dismissEmailBanner}
-                className="text-green-600 dark:text-green-400"
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* ── Pending Checklist Banner ── */}
-      {data?.pendingChecklistRequests?.length > 0 && showBanner && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Bell className="size-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                You have {data.pendingChecklistRequests.length} pending checklist{" "}
-                {data.pendingChecklistRequests.length === 1 ? "request" : "requests"}
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                Complete your skills checklists to share with employers
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/checklists">
-                <Button size="sm" variant="outline" className="gap-1 border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900">
-                  View <ArrowRight className="size-3" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="sm" onClick={dismissBanner} className="text-amber-600 dark:text-amber-400">
-                <X className="size-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── VaultSign Pending Signature Banner ── */}
-      {(data?.vaultsign?.pending ?? 0) > 0 && (
-        <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
-          <CardContent className="p-4 flex items-center gap-3">
-            <FileSignature className="size-5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                You have {data.vaultsign.pending} document{data.vaultsign.pending > 1 ? "s" : ""} awaiting your signature
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                Review and sign documents from recruiters and agencies
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/vaultsign">
-                <Button size="sm" variant="outline" className="gap-1 border-blue-300 text-blue-800 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-200 dark:hover:bg-blue-900">
-                  View <ArrowRight className="size-3" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ── Quick Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
