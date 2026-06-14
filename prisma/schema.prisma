@@ -102,6 +102,9 @@ model User {
   vault_sign_templates_created VaultSignTemplate[] @relation("VaultSignTemplateCreator")
   vault_sign_documents_created VaultSignDocument[] @relation("VaultSignDocumentCreator")
   vault_sign_signers VaultSignSigner[] @relation("VaultSignSignerUser")
+
+  // Banner relations
+  banners_created Banner[]
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -430,6 +433,26 @@ model Announcement {
   target_role String
   is_active   Boolean   @default(false)
   created_at  DateTime  @default(now())
+}
+
+// ─── 24b. In-App Banners ────────────────────────────────────────────
+model Banner {
+  id                Int       @id @default(autoincrement())
+  title             String
+  description       String?
+  image_url         String?   // Supabase Storage URL for banner image
+  cta_text          String?   // e.g. "Learn More"
+  cta_link          String?   // URL the CTA button navigates to
+  target_role       String    // "candidate" | "client_recruiter" | "client_admin"
+  is_active         Boolean   @default(true)
+  is_pinned         Boolean   @default(false)  // Sticky — always shows first
+  expires_at        DateTime? // Auto-hide after this date (null = no expiry)
+  carousel_duration Int       @default(5)      // Seconds per slide in carousel
+  created_by        Int?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  creator           User?     @relation(fields: [created_by], references: [id])
 }
 
 // ─── 25. Document Flags ─────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import {
   Megaphone,
@@ -12,6 +12,13 @@ import {
   ToggleLeft,
   Loader2,
   CheckCircle2,
+  ImagePlus,
+  ExternalLink,
+  Pin,
+  Clock,
+  Pencil,
+  Upload,
+  X,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -49,6 +56,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Announcement {
@@ -59,103 +68,730 @@ interface Announcement {
   createdAt: string;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────
-function getTargetBadge(targetRole: string) {
-  switch (targetRole) {
-    case "all":
-      return <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100">All</Badge>;
-    case "candidate":
-      return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Candidates</Badge>;
-    case "client_recruiter":
-      return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Recruiters</Badge>;
-    default:
-      return <Badge variant="outline">{targetRole}</Badge>;
-  }
+interface Banner {
+  id: number;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  ctaText: string | null;
+  ctaLink: string | null;
+  targetRole: string;
+  isActive: boolean;
+  isPinned: boolean;
+  expiresAt: string | null;
+  carouselDuration: number;
+  createdBy: number | null;
+  creatorName: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+// ─── Helpers ────────────────────────────────────────────────────────
+const roleLabels: Record<string, string> = {
+  all: "All Users",
+  candidate: "Candidates",
+  client_recruiter: "Recruiters",
+  client_admin: "Agencies/Admins",
+  all_candidates: "All Candidates",
+  all_recruiters: "All Recruiters & Agencies",
+  expiring_credentials: "Expiring Credentials",
+  inactive_users: "Inactive Users",
+};
+
+const bannerRoleLabels: Record<string, string> = {
+  candidate: "Candidates",
+  client_recruiter: "Recruiters",
+  client_admin: "Agencies/Admins",
+};
+
+function formatDate(date: string | Date) {
+  return new Date(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
-// ─── Skeleton ───────────────────────────────────────────────────────
-function AnnouncementSkeleton() {
+// ─── Banner Channel Tabs Config ─────────────────────────────────────
+const bannerChannels = [
+  { key: "candidate", label: "Candidates", value: "candidate" },
+  { key: "client_recruiter", label: "Recruiters", value: "client_recruiter" },
+  { key: "client_admin", label: "Agencies/Admins", value: "client_admin" },
+] as const;
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN PAGE COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+export default function AnnouncementsPage() {
+  const [activeTab, setActiveTab] = useState("banners");
+
   return (
-    <div className="space-y-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3">
-          <Skeleton className="size-8 rounded" />
-          <div className="flex-1 space-y-1">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-3 w-40" />
-          </div>
-          <Skeleton className="h-5 w-16 rounded-full" />
-        </div>
-      ))}
+    <div className="space-y-6">
+      <PageHeader
+        title="Announcements & Communication"
+        description="Send in-app banners and targeted emails to user segments."
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-[#F3F4F6] p-1 rounded-lg">
+          <TabsTrigger
+            value="banners"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4"
+          >
+            <Megaphone className="size-4 mr-2" />
+            In-App Banners
+          </TabsTrigger>
+          <TabsTrigger
+            value="campaigns"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4"
+          >
+            <Mail className="size-4 mr-2" />
+            Email Campaigns
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="banners" className="mt-6">
+          <BannersTab />
+        </TabsContent>
+
+        <TabsContent value="campaigns" className="mt-6">
+          <CampaignsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-// ─── Segment label map ─────────────────────────────────────────────
-const segmentLabels: Record<string, string> = {
-  all_candidates: "All Candidates",
-  expiring_credentials: "Candidates with Expiring Credentials",
-  all_recruiters: "All Recruiters",
-  inactive_users: "Inactive Users (30d+)",
-};
+// ═══════════════════════════════════════════════════════════════════
+// BANNERS TAB
+// ═══════════════════════════════════════════════════════════════════
+function BannersTab() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeChannel, setActiveChannel] = useState<string>("candidate");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null);
 
-const templateLabels: Record<string, string> = {
-  credential_expiry_reminder: "Credential Expiry Reminder",
-  profile_completion: "Complete Your Profile",
-  new_features: "New Features on MyZipVault",
-  monthly_digest: "Monthly Digest",
-};
+  const fetchBanners = useCallback(async () => {
+    try {
+      const res = await fetch("/api/superadmin/banners");
+      if (res.ok) {
+        const data = await res.json();
+        setBanners(data.banners || []);
+      }
+    } catch {
+      toast.error("Failed to load banners");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-// ─── Main Component ─────────────────────────────────────────────────
-export default function SuperadminAnnouncementsPage() {
+  useEffect(() => {
+    fetchBanners();
+  }, [fetchBanners]);
+
+  const filteredBanners = banners.filter((b) => b.targetRole === activeChannel);
+
+  const activeCount = filteredBanners.filter((b) => b.isActive).length;
+  const inactiveCount = filteredBanners.filter((b) => !b.isActive).length;
+
+  const handleToggle = async (id: number, isActive: boolean) => {
+    try {
+      const res = await fetch("/api/superadmin/banners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle", id, isActive }),
+      });
+      if (res.ok) {
+        setBanners((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, isActive } : b))
+        );
+        toast.success(isActive ? "Banner activated" : "Banner deactivated");
+      }
+    } catch {
+      toast.error("Failed to toggle banner");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch("/api/superadmin/banners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id }),
+      });
+      if (res.ok) {
+        setBanners((prev) => prev.filter((b) => b.id !== id));
+        toast.success("Banner deleted");
+      }
+    } catch {
+      toast.error("Failed to delete banner");
+    }
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
+              <Megaphone className="size-5 text-[#166534]" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{filteredBanners.length}</p>
+              <p className="text-xs text-[#6B7280]">Total Banners</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="size-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{activeCount}</p>
+              <p className="text-xs text-[#6B7280]">Active</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-gray-100 flex items-center justify-center">
+              <ToggleLeft className="size-5 text-gray-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{inactiveCount}</p>
+              <p className="text-xs text-[#6B7280]">Inactive</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Channel Tabs + Create Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-1 rounded-lg bg-[#F3F4F6] p-1">
+          {bannerChannels.map((ch) => (
+            <button
+              key={ch.key}
+              onClick={() => setActiveChannel(ch.value)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                activeChannel === ch.value
+                  ? "bg-white shadow-sm text-[#166534]"
+                  : "text-[#6B7280] hover:text-[#111827]"
+              )}
+            >
+              {ch.label}
+            </button>
+          ))}
+        </div>
+        <Button
+          onClick={() => {
+            setEditingBanner(null);
+            setShowCreateDialog(true);
+          }}
+          className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+        >
+          <Plus className="size-4" />
+          Create Banner
+        </Button>
+      </div>
+
+      {/* Banner List */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : filteredBanners.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Megaphone className="size-10 text-[#9CA3AF] mx-auto mb-3" />
+            <p className="text-sm font-medium text-[#111827]">No banners for {bannerRoleLabels[activeChannel]}</p>
+            <p className="text-xs text-[#6B7280] mt-1">Create your first banner to display in-app for this audience.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredBanners.map((banner) => (
+            <Card key={banner.id} className={cn(!banner.isActive && "opacity-60")}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  {/* Thumbnail */}
+                  <div className="size-16 rounded-lg bg-[#F3F4F6] border border-[#E5E7EB] overflow-hidden shrink-0">
+                    {banner.imageUrl ? (
+                      <img
+                        src={banner.imageUrl}
+                        alt={banner.title}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center">
+                        <ImagePlus className="size-5 text-[#9CA3AF]" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-[#111827] truncate">{banner.title}</p>
+                      {banner.isPinned && (
+                        <Badge className="bg-[#166534]/10 text-[#166534] text-[10px] px-1.5 py-0">
+                          <Pin className="size-3 mr-0.5" /> Pinned
+                        </Badge>
+                      )}
+                      <Badge variant={banner.isActive ? "default" : "secondary"} className="text-xs">
+                        {banner.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    {banner.description && (
+                      <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-1">{banner.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#9CA3AF]">
+                      <span className="flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {banner.carouselDuration}s per slide
+                      </span>
+                      {banner.expiresAt && (
+                        <span className="flex items-center gap-1">
+                          Expires {formatDate(banner.expiresAt)}
+                        </span>
+                      )}
+                      {banner.ctaText && (
+                        <span className="flex items-center gap-1">
+                          <ExternalLink className="size-3" />
+                          {banner.ctaText}
+                        </span>
+                      )}
+                      <span>Created {formatDate(banner.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch
+                      checked={banner.isActive}
+                      onCheckedChange={(checked) => handleToggle(banner.id, checked)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingBanner(banner);
+                        setShowCreateDialog(true);
+                      }}
+                    >
+                      <Pencil className="size-4 text-[#6B7280]" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTarget(banner)}
+                    >
+                      <Trash2 className="size-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Banner Dialog */}
+      <BannerFormDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        editingBanner={editingBanner}
+        defaultChannel={activeChannel}
+        onSuccess={fetchBanners}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Banner</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deleteTarget?.title}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BANNER FORM DIALOG (Create / Edit)
+// ═══════════════════════════════════════════════════════════════════
+function BannerFormDialog({
+  open,
+  onOpenChange,
+  editingBanner,
+  defaultChannel,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingBanner: Banner | null;
+  defaultChannel: string;
+  onSuccess: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaLink, setCtaLink] = useState("");
+  const [targetRole, setTargetRole] = useState(defaultChannel);
+  const [isActive, setIsActive] = useState(true);
+  const [isPinned, setIsPinned] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
+  const [carouselDuration, setCarouselDuration] = useState(5);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingBanner) {
+      setTitle(editingBanner.title);
+      setDescription(editingBanner.description || "");
+      setImageUrl(editingBanner.imageUrl || "");
+      setCtaText(editingBanner.ctaText || "");
+      setCtaLink(editingBanner.ctaLink || "");
+      setTargetRole(editingBanner.targetRole);
+      setIsActive(editingBanner.isActive);
+      setIsPinned(editingBanner.isPinned);
+      setExpiresAt(editingBanner.expiresAt ? new Date(editingBanner.expiresAt).toISOString().slice(0, 16) : "");
+      setCarouselDuration(editingBanner.carouselDuration);
+    } else {
+      setTitle("");
+      setDescription("");
+      setImageUrl("");
+      setCtaText("");
+      setCtaLink("");
+      setTargetRole(defaultChannel);
+      setIsActive(true);
+      setIsPinned(false);
+      setExpiresAt("");
+      setCarouselDuration(5);
+    }
+  }, [editingBanner, defaultChannel, open]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        const res = await fetch("/api/superadmin/banners/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file: base64,
+            filename: `banner-${Date.now()}.${file.name.split(".").pop()}`,
+            contentType: file.type,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setImageUrl(data.url);
+          toast.success("Image uploaded");
+        } else {
+          toast.error("Failed to upload image");
+        }
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error("Failed to upload image");
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const action = editingBanner ? "update" : "create";
+      const body: Record<string, unknown> = {
+        action,
+        title,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        ctaText: ctaText || null,
+        ctaLink: ctaLink || null,
+        targetRole,
+        isActive,
+        isPinned,
+        expiresAt: expiresAt || null,
+        carouselDuration,
+      };
+
+      if (editingBanner) {
+        body.id = editingBanner.id;
+      }
+
+      const res = await fetch("/api/superadmin/banners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        toast.success(editingBanner ? "Banner updated" : "Banner created");
+        onOpenChange(false);
+        onSuccess();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to save banner");
+      }
+    } catch {
+      toast.error("Failed to save banner");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            {editingBanner ? "Edit Banner" : "Create Banner"}
+          </DialogTitle>
+          <DialogDescription>
+            {editingBanner
+              ? "Update this in-app banner announcement."
+              : "Create a new in-app banner that will be displayed on the dashboard for the selected audience."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Target Role */}
+          <div className="space-y-1.5">
+            <Label>Target Audience *</Label>
+            <Select value={targetRole} onValueChange={setTargetRole}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="candidate">Candidates</SelectItem>
+                <SelectItem value="client_recruiter">Recruiters</SelectItem>
+                <SelectItem value="client_admin">Agencies/Admins</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label>Title *</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. New Feature Release"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of the announcement..."
+              rows={3}
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-1.5">
+            <Label>Banner Image</Label>
+            <div className="flex items-center gap-3">
+              {imageUrl ? (
+                <div className="relative size-20 rounded-lg overflow-hidden border border-[#E5E7EB]">
+                  <img src={imageUrl} alt="Preview" className="size-full object-cover" />
+                  <button
+                    onClick={() => setImageUrl("")}
+                    className="absolute -top-1 -right-1 size-5 rounded-full bg-red-500 text-white flex items-center justify-center"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex size-20 items-center justify-center rounded-lg border-2 border-dashed border-[#E5E7EB] hover:border-[#166534] transition-colors"
+                >
+                  {isUploading ? (
+                    <Loader2 className="size-5 text-[#9CA3AF] animate-spin" />
+                  ) : (
+                    <Upload className="size-5 text-[#9CA3AF]" />
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <div className="text-xs text-[#6B7280]">
+                <p>Recommended: 800x400px</p>
+                <p>Max 5MB. PNG, JPG, WebP</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>CTA Button Text</Label>
+              <Input
+                value={ctaText}
+                onChange={(e) => setCtaText(e.target.value)}
+                placeholder="e.g. Learn More"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>CTA Link URL</Label>
+              <Input
+                value={ctaLink}
+                onChange={(e) => setCtaLink(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          {/* Expires At */}
+          <div className="space-y-1.5">
+            <Label>Expiry Date (optional)</Label>
+            <Input
+              type="datetime-local"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+            />
+            <p className="text-[11px] text-[#9CA3AF]">Banner will auto-hide after this date. Leave empty for no expiry.</p>
+          </div>
+
+          {/* Carousel Duration */}
+          <div className="space-y-1.5">
+            <Label>Carousel Duration (seconds)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={carouselDuration}
+              onChange={(e) => setCarouselDuration(parseInt(e.target.value) || 5)}
+            />
+            <p className="text-[11px] text-[#9CA3AF]">How long this banner displays before auto-advancing. Default: 5 seconds.</p>
+          </div>
+
+          {/* Toggles */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Active</Label>
+              <p className="text-[11px] text-[#9CA3AF]">Banner is visible to the target audience</p>
+            </div>
+            <Switch checked={isActive} onCheckedChange={setIsActive} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Pinned / Sticky</Label>
+              <p className="text-[11px] text-[#9CA3AF]">Always shows first in the carousel</p>
+            </div>
+            <Switch checked={isPinned} onCheckedChange={setIsPinned} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !title.trim()}
+            className="bg-[#166534] hover:bg-[#14532D]"
+          >
+            {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
+            {editingBanner ? "Update Banner" : "Create Banner"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EMAIL CAMPAIGNS TAB (preserved from original)
+// ═══════════════════════════════════════════════════════════════════
+function CampaignsTab() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCampaignDialog, setShowCampaignDialog] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
 
-  // Form state
-  const [formMessage, setFormMessage] = useState("");
-  const [formTargetRole, setFormTargetRole] = useState("all");
-  const [formIsActive, setFormIsActive] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // Delete confirmation
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-
-  // Email section
-  const [emailSegment, setEmailSegment] = useState("all_candidates");
-  const [emailTemplate, setEmailTemplate] = useState("");
-  const [emailAnnouncementId, setEmailAnnouncementId] = useState<number | null>(null);
-  const [sendingCampaign, setSendingCampaign] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Campaign form state
+  const [campaignTargetRoles, setCampaignTargetRoles] = useState<string[]>(["all_candidates"]);
+  const [campaignSendEmail, setCampaignSendEmail] = useState(true);
+  const [campaignEmailTemplate, setCampaignEmailTemplate] = useState("new_features");
+  const [campaignAnnouncementId, setCampaignAnnouncementId] = useState<number | null>(null);
   const [campaignResult, setCampaignResult] = useState<{
     sentCount: number;
     failedCount: number;
     totalTargets: number;
     notificationsCreated: number;
   } | null>(null);
+  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
+
+  // Create/Edit form state
+  const [formMessage, setFormMessage] = useState("");
+  const [formTargetRole, setFormTargetRole] = useState("all");
+  const [formIsActive, setFormIsActive] = useState(false);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
   const fetchAnnouncements = useCallback(async () => {
     try {
-      setIsLoading(true);
       const res = await fetch("/api/superadmin/announcements");
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to fetch announcements");
+      if (res.ok) {
+        const data = await res.json();
+        setAnnouncements(data.announcements || []);
       }
-      const json = await res.json();
-      setAnnouncements(json.announcements);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Failed to load announcements", { description: message });
+    } catch {
+      toast.error("Failed to load announcements");
     } finally {
       setIsLoading(false);
     }
@@ -165,57 +801,40 @@ export default function SuperadminAnnouncementsPage() {
     fetchAnnouncements();
   }, [fetchAnnouncements]);
 
-  const resetForm = () => {
-    setFormMessage("");
-    setFormTargetRole("all");
-    setFormIsActive(false);
-    setEditId(null);
-  };
-
-  const openCreate = () => {
-    resetForm();
-    setCreateOpen(true);
-  };
-
-  const openEdit = (a: Announcement) => {
-    setFormMessage(a.message);
-    setFormTargetRole(a.targetRole);
-    setFormIsActive(a.isActive);
-    setEditId(a.id);
-    setCreateOpen(true);
-  };
-
-  const handleSave = async () => {
+  const handleCreateOrUpdateAnnouncement = async () => {
     if (!formMessage.trim()) {
       toast.error("Message is required");
       return;
     }
+
+    setIsSubmittingForm(true);
     try {
-      setSaving(true);
-      const payload: Record<string, unknown> = {
-        action: editId ? "update" : "create",
+      const action = editingAnnouncement ? "update" : "create";
+      const body: Record<string, unknown> = {
+        action,
         message: formMessage,
         targetRole: formTargetRole,
         isActive: formIsActive,
       };
-      if (editId) payload.id = editId;
+      if (editingAnnouncement) body.id = editingAnnouncement.id;
 
       const res = await fetch("/api/superadmin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to save");
-      toast.success(editId ? "Announcement updated" : "Announcement created");
-      setCreateOpen(false);
-      resetForm();
-      fetchAnnouncements();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save";
-      toast.error("Save failed", { description: message });
+
+      if (res.ok) {
+        toast.success(editingAnnouncement ? "Announcement updated" : "Announcement created");
+        setShowCreateDialog(false);
+        fetchAnnouncements();
+      } else {
+        toast.error("Failed to save announcement");
+      }
+    } catch {
+      toast.error("Failed to save announcement");
     } finally {
-      setSaving(false);
+      setIsSubmittingForm(false);
     }
   };
 
@@ -226,370 +845,222 @@ export default function SuperadminAnnouncementsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "toggle", id, isActive }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to toggle");
-      toast.success(isActive ? "Announcement enabled" : "Announcement disabled");
-      fetchAnnouncements();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to toggle";
-      toast.error("Toggle failed", { description: message });
+      if (res.ok) {
+        setAnnouncements((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, isActive } : a))
+        );
+        toast.success(isActive ? "Announcement activated" : "Announcement deactivated");
+      }
+    } catch {
+      toast.error("Failed to toggle announcement");
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+  const handleDelete = async (id: number) => {
     try {
       const res = await fetch("/api/superadmin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id: deleteId }),
+        body: JSON.stringify({ action: "delete", id }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to delete");
-      toast.success("Announcement deleted");
-      setDeleteId(null);
-      fetchAnnouncements();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete";
-      toast.error("Delete failed", { description: message });
+      if (res.ok) {
+        setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+        toast.success("Announcement deleted");
+      }
+    } catch {
+      toast.error("Failed to delete announcement");
     }
+    setDeleteTarget(null);
   };
 
   const handleSendCampaign = async () => {
-    if (!emailTemplate) {
-      toast.error("Please select an email template");
-      return;
-    }
+    setIsSendingCampaign(true);
+    setCampaignResult(null);
     try {
-      setSendingCampaign(true);
-      setCampaignResult(null);
-
       const res = await fetch("/api/superadmin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "send_campaign",
-          announcementId: emailAnnouncementId,
-          targetRoles: [emailSegment],
-          sendEmail: true,
-          emailTemplate,
+          targetRoles: campaignTargetRoles,
+          sendEmail: campaignSendEmail,
+          emailTemplate: campaignEmailTemplate,
+          announcementId: campaignAnnouncementId,
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to send campaign");
-
-      setCampaignResult({
-        sentCount: json.sentCount,
-        failedCount: json.failedCount,
-        totalTargets: json.totalTargets,
-        notificationsCreated: json.notificationsCreated,
-      });
-
-      if (json.failedCount > 0) {
-        toast.warning("Campaign partially sent", {
-          description: `${json.sentCount} emails sent, ${json.failedCount} failed. ${json.notificationsCreated} notifications created.`,
-          duration: 6000,
+      if (res.ok) {
+        const data = await res.json();
+        setCampaignResult({
+          sentCount: data.sentCount,
+          failedCount: data.failedCount,
+          totalTargets: data.totalTargets,
+          notificationsCreated: data.notificationsCreated,
         });
+        toast.success(`Campaign sent to ${data.totalTargets} users`);
       } else {
-        toast.success("Email campaign sent!", {
-          description: `${json.sentCount} emails sent. ${json.notificationsCreated} in-app notifications created.`,
-          duration: 5000,
-        });
+        toast.error("Failed to send campaign");
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send campaign";
-      toast.error("Campaign failed", { description: message });
+    } catch {
+      toast.error("Failed to send campaign");
     } finally {
-      setSendingCampaign(false);
+      setIsSendingCampaign(false);
     }
   };
 
   const activeCount = announcements.filter((a) => a.isActive).length;
+  const inactiveCount = announcements.filter((a) => !a.isActive).length;
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Announcements & Communication"
-        description="Send in-app banners and targeted emails to user segments."
-        actions={
-          <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-            onClick={openCreate}
-          >
-            <Plus className="size-4" />
-            Create Announcement
-          </Button>
-        }
-      />
-
-      {/* ── Stats ─────────────────────────────────────────────────── */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Announcements</CardTitle>
-            <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-              <Megaphone className="size-4 text-teal-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{announcements.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <ToggleLeft className="size-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-700">{activeCount}</div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
-            <div className="size-8 rounded-lg bg-muted flex items-center justify-center">
-              <Megaphone className="size-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{announcements.length - activeCount}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Announcements List ──────────────────────────────────── */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">All Announcements</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <AnnouncementSkeleton />
-              ) : announcements.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Megaphone className="size-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-1">No announcements</h3>
-                  <p className="text-sm text-muted-foreground">Create your first announcement to get started.</p>
-                </div>
-              ) : (
-                <div className="max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
-                  {announcements.map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-start gap-3 py-3 border-b last:border-0"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{a.message}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getTargetBadge(a.targetRole)}
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(a.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Switch
-                          checked={a.isActive}
-                          onCheckedChange={(checked) => handleToggle(a.id, checked)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0"
-                          onClick={() => openEdit(a)}
-                        >
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0 text-red-600 hover:text-red-700"
-                          onClick={() => setDeleteId(a.id)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── Send Email Section ──────────────────────────────────── */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                <Mail className="size-4 text-teal-600" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Send Email</CardTitle>
-                <CardDescription>Targeted email campaigns</CardDescription>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
+              <Mail className="size-5 text-[#166534]" />
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Target Segment</Label>
-              <Select value={emailSegment} onValueChange={setEmailSegment}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all_candidates">All Candidates</SelectItem>
-                  <SelectItem value="expiring_credentials">Candidates with Expiring Credentials</SelectItem>
-                  <SelectItem value="all_recruiters">All Recruiters</SelectItem>
-                  <SelectItem value="inactive_users">Inactive Users (30d+)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{announcements.length}</p>
+              <p className="text-xs text-[#6B7280]">Total Announcements</p>
             </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Email Template</Label>
-              <Select value={emailTemplate} onValueChange={setEmailTemplate}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select template…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="credential_expiry_reminder">Credential Expiry Reminder</SelectItem>
-                  <SelectItem value="profile_completion">Profile Completion Nudge</SelectItem>
-                  <SelectItem value="new_features">New Features Announcement</SelectItem>
-                  <SelectItem value="monthly_digest">Monthly Digest</SelectItem>
-                </SelectContent>
-              </Select>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="size-5 text-green-600" />
             </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Attach Announcement (Optional)</Label>
-              <Select
-                value={emailAnnouncementId ? String(emailAnnouncementId) : "none"}
-                onValueChange={(val) => setEmailAnnouncementId(val === "none" ? null : parseInt(val, 10))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Announcement</SelectItem>
-                  {announcements.filter((a) => a.isActive).map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.message.slice(0, 50)}{a.message.length > 50 ? "…" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{activeCount}</p>
+              <p className="text-xs text-[#6B7280]">Active</p>
             </div>
-
-            <Separator />
-
-            <div className="rounded-lg border border-dashed p-4 text-center">
-              <Mail className="size-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-medium">Email Preview</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {segmentLabels[emailSegment] || emailSegment}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Template: {emailTemplate ? emailTemplate.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "None selected"}
-              </p>
-              {emailAnnouncementId && (
-                <p className="text-xs text-teal-600 mt-1">
-                  + Announcement attached
-                </p>
-              )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-gray-100 flex items-center justify-center">
+              <ToggleLeft className="size-5 text-gray-500" />
             </div>
-
-            {/* Campaign Result */}
-            {campaignResult && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-emerald-800">
-                  <CheckCircle2 className="size-4" />
-                  Campaign Sent
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-emerald-600 font-semibold">{campaignResult.sentCount}</span>
-                    <span className="text-emerald-700"> emails sent</span>
-                  </div>
-                  <div>
-                    <span className="text-emerald-600 font-semibold">{campaignResult.notificationsCreated}</span>
-                    <span className="text-emerald-700"> notifications</span>
-                  </div>
-                  {campaignResult.failedCount > 0 && (
-                    <div>
-                      <span className="text-red-600 font-semibold">{campaignResult.failedCount}</span>
-                      <span className="text-red-700"> failed</span>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-emerald-600 font-semibold">{campaignResult.totalTargets}</span>
-                    <span className="text-emerald-700"> total targets</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 gap-2"
-                disabled={!emailTemplate}
-                onClick={() => setPreviewOpen(true)}
-              >
-                <Eye className="size-4" />
-                Preview
-              </Button>
-              <Button
-                className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                size="sm"
-                disabled={!emailTemplate || sendingCampaign}
-                onClick={handleSendCampaign}
-              >
-                {sendingCampaign ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Send className="size-4" />
-                )}
-                {sendingCampaign ? "Sending…" : "Send"}
-              </Button>
+            <div>
+              <p className="text-2xl font-semibold text-[#111827]">{inactiveCount}</p>
+              <p className="text-xs text-[#6B7280]">Inactive</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Create / Edit Announcement Dialog ─────────────────────── */}
-      <Dialog
-        open={createOpen}
-        onOpenChange={(open) => {
-          if (!open) resetForm();
-          setCreateOpen(open);
-        }}
-      >
-        <DialogContent className="max-w-md">
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          onClick={() => {
+            setEditingAnnouncement(null);
+            setFormMessage("");
+            setFormTargetRole("all");
+            setFormIsActive(false);
+            setShowCreateDialog(true);
+          }}
+          className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+        >
+          <Plus className="size-4" />
+          Create Announcement
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setCampaignResult(null);
+            setShowCampaignDialog(true);
+          }}
+          className="gap-2"
+        >
+          <Send className="size-4" />
+          Send Email Campaign
+        </Button>
+      </div>
+
+      {/* Announcements List */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : announcements.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Mail className="size-10 text-[#9CA3AF] mx-auto mb-3" />
+            <p className="text-sm font-medium text-[#111827]">No announcements yet</p>
+            <p className="text-xs text-[#6B7280] mt-1">Create an announcement to send targeted emails and notifications.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {announcements.map((ann) => (
+            <Card key={ann.id} className={cn(!ann.isActive && "opacity-60")}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#111827]">{ann.message}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <Badge variant="outline" className="text-xs">
+                        {roleLabels[ann.targetRole] || ann.targetRole}
+                      </Badge>
+                      <span className="text-[11px] text-[#9CA3AF]">{formatDate(ann.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch
+                      checked={ann.isActive}
+                      onCheckedChange={(checked) => handleToggle(ann.id, checked)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingAnnouncement(ann);
+                        setFormMessage(ann.message);
+                        setFormTargetRole(ann.targetRole);
+                        setFormIsActive(ann.isActive);
+                        setShowCreateDialog(true);
+                      }}
+                    >
+                      <Pencil className="size-4 text-[#6B7280]" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(ann)}>
+                      <Trash2 className="size-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Announcement Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? "Edit Announcement" : "Create Announcement"}</DialogTitle>
+            <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              {editingAnnouncement ? "Edit Announcement" : "Create Announcement"}
+            </DialogTitle>
             <DialogDescription>
-              {editId ? "Modify the announcement details." : "Create a new in-app banner announcement."}
+              {editingAnnouncement
+                ? "Update this announcement message."
+                : "Create a new announcement that can be sent as email campaigns and notifications."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="announcement-message">Message</Label>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Message *</Label>
               <Textarea
-                id="announcement-message"
                 value={formMessage}
                 onChange={(e) => setFormMessage(e.target.value)}
-                placeholder="Enter announcement message…"
-                className="min-h-[6rem]"
+                placeholder="Enter announcement message..."
+                rows={3}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Target Role</Label>
               <Select value={formTargetRole} onValueChange={setFormTargetRole}>
                 <SelectTrigger>
@@ -598,133 +1069,157 @@ export default function SuperadminAnnouncementsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Users</SelectItem>
                   <SelectItem value="candidate">Candidates</SelectItem>
-                  <SelectItem value="client_recruiter">Recruiters</SelectItem>
+                  <SelectItem value="client_recruiter">Recruiters & Agencies</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="announcement-active">Active</Label>
-              <Switch
-                id="announcement-active"
-                checked={formIsActive}
-                onCheckedChange={setFormIsActive}
-              />
+              <Label>Active</Label>
+              <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { resetForm(); setCreateOpen(false); }}>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-              onClick={handleSave}
-              disabled={saving || !formMessage.trim()}
+              onClick={handleCreateOrUpdateAnnouncement}
+              disabled={isSubmittingForm || !formMessage.trim()}
+              className="bg-[#166534] hover:bg-[#14532D]"
             >
-              <Plus className="size-4" />
-              {saving ? "Saving…" : editId ? "Update" : "Create"}
+              {isSubmittingForm && <Loader2 className="size-4 mr-1 animate-spin" />}
+              {editingAnnouncement ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Email Preview Dialog ──────────────────────────────────── */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      {/* Email Campaign Dialog */}
+      <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Email Preview</DialogTitle>
+            <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              Send Email Campaign
+            </DialogTitle>
             <DialogDescription>
-              Preview of the email that will be sent to the selected segment.
+              Target specific user segments with email announcements and in-app notifications.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Subject & Segment Info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground font-medium">Subject:</span>
-                <span className="font-semibold">
-                  {emailTemplate
-                    ? templateLabels[emailTemplate] || emailTemplate
-                    : "No template selected"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground font-medium">Segment:</span>
-                <Badge variant="outline">{segmentLabels[emailSegment] || emailSegment}</Badge>
-              </div>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Target Segment *</Label>
+              <Select
+                value={campaignTargetRoles[0]}
+                onValueChange={(val) => setCampaignTargetRoles([val])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="all_candidates">All Candidates</SelectItem>
+                  <SelectItem value="all_recruiters">All Recruiters & Agencies</SelectItem>
+                  <SelectItem value="expiring_credentials">Expiring Credentials (30 days)</SelectItem>
+                  <SelectItem value="inactive_users">Inactive Users (30 days)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <Separator />
+            <div className="space-y-1.5">
+              <Label>Attach Announcement (optional)</Label>
+              <Select
+                value={campaignAnnouncementId?.toString() || "none"}
+                onValueChange={(val) =>
+                  setCampaignAnnouncementId(val === "none" ? null : parseInt(val))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {announcements.map((a) => (
+                    <SelectItem key={a.id} value={a.id.toString()}>
+                      {a.message.slice(0, 50)}...
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Email Body Card */}
-            <Card className="border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                    <Mail className="size-4 text-teal-600" />
-                  </div>
-                  <CardTitle className="text-sm">MyZipVault</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <h3 className="text-base font-semibold">
-                  {emailTemplate
-                    ? templateLabels[emailTemplate] || emailTemplate
-                    : "No template selected"}
-                </h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Send Email</Label>
+                <p className="text-[11px] text-[#9CA3AF]">Also send via email (Brevo)</p>
+              </div>
+              <Switch checked={campaignSendEmail} onCheckedChange={setCampaignSendEmail} />
+            </div>
 
-                {emailTemplate === "credential_expiry_reminder" && (
-                  <p className="text-sm text-muted-foreground">
-                    This is a reminder that some of your credentials are expiring soon.
-                    Please log in to review your credentials and take action before they expire.
-                  </p>
-                )}
-                {emailTemplate === "profile_completion" && (
-                  <p className="text-sm text-muted-foreground">
-                    Your profile is almost complete! Finish setting up your account to unlock
-                    all features and get the most out of MyZipVault.
-                  </p>
-                )}
-                {emailTemplate === "new_features" && (
-                  <p className="text-sm text-muted-foreground">
-                    We\u2019ve added new features to MyZipVault! Check out the latest updates
-                    and improvements to enhance your experience.
-                  </p>
-                )}
-                {emailTemplate === "monthly_digest" && (
-                  <p className="text-sm text-muted-foreground">
-                    Here\u2019s your monthly digest of activity and highlights from MyZipVault.
-                    Stay informed with the latest updates and insights.
-                  </p>
-                )}
-                {!emailTemplate && (
-                  <p className="text-sm text-muted-foreground italic">
-                    Select a template to see the email body content.
-                  </p>
-                )}
+            {campaignSendEmail && (
+              <div className="space-y-1.5">
+                <Label>Email Template</Label>
+                <Select value={campaignEmailTemplate} onValueChange={setCampaignEmailTemplate}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="credential_expiry_reminder">Credential Expiry Reminder</SelectItem>
+                    <SelectItem value="profile_completion">Profile Completion</SelectItem>
+                    <SelectItem value="new_features">New Features</SelectItem>
+                    <SelectItem value="monthly_digest">Monthly Digest</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-                {emailAnnouncementId && (() => {
-                  const announcement = announcements.find((a) => a.id === emailAnnouncementId);
-                  if (!announcement) return null;
-                  return (
-                    <div className="mt-3 rounded-md border border-dashed bg-muted/50 p-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Attached Announcement</p>
-                      <p className="text-sm">{announcement.message}</p>
+            {campaignResult && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-green-800 mb-2">Campaign Results</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-green-600">Total Targets</p>
+                      <p className="font-semibold text-green-800">{campaignResult.totalTargets}</p>
                     </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
+                    <div>
+                      <p className="text-green-600">Emails Sent</p>
+                      <p className="font-semibold text-green-800">{campaignResult.sentCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Failed</p>
+                      <p className="font-semibold text-green-800">{campaignResult.failedCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Notifications Created</p>
+                      <p className="font-semibold text-green-800">{campaignResult.notificationsCreated}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+            <Button variant="outline" onClick={() => setShowCampaignDialog(false)}>
               Close
+            </Button>
+            <Button
+              onClick={handleSendCampaign}
+              disabled={isSendingCampaign}
+              className="bg-[#166534] hover:bg-[#14532D]"
+            >
+              {isSendingCampaign ? (
+                <Loader2 className="size-4 mr-1 animate-spin" />
+              ) : (
+                <Send className="size-4 mr-1" />
+              )}
+              Send Campaign
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmation ───────────────────────────────────── */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Announcement</AlertDialogTitle>
@@ -735,8 +1230,8 @@ export default function SuperadminAnnouncementsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
             >
               Delete
             </AlertDialogAction>

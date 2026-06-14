@@ -19,12 +19,17 @@ export async function GET() {
         first_name: true,
         last_name: true,
         phone: true,
+        email_verified_at: true,
         candidate_profile: {
           select: {
             profile_completion_pct: true,
             notification_preferences: true,
           },
         },
+        resumes: { select: { id: true } },
+        credentials: { select: { id: true } },
+        candidate_references: { select: { id: true } },
+        calendar_availabilities: { select: { id: true } },
       },
     });
 
@@ -51,10 +56,15 @@ export async function GET() {
 
     return NextResponse.json({
       email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
+      firstName: user.first_name,
+      lastName: user.last_name,
       phone: user.phone,
-      profile_completion_pct: user.candidate_profile?.profile_completion_pct ?? 0,
+      emailVerified: !!user.email_verified_at,
+      hasResume: user.resumes.length > 0,
+      credentialCount: user.credentials.length,
+      referenceCount: user.candidate_references.length,
+      hasAvailability: user.calendar_availabilities.length > 0,
+      profileCompletionPct: user.candidate_profile?.profile_completion_pct ?? 0,
       notification_preferences: notificationPreferences,
     });
   } catch (error) {

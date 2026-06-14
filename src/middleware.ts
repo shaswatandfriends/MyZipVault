@@ -35,7 +35,8 @@ export default withAuth({
         pathname.startsWith("/vaultsign") ||
         pathname.startsWith("/references") ||
         pathname.startsWith("/sharing") ||
-        pathname.startsWith("/settings")
+        pathname.startsWith("/settings") ||
+        pathname.startsWith("/profile-completion")
       ) {
         if (role !== "candidate") return false;
       }

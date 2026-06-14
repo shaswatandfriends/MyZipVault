@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
-import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,10 +21,76 @@ import {
   Mail,
   Loader2,
   FileSignature,
+  ArrowUpRight,
 } from "@/lib/icons";
 import Link from "next/link";
 import { toast } from "sonner";
+import { BannerCarousel } from "@/components/banners/banner-carousel";
 
+// ─── Circular Progress Component ─────────────────────────────────
+function CircularProgress({
+  percentage,
+  size = 80,
+  strokeWidth = 6,
+}: {
+  percentage: number;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  // Color based on completion
+  const color =
+    percentage >= 100
+      ? "#166534"
+      : percentage >= 50
+        ? "#16A34A"
+        : percentage >= 25
+          ? "#F59E0B"
+          : "#EF4444";
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#E5E7EB"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      {/* Percentage text in center */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="text-sm font-bold"
+          style={{ color }}
+        >
+          {percentage}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard Data Interface ─────────────────────────────────────
 interface DashboardData {
   profile: {
     firstName: string;
@@ -55,6 +119,7 @@ interface DashboardData {
   emailVerified: boolean;
 }
 
+// ─── Main Dashboard Component ─────────────────────────────────────
 export default function CandidateDashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -152,9 +217,17 @@ export default function CandidateDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        {/* Loading skeleton for welcome section */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="size-20 rounded-full" />
+        </div>
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <Skeleton className="h-4 w-24 mb-3" />
@@ -164,7 +237,6 @@ export default function CandidateDashboardPage() {
             </Card>
           ))}
         </div>
-        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
@@ -172,7 +244,6 @@ export default function CandidateDashboardPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" />
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-destructive mb-4">{error}</p>
@@ -187,12 +258,34 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`Welcome, ${displayName}`}
-        description="Here's an overview of your credential vault"
-      />
+      {/* ── Welcome Section with Profile Circle ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1
+            className="text-xl font-semibold text-[#111827] sm:text-2xl"
+            style={{ fontFamily: "'Clash Display', sans-serif" }}
+          >
+            Welcome, {displayName}
+          </h1>
+          <p className="text-sm text-[#6B7280] mt-0.5">
+            Here&apos;s an overview of your vault
+          </p>
+        </div>
+        <Link href="/profile-completion" className="group">
+          <div className="relative flex flex-col items-center gap-1 cursor-pointer">
+            <CircularProgress percentage={profileCompletion} size={80} strokeWidth={6} />
+            <span className="text-[10px] font-medium text-[#6B7280] group-hover:text-[#166534] transition-colors">
+              Profile
+            </span>
+            <ArrowUpRight className="absolute -top-1 -right-1 size-3.5 text-[#9CA3AF] group-hover:text-[#166534] transition-colors" />
+          </div>
+        </Link>
+      </div>
 
-      {/* Thank You State */}
+      {/* ── Announcement Carousel ── */}
+      <BannerCarousel />
+
+      {/* ── Thank You State ── */}
       {thankYouState?.show && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4 flex items-start gap-3">
@@ -234,7 +327,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* Email Verification Banner */}
+      {/* ── Email Verification Banner ── */}
       {!data?.emailVerified && showEmailBanner && (
         <Card className="border-green-300 bg-green-50 dark:bg-green-950/30 dark:border-green-800">
           <CardContent className="p-4 flex items-center gap-3">
@@ -274,7 +367,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* Notification Banner */}
+      {/* ── Pending Checklist Banner ── */}
       {data?.pendingChecklistRequests?.length > 0 && showBanner && (
         <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
           <CardContent className="p-4 flex items-center gap-3">
@@ -302,7 +395,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* VaultSign Pending Signature Banner */}
+      {/* ── VaultSign Pending Signature Banner ── */}
       {(data?.vaultsign?.pending ?? 0) > 0 && (
         <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
           <CardContent className="p-4 flex items-center gap-3">
@@ -326,27 +419,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* Profile Completion */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Profile Completion</p>
-            <span className="text-sm font-semibold text-primary">{profileCompletion}%</span>
-          </div>
-          <Progress value={profileCompletion} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {profileCompletion === 0
-              ? "Start by completing your profile information"
-              : profileCompletion < 50
-                ? "Keep going! Add more details to strengthen your profile"
-                : profileCompletion < 100
-                  ? "Almost there! Complete your profile for full access"
-                  : "Your profile is complete! 🎉"}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Quick Status Cards */}
+      {/* ── Quick Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="group hover:shadow-md transition-shadow">
           <Link href="/vault/resume">
@@ -473,7 +546,7 @@ export default function CandidateDashboardPage() {
         </Card>
       </div>
 
-      {/* Empty State for Organic Signups */}
+      {/* ── Empty State for Organic Signups ── */}
       {isEmptyState && (
         <Card>
           <CardContent className="p-8 text-center">
@@ -503,7 +576,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* Recent Activity */}
+      {/* ── Recent Activity ── */}
       {data?.notifications && data.notifications.length > 0 && (
         <Card>
           <CardContent className="p-4">

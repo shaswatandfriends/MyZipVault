@@ -16,6 +16,7 @@ import {
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -243,6 +244,9 @@ export default function RecruiterDashboardPage() {
           </div>
         }
       />
+
+      {/* ── Announcement Carousel ── */}
+      <BannerCarousel />
 
       {/* ── Stats Cards ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
