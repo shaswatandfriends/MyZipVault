@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Lock,
   Loader2,
@@ -18,12 +18,14 @@ import {
   ShieldCheck,
   ChevronRight,
   ClipboardCheck,
-  Clock,
   ArrowLeft,
-  ArrowRight,
   Info,
   Save,
   Pencil,
+  Upload,
+  Type,
+  PenLine,
+  Trash2,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -87,6 +89,15 @@ interface SignaturePadInstance {
   off(): void;
 }
 
+type SignatureType = "draw" | "type" | "upload";
+
+interface SignatureData {
+  type: SignatureType;
+  font?: string;
+  text?: string;
+  image_base64?: string;
+}
+
 /* ─── Rating Config (1-4 scale) ─────────────────────────────────────── */
 const RATING_LABELS: Record<string, string> = {
   "1": "No Experience",
@@ -114,6 +125,14 @@ const ratingBtnStyles: Record<string, { selected: string; unselected: string }> 
   },
 };
 
+/* ─── Signature Fonts ───────────────────────────────────────────────── */
+const SIGNATURE_FONTS = [
+  { name: "Dancing Script", value: "'Dancing Script', cursive" },
+  { name: "Great Vibes", value: "'Great Vibes', cursive" },
+  { name: "Pacifico", value: "'Pacifico', cursive" },
+  { name: "Sacramento", value: "'Sacramento', cursive" },
+];
+
 /* ─── Helper ────────────────────────────────────────────────────────── */
 function isRatingDone(rating: RatingItem | undefined): boolean {
   if (!rating) return false;
@@ -137,7 +156,14 @@ export default function ChecklistAssessmentPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [activeCategory, setActiveCategory] = useState<string>("");
-  const [showSignature, setShowSignature] = useState(false);
+
+  // Signature state — multi-method
+  const [signatureMethod, setSignatureMethod] = useState<SignatureType>("draw");
+  const [signatureData, setSignatureData] = useState<SignatureData | null>(null);
+  const [drawnSignatureBase64, setDrawnSignatureBase64] = useState("");
+  const [typedSignatureText, setTypedSignatureText] = useState("");
+  const [selectedFont, setSelectedFont] = useState(SIGNATURE_FONTS[0].value);
+  const [uploadedSignatureBase64, setUploadedSignatureBase64] = useState("");
 
   // Refs for scroll tracking
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +172,6 @@ export default function ChecklistAssessmentPage({
   // Signature pad
   const sigCanvasRef = useRef<HTMLCanvasElement>(null);
   const sigPadRef = useRef<SignaturePadInstance | null>(null);
-  const [hasSigned, setHasSigned] = useState(false);
   const sigPadInitialized = useRef(false);
 
   // Unwrap params
@@ -204,6 +229,13 @@ export default function ChecklistAssessmentPage({
   const ratedSkills = data?.ratedSkills ?? 0;
   const completionPct = data?.completionPct ?? 0;
 
+  // Has a valid signature been provided?
+  const hasValidSignature =
+    !!signatureData &&
+    ((signatureData.type === "draw" && !!signatureData.image_base64) ||
+      (signatureData.type === "type" && !!signatureData.text?.trim()) ||
+      (signatureData.type === "upload" && !!signatureData.image_base64));
+
   // Set initial active category
   useEffect(() => {
     if (categoryList.length > 0 && !activeCategory) {
@@ -217,7 +249,6 @@ export default function ChecklistAssessmentPage({
     if (!container || categoryList.length === 0) return;
 
     const handleScroll = () => {
-      const scrollTop = container.scrollTop;
       const containerTop = container.getBoundingClientRect().top;
       let currentCat = categoryList[0];
 
@@ -237,9 +268,9 @@ export default function ChecklistAssessmentPage({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [categoryList]);
 
-  // Initialize signature pad
+  // Initialize signature pad — depends on allSkillsRated (canvas must be in DOM)
   useEffect(() => {
-    if (!showSignature) return;
+    if (!allSkillsRated) return;
     if (sigPadInitialized.current) return;
 
     let destroyed = false;
@@ -263,7 +294,11 @@ export default function ChecklistAssessmentPage({
           penColor: "rgb(22,101,52)",
           onEnd: () => {
             const pad = sigPadRef.current;
-            setHasSigned(pad ? !pad.isEmpty() : false);
+            if (pad && !pad.isEmpty()) {
+              const base64 = pad.toDataURL("image/png");
+              setDrawnSignatureBase64(base64);
+              setSignatureData({ type: "draw", image_base64: base64 });
+            }
           },
         });
         sigPadInitialized.current = true;
@@ -298,7 +333,61 @@ export default function ChecklistAssessmentPage({
       }
       sigPadInitialized.current = false;
     };
-  }, [showSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allSkillsRated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ─── Signature: Upload handler ───────────────────────────────────── */
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setUploadedSignatureBase64(base64);
+      setSignatureData({ type: "upload", image_base64: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* ─── Signature: Typed handler ────────────────────────────────────── */
+  const handleTypedSignatureChange = (text: string) => {
+    setTypedSignatureText(text);
+    if (text.trim()) {
+      setSignatureData({ type: "type", font: selectedFont, text: text.trim() });
+    } else {
+      // If typed text is cleared, remove the signature
+      if (signatureData?.type === "type") {
+        setSignatureData(null);
+      }
+    }
+  };
+
+  const handleFontChange = (font: string) => {
+    setSelectedFont(font);
+    if (typedSignatureText.trim()) {
+      setSignatureData({ type: "type", font, text: typedSignatureText.trim() });
+    }
+  };
+
+  /* ─── Signature: Clear ────────────────────────────────────────────── */
+  const clearSignature = () => {
+    if (sigPadRef.current) {
+      sigPadRef.current.clear();
+    }
+    setDrawnSignatureBase64("");
+    setTypedSignatureText("");
+    setUploadedSignatureBase64("");
+    setSignatureData(null);
+  };
 
   /* ─── Save rating ────────────────────────────────────────────────── */
   const saveRating = async (
@@ -376,8 +465,7 @@ export default function ChecklistAssessmentPage({
     if (currentIdx < categoryList.length - 1) {
       scrollToCategory(categoryList[currentIdx + 1]);
     } else if (allSkillsRated) {
-      // Last category and all rated — show signature section
-      setShowSignature(true);
+      // Last category and all rated — scroll to signature section
       setTimeout(() => {
         const sigEl = document.getElementById("signature-section");
         if (sigEl && scrollContainerRef.current) {
@@ -418,12 +506,35 @@ export default function ChecklistAssessmentPage({
       return;
     }
 
-    if (!hasSigned || sigPadRef.current?.isEmpty()) {
-      toast.error("Please draw your signature.");
+    if (!hasValidSignature) {
+      toast.error("Please provide your signature (draw, type, or upload).");
       return;
     }
 
-    const signatureBase64 = sigPadRef.current?.toDataURL("image/png") || "";
+    // Build signature base64 for API
+    let signatureBase64 = "";
+
+    if (signatureData?.type === "draw" && signatureData.image_base64) {
+      signatureBase64 = signatureData.image_base64;
+    } else if (signatureData?.type === "upload" && signatureData.image_base64) {
+      signatureBase64 = signatureData.image_base64;
+    } else if (signatureData?.type === "type" && signatureData.text) {
+      // For typed signatures, generate a canvas-based image
+      const canvas = document.createElement("canvas");
+      canvas.width = 460;
+      canvas.height = 160;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "rgb(255,255,255)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgb(22,101,52)";
+        ctx.font = `36px ${signatureData.font || "'Dancing Script', cursive"}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(signatureData.text, canvas.width / 2, canvas.height / 2);
+        signatureBase64 = canvas.toDataURL("image/png");
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -657,7 +768,6 @@ export default function ChecklistAssessmentPage({
             {allSkillsRated && (
               <button
                 onClick={() => {
-                  setShowSignature(true);
                   setTimeout(() => {
                     const sigEl = document.getElementById("signature-section");
                     if (sigEl && scrollContainerRef.current) {
@@ -673,13 +783,18 @@ export default function ChecklistAssessmentPage({
                 }}
                 className={cn(
                   "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-sm mt-2",
-                  showSignature
+                  hasValidSignature
                     ? "bg-[#DCFCE7] text-[#166534] font-semibold"
                     : "bg-[#166534]/5 text-[#166534] hover:bg-[#DCFCE7]"
                 )}
               >
-                <div className="size-5 rounded-full flex items-center justify-center shrink-0 bg-[#166534] text-white text-[10px] font-bold border-2 border-[#166534]">
-                  <Pencil className="size-2.5" />
+                <div className={cn(
+                  "size-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2",
+                  hasValidSignature
+                    ? "bg-[#166534] border-[#166534] text-white"
+                    : "border-[#166534] text-[#166534]"
+                )}>
+                  {hasValidSignature ? "✓" : <Pencil className="size-2.5" />}
                 </div>
                 <span className="flex-1 truncate text-xs font-medium">Sign & Submit</span>
               </button>
@@ -728,7 +843,6 @@ export default function ChecklistAssessmentPage({
               {allSkillsRated && (
                 <button
                   onClick={() => {
-                    setShowSignature(true);
                     setTimeout(() => {
                       const sigEl = document.getElementById("signature-section");
                       if (sigEl && scrollContainerRef.current) {
@@ -997,34 +1111,191 @@ export default function ChecklistAssessmentPage({
                         </div>
                       </div>
 
-                      {/* Signature Pad */}
-                      <div className="space-y-2">
-                        <Label>Signature</Label>
-                        <div className="relative">
-                          <canvas
-                            ref={sigCanvasRef}
-                            className="w-full border-[1.5px] border-[#E5E7EB] rounded-lg bg-white cursor-crosshair"
-                            style={{ height: "160px" }}
-                          />
-                          {!hasSigned && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <span className="text-[#9CA3AF] text-sm select-none">
-                                Sign here
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-[#9CA3AF] text-xs"
-                          onClick={() => {
-                            sigPadRef.current?.clear();
-                            setHasSigned(false);
-                          }}
+                      {/* ── Signature Method Tabs ─────────────────────────── */}
+                      <div className="space-y-3">
+                        <Label>Your Signature</Label>
+                        <Tabs
+                          value={signatureMethod}
+                          onValueChange={(v) => setSignatureMethod(v as SignatureType)}
+                          className="w-full"
                         >
-                          Clear Signature
-                        </Button>
+                          <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="draw" className="gap-1.5">
+                              <Pencil className="size-3.5" />
+                              Draw
+                            </TabsTrigger>
+                            <TabsTrigger value="type" className="gap-1.5">
+                              <Type className="size-3.5" />
+                              Type
+                            </TabsTrigger>
+                            <TabsTrigger value="upload" className="gap-1.5">
+                              <Upload className="size-3.5" />
+                              Upload
+                            </TabsTrigger>
+                          </TabsList>
+
+                          {/* ── Draw Tab ─────────────────────────────────── */}
+                          <TabsContent value="draw" className="mt-3">
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <canvas
+                                  ref={sigCanvasRef}
+                                  className="w-full border-[1.5px] border-[#E5E7EB] rounded-lg bg-white cursor-crosshair touch-none"
+                                  style={{ height: "160px" }}
+                                />
+                                {!drawnSignatureBase64 && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span className="text-[#9CA3AF] text-sm select-none">
+                                      Sign here
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-[#9CA3AF] text-xs gap-1"
+                                  onClick={() => {
+                                    if (sigPadRef.current) {
+                                      sigPadRef.current.clear();
+                                    }
+                                    setDrawnSignatureBase64("");
+                                    if (signatureData?.type === "draw") {
+                                      setSignatureData(null);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="size-3" /> Clear
+                                </Button>
+                                {drawnSignatureBase64 && (
+                                  <span className="text-xs text-[#166534] font-medium flex items-center gap-1">
+                                    <CheckCircle2 className="size-3" /> Signature captured
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </TabsContent>
+
+                          {/* ── Type Tab ─────────────────────────────────── */}
+                          <TabsContent value="type" className="mt-3">
+                            <div className="space-y-3">
+                              <Input
+                                value={typedSignatureText}
+                                onChange={(e) => handleTypedSignatureChange(e.target.value)}
+                                placeholder="Type your name"
+                                className="text-base"
+                              />
+                              <p className="text-xs text-[#6B7280]">Choose a font style:</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {SIGNATURE_FONTS.map((font) => (
+                                  <button
+                                    key={font.value}
+                                    type="button"
+                                    className={cn(
+                                      "p-3 rounded-lg border text-center transition-all",
+                                      selectedFont === font.value
+                                        ? "border-[#166534] bg-[#F0FDF4] ring-1 ring-[#166534]"
+                                        : "border-[#E5E7EB] hover:border-[#166534]/50"
+                                    )}
+                                    onClick={() => handleFontChange(font.value)}
+                                  >
+                                    <span
+                                      style={{ fontFamily: font.value, fontSize: "18px" }}
+                                      className="block truncate"
+                                    >
+                                      {typedSignatureText || "Preview"}
+                                    </span>
+                                    <p className="text-[10px] text-[#6B7280] mt-1">{font.name}</p>
+                                  </button>
+                                ))}
+                              </div>
+                              {typedSignatureText.trim() && (
+                                <div className="flex items-center gap-1.5">
+                                  <CheckCircle2 className="size-3.5 text-[#166534]" />
+                                  <span className="text-xs text-[#166534] font-medium">Typed signature ready</span>
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+
+                          {/* ── Upload Tab ────────────────────────────────── */}
+                          <TabsContent value="upload" className="mt-3">
+                            <div className="space-y-3">
+                              {uploadedSignatureBase64 ? (
+                                <div className="space-y-3">
+                                  <div className="border rounded-lg bg-white p-3 flex items-center justify-center">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={uploadedSignatureBase64}
+                                      alt="Uploaded signature"
+                                      className="max-h-28 max-w-full object-contain"
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-[#9CA3AF] text-xs gap-1"
+                                      onClick={() => {
+                                        setUploadedSignatureBase64("");
+                                        if (signatureData?.type === "upload") {
+                                          setSignatureData(null);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="size-3" /> Remove
+                                    </Button>
+                                    <span className="text-xs text-[#166534] font-medium flex items-center gap-1">
+                                      <CheckCircle2 className="size-3" /> Signature uploaded
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-6 text-center hover:border-[#166534]/50 transition-colors">
+                                  <Upload className="size-8 text-[#9CA3AF] mx-auto mb-2" />
+                                  <p className="text-sm text-[#6B7280] mb-2">
+                                    Upload an image of your signature
+                                  </p>
+                                  <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleSignatureUpload}
+                                    className="max-w-xs mx-auto"
+                                  />
+                                  <p className="text-[10px] text-[#9CA3AF] mt-2">
+                                    PNG, JPG, or SVG — max 5MB
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+
+                        {/* Current signature preview */}
+                        {hasValidSignature && signatureData?.type !== "draw" && (
+                          <div className="mt-2 p-3 border border-[#BBF7D0] bg-[#F0FDF4] rounded-lg">
+                            <p className="text-[10px] font-semibold text-[#166534] uppercase tracking-wider mb-1.5">
+                              Signature Preview
+                            </p>
+                            {signatureData.type === "type" && signatureData.text && (
+                              <p
+                                className="text-2xl text-[#166534]"
+                                style={{ fontFamily: signatureData.font || "'Dancing Script', cursive" }}
+                              >
+                                {signatureData.text}
+                              </p>
+                            )}
+                            {signatureData.type === "upload" && signatureData.image_base64 && (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={signatureData.image_base64}
+                                alt="Signature preview"
+                                className="max-h-16 object-contain"
+                              />
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <Button
@@ -1034,7 +1305,7 @@ export default function ChecklistAssessmentPage({
                         disabled={
                           !allSkillsRated ||
                           !candidateNameSigned.trim() ||
-                          !hasSigned ||
+                          !hasValidSignature ||
                           isSubmitting
                         }
                         onClick={handleSubmit}
@@ -1051,14 +1322,14 @@ export default function ChecklistAssessmentPage({
                       </Button>
                       {(!allSkillsRated ||
                         !candidateNameSigned.trim() ||
-                        !hasSigned) &&
+                        !hasValidSignature) &&
                         !isSubmitting && (
                         <p className="text-xs text-[#9CA3AF] text-center">
                           {!allSkillsRated
                             ? "Please rate all skills before submitting"
                             : !candidateNameSigned.trim()
                               ? "Please type your full legal name"
-                              : "Please draw your signature"}
+                              : "Please provide your signature (draw, type, or upload)"}
                         </p>
                       )}
                     </CardContent>

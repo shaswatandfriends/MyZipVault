@@ -82,7 +82,7 @@ export async function GET(
     const totalSkills = skills.length;
     const ratedSkills = skills.filter((s) => {
       const rating = ratings[s.id];
-      return rating && (rating.ratingValue !== null || rating.isNa);
+      return rating && ((rating.ratingValue !== null && rating.ratingValue !== "") || rating.isNa);
     }).length;
     const completionPct = totalSkills > 0 ? Math.round((ratedSkills / totalSkills) * 100) : 0;
 
