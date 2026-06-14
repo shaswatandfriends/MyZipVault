@@ -157,7 +157,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
       >
         {hasValidImage ? (
           /* ── Layout WITH image: full-bleed image + gradient overlay ── */
-          <div className="relative w-full h-56 sm:h-64">
+          <div className="relative w-full h-72 sm:h-80">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={currentBanner.imageUrl!}
