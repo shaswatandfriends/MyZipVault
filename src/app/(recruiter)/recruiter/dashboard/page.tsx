@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Users,
@@ -16,6 +15,8 @@ import {
   CreditCard,
   Download,
   Send,
+  BellRing,
+  Loader2,
 } from "@/lib/icons";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
@@ -177,7 +178,6 @@ function TableRowSkeleton() {
 
 // ─── Main Component ─────────────────────────────────────────────────
 export default function RecruiterDashboardPage() {
-  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -228,6 +228,32 @@ export default function RecruiterDashboardPage() {
       return matchesSearch && matchesCompliance;
     });
   }, [data?.candidates, searchQuery, complianceFilter]);
+
+  const [sendingReminderId, setSendingReminderId] = useState<number | null>(null);
+
+  // Send in-app reminder to a candidate
+  const handleSendReminder = async (candidateId: number) => {
+    setSendingReminderId(candidateId);
+    try {
+      const res = await fetch("/api/recruiter/send-reminder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send reminder");
+      }
+      toast.success("Reminder sent!", {
+        description: "The candidate will see this in their notifications.",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Could not send reminder", { description: message });
+    } finally {
+      setSendingReminderId(null);
+    }
+  };
 
   // CSV Export
   const handleExport = () => {
@@ -502,6 +528,7 @@ export default function RecruiterDashboardPage() {
                     <TableHead>Checklist Status</TableHead>
                     <TableHead>Docs Shared</TableHead>
                     <TableHead>Last Activity</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -512,51 +539,87 @@ export default function RecruiterDashboardPage() {
                         .join(" ") || candidate.email;
 
                     return (
-                      <TableRow key={candidate.id} className="cursor-pointer group hover:bg-muted/50" onClick={() => router.push(`/recruiter/candidates/${candidate.id}`)}>
-                        {/* Candidate Name */}
+                      <TableRow key={candidate.id} className="group hover:bg-muted/50">
+                        {/* Candidate Name — clickable link */}
                         <TableCell>
-                          <div className="flex items-center gap-3">
+                          <Link
+                            href={`/recruiter/candidates/${candidate.id}`}
+                            className="flex items-center gap-3"
+                          >
                             <div className="flex size-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shrink-0">
                               {candidate.firstName?.[0]?.toUpperCase() ??
                                 candidate.email[0]?.toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-medium text-sm truncate">
+                              <p className="font-medium text-sm truncate group-hover:text-emerald-700 group-hover:underline underline-offset-2">
                                 {fullName}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {candidate.email}
                               </p>
                             </div>
-                          </div>
+                          </Link>
                         </TableCell>
 
                         {/* Specialty */}
                         <TableCell>
-                          <span className="text-sm">{candidate.specialty || "—"}</span>
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:text-emerald-700">
+                            {candidate.specialty || "—"}
+                          </Link>
                         </TableCell>
 
                         {/* Checklist Status */}
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getComplianceDot(candidate.complianceStatus)}
-                            {getComplianceBadge(candidate.complianceStatus)}
-                          </div>
+                          <Link href={`/recruiter/candidates/${candidate.id}`}>
+                            <div className="flex items-center gap-2">
+                              {getComplianceDot(candidate.complianceStatus)}
+                              {getComplianceBadge(candidate.complianceStatus)}
+                            </div>
+                          </Link>
                         </TableCell>
 
                         {/* Documents Shared */}
                         <TableCell>
-                          <span className="inline-flex items-center gap-1 text-sm">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="inline-flex items-center gap-1 text-sm">
                             <FileText className="size-3.5 text-muted-foreground" />
                             {candidate.sharedDocuments.length}
-                          </span>
+                          </Link>
                         </TableCell>
 
                         {/* Last Activity */}
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm text-muted-foreground hover:text-emerald-700">
                             {formatDate(candidate.lastActivity)}
-                          </span>
+                          </Link>
+                        </TableCell>
+
+                        {/* Actions — Send Reminder for non-compliant/pending */}
+                        <TableCell className="text-right">
+                          {candidate.complianceStatus !== "compliant" ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSendReminder(candidate.id);
+                              }}
+                              disabled={sendingReminderId === candidate.id}
+                            >
+                              <BellRing className="size-3" />
+                              {sendingReminderId === candidate.id ? (
+                                <>
+                                  <Loader2 className="size-3 animate-spin" />
+                                  Sending...
+                                </>
+                              ) : (
+                                "Send Reminder"
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );

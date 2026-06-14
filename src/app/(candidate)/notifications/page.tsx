@@ -55,6 +55,7 @@ function getNotificationIcon(type: string) {
     case "credential":
       return <ShieldCheck className="size-4" />;
     case "checklist":
+    case "checklist_reminder":
       return <ClipboardCheck className="size-4" />;
     case "reference":
       return <Users className="size-4" />;
@@ -77,7 +78,8 @@ function getNotificationIconBg(type: string) {
     case "credential":
       return "bg-emerald-100 text-emerald-700";
     case "checklist":
-      return "bg-blue-100 text-blue-700";
+    case "checklist_reminder":
+      return "bg-amber-100 text-amber-700";
     case "reference":
       return "bg-purple-100 text-purple-700";
     case "sharing":
@@ -98,6 +100,7 @@ function getNotificationTypeLabel(type: string): string {
   switch (type) {
     case "credential": return "Credential";
     case "checklist": return "Checklist";
+    case "checklist_reminder": return "Reminder";
     case "reference": return "Reference";
     case "sharing": return "Sharing";
     case "calendar": return "Calendar";
