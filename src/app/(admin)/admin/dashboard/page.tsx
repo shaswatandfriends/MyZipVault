@@ -6,18 +6,29 @@ import { toast } from "sonner";
 import {
   Users,
   FileText,
-  Clock,
   UserPlus,
   ArrowUpRight,
   ShieldCheck,
   Bell,
   PenSquare,
-  LayoutDashboard,
+  Download,
+  BarChart3,
+  Sparkles,
 } from "@/lib/icons";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,6 +65,11 @@ interface DashboardData {
     };
   }[];
   pendingReminders: number;
+  userGrowth: {
+    month: string;
+    candidates: number;
+    recruiters: number;
+  }[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -156,17 +172,93 @@ export default function AdminDashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  // Fix #14 - Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchDashboard, 60000);
+    return () => clearInterval(interval);
+  }, [fetchDashboard]);
+
   const stats = data?.usersByRole;
+
+  // Fix #17 - CSV Export
+  const handleExportCSV = () => {
+    if (!data) return;
+    const rows = [
+      ["Metric", "Value"],
+      ["Total Candidates", String(stats?.candidates ?? 0)],
+      ["Total Recruiters", String(stats?.clientRecruiters ?? 0)],
+      ["Client Admins", String(stats?.clientAdmins ?? 0)],
+      ["Platform Admins", String(stats?.platformAdmins ?? 0)],
+      ["Total Users", String(stats?.total ?? 0)],
+      ["Pending Documents", String(data.pendingDocuments ?? 0)],
+      ["Recent Signups (7 days)", String(data.recentSignups ?? 0)],
+      ["Pending Reminders", String(data.pendingReminders ?? 0)],
+    ];
+    // Add user growth data
+    if (data.userGrowth?.length) {
+      rows.push([]);
+      rows.push(["Month", "Candidates", "Recruiters"]);
+      for (const row of data.userGrowth) {
+        rows.push([row.month, String(row.candidates), String(row.recruiters)]);
+      }
+    }
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `admin-dashboard-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully");
+  };
 
   return (
     <div className="space-y-3">
       <PageHeader
         title="Dashboard"
         description="Platform administration overview. Monitor users, documents, and system health."
+        actions={
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !data}>
+            <Download className="size-4 mr-1.5" />
+            Export CSV
+          </Button>
+        }
       />
 
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
+
+      {/* ── Onboarding Empty State (Fix #18) ── */}
+      {!isLoading && data && data.usersByRole.total === 0 && (
+        <Card className="border-dashed border-2 border-teal-200 bg-teal-50/50">
+          <CardContent className="py-8 text-center">
+            <div className="flex justify-center mb-3">
+              <div className="size-12 rounded-full bg-teal-100 flex items-center justify-center">
+                <Sparkles className="size-6 text-teal-600" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-teal-900 mb-1">Welcome to Your Platform!</h3>
+            <p className="text-sm text-teal-700 max-w-md mx-auto mb-4">
+              Your platform is brand new. Start by inviting recruiters and candidates to begin building your community.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button asChild>
+                <Link href="/admin/users">
+                  <Users className="size-4 mr-1.5" />
+                  Manage Users
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/content">
+                  <PenSquare className="size-4 mr-1.5" />
+                  Edit Content
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Stats Cards ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -238,6 +330,43 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
+      {/* ── User Growth Chart (Fix #16) ──────────────────────────────── */}
+      {!isLoading && data?.userGrowth && data.userGrowth.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">User Growth</CardTitle>
+                <CardDescription>New signups over the last 6 months</CardDescription>
+              </div>
+              <BarChart3 className="size-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="recruiters" name="Recruiters" fill="#059669" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Two Column Layout ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Document Verification Queue Preview ────────────────── */}
@@ -303,7 +432,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Recent User Signups ────────────────────────────────── */}
+        {/* ── Recent User Signups (Fix #9 - clickable) ────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -335,9 +464,10 @@ export default function AdminDashboardPage() {
                     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
                     user.email;
                   return (
-                    <div
+                    <Link
                       key={user.id}
-                      className="flex items-center justify-between py-3 border-b last:border-0"
+                      href="/admin/users"
+                      className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
@@ -352,7 +482,7 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
                       {getRoleBadge(user.role)}
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

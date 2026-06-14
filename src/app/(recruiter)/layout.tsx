@@ -24,10 +24,10 @@ export default function RecruiterLayout({
 
   const fetchCredits = useCallback(async () => {
     try {
-      const res = await fetch("/api/recruiter/dashboard");
+      const res = await fetch("/api/recruiter/credits/balance");
       if (res.ok) {
         const data = await res.json();
-        setCredits(data?.stats?.creditsBalance ?? 0);
+        setCredits(data?.balance ?? 0);
       }
     } catch {
       // ignore

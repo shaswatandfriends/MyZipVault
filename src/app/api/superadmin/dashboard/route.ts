@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -15,20 +15,32 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Users by role
+    // Parse period query param
+    const { searchParams } = new URL(request.url);
+    const period = searchParams.get("period") || "all";
+    let periodDate: Date | null = null;
+    const now = new Date();
+    if (period === "week") {
+      periodDate = new Date(now);
+      periodDate.setDate(periodDate.getDate() - 7);
+    } else if (period === "month") {
+      periodDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    // Users by role (optionally filtered by period)
+    const userWhere = periodDate ? { created_at: { gte: periodDate } } : {};
     const [candidates, clientRecruiters, clientAdmins, platformAdmins, superAdmins] =
       await Promise.all([
-        db.user.count({ where: { role: "candidate" } }),
-        db.user.count({ where: { role: "client_recruiter" } }),
-        db.user.count({ where: { role: "client_admin" } }),
-        db.user.count({ where: { role: "platform_admin" } }),
-        db.user.count({ where: { role: "super_admin" } }),
+        db.user.count({ where: { role: "candidate", ...userWhere } }),
+        db.user.count({ where: { role: "client_recruiter", ...userWhere } }),
+        db.user.count({ where: { role: "client_admin", ...userWhere } }),
+        db.user.count({ where: { role: "platform_admin", ...userWhere } }),
+        db.user.count({ where: { role: "super_admin", ...userWhere } }),
       ]);
 
     const totalUsers = candidates + clientRecruiters + clientAdmins + platformAdmins + superAdmins;
 
     // Revenue this month — sum of all purchase transactions
-    const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const purchasesThisMonth = await db.creditTransaction.findMany({
       where: {
@@ -119,6 +131,36 @@ export async function GET() {
       }),
     ]);
 
+    // User growth by month (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const recentUsersForChart = await db.user.findMany({
+      where: { created_at: { gte: sixMonthsAgo } },
+      select: { role: true, created_at: true },
+      orderBy: { created_at: "asc" },
+    });
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthData: Record<string, { candidates: number; recruiters: number }> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      monthData[key] = { candidates: 0, recruiters: 0 };
+    }
+    for (const u of recentUsersForChart) {
+      const d = new Date(u.created_at);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      if (monthData[key]) {
+        if (u.role === "candidate") monthData[key].candidates++;
+        else if (["client_recruiter", "client_admin"].includes(u.role)) monthData[key].recruiters++;
+      }
+    }
+    const userGrowth = Object.entries(monthData).map(([month, counts]) => ({ month, ...counts }));
+
     return NextResponse.json({
       usersByRole: {
         candidates,
@@ -158,6 +200,7 @@ export async function GET() {
         email: a.email,
         createdAt: a.created_at,
       })),
+      userGrowth,
     });
   } catch (error) {
     console.error("Superadmin Dashboard GET error:", error);

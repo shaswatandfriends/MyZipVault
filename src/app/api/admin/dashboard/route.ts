@@ -76,6 +76,36 @@ export async function GET() {
       where: { status: "awaiting_approval" },
     });
 
+    // User growth by month (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const recentUsersForChart = await db.user.findMany({
+      where: { created_at: { gte: sixMonthsAgo } },
+      select: { role: true, created_at: true },
+      orderBy: { created_at: "asc" },
+    });
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthData: Record<string, { candidates: number; recruiters: number }> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      monthData[key] = { candidates: 0, recruiters: 0 };
+    }
+    for (const u of recentUsersForChart) {
+      const d = new Date(u.created_at);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      if (monthData[key]) {
+        if (u.role === "candidate") monthData[key].candidates++;
+        else if (["client_recruiter", "client_admin"].includes(u.role)) monthData[key].recruiters++;
+      }
+    }
+    const userGrowth = Object.entries(monthData).map(([month, counts]) => ({ month, ...counts }));
+
     return NextResponse.json({
       usersByRole: {
         candidates,
@@ -107,6 +137,7 @@ export async function GET() {
         },
       })),
       pendingReminders,
+      userGrowth,
     });
   } catch (error) {
     console.error("Admin Dashboard GET error:", error);

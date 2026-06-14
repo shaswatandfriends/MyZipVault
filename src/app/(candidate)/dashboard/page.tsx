@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,13 @@ import {
   Sparkles,
   CalendarDays,
   FileSignature,
+  Mail,
+  Download,
+  ClipboardList,
+  ArrowRight,
 } from "@/lib/icons";
 import Link from "next/link";
+import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 
 // ─── Dashboard Data Interface ─────────────────────────────────────
@@ -58,6 +63,8 @@ export default function CandidateDashboardPage() {
     show: boolean;
     pct: number;
   } | null>(null);
+  const [emailBannerDismissed, setEmailBannerDismissed] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -65,8 +72,11 @@ export default function CandidateDashboardPage() {
       if (!res.ok) throw new Error("Failed to fetch dashboard data");
       const dashboardData = await res.json();
       setData(dashboardData);
+      setError("");
     } catch {
-      setError("Failed to load dashboard. Please refresh.");
+      const msg = "Failed to load dashboard. Please refresh.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +84,16 @@ export default function CandidateDashboardPage() {
 
   useEffect(() => {
     fetchDashboard();
+  }, [fetchDashboard]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    pollingRef.current = setInterval(() => {
+      fetchDashboard();
+    }, 60_000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, [fetchDashboard]);
 
   // Check for thank you state from URL params
@@ -93,6 +113,28 @@ export default function CandidateDashboardPage() {
     !data?.credentials?.total &&
     !data?.references?.total &&
     !hasResume;
+
+  const handleExport = () => {
+    if (!data) return;
+    const rows = [
+      ["Category", "Status", "Count", "Details"],
+      ["Resume", hasResume ? "Uploaded" : "Not Added", "", data.resume?.fileUrl ? "On file" : "Not uploaded"],
+      ["Credentials", "Active", String(data.credentials.active), `${data.credentials.total} total`],
+      ["Checklists", "Completed", String(data.checklists.completed), `${data.checklists.completed} of ${data.checklists.total}`],
+      ["References", "Completed", String(data.references.completed), `${data.references.total} total`],
+      ["VaultSign", "Pending", String(data.vaultsign.pending), `${data.vaultsign.signed} signed, ${data.vaultsign.total} total`],
+      ["Profile Completion", "", `${data.profile?.profileCompletionPct ?? 0}%`, ""],
+      ["Email Verified", data.emailVerified ? "Yes" : "No", "", ""],
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "myzipvault-dashboard.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -138,8 +180,47 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="space-y-3">
+      {/* ── Top Bar with Export ── */}
+      <div className="flex items-center justify-end">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
+          <Download className="size-3.5" />
+          Export
+        </Button>
+      </div>
+
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
+
+      {/* ── Email Verification Nudge ── */}
+      {data && !data.emailVerified && !emailBannerDismissed && (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Mail className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-sm text-amber-800 dark:text-amber-200">
+                Verify your email address
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                Please verify your email to access all features and secure your account.
+              </p>
+              <Link href="/verify-email" className="inline-block mt-2">
+                <Button size="sm" variant="outline" className="gap-1.5 border-amber-400 text-amber-800 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-900">
+                  <Mail className="size-3.5" />
+                  Verify Email
+                </Button>
+              </Link>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200"
+              onClick={() => setEmailBannerDismissed(true)}
+            >
+              <X className="size-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Thank You State ── */}
       {thankYouState?.show && (
@@ -182,8 +263,6 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
       )}
-
-
 
       {/* ── Quick Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -337,6 +416,44 @@ export default function CandidateDashboardPage() {
                   Add Credentials
                 </Button>
               </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Pending Checklists Action Items ── */}
+      {data?.pendingChecklistRequests && data.pendingChecklistRequests.length > 0 && (
+        <Card className="border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                <h3 className="text-sm font-semibold">Pending Checklists</h3>
+              </div>
+              <Badge variant="destructive" className="text-xs">
+                {data.pendingChecklistRequests.length} pending
+              </Badge>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {data.pendingChecklistRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{req.checklistName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Assigned {new Date(req.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Link href="/checklists">
+                    <Button size="sm" variant="outline" className="gap-1 shrink-0">
+                      Complete Now
+                      <ArrowRight className="size-3" />
+                    </Button>
+                  </Link>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

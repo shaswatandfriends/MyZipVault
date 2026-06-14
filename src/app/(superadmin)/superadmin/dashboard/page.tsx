@@ -5,21 +5,42 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   Users,
-  DollarSign,
   CreditCard,
   AlertTriangle,
   ArrowUpRight,
   ShieldCheck,
   Megaphone,
   UserPlus,
+  CheckCircle2,
+  XCircle,
+  Download,
+  BarChart3,
+  Sparkles,
 } from "@/lib/icons";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -68,6 +89,11 @@ interface DashboardData {
     lastName: string | null;
     email: string;
     createdAt: string;
+  }[];
+  userGrowth: {
+    month: string;
+    candidates: number;
+    recruiters: number;
   }[];
 }
 
@@ -167,11 +193,13 @@ function ListSkeleton() {
 export default function SuperadminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [period, setPeriod] = useState<string>("all");
+  const [processingId, setProcessingId] = useState<number | null>(null);
 
   const fetchDashboard = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/superadmin/dashboard");
+      const res = await fetch(`/api/superadmin/dashboard?period=${period}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Failed to fetch dashboard data");
@@ -184,10 +212,16 @@ export default function SuperadminDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [period]);
 
   useEffect(() => {
     fetchDashboard();
+  }, [fetchDashboard]);
+
+  // Fix #14 - Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchDashboard, 60000);
+    return () => clearInterval(interval);
   }, [fetchDashboard]);
 
   const stats = data?.usersByRole;
@@ -199,15 +233,131 @@ export default function SuperadminDashboardPage() {
     1
   );
 
+  // Fix #8 - Approve/Reject handlers
+  const handleApprove = async (adminId: number) => {
+    setProcessingId(adminId);
+    try {
+      const res = await fetch(`/api/superadmin/admins/${adminId}/approve`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to approve");
+      toast.success("Admin approved successfully");
+      fetchDashboard();
+    } catch {
+      toast.error("Failed to approve admin");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (adminId: number) => {
+    setProcessingId(adminId);
+    try {
+      const res = await fetch(`/api/superadmin/admins/${adminId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to reject");
+      toast.success("Admin rejected");
+      fetchDashboard();
+    } catch {
+      toast.error("Failed to reject admin");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Fix #17 - CSV Export
+  const handleExportCSV = () => {
+    if (!data) return;
+    const rows = [
+      ["Metric", "Value"],
+      ["Total Users", String(stats?.total ?? 0)],
+      ["Candidates", String(stats?.candidates ?? 0)],
+      ["Client Recruiters", String(stats?.clientRecruiters ?? 0)],
+      ["Client Admins", String(stats?.clientAdmins ?? 0)],
+      ["Platform Admins", String(stats?.platformAdmins ?? 0)],
+      ["Super Admins", String(stats?.superAdmins ?? 0)],
+      ["Credits Purchased This Month", String(data.creditsPurchasedMonth ?? 0)],
+      ["Credits Spent This Month", String(data.creditsSpentMonth ?? 0)],
+      ["Credits Purchased Today", String(data.creditsPurchasedToday ?? 0)],
+      ["Credits Spent Today", String(data.creditsSpentToday ?? 0)],
+      ["Pending Admin Approvals", String(data.pendingAdminApprovals ?? 0)],
+      ["Active Errors Today", String(data.errorCountToday ?? 0)],
+      ["Active Announcements", String(data.activeAnnouncements ?? 0)],
+    ];
+    // Add user growth data
+    if (data.userGrowth?.length) {
+      rows.push([]);
+      rows.push(["Month", "Candidates", "Recruiters"]);
+      for (const row of data.userGrowth) {
+        rows.push([row.month, String(row.candidates), String(row.recruiters)]);
+      }
+    }
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `superadmin-dashboard-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully");
+  };
+
   return (
     <div className="space-y-3">
       <PageHeader
         title="Dashboard"
         description="System-wide overview. Monitor all organizations, users, and platform health."
+        actions={
+          <div className="flex items-center gap-2">
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !data}>
+              <Download className="size-4 mr-1.5" />
+              Export CSV
+            </Button>
+          </div>
+        }
       />
 
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
+
+      {/* ── Onboarding Empty State (Fix #18) ── */}
+      {!isLoading && data && data.usersByRole.total === 0 && (
+        <Card className="border-dashed border-2 border-teal-200 bg-teal-50/50">
+          <CardContent className="py-8 text-center">
+            <div className="flex justify-center mb-3">
+              <div className="size-12 rounded-full bg-teal-100 flex items-center justify-center">
+                <Sparkles className="size-6 text-teal-600" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-teal-900 mb-1">Welcome to Your Platform!</h3>
+            <p className="text-sm text-teal-700 max-w-md mx-auto mb-4">
+              Your platform is brand new. Start by setting up organizations and inviting admins to begin managing the system.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button asChild>
+                <Link href="/superadmin/users">
+                  <Users className="size-4 mr-1.5" />
+                  Manage Users
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/superadmin/companies">
+                  <ShieldCheck className="size-4 mr-1.5" />
+                  Companies
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Stats Cards ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -235,16 +385,17 @@ export default function SuperadminDashboardPage() {
               </CardContent>
             </Card>
 
+            {/* Fix #10 - Changed from "Revenue This Month" to "Credits Purchased This Month" */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Revenue This Month</CardTitle>
+                <CardTitle className="text-sm font-medium">Credits Purchased This Month</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <DollarSign className="size-4 text-emerald-600" />
+                  <CreditCard className="size-4 text-emerald-600" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data?.revenueThisMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Credits purchased</p>
+                <p className="text-xs text-muted-foreground">This month&apos;s total</p>
               </CardContent>
             </Card>
 
@@ -278,6 +429,43 @@ export default function SuperadminDashboardPage() {
           </>
         )}
       </div>
+
+      {/* ── User Growth Chart (Fix #16) ──────────────────────────────── */}
+      {!isLoading && data?.userGrowth && data.userGrowth.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">User Growth</CardTitle>
+                <CardDescription>New signups over the last 6 months</CardDescription>
+              </div>
+              <BarChart3 className="size-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="recruiters" name="Recruiters" fill="#059669" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Revenue Snapshot & Announcements ───────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -343,7 +531,7 @@ export default function SuperadminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Pending Admin Approvals ──────────────────────────────── */}
+        {/* ── Pending Admin Approvals (Fix #8 - inline approve/reject) ── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -385,9 +573,28 @@ export default function SuperadminDashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 shrink-0 ml-2">
-                        Pending
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          onClick={() => handleApprove(admin.id)}
+                          disabled={processingId === admin.id}
+                        >
+                          <CheckCircle2 className="size-3" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 text-red-700 border-red-300 hover:bg-red-50"
+                          onClick={() => handleReject(admin.id)}
+                          disabled={processingId === admin.id}
+                        >
+                          <XCircle className="size-3" />
+                          Reject
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -451,7 +658,7 @@ export default function SuperadminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Recent Signups ────────────────────────────────────────── */}
+        {/* ── Recent Signups (Fix #9 - clickable) ────────────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -478,9 +685,10 @@ export default function SuperadminDashboardPage() {
                   const fullName =
                     [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email;
                   return (
-                    <div
+                    <Link
                       key={user.id}
-                      className="flex items-center justify-between py-3 border-b last:border-0"
+                      href="/superadmin/users"
+                      className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
@@ -494,7 +702,7 @@ export default function SuperadminDashboardPage() {
                         </div>
                       </div>
                       {getRoleBadge(user.role)}
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -526,7 +734,7 @@ export default function SuperadminDashboardPage() {
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/companies">
-                <DollarSign className="size-5 text-emerald-600" />
+                <CreditCard className="size-5 text-emerald-600" />
                 <span className="text-sm">Companies</span>
               </Link>
             </Button>

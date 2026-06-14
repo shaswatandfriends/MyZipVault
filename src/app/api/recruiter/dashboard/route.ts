@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -21,6 +21,10 @@ export async function GET() {
     if (!organizationId) {
       return NextResponse.json({ error: "No organization found" }, { status: 400 });
     }
+
+    // Parse period query param
+    const { searchParams } = new URL(request.url);
+    const period = searchParams.get("period") || "month"; // week | month | all
 
     // Get all checklist requests from this organization's recruiters
     const orgUsers = await db.user.findMany({
@@ -169,17 +173,59 @@ export async function GET() {
     const pendingRequests = checklistRequests.filter((r) => r.status === "sent").length;
     const completedPackets = checklistRequests.filter((r) => r.status === "completed").length;
 
-    // Credits used this month
+    // Credits used based on period
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const creditsUsedThisMonth = await db.creditTransaction.aggregate({
+    let periodStart: Date | undefined;
+    if (period === "week") {
+      periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (period === "month") {
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    // "all" → no date filter
+
+    const creditsUsedWhere: Record<string, unknown> = {
+      organization_id: organizationId,
+      transaction_type: "deduction",
+    };
+    if (periodStart) {
+      creditsUsedWhere.created_at = { gte: periodStart };
+    }
+
+    const creditsUsedThisPeriod = await db.creditTransaction.aggregate({
       _sum: { credit_amount: true },
+      where: creditsUsedWhere,
+    });
+
+    // Credits by month (last 6 months)
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const monthlyTransactions = await db.creditTransaction.findMany({
       where: {
         organization_id: organizationId,
         transaction_type: "deduction",
-        created_at: { gte: startOfMonth },
+        created_at: { gte: sixMonthsAgo },
       },
+      select: { credit_amount: true, created_at: true },
     });
+
+    const monthMap = new Map<string, number>();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      monthMap.set(key, 0);
+    }
+
+    for (const tx of monthlyTransactions) {
+      const d = new Date(tx.created_at);
+      const key = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      if (monthMap.has(key)) {
+        monthMap.set(key, (monthMap.get(key) ?? 0) + Math.abs(tx.credit_amount));
+      }
+    }
+
+    // Reverse so oldest month is first
+    const creditsByMonth = Array.from(monthMap.entries())
+      .reverse()
+      .map(([month, used]) => ({ month, used }));
 
     // Organization info
     const organization = await db.organization.findUnique({
@@ -193,10 +239,11 @@ export async function GET() {
         totalCandidates,
         pendingRequests,
         completedPackets,
-        creditsUsedThisMonth: Math.abs(creditsUsedThisMonth._sum.credit_amount ?? 0),
+        creditsUsedThisMonth: Math.abs(creditsUsedThisPeriod._sum.credit_amount ?? 0),
         creditsBalance: organization?.credits_balance ?? 0,
         baaStatus: organization?.baa_status ?? "pending",
       },
+      creditsByMonth,
       organization: {
         name: organization?.name ?? "",
         creditsBalance: organization?.credits_balance ?? 0,
