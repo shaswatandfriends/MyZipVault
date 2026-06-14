@@ -459,6 +459,26 @@ export async function generateInvoicePdf(data: {
 // 3. Checklist PDF  (pdf-lib — works reliably on Vercel)
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * pdf-lib standard fonts only support WinAnsi encoding (roughly Latin-1 + Windows extensions).
+ * Any character outside that range will crash drawText(). This function replaces unsupported
+ * characters with safe ASCII equivalents so PDF generation never throws.
+ */
+function sanitizeForPdf(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[\u2018\u2019]/g, "'")   // smart single quotes
+    .replace(/[\u201C\u201D]/g, '"')   // smart double quotes
+    .replace(/\u2013/g, '-')            // en dash
+    .replace(/\u2015/g, '-')            // horizontal bar
+    .replace(/\u2026/g, '...')          // ellipsis
+    .replace(/\u2022/g, '-')            // bullet
+    .replace(/[\u2713\u2714]/g, 'X')   // checkmarks
+    .replace(/[\u00A0]/g, ' ')          // non-breaking space
+    // Remove any remaining characters outside WinAnsi (0x80-0xFF range is OK for WinAnsi)
+    .replace(/[^\x20-\x7E\x80-\xFF]/g, '?');
+}
+
 const RATING_LABELS: Record<string, string> = {
   '1': 'No Experience',
   '2': 'Limited Experience',
@@ -573,7 +593,7 @@ export async function generateChecklistPdf(data: {
   function footer(p: PDFPage, num: number) {
     const fSize = 7;
     const fY = M_BOTTOM - 15;
-    p.drawText('MyZipVault — Skills Checklist', { x: M_LEFT, y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
+    p.drawText(sanitizeForPdf('MyZipVault - Skills Checklist'), { x: M_LEFT, y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
     p.drawText(`Page ${num}`, { x: PAGE_W - M_RIGHT - fontRegular.widthOfTextAtSize(`Page ${num}`, fSize), y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
   }
 
@@ -583,9 +603,11 @@ export async function generateChecklistPdf(data: {
     page = pdfDoc.addPage([PAGE_W, PAGE_H]);
     curY = PAGE_H - M_TOP;
     // Continuation header
-    page.drawText(data.checklistName, { x: M_LEFT, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
-    const nameW = fontRegular.widthOfTextAtSize(data.candidateName, 8);
-    page.drawText(data.candidateName, { x: PAGE_W - M_RIGHT - nameW, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
+    const safeName = sanitizeForPdf(data.checklistName);
+    const safeCandidate = sanitizeForPdf(data.candidateName);
+    page.drawText(safeName, { x: M_LEFT, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
+    const nameW = fontRegular.widthOfTextAtSize(safeCandidate, 8);
+    page.drawText(safeCandidate, { x: PAGE_W - M_RIGHT - nameW, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
     curY = PAGE_H - M_TOP - 10;
     return page;
   }
@@ -597,7 +619,7 @@ export async function generateChecklistPdf(data: {
   // ── HEADER BANNER ──
   drawRect(page, 0, curY - 45, PAGE_W, 50, C_BRAND);
   const titleSize = 18;
-  page.drawText(data.checklistName.toUpperCase(), {
+  page.drawText(sanitizeForPdf(data.checklistName.toUpperCase()), {
     x: M_LEFT,
     y: curY - 30,
     size: titleSize,
@@ -661,28 +683,28 @@ export async function generateChecklistPdf(data: {
       drawHLine(page, COL_SKILL, curY - ROW_H, CONTENT_W, C_BORDER, 0.3);
 
       // Skill name (may need wrapping for long names)
-      const skillLabel = skill.skillName;
+      const skillLabel = sanitizeForPdf(skill.skillName);
       if (fontRegular.widthOfTextAtSize(skillLabel, fTable) <= COL_SKILL_W - 20) {
-        page.drawText(truncate(skillLabel, fontRegular, fTable, COL_SKILL_W - 20), { x: COL_SKILL + 16, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
+        page.drawText(truncate(skill.skillName, fontRegular, fTable, COL_SKILL_W - 20), { x: COL_SKILL + 16, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
       } else {
         // Wrap long skill names
         const lines = wrapText(skillLabel, fontRegular, fTable, COL_SKILL_W - 20);
         let ly = curY - 13;
         for (const line of lines.slice(0, 2)) {
-          page.drawText(line, { x: COL_SKILL + 16, y: ly, size: fTable, font: fontRegular, color: C_DARK });
+          page.drawText(sanitizeForPdf(line), { x: COL_SKILL + 16, y: ly, size: fTable, font: fontRegular, color: C_DARK });
           ly -= fTable + 2;
         }
       }
 
       // Rating
-      const ratingText = skill.isNa ? '\u2014' : (RATING_LABELS[skill.rating] || skill.rating);
+      const ratingText = skill.isNa ? '--' : sanitizeForPdf(RATING_LABELS[skill.rating] || skill.rating);
       const ratingW = fontRegular.widthOfTextAtSize(ratingText, fTable);
       page.drawText(ratingText, { x: COL_RATING + (COL_RATING_W - ratingW) / 2, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
 
-      // N/A check
+      // N/A check — use 'X' instead of unicode checkmark (WinAnsi can't encode U+2713)
       if (skill.isNa) {
-        const naW = fontRegular.widthOfTextAtSize('\u2713', fTable);
-        page.drawText('\u2713', { x: COL_NA + (COL_NA_W - naW) / 2, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
+        const naW = fontRegular.widthOfTextAtSize('X', fTable);
+        page.drawText('X', { x: COL_NA + (COL_NA_W - naW) / 2, y: curY - 13, size: fTable, font: fontBold, color: C_DARK });
       }
 
       curY -= ROW_H;
@@ -701,7 +723,7 @@ export async function generateChecklistPdf(data: {
   curY -= 20;
 
   // Attestation box
-  const attestLines = wrapText(data.attestationText, fontOblique, 8.5, CONTENT_W - 24);
+  const attestLines = wrapText(sanitizeForPdf(data.attestationText), fontOblique, 8.5, CONTENT_W - 24);
   const attestBoxH = Math.max(40, attestLines.length * 13 + 20);
   ensureSpace(attestBoxH + 10);
   drawRect(page, M_LEFT, curY - attestBoxH, CONTENT_W, attestBoxH, rgb(1,1,1));
@@ -738,16 +760,16 @@ export async function generateChecklistPdf(data: {
     curY -= 34;
   }
 
-  page.drawText(`Signed by: ${data.signatureName}`, { x: M_LEFT, y: curY, size: 9, font: fontRegular, color: C_MEDIUM });
+  page.drawText(sanitizeForPdf(`Signed by: ${data.signatureName}`), { x: M_LEFT, y: curY, size: 9, font: fontRegular, color: C_MEDIUM });
   curY -= 14;
-  page.drawText(`Valid until: ${data.validUntil || 'N/A'}`, { x: M_LEFT, y: curY, size: 8, font: fontRegular, color: C_LIGHT });
+  page.drawText(sanitizeForPdf(`Valid until: ${data.validUntil || 'N/A'}`), { x: M_LEFT, y: curY, size: 8, font: fontRegular, color: C_LIGHT });
 
   // Date and agency on right
-  const dateText = `Date: ${data.signatureDate}`;
+  const dateText = sanitizeForPdf(`Date: ${data.signatureDate}`);
   const dateW = fontRegular.widthOfTextAtSize(dateText, 9);
   page.drawText(dateText, { x: PAGE_W - M_RIGHT - dateW, y: curY + 14, size: 9, font: fontRegular, color: C_MEDIUM });
   if (data.agencyName) {
-    const agencyText = `Agency: ${data.agencyName}`;
+    const agencyText = sanitizeForPdf(`Agency: ${data.agencyName}`);
     const agencyW = fontRegular.widthOfTextAtSize(agencyText, 8);
     page.drawText(agencyText, { x: PAGE_W - M_RIGHT - agencyW, y: curY, size: 8, font: fontRegular, color: C_LIGHT });
   }
@@ -761,8 +783,9 @@ export async function generateChecklistPdf(data: {
 
 /** Truncate text with ellipsis if wider than maxWidth */
 function truncate(text: string, font: PDFFont, fontSize: number, maxWidth: number): string {
-  if (font.widthOfTextAtSize(text, fontSize) <= maxWidth) return text;
-  let t = text;
+  const safe = sanitizeForPdf(text);
+  if (font.widthOfTextAtSize(safe, fontSize) <= maxWidth) return safe;
+  let t = safe;
   while (t.length > 0 && font.widthOfTextAtSize(t + '...', fontSize) > maxWidth) {
     t = t.slice(0, -1);
   }
