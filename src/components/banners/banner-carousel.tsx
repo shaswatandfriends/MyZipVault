@@ -157,7 +157,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
       >
         {hasValidImage ? (
           /* ── Layout WITH image: full-bleed image + gradient overlay ── */
-          <div className="relative w-full h-64 sm:h-72">
+          <div className="relative w-full h-56 sm:h-64">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={currentBanner.imageUrl!}
@@ -167,10 +167,10 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
             />
 
             {/* Gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/10" />
 
-            {/* Text content overlaid on bottom-left */}
-            <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
+            {/* Text content overlaid - shifted up with justify-center instead of justify-end */}
+            <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-7">
               <div className="max-w-xl">
                 {/* Pinned badge */}
                 {currentBanner?.isPinned && (
@@ -213,7 +213,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
             {/* Accent bar */}
             <div className="w-1.5 shrink-0 bg-[#166534] rounded-l-xl" />
 
-            <div className="flex flex-1 flex-col justify-center p-6 sm:p-8">
+            <div className="flex flex-1 flex-col justify-center p-5 sm:p-7">
               {/* Pinned badge */}
               {currentBanner?.isPinned && (
                 <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-[#166534]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#166534]">

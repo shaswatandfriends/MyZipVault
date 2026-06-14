@@ -257,7 +257,7 @@ export default function CandidateDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ── Welcome Section with Profile Circle ── */}
       <div className="flex items-center justify-between">
         <div>
