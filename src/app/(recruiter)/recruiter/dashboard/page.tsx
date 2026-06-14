@@ -11,6 +11,8 @@ import {
   FileText,
   AlertCircle,
   ArrowUpRight,
+  CreditCard,
+  Send,
 } from "@/lib/icons";
 
 import { BannerCarousel } from "@/components/banners/banner-carousel";
