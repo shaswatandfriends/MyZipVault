@@ -34,6 +34,17 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   headers: () => securityHeaders,
 
+  // Allow Supabase Storage images in next/image
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+
   // Fix: lucide-react uses a double-barrel ESM structure that causes
   // "Cannot access 'ey' before initialization" (TDZ error) with Turbopack + React 19.
   experimental: {
