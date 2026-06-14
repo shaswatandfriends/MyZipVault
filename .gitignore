@@ -66,3 +66,6 @@ download/*secret*
 
 # Skills directory
 /skills/upload/
+
+# Tool results (temp files)
+tool-results/
