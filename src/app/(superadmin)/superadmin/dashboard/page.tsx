@@ -15,6 +15,7 @@ import {
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,11 +200,14 @@ export default function SuperadminDashboardPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Dashboard"
         description="System-wide overview. Monitor all organizations, users, and platform health."
       />
+
+      {/* ── Announcement Carousel ── */}
+      <BannerCarousel />
 
       {/* ── Stats Cards ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

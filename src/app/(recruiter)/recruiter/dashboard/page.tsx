@@ -215,7 +215,7 @@ export default function RecruiterDashboardPage() {
   const stats = data?.stats;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* ── Header with credit balance ─────────────────────────────── */}
       <PageHeader
         title="Dashboard"
