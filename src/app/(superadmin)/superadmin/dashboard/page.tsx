@@ -19,7 +19,9 @@ import {
   Sparkles,
   Building2,
   Settings,
-  Bell,
+  Activity,
+  TrendingUp,
+  Clock,
 } from "@/lib/icons";
 import {
   BarChart,
@@ -162,17 +164,14 @@ function getSeverityBadge(severity: string) {
   }
 }
 
-// ─── Skeleton ───────────────────────────────────────────────────────
-function StatsCardSkeleton() {
+// ─── Skeletons ───────────────────────────────────────────────────────
+function HeroCardSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="size-4 rounded" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-8 w-16 mb-1" />
-        <Skeleton className="h-3 w-24" />
+    <Card className="h-full">
+      <CardContent className="pt-6">
+        <Skeleton className="h-4 w-24 mb-3" />
+        <Skeleton className="h-10 w-20 mb-2" />
+        <Skeleton className="h-3 w-48" />
       </CardContent>
     </Card>
   );
@@ -191,6 +190,20 @@ function ListSkeleton() {
         </div>
       ))}
     </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-3 w-48" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-64 w-full" />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -224,7 +237,7 @@ export default function SuperadminDashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  // Fix #14 - Auto-refresh every 60 seconds
+  // Auto-refresh every 60 seconds
   useEffect(() => {
     const interval = setInterval(fetchDashboard, 60000);
     return () => clearInterval(interval);
@@ -232,14 +245,7 @@ export default function SuperadminDashboardPage() {
 
   const stats = data?.usersByRole;
 
-  // Credit bar chart data
-  const maxCredits = Math.max(
-    data?.creditsPurchasedMonth ?? 0,
-    data?.creditsSpentMonth ?? 0,
-    1
-  );
-
-  // Fix #8 - Approve/Reject handlers
+  // Approve/Reject handlers
   const handleApprove = async (adminId: number) => {
     setProcessingId(adminId);
     try {
@@ -268,7 +274,7 @@ export default function SuperadminDashboardPage() {
     }
   };
 
-  // Fix #17 - CSV Export
+  // CSV Export
   const handleExportCSV = () => {
     if (!data) return;
     const rows = [
@@ -279,6 +285,7 @@ export default function SuperadminDashboardPage() {
       ["Client Admins", String(stats?.clientAdmins ?? 0)],
       ["Platform Admins", String(stats?.platformAdmins ?? 0)],
       ["Super Admins", String(stats?.superAdmins ?? 0)],
+      ["Organizations", String(data.organizationsCount ?? 0)],
       ["Credits Purchased This Month", String(data.creditsPurchasedMonth ?? 0)],
       ["Credits Spent This Month", String(data.creditsSpentMonth ?? 0)],
       ["Credits Purchased Today", String(data.creditsPurchasedToday ?? 0)],
@@ -287,7 +294,6 @@ export default function SuperadminDashboardPage() {
       ["Active Errors Today", String(data.errorCountToday ?? 0)],
       ["Active Announcements", String(data.activeAnnouncements ?? 0)],
     ];
-    // Add user growth data
     if (data.userGrowth?.length) {
       rows.push([]);
       rows.push(["Month", "Candidates", "Recruiters"]);
@@ -306,8 +312,14 @@ export default function SuperadminDashboardPage() {
     toast.success("CSV exported successfully");
   };
 
+  // Determine platform health status
+  const hasErrors = (data?.errorCountToday ?? 0) > 0;
+  const hasPending = (data?.pendingAdminApprovals ?? 0) > 0;
+  const healthStatus = hasErrors ? "critical" : hasPending ? "warning" : "healthy";
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
+      {/* ── Header ── */}
       <PageHeader
         title="Dashboard"
         description="System-wide overview. Monitor all organizations, users, and platform health."
@@ -325,7 +337,7 @@ export default function SuperadminDashboardPage() {
             </Select>
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !data}>
               <Download className="size-4 mr-1.5" />
-              Export CSV
+              Export
             </Button>
           </div>
         }
@@ -334,7 +346,7 @@ export default function SuperadminDashboardPage() {
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
-      {/* ── Onboarding Empty State (Fix #18) ── */}
+      {/* ── Onboarding Empty State ── */}
       {!isLoading && data && data.usersByRole.total === 0 && (
         <Card className="border-dashed border-2 border-teal-200 bg-teal-50/50">
           <CardContent className="py-8 text-center">
@@ -356,7 +368,7 @@ export default function SuperadminDashboardPage() {
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/superadmin/companies">
-                  <ShieldCheck className="size-4 mr-1.5" />
+                  <Building2 className="size-4 mr-1.5" />
                   Companies
                 </Link>
               </Button>
@@ -365,237 +377,207 @@ export default function SuperadminDashboardPage() {
         </Card>
       )}
 
-      {/* ── Stats Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* ═══════════════════════════════════════════════════════════════
+          HERO METRIC CARDS — 3 prominent cards with gradient backgrounds
+          Consolidates: stats cards + revenue snapshot + removes redundancy
+      ═══════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <>
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
+            <HeroCardSkeleton />
+            <HeroCardSkeleton />
+            <HeroCardSkeleton />
           </>
         ) : (
           <>
-            {/* Total Users — clickable → /superadmin/users */}
+            {/* ── Card 1: Users & Organizations ─────────────────────── */}
             <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br from-teal-600 to-teal-700 text-white"
               onClick={() => router.push("/superadmin/users")}
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <Users className="size-4 text-teal-600" />
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Users className="size-5 text-white" />
+                  </div>
+                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-teal-700 transition-colors">
-                  {stats?.candidates ?? 0} candidates, {stats?.clientRecruiters ?? 0} recruiters
-                </p>
+                <div className="text-3xl font-bold tracking-tight">{stats?.total ?? 0}</div>
+                <p className="text-sm text-teal-100 font-medium mt-0.5">Total Users</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
+                    {stats?.candidates ?? 0} Candidates
+                  </Badge>
+                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
+                    {stats?.clientRecruiters ?? 0} Recruiters
+                  </Badge>
+                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
+                    {stats?.clientAdmins ?? 0} Admins
+                  </Badge>
+                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
+                    {data?.organizationsCount ?? 0} Orgs
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Credits Purchased This Month — clickable → /superadmin/analytics */}
+            {/* ── Card 2: Credits & Revenue ────────────────────────── */}
             <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white"
               onClick={() => router.push("/superadmin/analytics")}
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Credits Purchased</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <CreditCard className="size-4 text-emerald-600" />
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <TrendingUp className="size-5 text-white" />
+                  </div>
+                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.creditsPurchasedMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">This month&apos;s total</p>
+                <div className="text-3xl font-bold tracking-tight">{data?.creditsPurchasedMonth ?? 0}</div>
+                <p className="text-sm text-emerald-100 font-medium mt-0.5">Credits Purchased (Month)</p>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-emerald-100 flex items-center gap-1.5">
+                      <CreditCard className="size-3.5" /> Spent This Month
+                    </span>
+                    <span className="font-semibold">{data?.creditsSpentMonth ?? 0}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-white/70 transition-all duration-500"
+                      style={{
+                        width: `${Math.min(((data?.creditsSpentMonth ?? 0) / Math.max(data?.creditsPurchasedMonth ?? 1, 1)) * 100, 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-emerald-200">
+                    <span>Today: {data?.creditsPurchasedToday ?? 0} purchased / {data?.creditsSpentToday ?? 0} spent</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Credits Purchased Today — clickable → /superadmin/analytics */}
+            {/* ── Card 3: Platform Health ──────────────────────────── */}
             <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
-              onClick={() => router.push("/superadmin/analytics")}
+              className={`cursor-pointer hover:shadow-lg transition-all group/card border-0 text-white ${
+                healthStatus === "critical"
+                  ? "bg-gradient-to-br from-red-600 to-red-700"
+                  : healthStatus === "warning"
+                  ? "bg-gradient-to-br from-amber-500 to-amber-600"
+                  : "bg-gradient-to-br from-violet-600 to-violet-700"
+              }`}
+              onClick={() => {
+                if (hasErrors) router.push("/superadmin/errors");
+                else if (hasPending) router.push("/superadmin/admins");
+                else router.push("/superadmin/compliance");
+              }}
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Credits Today</CardTitle>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <CreditCard className="size-4 text-teal-600" />
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Activity className="size-5 text-white" />
+                  </div>
+                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.creditsPurchasedToday ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-teal-700 transition-colors">
-                  Spent: {data?.creditsSpentToday ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Active Errors — clickable → /superadmin/errors */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
-              onClick={() => router.push("/superadmin/errors")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Active Errors</CardTitle>
-                <div className="size-8 rounded-lg bg-red-50 flex items-center justify-center">
-                  <AlertTriangle className="size-4 text-red-600" />
+                <div className="text-3xl font-bold tracking-tight capitalize">{healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Attention" : "Critical"}</div>
+                <p className="text-sm font-medium mt-0.5 opacity-90">Platform Status</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  <Badge className={`border-0 text-[11px] px-2 ${data?.errorCountToday ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
+                    <AlertTriangle className="size-3 mr-1" />
+                    {data?.errorCountToday ?? 0} Errors
+                  </Badge>
+                  <Badge className={`border-0 text-[11px] px-2 ${data?.pendingAdminApprovals ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
+                    <ShieldCheck className="size-3 mr-1" />
+                    {data?.pendingAdminApprovals ?? 0} Pending
+                  </Badge>
+                  <Badge className="bg-white/15 text-white/80 border-0 text-[11px] px-2">
+                    <Megaphone className="size-3 mr-1" />
+                    {data?.activeAnnouncements ?? 0} Announcements
+                  </Badge>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.errorCountToday ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-red-700 transition-colors">Errors logged today</p>
-              </CardContent>
-            </Card>
-
-            {/* Pending Admin Approvals — clickable → /superadmin/admins */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
-              onClick={() => router.push("/superadmin/admins")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-                <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <ShieldCheck className="size-4 text-amber-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.pendingAdminApprovals ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-amber-700 transition-colors">Admin accounts awaiting review</p>
-              </CardContent>
-            </Card>
-
-            {/* Active Announcements — clickable → /superadmin/announcements */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
-              onClick={() => router.push("/superadmin/announcements")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Announcements</CardTitle>
-                <div className="size-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <Megaphone className="size-4 text-purple-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.activeAnnouncements ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-purple-700 transition-colors">Currently active</p>
               </CardContent>
             </Card>
           </>
         )}
       </div>
 
-      {/* ── User Growth Chart (Fix #16) ──────────────────────────────── */}
-      {!isLoading && data?.userGrowth && data.userGrowth.length > 0 && (
+      {/* ═══════════════════════════════════════════════════════════════
+          USER GROWTH CHART + PENDING APPROVALS — Two-column layout
+      ═══════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ── User Growth Chart ────────────────────────────────────── */}
+        {isLoading ? (
+          <ChartSkeleton />
+        ) : data?.userGrowth && data.userGrowth.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">User Growth</CardTitle>
+                  <CardDescription>New signups over the last 6 months</CardDescription>
+                </div>
+                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                  <BarChart3 className="size-4 text-teal-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                    <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="recruiters" name="Recruiters" fill="#059669" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">User Growth</CardTitle>
+                  <CardDescription>New signups over the last 6 months</CardDescription>
+                </div>
+                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                  <BarChart3 className="size-4 text-teal-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center h-48 text-center">
+                <BarChart3 className="size-10 text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">Not enough data to show growth chart</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Pending Admin Approvals ──────────────────────────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">User Growth</CardTitle>
-                <CardDescription>New signups over the last 6 months</CardDescription>
+                <CardTitle className="text-base">Pending Admin Approvals</CardTitle>
+                <CardDescription>
+                  {(data?.pendingAdminList ?? []).length > 0
+                    ? `${data?.pendingAdminList.length} awaiting your review`
+                    : "All clear"}
+                </CardDescription>
               </div>
-              <BarChart3 className="size-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="recruiters" name="Recruiters" fill="#059669" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Revenue Snapshot & Announcements ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Credits Purchased vs Spent — clickable → /superadmin/analytics ──── */}
-        <Card
-          className="hover:shadow-md transition-shadow cursor-pointer group/card"
-          onClick={() => router.push("/superadmin/analytics")}
-        >
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Revenue Snapshot</CardTitle>
-              <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100">
-                This Month
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <ListSkeleton />
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Credits Purchased</span>
-                    <span className="text-emerald-700 font-semibold">
-                      {data?.creditsPurchasedMonth ?? 0}
-                    </span>
-                  </div>
-                  <div className="h-3 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                      style={{
-                        width: `${((data?.creditsPurchasedMonth ?? 0) / maxCredits) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Credits Spent</span>
-                    <span className="text-teal-700 font-semibold">
-                      {data?.creditsSpentMonth ?? 0}
-                    </span>
-                  </div>
-                  <div className="h-3 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-teal-500 transition-all duration-500"
-                      style={{
-                        width: `${((data?.creditsSpentMonth ?? 0) / maxCredits) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 pt-2 border-t">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="size-2.5 rounded-full bg-emerald-500" />
-                    Purchased
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="size-2.5 rounded-full bg-teal-500" />
-                    Spent
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ── Pending Admin Approvals (Fix #8 - inline approve/reject) ── */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Pending Admin Approvals</CardTitle>
               <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
                 <Link href="/superadmin/admins">
                   <ArrowUpRight className="size-3.5" />
@@ -608,12 +590,15 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.pendingAdminList ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <ShieldCheck className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No pending approvals</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="size-14 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="size-7 text-emerald-500" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No pending approvals</p>
+                <p className="text-xs text-muted-foreground mt-1">All admin accounts have been reviewed</p>
               </div>
             ) : (
-              <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
+              <div className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
                 {(data?.pendingAdminList ?? []).map((admin) => {
                   const fullName =
                     [admin.firstName, admin.lastName].filter(Boolean).join(" ") || admin.email;
@@ -623,7 +608,7 @@ export default function SuperadminDashboardPage() {
                       className="flex items-center justify-between py-3 border-b last:border-0"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold shrink-0">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold shrink-0">
                           {admin.firstName?.[0]?.toUpperCase() ?? "A"}
                         </div>
                         <div className="min-w-0">
@@ -636,8 +621,7 @@ export default function SuperadminDashboardPage() {
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                           onClick={() => handleApprove(admin.id)}
                           disabled={processingId === admin.id}
                         >
@@ -664,13 +648,22 @@ export default function SuperadminDashboardPage() {
         </Card>
       </div>
 
-      {/* ── Error Log & Recent Signups ──────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          RECENT ERRORS + RECENT SIGNUPS — Two-column layout
+      ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Error Log Feed ────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Recent Errors</CardTitle>
+              <div>
+                <CardTitle className="text-base">Recent Errors</CardTitle>
+                <CardDescription>
+                  {(data?.errorCountToday ?? 0) > 0
+                    ? `${data?.errorCountToday} error${(data?.errorCountToday ?? 0) !== 1 ? "s" : ""} logged today`
+                    : "No errors today"}
+                </CardDescription>
+              </div>
               <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
                 <Link href="/superadmin/errors">
                   <ArrowUpRight className="size-3.5" />
@@ -683,9 +676,12 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.recentErrors ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <AlertTriangle className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No recent errors</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="size-14 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="size-7 text-emerald-500" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No recent errors</p>
+                <p className="text-xs text-muted-foreground mt-1">System is running smoothly</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
@@ -722,11 +718,14 @@ export default function SuperadminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Recent Signups (Fix #9 - clickable) ────────────────── */}
+        {/* ── Recent Signups ────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Recent Signups</CardTitle>
+              <div>
+                <CardTitle className="text-base">Recent Signups</CardTitle>
+                <CardDescription>Latest users who joined the platform</CardDescription>
+              </div>
               <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
                 <Link href="/superadmin/users">
                   <ArrowUpRight className="size-3.5" />
@@ -739,9 +738,12 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.recentSignups ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <UserPlus className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No recent signups</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="size-14 rounded-full bg-teal-50 flex items-center justify-center mb-3">
+                  <UserPlus className="size-7 text-teal-500" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No recent signups</p>
+                <p className="text-xs text-muted-foreground mt-1">New users will appear here</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
@@ -755,7 +757,7 @@ export default function SuperadminDashboardPage() {
                       className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
                           {user.firstName?.[0]?.toUpperCase() ?? user.email[0]?.toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -775,54 +777,50 @@ export default function SuperadminDashboardPage() {
         </Card>
       </div>
 
-      {/* ── Quick Actions ────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          QUICK ACTIONS — Clean, contextual grid
+      ═══════════════════════════════════════════════════════════════ */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-            <div className="flex items-center gap-2">
-              <Megaphone className="size-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {isLoading ? "…" : data?.activeAnnouncements ?? 0} active announcements
-              </span>
-              <span className="text-muted-foreground">·</span>
-              <Building2 className="size-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {isLoading ? "…" : data?.organizationsCount ?? 0} organizations
-              </span>
-            </div>
-          </div>
+          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardDescription>Jump to common administrative tasks</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-teal-300 hover:bg-teal-50/50">
               <Link href="/superadmin/users">
                 <Users className="size-5 text-teal-600" />
-                <span className="text-sm">Manage Users</span>
+                <span className="text-xs">Users</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-emerald-300 hover:bg-emerald-50/50">
               <Link href="/superadmin/companies">
                 <Building2 className="size-5 text-emerald-600" />
-                <span className="text-sm">Companies</span>
+                <span className="text-xs">Companies</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-amber-300 hover:bg-amber-50/50">
               <Link href="/superadmin/admins">
-                <ShieldCheck className="size-5 text-teal-600" />
-                <span className="text-sm">Admin Team</span>
+                <ShieldCheck className="size-5 text-amber-600" />
+                <span className="text-xs">Admin Team</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-purple-300 hover:bg-purple-50/50">
               <Link href="/superadmin/announcements">
                 <Megaphone className="size-5 text-purple-600" />
-                <span className="text-sm">Announcements</span>
+                <span className="text-xs">Announcements</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-blue-300 hover:bg-blue-50/50">
+              <Link href="/superadmin/analytics">
+                <BarChart3 className="size-5 text-blue-600" />
+                <span className="text-xs">Analytics</span>
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-gray-300 hover:bg-gray-50/50">
               <Link href="/superadmin/settings">
-                <Settings className="size-5 text-muted-foreground" />
-                <span className="text-sm">Settings</span>
+                <Settings className="size-5 text-gray-600" />
+                <span className="text-xs">Settings</span>
               </Link>
             </Button>
           </div>
