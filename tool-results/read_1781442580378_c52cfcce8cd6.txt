@@ -1,0 +1,1881 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback } from "react";
+     4→import { PageHeader } from "@/components/layout/page-header";
+     5→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     6→import { Badge } from "@/components/ui/badge";
+     7→import { Button } from "@/components/ui/button";
+     8→import { Input } from "@/components/ui/input";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Skeleton } from "@/components/ui/skeleton";
+    11→import { Switch } from "@/components/ui/switch";
+    12→import { Calendar } from "@/components/ui/calendar";
+    13→import {
+    14→  Tabs,
+    15→  TabsContent,
+    16→  TabsList,
+    17→  TabsTrigger,
+    18→} from "@/components/ui/tabs";
+    19→import {
+    20→  Dialog,
+    21→  DialogContent,
+    22→  DialogDescription,
+    23→  DialogFooter,
+    24→  DialogHeader,
+    25→  DialogTitle,
+    26→  DialogTrigger,
+    27→} from "@/components/ui/dialog";
+    28→import {
+    29→  Select,
+    30→  SelectContent,
+    31→  SelectItem,
+    32→  SelectTrigger,
+    33→  SelectValue,
+    34→} from "@/components/ui/select";
+    35→import {
+    36→  Popover,
+    37→  PopoverContent,
+    38→  PopoverTrigger,
+    39→} from "@/components/ui/popover";
+    40→import { ScrollArea } from "@/components/ui/scroll-area";
+    41→import {
+    42→  CalendarDays,
+    43→  Clock,
+    44→  Plus,
+    45→  Trash2,
+    46→  Share2,
+    47→  Link2,
+    48→  Copy,
+    49→  Ban,
+    50→  Check,
+    51→  X,
+    52→  Loader2,
+    53→  Users,
+    54→  Filter,
+    55→  Phone,
+    56→  Zap,
+    57→  Sun,
+    58→  Moon,
+    59→  Calendar as CalendarIcon,
+    60→  Sparkles,
+    61→  Settings2,
+    62→  Building2,
+    63→  User,
+    64→  ListChecks,
+    65→  ClipboardList,
+    66→} from "@/lib/icons";
+    67→import { toast } from "sonner";
+    68→
+    69→/* ─── Types ─────────────────────────────────────────────────────────── */
+    70→
+    71→interface AvailabilitySlot {
+    72→  id: number;
+    73→  day_of_week: number | null;
+    74→  specific_date: string | null;
+    75→  start_time: string | null;
+    76→  end_time: string | null;
+    77→  is_available: boolean;
+    78→  is_recurring: boolean;
+    79→  label: string | null;
+    80→  template_name: string | null;
+    81→  min_notice_hours: number;
+    82→  shift_duration_pref: string | null;
+    83→  availability_status: string;
+    84→}
+    85→
+    86→interface Recruiter {
+    87→  id: number;
+    88→  email: string;
+    89→  first_name: string | null;
+    90→  last_name: string | null;
+    91→  organization: { id: number; name: string } | null;
+    92→}
+    93→
+    94→interface CalendarShare {
+    95→  id: number;
+    96→  candidate_user_id: number;
+    97→  recruiter_user_id: number | null;
+    98→  share_token: string | null;
+    99→  share_type: string;
+   100→  expiry_type: string;
+   101→  expires_at: string | null;
+   102→  is_revoked: boolean;
+   103→  created_at: string;
+   104→  recruiter_user?: {
+   105→    id: number;
+   106→    email: string;
+   107→    first_name: string | null;
+   108→    last_name: string | null;
+   109→    organization: { id: number; name: string } | null;
+   110→  } | null;
+   111→}
+   112→
+   113→interface ShiftRequest {
+   114→  id: number;
+   115→  recruiter_user_id: number;
+   116→  candidate_user_id: number;
+   117→  shift_date: string;
+   118→  start_time: string | null;
+   119→  end_time: string | null;
+   120→  position: string | null;
+   121→  facility_name: string | null;
+   122→  notes: string | null;
+   123→  status: string;
+   124→  response_deadline: string | null;
+   125→  responded_at: string | null;
+   126→  response_note: string | null;
+   127→  created_at: string;
+   128→  recruiter_user: {
+   129→    id: number;
+   130→    email: string;
+   131→    first_name: string | null;
+   132→    last_name: string | null;
+   133→    organization: { id: number; name: string } | null;
+   134→  };
+   135→}
+   136→
+   137→interface SharedAvailability {
+   138→  id: number;
+   139→  recruiter_user_id: number;
+   140→  day_of_week: number | null;
+   141→  specific_date: string | null;
+   142→  start_time: string | null;
+   143→  end_time: string | null;
+   144→  is_available: boolean;
+   145→  is_recurring: boolean;
+   146→  label: string | null;
+   147→  created_at: string;
+   148→  recruiter_user: {
+   149→    id: number;
+   150→    first_name: string | null;
+   151→    last_name: string | null;
+   152→    organization: { id: number; name: string } | null;
+   153→  };
+   154→}
+   155→
+   156→/* ─── Constants ─────────────────────────────────────────────────────── */
+   157→
+   158→const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+   159→const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0]; // Mon=1 ... Sun=0 (DB convention)
+   160→const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
+   161→  const h = i.toString().padStart(2, "0");
+   162→  return `${h}:00`;
+   163→});
+   164→
+   165→const STATUS_CONFIG = {
+   166→  actively_looking: {
+   167→    label: "Actively Looking",
+   168→    emoji: "🟢",
+   169→    color: "#166534",
+   170→    bgColor: "#DCFCE7",
+   171→    borderColor: "#86EFAC",
+   172→  },
+   173→  open: {
+   174→    label: "Open to Opportunities",
+   175→    emoji: "🟡",
+   176→    color: "#92400E",
+   177→    bgColor: "#FEF9C3",
+   178→    borderColor: "#FDE047",
+   179→  },
+   180→  not_available: {
+   181→    label: "Not Available Right Now",
+   182→    emoji: "🔴",
+   183→    color: "#991B1B",
+   184→    bgColor: "#FEE2E2",
+   185→    borderColor: "#FCA5A5",
+   186→  },
+   187→} as const;
+   188→
+   189→type AvailabilityStatus = keyof typeof STATUS_CONFIG;
+   190→
+   191→const TEMPLATES = [
+   192→  {
+   193→    name: "Morning Person",
+   194→    icon: Sun,
+   195→    description: "6AM–2PM, Mon–Fri",
+   196→    slots: DAY_VALUES.slice(0, 5).map((d) => ({
+   197→      dayOfWeek: d,
+   198→      startTime: "06:00",
+   199→      endTime: "14:00",
+   200→    })),
+   201→  },
+   202→  {
+   203→    name: "Night Owl",
+   204→    icon: Moon,
+   205→    description: "10PM–6AM, Mon–Fri",
+   206→    slots: DAY_VALUES.slice(0, 5).map((d) => ({
+   207→      dayOfWeek: d,
+   208→      startTime: "22:00",
+   209→      endTime: "06:00",
+   210→    })),
+   211→  },
+   212→  {
+   213→    name: "Weekends Only",
+   214→    icon: CalendarIcon,
+   215→    description: "8AM–8PM, Sat–Sun",
+   216→    slots: DAY_VALUES.slice(5).map((d) => ({
+   217→      dayOfWeek: d,
+   218→      startTime: "08:00",
+   219→      endTime: "20:00",
+   220→    })),
+   221→  },
+   222→  {
+   223→    name: "Flexible",
+   224→    icon: Sparkles,
+   225→    description: "7AM–9PM, Mon–Sun",
+   226→    slots: DAY_VALUES.map((d) => ({
+   227→      dayOfWeek: d,
+   228→      startTime: "07:00",
+   229→      endTime: "21:00",
+   230→    })),
+   231→  },
+   232→];
+   233→
+   234→/* ─── Helper: format time for display ──────────────────────────────── */
+   235→function formatTimeDisplay(time: string | null): string {
+   236→  if (!time) return "All day";
+   237→  const [h, m] = time.split(":").map(Number);
+   238→  const period = h >= 12 ? "PM" : "AM";
+   239→  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+   240→  return `${displayH}:${m.toString().padStart(2, "0")} ${period}`;
+   241→}
+   242→
+   243→/* ─── Component ─────────────────────────────────────────────────────── */
+   244→export default function CalendarPage() {
+   245→  /* ─── State ───────────────────────────────────────────────────────── */
+   246→  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+   247→  const [availabilityStatus, setAvailabilityStatus] = useState<AvailabilityStatus>("actively_looking");
+   248→  const [minNoticeHours, setMinNoticeHours] = useState(24);
+   249→  const [shiftDurationPref, setShiftDurationPref] = useState<string | null>(null);
+   250→  const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
+   251→  const [shares, setShares] = useState<CalendarShare[]>([]);
+   252→  const [shiftRequests, setShiftRequests] = useState<ShiftRequest[]>([]);
+   253→  const [sharedAvailability, setSharedAvailability] = useState<SharedAvailability[]>([]);
+   254→  const [isLoading, setIsLoading] = useState(true);
+   255→  const [error, setError] = useState("");
+   256→
+   257→  // Dialog states
+   258→  const [addDialogOpen, setAddDialogOpen] = useState(false);
+   259→  const [shareRecruiterDialogOpen, setShareRecruiterDialogOpen] = useState(false);
+   260→  const [shareLinkDialogOpen, setShareLinkDialogOpen] = useState(false);
+   261→  const [blockDatesDialogOpen, setBlockDatesDialogOpen] = useState(false);
+   262→
+   263→  // Add availability form
+   264→  const [addDayOfWeek, setAddDayOfWeek] = useState<string>("1");
+   265→  const [addUseSpecificDate, setAddUseSpecificDate] = useState(false);
+   266→  const [addSpecificDate, setAddSpecificDate] = useState<Date | undefined>(undefined);
+   267→  const [addStartTime, setAddStartTime] = useState("09:00");
+   268→  const [addEndTime, setAddEndTime] = useState("17:00");
+   269→  const [addIsAvailable, setAddIsAvailable] = useState(true);
+   270→  const [addIsRecurring, setAddIsRecurring] = useState(false);
+   271→  const [addLabel, setAddLabel] = useState("");
+   272→
+   273→  // Share form
+   274→  const [shareRecruiterId, setShareRecruiterId] = useState("");
+   275→  const [shareExpiry, setShareExpiry] = useState<"1_day" | "1_month" | "1_year" | "never">("1_month");
+   276→  const [linkExpiry, setLinkExpiry] = useState<"1_day" | "1_month" | "1_year" | "never">("1_month");
+   277→  const [generatedLink, setGeneratedLink] = useState("");
+   278→
+   279→  // Block dates
+   280→  const [blockDates, setBlockDates] = useState<Date[]>([]);
+   281→
+   282→  // Others calendar filter
+   283→  const [recruiterFilter, setRecruiterFilter] = useState("all");
+   284→
+   285→  // Loading states for actions
+   286→  const [isSubmitting, setIsSubmitting] = useState(false);
+   287→  const [isApplyingTemplate, setIsApplyingTemplate] = useState<string | null>(null);
+   288→  const [isSharing, setIsSharing] = useState(false);
+   289→  const [isRevoking, setIsRevoking] = useState<number | null>(null);
+   290→  const [isRespondingToShift, setIsRespondingToShift] = useState<number | null>(null);
+   291→  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+   292→
+   293→  /* ─── Data fetching ───────────────────────────────────────────────── */
+   294→  const fetchAvailability = useCallback(async () => {
+   295→    try {
+   296→      const res = await fetch("/api/candidate/calendar/availability");
+   297→      if (!res.ok) throw new Error("Failed to fetch availability");
+   298→      const data = await res.json();
+   299→      setSlots(data.slots || []);
+   300→      setAvailabilityStatus(data.availabilityStatus || "actively_looking");
+   301→      setMinNoticeHours(data.minNoticeHours || 24);
+   302→      setShiftDurationPref(data.shiftDurationPref || null);
+   303→    } catch {
+   304→      setError("Failed to load availability data");
+   305→    }
+   306→  }, []);
+   307→
+   308→  const fetchRecruiters = useCallback(async () => {
+   309→    try {
+   310→      const res = await fetch("/api/candidate/recruiters");
+   311→      if (!res.ok) throw new Error("Failed to fetch recruiters");
+   312→      const data = await res.json();
+   313→      setRecruiters(data.recruiters || []);
+   314→    } catch {
+   315→      // Silently fail — recruiters list is optional
+   316→    }
+   317→  }, []);
+   318→
+   319→  const fetchShares = useCallback(async () => {
+   320→    try {
+   321→      const res = await fetch("/api/candidate/calendar/shares");
+   322→      if (!res.ok) throw new Error("Failed to fetch shares");
+   323→      const data = await res.json();
+   324→      setShares(data.shares || []);
+   325→    } catch {
+   326→      // Silently fail
+   327→    }
+   328→  }, []);
+   329→
+   330→  const fetchShiftRequests = useCallback(async () => {
+   331→    try {
+   332→      const res = await fetch("/api/candidate/calendar/shift-requests");
+   333→      if (!res.ok) throw new Error("Failed to fetch shift requests");
+   334→      const data = await res.json();
+   335→      setShiftRequests(data.shiftRequests || []);
+   336→    } catch {
+   337→      // Silently fail
+   338→    }
+   339→  }, []);
+   340→
+   341→  const fetchSharedAvailability = useCallback(async () => {
+   342→    try {
+   343→      const res = await fetch("/api/candidate/calendar/shared-availability");
+   344→      if (!res.ok) throw new Error("Failed to fetch shared availability");
+   345→      const data = await res.json();
+   346→      setSharedAvailability(data.availability || []);
+   347→    } catch {
+   348→      // Silently fail
+   349→    }
+   350→  }, []);
+   351→
+   352→  const loadAllData = useCallback(async () => {
+   353→    setIsLoading(true);
+   354→    setError("");
+   355→    await Promise.all([
+   356→      fetchAvailability(),
+   357→      fetchRecruiters(),
+   358→      fetchShares(),
+   359→      fetchShiftRequests(),
+   360→      fetchSharedAvailability(),
+   361→    ]);
+   362→    setIsLoading(false);
+   363→  }, [fetchAvailability, fetchRecruiters, fetchShares, fetchShiftRequests, fetchSharedAvailability]);
+   364→
+   365→  useEffect(() => {
+   366→    loadAllData();
+   367→  }, [loadAllData]);
+   368→
+   369→  /* ─── Actions ─────────────────────────────────────────────────────── */
+   370→
+   371→  // Cycle availability status
+   372→  const cycleStatus = async () => {
+   373→    const statuses: AvailabilityStatus[] = ["actively_looking", "open", "not_available"];
+   374→    const currentIndex = statuses.indexOf(availabilityStatus);
+   375→    const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+   376→
+   377→    try {
+   378→      const res = await fetch("/api/candidate/calendar/availability", {
+   379→        method: "PATCH",
+   380→        headers: { "Content-Type": "application/json" },
+   381→        body: JSON.stringify({
+   382→          availabilityStatus: nextStatus,
+   383→        }),
+   384→      });
+   385→      if (!res.ok) {
+   386→        const errData = await res.json().catch(() => ({}));
+   387→        throw new Error(errData.error || "Failed to update status");
+   388→      }
+   389→      setAvailabilityStatus(nextStatus);
+   390→      toast.success(`Status updated to ${STATUS_CONFIG[nextStatus].label}`);
+   391→    } catch (err) {
+   392→      toast.error(err instanceof Error ? err.message : "Failed to update availability status");
+   393→    }
+   394→  };
+   395→
+   396→  // Add availability slot
+   397→  const handleAddSlot = async () => {
+   398→    setIsSubmitting(true);
+   399→    try {
+   400→      const dayOfWeek = addUseSpecificDate ? null : parseInt(addDayOfWeek);
+   401→      const specificDate = addUseSpecificDate && addSpecificDate ? addSpecificDate.toISOString() : null;
+   402→
+   403→      const res = await fetch("/api/candidate/calendar/availability", {
+   404→        method: "POST",
+   405→        headers: { "Content-Type": "application/json" },
+   406→        body: JSON.stringify({
+   407→          slots: [{
+   408→            dayOfWeek,
+   409→            specificDate,
+   410→            startTime: addStartTime,
+   411→            endTime: addEndTime,
+   412→            isAvailable: addIsAvailable,
+   413→            isRecurring: addIsRecurring,
+   414→            label: addLabel || null,
+   415→          }],
+   416→        }),
+   417→      });
+   418→      if (!res.ok) throw new Error("Failed to add availability");
+   419→      toast.success("Availability slot added");
+   420→      setAddDialogOpen(false);
+   421→      resetAddForm();
+   422→      fetchAvailability();
+   423→    } catch {
+   424→      toast.error("Failed to add availability slot");
+   425→    } finally {
+   426→      setIsSubmitting(false);
+   427→    }
+   428→  };
+   429→
+   430→  // Delete availability slot
+   431→  const handleDeleteSlot = async (id: number) => {
+   432→    try {
+   433→      const res = await fetch("/api/candidate/calendar/availability", {
+   434→        method: "DELETE",
+   435→        headers: { "Content-Type": "application/json" },
+   436→        body: JSON.stringify({ id }),
+   437→      });
+   438→      if (!res.ok) {
+   439→        const errData = await res.json().catch(() => ({}));
+   440→        throw new Error(errData.error || "Failed to delete slot");
+   441→      }
+   442→      toast.success("Slot removed");
+   443→      fetchAvailability();
+   444→    } catch (err) {
+   445→      toast.error(err instanceof Error ? err.message : "Failed to remove slot");
+   446→    }
+   447→  };
+   448→
+   449→  // Apply quick template
+   450→  const handleApplyTemplate = async (template: typeof TEMPLATES[number]) => {
+   451→    setIsApplyingTemplate(template.name);
+   452→    try {
+   453→      const res = await fetch("/api/candidate/calendar/availability", {
+   454→        method: "POST",
+   455→        headers: { "Content-Type": "application/json" },
+   456→        body: JSON.stringify({
+   457→          slots: template.slots.map((s) => ({
+   458→            dayOfWeek: s.dayOfWeek,
+   459→            specificDate: null,
+   460→            startTime: s.startTime,
+   461→            endTime: s.endTime,
+   462→            isAvailable: true,
+   463→            isRecurring: true,
+   464→            label: template.name,
+   465→          })),
+   466→          templateName: template.name,
+   467→        }),
+   468→      });
+   469→      if (!res.ok) throw new Error("Failed to apply template");
+   470→      toast.success(`"${template.name}" template applied`);
+   471→      fetchAvailability();
+   472→    } catch {
+   473→      toast.error("Failed to apply template");
+   474→    } finally {
+   475→      setIsApplyingTemplate(null);
+   476→    }
+   477→  };
+   478→
+   479→  // Block out dates
+   480→  const handleBlockDates = async () => {
+   481→    if (blockDates.length === 0) {
+   482→      toast.error("Please select at least one date to block");
+   483→      return;
+   484→    }
+   485→    setIsSubmitting(true);
+   486→    try {
+   487→      const res = await fetch("/api/candidate/calendar/availability", {
+   488→        method: "POST",
+   489→        headers: { "Content-Type": "application/json" },
+   490→        body: JSON.stringify({
+   491→          slots: blockDates.map((date) => ({
+   492→            dayOfWeek: null,
+   493→            specificDate: date.toISOString(),
+   494→            startTime: null,
+   495→            endTime: null,
+   496→            isAvailable: false,
+   497→            isRecurring: false,
+   498→            label: "Blocked",
+   499→          })),
+   500→        }),
+   501→      });
+   502→      if (!res.ok) throw new Error("Failed to block dates");
+   503→      toast.success(`${blockDates.length} date(s) blocked`);
+   504→      setBlockDatesDialogOpen(false);
+   505→      setBlockDates([]);
+   506→      fetchAvailability();
+   507→    } catch {
+   508→      toast.error("Failed to block dates");
+   509→    } finally {
+   510→      setIsSubmitting(false);
+   511→    }
+   512→  };
+   513→
+   514→  // Save preferences
+   515→  const handleSavePrefs = async () => {
+   516→    setIsSavingPrefs(true);
+   517→    try {
+   518→      const res = await fetch("/api/candidate/calendar/availability", {
+   519→        method: "PATCH",
+   520→        headers: { "Content-Type": "application/json" },
+   521→        body: JSON.stringify({
+   522→          minNoticeHours,
+   523→          shiftDurationPref,
+   524→        }),
+   525→      });
+   526→      if (!res.ok) {
+   527→        const errData = await res.json().catch(() => ({}));
+   528→        throw new Error(errData.error || "Failed to save preferences");
+   529→      }
+   530→      toast.success("Preferences saved");
+   531→      fetchAvailability();
+   532→    } catch (err) {
+   533→      toast.error(err instanceof Error ? err.message : "Failed to save preferences");
+   534→    } finally {
+   535→      setIsSavingPrefs(false);
+   536→    }
+   537→  };
+   538→
+   539→  // Share with recruiter
+   540→  const handleShareWithRecruiter = async () => {
+   541→    if (!shareRecruiterId) {
+   542→      toast.error("Please select a recruiter");
+   543→      return;
+   544→    }
+   545→    setIsSharing(true);
+   546→    try {
+   547→      const res = await fetch("/api/candidate/calendar/shares", {
+   548→        method: "POST",
+   549→        headers: { "Content-Type": "application/json" },
+   550→        body: JSON.stringify({
+   551→          shareType: "direct",
+   552→          recruiterUserId: parseInt(shareRecruiterId),
+   553→          expiryType: shareExpiry,
+   554→        }),
+   555→      });
+   556→      if (!res.ok) throw new Error("Failed to share calendar");
+   557→      toast.success("Calendar shared with recruiter");
+   558→      setShareRecruiterDialogOpen(false);
+   559→      setShareRecruiterId("");
+   560→      fetchShares();
+   561→    } catch {
+   562→      toast.error("Failed to share calendar");
+   563→    } finally {
+   564→      setIsSharing(false);
+   565→    }
+   566→  };
+   567→
+   568→  // Generate share link
+   569→  const handleGenerateLink = async () => {
+   570→    setIsSharing(true);
+   571→    try {
+   572→      const res = await fetch("/api/candidate/calendar/shares", {
+   573→        method: "POST",
+   574→        headers: { "Content-Type": "application/json" },
+   575→        body: JSON.stringify({
+   576→          shareType: "link",
+   577→          expiryType: linkExpiry,
+   578→        }),
+   579→      });
+   580→      if (!res.ok) throw new Error("Failed to generate link");
+   581→      const data = await res.json();
+   582→      const token = data.share?.share_token;
+   583→      if (token) {
+   584→        setGeneratedLink(`${window.location.origin}/shared/calendar/${token}`);
+   585→      }
+   586→      fetchShares();
+   587→    } catch {
+   588→      toast.error("Failed to generate share link");
+   589→    } finally {
+   590→      setIsSharing(false);
+   591→    }
+   592→  };
+   593→
+   594→  // Copy link
+   595→  const handleCopyLink = () => {
+   596→    if (generatedLink) {
+   597→      navigator.clipboard.writeText(generatedLink);
+   598→      toast.success("Link copied to clipboard");
+   599→    }
+   600→  };
+   601→
+   602→  // Revoke share
+   603→  const handleRevokeShare = async (shareId: number) => {
+   604→    setIsRevoking(shareId);
+   605→    try {
+   606→      const res = await fetch("/api/candidate/calendar/shares", {
+   607→        method: "PUT",
+   608→        headers: { "Content-Type": "application/json" },
+   609→        body: JSON.stringify({ shareId }),
+   610→      });
+   611→      if (!res.ok) throw new Error("Failed to revoke share");
+   612→      toast.success("Share revoked");
+   613→      fetchShares();
+   614→    } catch {
+   615→      toast.error("Failed to revoke share");
+   616→    } finally {
+   617→      setIsRevoking(null);
+   618→    }
+   619→  };
+   620→
+   621→  // Respond to shift request
+   622→  const handleShiftResponse = async (shiftRequestId: number, status: "accepted" | "declined") => {
+   623→    setIsRespondingToShift(shiftRequestId);
+   624→    try {
+   625→      const res = await fetch("/api/candidate/calendar/shift-requests", {
+   626→        method: "PUT",
+   627→        headers: { "Content-Type": "application/json" },
+   628→        body: JSON.stringify({ shiftRequestId, status }),
+   629→      });
+   630→      if (!res.ok) throw new Error("Failed to respond to shift request");
+   631→      toast.success(`Shift ${status === "accepted" ? "accepted" : "declined"}`);
+   632→      fetchShiftRequests();
+   633→    } catch {
+   634→      toast.error("Failed to respond to shift request");
+   635→    } finally {
+   636→      setIsRespondingToShift(null);
+   637→    }
+   638→  };
+   639→
+   640→  // Request a call with recruiter
+   641→  const handleRequestCall = async (recruiterUserId: number) => {
+   642→    try {
+   643→      const res = await fetch("/api/candidate/notifications", {
+   644→        method: "POST",
+   645→        headers: { "Content-Type": "application/json" },
+   646→        body: JSON.stringify({
+   647→          type: "call_request",
+   648→          message: "A candidate has requested a call with you.",
+   649→          relatedEntityId: recruiterUserId,
+   650→        }),
+   651→      });
+   652→      if (!res.ok) throw new Error("Failed to request call");
+   653→      toast.success("Call request sent to recruiter");
+   654→    } catch {
+   655→      toast.error("Failed to send call request");
+   656→    }
+   657→  };
+   658→
+   659→  /* ─── Helpers ─────────────────────────────────────────────────────── */
+   660→
+   661→  const resetAddForm = () => {
+   662→    setAddDayOfWeek("1");
+   663→    setAddUseSpecificDate(false);
+   664→    setAddSpecificDate(undefined);
+   665→    setAddStartTime("09:00");
+   666→    setAddEndTime("17:00");
+   667→    setAddIsAvailable(true);
+   668→    setAddIsRecurring(false);
+   669→    setAddLabel("");
+   670→  };
+   671→
+   672→  // Group availability slots by day of week
+   673→  const getSlotsForDay = (dayOfWeek: number) => {
+   674→    return slots.filter(
+   675→      (s) => s.day_of_week === dayOfWeek && s.specific_date === null
+   676→    );
+   677→  };
+   678→
+   679→  // Get blocked dates
+   680→  const blockedDates = slots
+   681→    .filter((s) => s.specific_date !== null && !s.is_available)
+   682→    .map((s) => new Date(s.specific_date!));
+   683→
+   684→  // Group shared availability by recruiter
+   685→  const groupedSharedAvail = sharedAvailability.reduce(
+   686→    (acc, item) => {
+   687→      const key = item.recruiter_user_id;
+   688→      if (!acc[key]) {
+   689→        acc[key] = {
+   690→          recruiter: item.recruiter_user,
+   691→          slots: [],
+   692→        };
+   693→      }
+   694→      acc[key].slots.push(item);
+   695→      return acc;
+   696→    },
+   697→    {} as Record<number, { recruiter: SharedAvailability["recruiter_user"]; slots: SharedAvailability[] }>
+   698→  );
+   699→
+   700→  const filteredRecruiterIds =
+   701→    recruiterFilter === "all"
+   702→      ? Object.keys(groupedSharedAvail)
+   703→      : [recruiterFilter];
+   704→
+   705→  const statusConfig = STATUS_CONFIG[availabilityStatus];
+   706→
+   707→  const pendingShiftRequests = shiftRequests.filter((r) => r.status === "pending");
+   708→  const respondedShiftRequests = shiftRequests.filter((r) => r.status !== "pending");
+   709→
+   710→  /* ─── Loading ─────────────────────────────────────────────────────── */
+   711→  if (isLoading) {
+   712→    return (
+   713→      <div className="space-y-6">
+   714→        <PageHeader title="Calendar & Scheduler" description="Manage your availability, share your calendar, and handle shift requests." />
+   715→        <div className="space-y-4">
+   716→          <Skeleton className="h-16 w-full rounded-xl" />
+   717→          <Skeleton className="h-[400px] w-full rounded-xl" />
+   718→          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   719→            <Skeleton className="h-48 rounded-xl" />
+   720→            <Skeleton className="h-48 rounded-xl" />
+   721→          </div>
+   722→        </div>
+   723→      </div>
+   724→    );
+   725→  }
+   726→
+   727→  if (error) {
+   728→    return (
+   729→      <div className="space-y-6">
+   730→        <PageHeader title="Calendar & Scheduler" />
+   731→        <Card>
+   732→          <CardContent className="p-6 text-center">
+   733→            <p className="text-destructive mb-4">{error}</p>
+   734→            <Button onClick={loadAllData} variant="outline">Try Again</Button>
+   735→          </CardContent>
+   736→        </Card>
+   737→      </div>
+   738→    );
+   739→  }
+   740→
+   741→  /* ─── Render ──────────────────────────────────────────────────────── */
+   742→  return (
+   743→    <div className="space-y-6">
+   744→      <PageHeader
+   745→        title="Calendar & Scheduler"
+   746→        description="Manage your availability, share your calendar, and handle shift requests."
+   747→      />
+   748→
+   749→      <Tabs defaultValue="my-calendar" className="space-y-6">
+   750→        <TabsList className="bg-[#F3F4F6]">
+   751→          <TabsTrigger value="my-calendar" className="gap-1.5 data-[state=active]:bg-white">
+   752→            <CalendarDays className="size-4" />
+   753→            My Calendar
+   754→          </TabsTrigger>
+   755→          <TabsTrigger value="others-calendar" className="gap-1.5 data-[state=active]:bg-white">
+   756→            <Users className="size-4" />
+   757→            Others Calendar
+   758→          </TabsTrigger>
+   759→        </TabsList>
+   760→
+   761→        {/* ═══════════════════════════════════════════════════════════════
+   762→            TAB 1: My Calendar
+   763→        ═══════════════════════════════════════════════════════════════ */}
+   764→        <TabsContent value="my-calendar" className="space-y-6">
+   765→
+   766→          {/* ── Availability Status Toggle ──────────────────────────── */}
+   767→          <Card
+   768→            className="cursor-pointer transition-all hover:shadow-md"
+   769→            style={{
+   770→              borderColor: statusConfig.borderColor,
+   771→              backgroundColor: statusConfig.bgColor,
+   772→            }}
+   773→            onClick={cycleStatus}
+   774→          >
+   775→            <CardContent className="p-4 flex items-center justify-between">
+   776→              <div className="flex items-center gap-3">
+   777→                <span className="text-2xl">{statusConfig.emoji}</span>
+   778→                <div>
+   779→                  <p className="font-semibold text-sm" style={{ color: statusConfig.color }}>
+   780→                    {statusConfig.label}
+   781→                  </p>
+   782→                  <p className="text-xs text-muted-foreground mt-0.5">
+   783→                    Click to change your availability status
+   784→                  </p>
+   785→                </div>
+   786→              </div>
+   787→              <div className="flex items-center gap-2">
+   788→                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+   789→                  <div
+   790→                    key={key}
+   791→                    className={`size-3 rounded-full transition-all ${
+   792→                      availabilityStatus === key ? "ring-2 ring-offset-1 scale-125" : "opacity-40"
+   793→                    }`}
+   794→                    style={{
+   795→                      backgroundColor: cfg.color,
+   796→                      ringColor: cfg.color,
+   797→                    }}
+   798→                  />
+   799→                ))}
+   800→              </div>
+   801→            </CardContent>
+   802→          </Card>
+   803→
+   804→          {/* ── Main Grid ───────────────────────────────────────────── */}
+   805→          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   806→            {/* Left: Availability Grid + Add Button */}
+   807→            <div className="lg:col-span-2 space-y-4">
+   808→
+   809→              {/* Availability Grid Header */}
+   810→              <Card>
+   811→                <CardHeader className="pb-3">
+   812→                  <div className="flex items-center justify-between">
+   813→                    <CardTitle className="text-base flex items-center gap-2">
+   814→                      <Clock className="size-5 text-[#166534]" />
+   815→                      Weekly Availability
+   816→                    </CardTitle>
+   817→                    <div className="flex items-center gap-2">
+   818→                      <Dialog open={blockDatesDialogOpen} onOpenChange={setBlockDatesDialogOpen}>
+   819→                        <DialogTrigger asChild>
+   820→                          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+   821→                            <Ban className="size-3.5" />
+   822→                            Block Dates
+   823→                          </Button>
+   824→                        </DialogTrigger>
+   825→                        <DialogContent>
+   826→                          <DialogHeader>
+   827→                            <DialogTitle>Block Out Dates</DialogTitle>
+   828→                            <DialogDescription>
+   829→                              Select specific dates to override your recurring availability. These dates will be marked as unavailable.
+   830→                            </DialogDescription>
+   831→                          </DialogHeader>
+   832→                          <div className="space-y-4">
+   833→                            <Calendar
+   834→                              mode="multiple"
+   835→                              selected={blockDates}
+   836→                              onSelect={(dates) => setBlockDates(dates || [])}
+   837→                              className="rounded-md border mx-auto"
+   838→                            />
+   839→                            {blockDates.length > 0 && (
+   840→                              <p className="text-sm text-muted-foreground text-center">
+   841→                                {blockDates.length} date(s) selected
+   842→                              </p>
+   843→                            )}
+   844→                          </div>
+   845→                          <DialogFooter>
+   846→                            <Button variant="outline" onClick={() => setBlockDatesDialogOpen(false)}>
+   847→                              Cancel
+   848→                            </Button>
+   849→                            <Button
+   850→                              onClick={handleBlockDates}
+   851→                              disabled={isSubmitting || blockDates.length === 0}
+   852→                              className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+   853→                            >
+   854→                              {isSubmitting ? (
+   855→                                <Loader2 className="size-4 animate-spin" />
+   856→                              ) : (
+   857→                                <Ban className="size-4" />
+   858→                              )}
+   859→                              Block {blockDates.length} Date(s)
+   860→                            </Button>
+   861→                          </DialogFooter>
+   862→                        </DialogContent>
+   863→                      </Dialog>
+   864→
+   865→                      <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetAddForm(); }}>
+   866→                        <DialogTrigger asChild>
+   867→                          <Button size="sm" className="gap-1.5 bg-[#166534] hover:bg-[#14532D]">
+   868→                            <Plus className="size-3.5" />
+   869→                            Add Availability
+   870→                          </Button>
+   871→                        </DialogTrigger>
+   872→                        <DialogContent className="sm:max-w-md">
+   873→                          <DialogHeader>
+   874→                            <DialogTitle>Add Availability</DialogTitle>
+   875→                            <DialogDescription>
+   876→                              Set when you&apos;re available or unavailable for shifts.
+   877→                            </DialogDescription>
+   878→                          </DialogHeader>
+   879→                          <div className="space-y-4">
+   880→                            {/* Day of week vs specific date */}
+   881→                            <div className="flex items-center gap-3">
+   882→                              <Switch
+   883→                                checked={addUseSpecificDate}
+   884→                                onCheckedChange={setAddUseSpecificDate}
+   885→                              />
+   886→                              <Label className="text-sm">Use specific date instead of day of week</Label>
+   887→                            </div>
+   888→
+   889→                            {addUseSpecificDate ? (
+   890→                              <div className="space-y-2">
+   891→                                <Label>Date</Label>
+   892→                                <Popover>
+   893→                                  <PopoverTrigger asChild>
+   894→                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+   895→                                      <CalendarIcon className="size-4 mr-2" />
+   896→                                      {addSpecificDate ? addSpecificDate.toLocaleDateString() : "Pick a date"}
+   897→                                    </Button>
+   898→                                  </PopoverTrigger>
+   899→                                  <PopoverContent className="w-auto p-0">
+   900→                                    <Calendar
+   901→                                      mode="single"
+   902→                                      selected={addSpecificDate}
+   903→                                      onSelect={setAddSpecificDate}
+   904→                                    />
+   905→                                  </PopoverContent>
+   906→                                </Popover>
+   907→                              </div>
+   908→                            ) : (
+   909→                              <div className="space-y-2">
+   910→                                <Label>Day of Week</Label>
+   911→                                <Select value={addDayOfWeek} onValueChange={setAddDayOfWeek}>
+   912→                                  <SelectTrigger className="w-full">
+   913→                                    <SelectValue />
+   914→                                  </SelectTrigger>
+   915→                                  <SelectContent>
+   916→                                    {DAYS_OF_WEEK.map((day, idx) => (
+   917→                                      <SelectItem key={DAY_VALUES[idx]} value={String(DAY_VALUES[idx])}>
+   918→                                        {day}
+   919→                                      </SelectItem>
+   920→                                    ))}
+   921→                                  </SelectContent>
+   922→                                </Select>
+   923→                              </div>
+   924→                            )}
+   925→
+   926→                            {/* Time pickers */}
+   927→                            <div className="grid grid-cols-2 gap-3">
+   928→                              <div className="space-y-2">
+   929→                                <Label>Start Time</Label>
+   930→                                <Input
+   931→                                  type="time"
+   932→                                  value={addStartTime}
+   933→                                  onChange={(e) => setAddStartTime(e.target.value)}
+   934→                                />
+   935→                              </div>
+   936→                              <div className="space-y-2">
+   937→                                <Label>End Time</Label>
+   938→                                <Input
+   939→                                  type="time"
+   940→                                  value={addEndTime}
+   941→                                  onChange={(e) => setAddEndTime(e.target.value)}
+   942→                                />
+   943→                              </div>
+   944→                            </div>
+   945→
+   946→                            {/* Available / Not Available */}
+   947→                            <div className="flex items-center gap-3">
+   948→                              <Switch
+   949→                                checked={addIsAvailable}
+   950→                                onCheckedChange={setAddIsAvailable}
+   951→                              />
+   952→                              <Label className="text-sm">
+   953→                                {addIsAvailable ? "Available" : "Not Available"}
+   954→                              </Label>
+   955→                              <Badge
+   956→                                variant={addIsAvailable ? "default" : "destructive"}
+   957→                                className="text-[10px] ml-auto"
+   958→                              >
+   959→                                {addIsAvailable ? "Available" : "Blocked"}
+   960→                              </Badge>
+   961→                            </div>
+   962→
+   963→                            {/* Recurring */}
+   964→                            <div className="flex items-center gap-3">
+   965→                              <Switch
+   966→                                checked={addIsRecurring}
+   967→                                onCheckedChange={setAddIsRecurring}
+   968→                              />
+   969→                              <Label className="text-sm">Recurring (weekly)</Label>
+   970→                            </div>
+   971→
+   972→                            {/* Label */}
+   973→                            <div className="space-y-2">
+   974→                              <Label>Label (optional)</Label>
+   975→                              <Input
+   976→                                placeholder="e.g., Lunch break, Night shift available"
+   977→                                value={addLabel}
+   978→                                onChange={(e) => setAddLabel(e.target.value)}
+   979→                              />
+   980→                            </div>
+   981→                          </div>
+   982→                          <DialogFooter>
+   983→                            <Button variant="outline" onClick={() => { setAddDialogOpen(false); resetAddForm(); }}>
+   984→                              Cancel
+   985→                            </Button>
+   986→                            <Button
+   987→                              onClick={handleAddSlot}
+   988→                              disabled={isSubmitting}
+   989→                              className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+   990→                            >
+   991→                              {isSubmitting ? (
+   992→                                <Loader2 className="size-4 animate-spin" />
+   993→                              ) : (
+   994→                                <Plus className="size-4" />
+   995→                              )}
+   996→                              Add Slot
+   997→                            </Button>
+   998→                          </DialogFooter>
+   999→                        </DialogContent>
+  1000→                      </Dialog>
+  1001→                    </div>
+  1002→                  </div>
+  1003→                </CardHeader>
+  1004→                <CardContent>
+  1005→                  {/* Weekly Grid */}
+  1006→                  <div className="overflow-x-auto">
+  1007→                    <div className="min-w-[640px]">
+  1008→                      {/* Day headers */}
+  1009→                      <div className="grid grid-cols-8 gap-1 mb-2">
+  1010→                        <div className="text-xs font-medium text-muted-foreground text-center py-1">
+  1011→                          Time
+  1012→                        </div>
+  1013→                        {DAYS_OF_WEEK.map((day, idx) => (
+  1014→                          <div
+  1015→                            key={day}
+  1016→                            className="text-xs font-medium text-center py-1 rounded-md bg-[#F8F7F4]"
+  1017→                            style={{ color: idx >= 5 ? "#0D9488" : "#166534" }}
+  1018→                          >
+  1019→                            {day}
+  1020→                          </div>
+  1021→                        ))}
+  1022→                      </div>
+  1023→
+  1024→                      {/* Time slots */}
+  1025→                      {TIME_SLOTS.filter((_, i) => i >= 6 && i <= 22).map((timeSlot) => {
+  1026→                        const hour = parseInt(timeSlot.split(":")[0]);
+  1027→                        return (
+  1028→                          <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-0.5">
+  1029→                            <div className="text-[10px] text-muted-foreground text-center py-2 flex items-center justify-center">
+  1030→                              {formatTimeDisplay(timeSlot)}
+  1031→                            </div>
+  1032→                            {DAY_VALUES.map((dayVal) => {
+  1033→                              const daySlots = getSlotsForDay(dayVal);
+  1034→                              const matchingSlots = daySlots.filter((s) => {
+  1035→                                if (!s.start_time || !s.end_time) return false;
+  1036→                                const startH = parseInt(s.start_time.split(":")[0]);
+  1037→                                const endH = s.end_time === "00:00" ? 24 : parseInt(s.end_time.split(":")[0]);
+  1038→                                return hour >= startH && hour < endH;
+  1039→                              });
+  1040→                              const isAvailable = matchingSlots.some((s) => s.is_available);
+  1041→                              const isBlocked = matchingSlots.some((s) => !s.is_available);
+  1042→                              const hasSlot = matchingSlots.length > 0;
+  1043→
+  1044→                              return (
+  1045→                                <div
+  1046→                                  key={dayVal}
+  1047→                                  className={`
+  1048→                                    h-8 rounded text-[9px] flex items-center justify-center transition-colors
+  1049→                                    ${hasSlot ? "" : "bg-[#FAFAFA]"}
+  1050→                                    ${isAvailable ? "bg-emerald-100 text-emerald-800 font-medium" : ""}
+  1051→                                    ${isBlocked ? "bg-red-100 text-red-800 font-medium" : ""}
+  1052→                                  `}
+  1053→                                >
+  1054→                                  {matchingSlots.length > 0 && matchingSlots[0].label && (
+  1055→                                    <span className="truncate px-0.5">{matchingSlots[0].label}</span>
+  1056→                                  )}
+  1057→                                </div>
+  1058→                              );
+  1059→                            })}
+  1060→                          </div>
+  1061→                        );
+  1062→                      })}
+  1063→                    </div>
+  1064→                  </div>
+  1065→
+  1066→                  {/* Legend */}
+  1067→                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-[#E5E7EB]">
+  1068→                    <div className="flex items-center gap-1.5">
+  1069→                      <div className="size-3 rounded bg-emerald-100 border border-emerald-300" />
+  1070→                      <span className="text-xs text-muted-foreground">Available</span>
+  1071→                    </div>
+  1072→                    <div className="flex items-center gap-1.5">
+  1073→                      <div className="size-3 rounded bg-red-100 border border-red-300" />
+  1074→                      <span className="text-xs text-muted-foreground">Blocked</span>
+  1075→                    </div>
+  1076→                    <div className="flex items-center gap-1.5">
+  1077→                      <div className="size-3 rounded bg-[#FAFAFA] border border-gray-200" />
+  1078→                      <span className="text-xs text-muted-foreground">Not Set</span>
+  1079→                    </div>
+  1080→                  </div>
+  1081→                </CardContent>
+  1082→              </Card>
+  1083→
+  1084→              {/* Existing Availability Slots List */}
+  1085→              {slots.length > 0 && (
+  1086→                <Card>
+  1087→                  <CardHeader className="pb-3">
+  1088→                    <CardTitle className="text-base flex items-center gap-2">
+  1089→                      <ListChecks className="size-5 text-[#0D9488]" />
+  1090→                      Current Availability Slots
+  1091→                    </CardTitle>
+  1092→                  </CardHeader>
+  1093→                  <CardContent>
+  1094→                    <div className="max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+  1095→                      <div className="space-y-2">
+  1096→                        {slots.map((slot) => {
+  1097→                          const dayLabel = slot.day_of_week !== null
+  1098→                            ? DAYS_OF_WEEK[DAY_VALUES.indexOf(slot.day_of_week)]
+  1099→                            : slot.specific_date
+  1100→                              ? new Date(slot.specific_date).toLocaleDateString()
+  1101→                              : "Unset";
+  1102→                          return (
+  1103→                            <div
+  1104→                              key={slot.id}
+  1105→                              className="flex items-center gap-3 p-2.5 rounded-lg border border-[#E5E7EB] hover:bg-[#F8F7F4] transition-colors"
+  1106→                            >
+  1107→                              <div
+  1108→                                className={`size-2.5 rounded-full shrink-0 ${
+  1109→                                  slot.is_available ? "bg-emerald-500" : "bg-red-500"
+  1110→                                }`}
+  1111→                              />
+  1112→                              <div className="flex-1 min-w-0">
+  1113→                                <div className="flex items-center gap-2">
+  1114→                                  <span className="text-sm font-medium">{dayLabel}</span>
+  1115→                                  <span className="text-xs text-muted-foreground">
+  1116→                                    {slot.start_time && slot.end_time
+  1117→                                      ? `${formatTimeDisplay(slot.start_time)} – ${formatTimeDisplay(slot.end_time)}`
+  1118→                                      : "All day"}
+  1119→                                  </span>
+  1120→                                  {slot.label && (
+  1121→                                    <Badge variant="secondary" className="text-[10px]">
+  1122→                                      {slot.label}
+  1123→                                    </Badge>
+  1124→                                  )}
+  1125→                                  {slot.is_recurring && (
+  1126→                                    <Badge className="text-[10px] bg-[#0D9488]/10 text-[#0D9488] border-[#0D9488]/20">
+  1127→                                      Recurring
+  1128→                                    </Badge>
+  1129→                                  )}
+  1130→                                  {slot.template_name && (
+  1131→                                    <Badge variant="outline" className="text-[10px]">
+  1132→                                      {slot.template_name}
+  1133→                                    </Badge>
+  1134→                                  )}
+  1135→                                </div>
+  1136→                              </div>
+  1137→                              <Button
+  1138→                                variant="ghost"
+  1139→                                size="sm"
+  1140→                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
+  1141→                                onClick={() => handleDeleteSlot(slot.id)}
+  1142→                              >
+  1143→                                <Trash2 className="size-3.5" />
+  1144→                              </Button>
+  1145→                            </div>
+  1146→                          );
+  1147→                        })}
+  1148→                      </div>
+  1149→                    </div>
+  1150→                  </CardContent>
+  1151→                </Card>
+  1152→              )}
+  1153→
+  1154→              {/* Quick Templates */}
+  1155→              <Card>
+  1156→                <CardHeader className="pb-3">
+  1157→                  <CardTitle className="text-base flex items-center gap-2">
+  1158→                    <Zap className="size-5 text-[#166534]" />
+  1159→                    Quick Templates
+  1160→                  </CardTitle>
+  1161→                </CardHeader>
+  1162→                <CardContent>
+  1163→                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1164→                    {TEMPLATES.map((template) => {
+  1165→                      const IconComp = template.icon;
+  1166→                      return (
+  1167→                        <Button
+  1168→                          key={template.name}
+  1169→                          variant="outline"
+  1170→                          className="h-auto py-3 px-3 flex flex-col items-center gap-2 hover:bg-[#F8F7F4] hover:border-[#166534]/30"
+  1171→                          onClick={() => handleApplyTemplate(template)}
+  1172→                          disabled={isApplyingTemplate !== null}
+  1173→                        >
+  1174→                          {isApplyingTemplate === template.name ? (
+  1175→                            <Loader2 className="size-5 animate-spin text-[#166534]" />
+  1176→                          ) : (
+  1177→                            <IconComp className="size-5 text-[#166534]" />
+  1178→                          )}
+  1179→                          <span className="text-xs font-medium">{template.name}</span>
+  1180→                          <span className="text-[10px] text-muted-foreground">{template.description}</span>
+  1181→                        </Button>
+  1182→                      );
+  1183→                    })}
+  1184→                  </div>
+  1185→                </CardContent>
+  1186→              </Card>
+  1187→            </div>
+  1188→
+  1189→            {/* Right sidebar */}
+  1190→            <div className="space-y-4">
+  1191→
+  1192→              {/* Blocked Dates Preview */}
+  1193→              {blockedDates.length > 0 && (
+  1194→                <Card>
+  1195→                  <CardHeader className="pb-3">
+  1196→                    <CardTitle className="text-base flex items-center gap-2">
+  1197→                      <Ban className="size-5 text-red-500" />
+  1198→                      Blocked Dates
+  1199→                    </CardTitle>
+  1200→                  </CardHeader>
+  1201→                  <CardContent>
+  1202→                    <ScrollArea className="max-h-40">
+  1203→                      <div className="space-y-1.5">
+  1204→                        {blockedDates
+  1205→                          .sort((a, b) => a.getTime() - b.getTime())
+  1206→                          .map((date, idx) => (
+  1207→                            <div key={idx} className="flex items-center gap-2 text-sm">
+  1208→                              <div className="size-2 rounded-full bg-red-500 shrink-0" />
+  1209→                              <span>{date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
+  1210→                            </div>
+  1211→                          ))}
+  1212→                      </div>
+  1213→                    </ScrollArea>
+  1214→                  </CardContent>
+  1215→                </Card>
+  1216→              )}
+  1217→
+  1218→              {/* Preferences Card */}
+  1219→              <Card>
+  1220→                <CardHeader className="pb-3">
+  1221→                  <CardTitle className="text-base flex items-center gap-2">
+  1222→                    <Settings2 className="size-5 text-[#166534]" />
+  1223→                    Preferences
+  1224→                  </CardTitle>
+  1225→                </CardHeader>
+  1226→                <CardContent className="space-y-4">
+  1227→                  <div className="space-y-2">
+  1228→                    <Label className="text-xs text-muted-foreground">Minimum Notice</Label>
+  1229→                    <Select
+  1230→                      value={String(minNoticeHours)}
+  1231→                      onValueChange={(val) => setMinNoticeHours(parseInt(val))}
+  1232→                    >
+  1233→                      <SelectTrigger className="w-full">
+  1234→                        <SelectValue />
+  1235→                      </SelectTrigger>
+  1236→                      <SelectContent>
+  1237→                        <SelectItem value="12">12 hours</SelectItem>
+  1238→                        <SelectItem value="24">24 hours</SelectItem>
+  1239→                        <SelectItem value="48">48 hours</SelectItem>
+  1240→                        <SelectItem value="72">72 hours</SelectItem>
+  1241→                      </SelectContent>
+  1242→                    </Select>
+  1243→                  </div>
+  1244→                  <div className="space-y-2">
+  1245→                    <Label className="text-xs text-muted-foreground">Shift Duration Preference</Label>
+  1246→                    <Select
+  1247→                      value={shiftDurationPref || "no_preference"}
+  1248→                      onValueChange={(val) => setShiftDurationPref(val === "no_preference" ? null : val)}
+  1249→                    >
+  1250→                      <SelectTrigger className="w-full">
+  1251→                        <SelectValue />
+  1252→                      </SelectTrigger>
+  1253→                      <SelectContent>
+  1254→                        <SelectItem value="4hr_min">4hr minimum</SelectItem>
+  1255→                        <SelectItem value="8hr">8 hours</SelectItem>
+  1256→                        <SelectItem value="12hr">12 hours</SelectItem>
+  1257→                        <SelectItem value="no_preference">No preference</SelectItem>
+  1258→                      </SelectContent>
+  1259→                    </Select>
+  1260→                  </div>
+  1261→                  <Button
+  1262→                    onClick={handleSavePrefs}
+  1263→                    disabled={isSavingPrefs}
+  1264→                    className="w-full gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+  1265→                    size="sm"
+  1266→                  >
+  1267→                    {isSavingPrefs ? (
+  1268→                      <Loader2 className="size-4 animate-spin" />
+  1269→                    ) : (
+  1270→                      <Check className="size-4" />
+  1271→                    )}
+  1272→                    Save Preferences
+  1273→                  </Button>
+  1274→                </CardContent>
+  1275→              </Card>
+  1276→
+  1277→              {/* Share Calendar */}
+  1278→              <Card>
+  1279→                <CardHeader className="pb-3">
+  1280→                  <CardTitle className="text-base flex items-center gap-2">
+  1281→                    <Share2 className="size-5 text-[#0D9488]" />
+  1282→                    Share Calendar
+  1283→                  </CardTitle>
+  1284→                </CardHeader>
+  1285→                <CardContent className="space-y-3">
+  1286→                  <Dialog open={shareRecruiterDialogOpen} onOpenChange={setShareRecruiterDialogOpen}>
+  1287→                    <DialogTrigger asChild>
+  1288→                      <Button variant="outline" className="w-full gap-1.5" size="sm">
+  1289→                        <User className="size-4" />
+  1290→                        Share with Recruiter
+  1291→                      </Button>
+  1292→                    </DialogTrigger>
+  1293→                    <DialogContent>
+  1294→                      <DialogHeader>
+  1295→                        <DialogTitle>Share with Recruiter</DialogTitle>
+  1296→                        <DialogDescription>
+  1297→                          Allow a recruiter to view your availability calendar.
+  1298→                        </DialogDescription>
+  1299→                      </DialogHeader>
+  1300→                      <div className="space-y-4">
+  1301→                        <div className="space-y-2">
+  1302→                          <Label>Select Recruiter</Label>
+  1303→                          <Select value={shareRecruiterId} onValueChange={setShareRecruiterId}>
+  1304→                            <SelectTrigger className="w-full">
+  1305→                              <SelectValue placeholder="Choose a recruiter..." />
+  1306→                            </SelectTrigger>
+  1307→                            <SelectContent>
+  1308→                              {recruiters.map((r) => (
+  1309→                                <SelectItem key={r.id} value={String(r.id)}>
+  1310→                                  {r.first_name || ""} {r.last_name || ""}
+  1311→                                  {r.organization ? ` — ${r.organization.name}` : ""}
+  1312→                                </SelectItem>
+  1313→                              ))}
+  1314→                            </SelectContent>
+  1315→                          </Select>
+  1316→                        </div>
+  1317→                        <div className="space-y-2">
+  1318→                          <Label>Access Expires</Label>
+  1319→                          <Select value={shareExpiry} onValueChange={(val) => setShareExpiry(val as typeof shareExpiry)}>
+  1320→                            <SelectTrigger className="w-full">
+  1321→                              <SelectValue />
+  1322→                            </SelectTrigger>
+  1323→                            <SelectContent>
+  1324→                              <SelectItem value="1_day">1 Day</SelectItem>
+  1325→                              <SelectItem value="1_month">1 Month</SelectItem>
+  1326→                              <SelectItem value="1_year">1 Year</SelectItem>
+  1327→                              <SelectItem value="never">Never</SelectItem>
+  1328→                            </SelectContent>
+  1329→                          </Select>
+  1330→                        </div>
+  1331→                      </div>
+  1332→                      <DialogFooter>
+  1333→                        <Button variant="outline" onClick={() => setShareRecruiterDialogOpen(false)}>
+  1334→                          Cancel
+  1335→                        </Button>
+  1336→                        <Button
+  1337→                          onClick={handleShareWithRecruiter}
+  1338→                          disabled={isSharing || !shareRecruiterId}
+  1339→                          className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+  1340→                        >
+  1341→                          {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
+  1342→                          Share
+  1343→                        </Button>
+  1344→                      </DialogFooter>
+  1345→                    </DialogContent>
+  1346→                  </Dialog>
+  1347→
+  1348→                  <Dialog open={shareLinkDialogOpen} onOpenChange={(open) => { setShareLinkDialogOpen(open); if (!open) setGeneratedLink(""); }}>
+  1349→                    <DialogTrigger asChild>
+  1350→                      <Button variant="outline" className="w-full gap-1.5" size="sm">
+  1351→                        <Link2 className="size-4" />
+  1352→                        Generate Share Link
+  1353→                      </Button>
+  1354→                    </DialogTrigger>
+  1355→                    <DialogContent>
+  1356→                      <DialogHeader>
+  1357→                        <DialogTitle>Generate Share Link</DialogTitle>
+  1358→                        <DialogDescription>
+  1359→                          Create a shareable link that allows anyone to view your availability.
+  1360→                        </DialogDescription>
+  1361→                      </DialogHeader>
+  1362→                      <div className="space-y-4">
+  1363→                        <div className="space-y-2">
+  1364→                          <Label>Link Expires</Label>
+  1365→                          <Select value={linkExpiry} onValueChange={(val) => setLinkExpiry(val as typeof linkExpiry)}>
+  1366→                            <SelectTrigger className="w-full">
+  1367→                              <SelectValue />
+  1368→                            </SelectTrigger>
+  1369→                            <SelectContent>
+  1370→                              <SelectItem value="1_day">1 Day</SelectItem>
+  1371→                              <SelectItem value="1_month">1 Month</SelectItem>
+  1372→                              <SelectItem value="1_year">1 Year</SelectItem>
+  1373→                              <SelectItem value="never">Never</SelectItem>
+  1374→                            </SelectContent>
+  1375→                          </Select>
+  1376→                        </div>
+  1377→                        {generatedLink && (
+  1378→                          <div className="space-y-2">
+  1379→                            <Label>Generated Link</Label>
+  1380→                            <div className="flex items-center gap-2">
+  1381→                              <Input
+  1382→                                value={generatedLink}
+  1383→                                readOnly
+  1384→                                className="text-xs bg-muted"
+  1385→                              />
+  1386→                              <Button
+  1387→                                variant="outline"
+  1388→                                size="sm"
+  1389→                                onClick={handleCopyLink}
+  1390→                                className="shrink-0 gap-1"
+  1391→                              >
+  1392→                                <Copy className="size-3.5" />
+  1393→                                Copy
+  1394→                              </Button>
+  1395→                            </div>
+  1396→                          </div>
+  1397→                        )}
+  1398→                      </div>
+  1399→                      <DialogFooter>
+  1400→                        <Button variant="outline" onClick={() => setShareLinkDialogOpen(false)}>
+  1401→                          {generatedLink ? "Close" : "Cancel"}
+  1402→                        </Button>
+  1403→                        {!generatedLink && (
+  1404→                          <Button
+  1405→                            onClick={handleGenerateLink}
+  1406→                            disabled={isSharing}
+  1407→                            className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+  1408→                          >
+  1409→                            {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Link2 className="size-4" />}
+  1410→                            Generate
+  1411→                          </Button>
+  1412→                        )}
+  1413→                      </DialogFooter>
+  1414→                    </DialogContent>
+  1415→                  </Dialog>
+  1416→
+  1417→                  {/* Active Shares List */}
+  1418→                  {shares.length > 0 && (
+  1419→                    <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+  1420→                      <p className="text-xs font-medium text-muted-foreground mb-2">
+  1421→                        Active Shares ({shares.length})
+  1422→                      </p>
+  1423→                      <ScrollArea className="max-h-48">
+  1424→                        <div className="space-y-2">
+  1425→                          {shares.map((share) => {
+  1426→                            const isExpired = share.expires_at && new Date(share.expires_at) < new Date();
+  1427→                            const recruiterName = share.recruiter_user
+  1428→                              ? `${share.recruiter_user.first_name || ""} ${share.recruiter_user.last_name || ""}`.trim() || share.recruiter_user.email
+  1429→                              : null;
+  1430→                            const agencyName = share.recruiter_user?.organization?.name;
+  1431→
+  1432→                            return (
+  1433→                              <div
+  1434→                                key={share.id}
+  1435→                                className={`flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] ${
+  1436→                                  isExpired || share.is_revoked ? "opacity-50" : ""
+  1437→                                }`}
+  1438→                              >
+  1439→                                <div className={`size-6 rounded flex items-center justify-center shrink-0 ${
+  1440→                                  share.share_type === "link" ? "bg-blue-100" : "bg-emerald-100"
+  1441→                                }`}>
+  1442→                                  {share.share_type === "link" ? (
+  1443→                                    <Link2 className="size-3 text-blue-600" />
+  1444→                                  ) : (
+  1445→                                    <User className="size-3 text-emerald-600" />
+  1446→                                  )}
+  1447→                                </div>
+  1448→                                <div className="flex-1 min-w-0">
+  1449→                                  <p className="text-xs font-medium truncate">
+  1450→                                    {recruiterName || "Link share"}
+  1451→                                  </p>
+  1452→                                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+  1453→                                    {agencyName && <span>{agencyName} · </span>}
+  1454→                                    <span>
+  1455→                                      {share.is_revoked
+  1456→                                        ? "Revoked"
+  1457→                                        : isExpired
+  1458→                                          ? "Expired"
+  1459→                                          : share.expiry_type === "never"
+  1460→                                            ? "Never expires"
+  1461→                                            : `Expires ${new Date(share.expires_at!).toLocaleDateString()}`}
+  1462→                                    </span>
+  1463→                                  </div>
+  1464→                                </div>
+  1465→                                {!share.is_revoked && !isExpired && (
+  1466→                                  <Button
+  1467→                                    variant="ghost"
+  1468→                                    size="sm"
+  1469→                                    className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 p-0 shrink-0"
+  1470→                                    disabled={isRevoking === share.id}
+  1471→                                    onClick={() => handleRevokeShare(share.id)}
+  1472→                                  >
+  1473→                                    {isRevoking === share.id ? (
+  1474→                                      <Loader2 className="size-3 animate-spin" />
+  1475→                                    ) : (
+  1476→                                      <X className="size-3" />
+  1477→                                    )}
+  1478→                                  </Button>
+  1479→                                )}
+  1480→                              </div>
+  1481→                            );
+  1482→                          })}
+  1483→                        </div>
+  1484→                      </ScrollArea>
+  1485→                    </div>
+  1486→                  )}
+  1487→                </CardContent>
+  1488→              </Card>
+  1489→            </div>
+  1490→          </div>
+  1491→
+  1492→          {/* ── Shift Requests Section ──────────────────────────────── */}
+  1493→          <Card>
+  1494→            <CardHeader className="pb-3">
+  1495→              <div className="flex items-center justify-between">
+  1496→                <CardTitle className="text-base flex items-center gap-2">
+  1497→                  <ClipboardList className="size-5 text-[#166534]" />
+  1498→                  Shift Requests
+  1499→                  {pendingShiftRequests.length > 0 && (
+  1500→                    <Badge className="bg-[#166534] text-[10px]">{pendingShiftRequests.length} pending</Badge>
+  1501→                  )}
+  1502→                </CardTitle>
+  1503→              </div>
+  1504→            </CardHeader>
+  1505→            <CardContent>
+  1506→              {shiftRequests.length === 0 ? (
+  1507→                <div className="text-center py-8">
+  1508→                  <div className="size-12 rounded-full bg-[#F8F7F4] flex items-center justify-center mx-auto mb-3">
+  1509→                    <ClipboardList className="size-6 text-muted-foreground" />
+  1510→                  </div>
+  1511→                  <p className="text-sm text-muted-foreground">No shift requests yet</p>
+  1512→                  <p className="text-xs text-muted-foreground mt-1">
+  1513→                    When recruiters send you shift requests, they&apos;ll appear here.
+  1514→                  </p>
+  1515→                </div>
+  1516→              ) : (
+  1517→                <div className="space-y-6">
+  1518→                  {/* Pending */}
+  1519→                  {pendingShiftRequests.length > 0 && (
+  1520→                    <div className="space-y-3">
+  1521→                      <h4 className="text-sm font-semibold text-muted-foreground">Pending</h4>
+  1522→                      {pendingShiftRequests.map((req) => {
+  1523→                        const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
+  1524→                        const agency = req.recruiter_user.organization?.name;
+  1525→                        return (
+  1526→                          <div
+  1527→                            key={req.id}
+  1528→                            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#E5E7EB] bg-[#FAFAFA]"
+  1529→                          >
+  1530→                            <div className="size-10 rounded-lg bg-[#0D9488]/10 flex items-center justify-center shrink-0">
+  1531→                              <Building2 className="size-5 text-[#0D9488]" />
+  1532→                            </div>
+  1533→                            <div className="flex-1 min-w-0">
+  1534→                              <p className="text-sm font-medium">
+  1535→                                {req.position || "Shift"}
+  1536→                                {req.facility_name && <span className="text-muted-foreground"> at {req.facility_name}</span>}
+  1537→                              </p>
+  1538→                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+  1539→                                <span className="flex items-center gap-1">
+  1540→                                  <CalendarDays className="size-3" />
+  1541→                                  {new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+  1542→                                </span>
+  1543→                                {req.start_time && req.end_time && (
+  1544→                                  <span className="flex items-center gap-1">
+  1545→                                    <Clock className="size-3" />
+  1546→                                    {formatTimeDisplay(req.start_time)} – {formatTimeDisplay(req.end_time)}
+  1547→                                  </span>
+  1548→                                )}
+  1549→                                <span>·</span>
+  1550→                                <span>{recruiterName}{agency ? ` (${agency})` : ""}</span>
+  1551→                              </div>
+  1552→                              {req.notes && (
+  1553→                                <p className="text-xs text-muted-foreground mt-1 italic">&ldquo;{req.notes}&rdquo;</p>
+  1554→                              )}
+  1555→                            </div>
+  1556→                            <div className="flex items-center gap-2 shrink-0">
+  1557→                              <Button
+  1558→                                size="sm"
+  1559→                                className="gap-1 bg-[#166534] hover:bg-[#14532D]"
+  1560→                                disabled={isRespondingToShift === req.id}
+  1561→                                onClick={() => handleShiftResponse(req.id, "accepted")}
+  1562→                              >
+  1563→                                {isRespondingToShift === req.id ? (
+  1564→                                  <Loader2 className="size-3 animate-spin" />
+  1565→                                ) : (
+  1566→                                  <Check className="size-3" />
+  1567→                                )}
+  1568→                                Accept
+  1569→                              </Button>
+  1570→                              <Button
+  1571→                                size="sm"
+  1572→                                variant="outline"
+  1573→                                className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+  1574→                                disabled={isRespondingToShift === req.id}
+  1575→                                onClick={() => handleShiftResponse(req.id, "declined")}
+  1576→                              >
+  1577→                                <X className="size-3" />
+  1578→                                Decline
+  1579→                              </Button>
+  1580→                            </div>
+  1581→                          </div>
+  1582→                        );
+  1583→                      })}
+  1584→                    </div>
+  1585→                  )}
+  1586→
+  1587→                  {/* History */}
+  1588→                  {respondedShiftRequests.length > 0 && (
+  1589→                    <div className="space-y-3">
+  1590→                      <h4 className="text-sm font-semibold text-muted-foreground">History</h4>
+  1591→                      <ScrollArea className="max-h-48">
+  1592→                        <div className="space-y-2">
+  1593→                          {respondedShiftRequests.map((req) => {
+  1594→                            const isAccepted = req.status === "accepted";
+  1595→                            return (
+  1596→                              <div
+  1597→                                key={req.id}
+  1598→                                className="flex items-center gap-3 p-2.5 rounded-lg border border-[#E5E7EB] opacity-70"
+  1599→                              >
+  1600→                                <div className={`size-6 rounded flex items-center justify-center shrink-0 ${
+  1601→                                  isAccepted ? "bg-emerald-100" : "bg-red-100"
+  1602→                                }`}>
+  1603→                                  {isAccepted ? (
+  1604→                                    <Check className="size-3 text-emerald-600" />
+  1605→                                  ) : (
+  1606→                                    <X className="size-3 text-red-600" />
+  1607→                                  )}
+  1608→                                </div>
+  1609→                                <div className="flex-1 min-w-0">
+  1610→                                  <p className="text-xs font-medium truncate">
+  1611→                                    {req.position || "Shift"} at {req.facility_name || "TBD"}
+  1612→                                  </p>
+  1613→                                  <p className="text-[10px] text-muted-foreground">
+  1614→                                    {new Date(req.shift_date).toLocaleDateString()}
+  1615→                                    {req.start_time ? ` · ${formatTimeDisplay(req.start_time)}` : ""}
+  1616→                                    {" · "}
+  1617→                                    {isAccepted ? "Accepted" : "Declined"}
+  1618→                                    {req.responded_at ? ` on ${new Date(req.responded_at).toLocaleDateString()}` : ""}
+  1619→                                  </p>
+  1620→                                </div>
+  1621→                                <Badge
+  1622→                                  variant={isAccepted ? "default" : "destructive"}
+  1623→                                  className="text-[10px]"
+  1624→                                >
+  1625→                                  {isAccepted ? "Accepted" : "Declined"}
+  1626→                                </Badge>
+  1627→                              </div>
+  1628→                            );
+  1629→                          })}
+  1630→                        </div>
+  1631→                      </ScrollArea>
+  1632→                    </div>
+  1633→                  )}
+  1634→                </div>
+  1635→              )}
+  1636→            </CardContent>
+  1637→          </Card>
+  1638→        </TabsContent>
+  1639→
+  1640→        {/* ═══════════════════════════════════════════════════════════════
+  1641→            TAB 2: Others Calendar
+  1642→        ═══════════════════════════════════════════════════════════════ */}
+  1643→        <TabsContent value="others-calendar" className="space-y-6">
+  1644→
+  1645→          {/* Recruiter filter */}
+  1646→          <Card>
+  1647→            <CardContent className="p-4">
+  1648→              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+  1649→                <div className="flex items-center gap-2">
+  1650→                  <Filter className="size-4 text-[#0D9488]" />
+  1651→                  <Label className="text-sm font-medium">Filter by Recruiter</Label>
+  1652→                </div>
+  1653→                <Select value={recruiterFilter} onValueChange={setRecruiterFilter}>
+  1654→                  <SelectTrigger className="w-full sm:w-[280px]">
+  1655→                    <SelectValue placeholder="All recruiters" />
+  1656→                  </SelectTrigger>
+  1657→                  <SelectContent>
+  1658→                    <SelectItem value="all">All Recruiters</SelectItem>
+  1659→                    {Object.values(groupedSharedAvail).map(({ recruiter }) => (
+  1660→                      <SelectItem key={recruiter.id} value={String(recruiter.id)}>
+  1661→                        {recruiter.first_name || ""} {recruiter.last_name || ""}
+  1662→                        {recruiter.organization ? ` — ${recruiter.organization.name}` : ""}
+  1663→                      </SelectItem>
+  1664→                    ))}
+  1665→                  </SelectContent>
+  1666→                </Select>
+  1667→              </div>
+  1668→            </CardContent>
+  1669→          </Card>
+  1670→
+  1671→          {filteredRecruiterIds.length === 0 || sharedAvailability.length === 0 ? (
+  1672→            <Card>
+  1673→              <CardContent className="p-8 text-center">
+  1674→                <div className="size-14 rounded-full bg-[#0D9488]/10 flex items-center justify-center mx-auto mb-4">
+  1675→                  <Users className="size-7 text-[#0D9488]" />
+  1676→                </div>
+  1677→                <h3 className="text-lg font-medium">No shared calendars yet</h3>
+  1678→                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+  1679→                  When recruiters share their availability with you, it will appear here.
+  1680→                  Share your calendar with recruiters to get started.
+  1681→                </p>
+  1682→              </CardContent>
+  1683→            </Card>
+  1684→          ) : (
+  1685→            <div className="space-y-4">
+  1686→              {filteredRecruiterIds.map((recruiterIdKey) => {
+  1687→                const group = groupedSharedAvail[Number(recruiterIdKey)];
+  1688→                if (!group) return null;
+  1689→                const { recruiter, slots: recruiterSlots } = group;
+  1690→                const recruiterName = `${recruiter.first_name || ""} ${recruiter.last_name || ""}`.trim() || "Unknown";
+  1691→                const agencyName = recruiter.organization?.name;
+  1692→
+  1693→                return (
+  1694→                  <Card key={recruiterIdKey}>
+  1695→                    <CardHeader className="pb-3">
+  1696→                      <div className="flex items-center justify-between">
+  1697→                        <div className="flex items-center gap-3">
+  1698→                          <div className="size-10 rounded-lg bg-[#0D9488]/10 flex items-center justify-center">
+  1699→                            <User className="size-5 text-[#0D9488]" />
+  1700→                          </div>
+  1701→                          <div>
+  1702→                            <CardTitle className="text-base">{recruiterName}</CardTitle>
+  1703→                            {agencyName && (
+  1704→                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+  1705→                                <Building2 className="size-3" />
+  1706→                                {agencyName}
+  1707→                              </div>
+  1708→                            )}
+  1709→                          </div>
+  1710→                        </div>
+  1711→                        <Button
+  1712→                          variant="outline"
+  1713→                          size="sm"
+  1714→                          className="gap-1.5"
+  1715→                          onClick={() => handleRequestCall(recruiter.id)}
+  1716→                        >
+  1717→                          <Phone className="size-3.5" />
+  1718→                          Request a Call
+  1719→                        </Button>
+  1720→                      </div>
+  1721→                    </CardHeader>
+  1722→                    <CardContent>
+  1723→                      {/* Weekly schedule for this recruiter */}
+  1724→                      <div className="overflow-x-auto">
+  1725→                        <div className="min-w-[520px]">
+  1726→                          <div className="grid grid-cols-7 gap-1 mb-2">
+  1727→                            {DAYS_OF_WEEK.map((day, idx) => (
+  1728→                              <div
+  1729→                                key={day}
+  1730→                                className="text-xs font-medium text-center py-1 rounded-md bg-[#F8F7F4]"
+  1731→                                style={{ color: idx >= 5 ? "#0D9488" : "#166534" }}
+  1732→                              >
+  1733→                                {day}
+  1734→                              </div>
+  1735→                            ))}
+  1736→                          </div>
+  1737→
+  1738→                          {/* Time rows */}
+  1739→                          {TIME_SLOTS.filter((_, i) => i >= 7 && i <= 20).map((timeSlot) => {
+  1740→                            const hour = parseInt(timeSlot.split(":")[0]);
+  1741→                            return (
+  1742→                              <div key={timeSlot} className="grid grid-cols-7 gap-1 mb-0.5">
+  1743→                                {DAY_VALUES.map((dayVal) => {
+  1744→                                  const matching = recruiterSlots.filter((s) => {
+  1745→                                    if (s.day_of_week !== dayVal) return false;
+  1746→                                    if (!s.start_time || !s.end_time) return false;
+  1747→                                    const startH = parseInt(s.start_time.split(":")[0]);
+  1748→                                    const endH = s.end_time === "00:00" ? 24 : parseInt(s.end_time.split(":")[0]);
+  1749→                                    return hour >= startH && hour < endH;
+  1750→                                  });
+  1751→
+  1752→                                  return (
+  1753→                                    <div
+  1754→                                      key={dayVal}
+  1755→                                      className={`h-7 rounded text-[9px] flex items-center justify-center ${
+  1756→                                        matching.length > 0
+  1757→                                          ? matching.some((s) => s.is_available)
+  1758→                                            ? "bg-teal-100 text-teal-800 font-medium"
+  1759→                                            : "bg-red-100 text-red-800"
+  1760→                                          : "bg-[#FAFAFA]"
+  1761→                                      }`}
+  1762→                                    >
+  1763→                                      {matching.length > 0 && matching[0].label && (
+  1764→                                        <span className="truncate px-0.5">{matching[0].label}</span>
+  1765→                                      )}
+  1766→                                    </div>
+  1767→                                  );
+  1768→                                })}
+  1769→                              </div>
+  1770→                            );
+  1771→                          })}
+  1772→                        </div>
+  1773→                      </div>
+  1774→
+  1775→                      {/* Slots detail */}
+  1776→                      {recruiterSlots.length > 0 && (
+  1777→                        <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+  1778→                          <div className="flex flex-wrap gap-2">
+  1779→                            {recruiterSlots.map((slot) => {
+  1780→                              const dayLabel = slot.day_of_week !== null
+  1781→                                ? DAYS_OF_WEEK[DAY_VALUES.indexOf(slot.day_of_week)]
+  1782→                                : slot.specific_date
+  1783→                                  ? new Date(slot.specific_date).toLocaleDateString()
+  1784→                                  : "Unset";
+  1785→                              return (
+  1786→                                <Badge
+  1787→                                  key={slot.id}
+  1788→                                  variant="outline"
+  1789→                                  className={`text-[10px] ${
+  1790→                                    slot.is_available
+  1791→                                      ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+  1792→                                      : "border-red-300 text-red-700 bg-red-50"
+  1793→                                  }`}
+  1794→                                >
+  1795→                                  {dayLabel} {slot.start_time && slot.end_time
+  1796→                                    ? `${formatTimeDisplay(slot.start_time)}–${formatTimeDisplay(slot.end_time)}`
+  1797→                                    : "All day"}
+  1798→                                  {slot.label && ` · ${slot.label}`}
+  1799→                                </Badge>
+  1800→                              );
+  1801→                            })}
+  1802→                          </div>
+  1803→                        </div>
+  1804→                      )}
+  1805→                    </CardContent>
+  1806→                  </Card>
+  1807→                );
+  1808→              })}
+  1809→
+  1810→              {/* Upcoming Calls / Meetings */}
+  1811→              <Card>
+  1812→                <CardHeader className="pb-3">
+  1813→                  <CardTitle className="text-base flex items-center gap-2">
+  1814→                    <Phone className="size-5 text-[#0D9488]" />
+  1815→                    Upcoming Calls & Meetings
+  1816→                  </CardTitle>
+  1817→                </CardHeader>
+  1818→                <CardContent>
+  1819→                  {/* We check if there are any accepted shift requests that could be upcoming */}
+  1820→                  {(() => {
+  1821→                    const upcoming = shiftRequests.filter(
+  1822→                      (r) => r.status === "accepted" && new Date(r.shift_date) >= new Date(new Date().toDateString())
+  1823→                    );
+  1824→                    if (upcoming.length === 0) {
+  1825→                      return (
+  1826→                        <div className="text-center py-6">
+  1827→                          <div className="size-10 rounded-full bg-[#F8F7F4] flex items-center justify-center mx-auto mb-2">
+  1828→                            <Phone className="size-5 text-muted-foreground" />
+  1829→                          </div>
+  1830→                          <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
+  1831→                        </div>
+  1832→                      );
+  1833→                    }
+  1834→                    return (
+  1835→                      <div className="space-y-2">
+  1836→                        {upcoming
+  1837→                          .sort((a, b) => new Date(a.shift_date).getTime() - new Date(b.shift_date).getTime())
+  1838→                          .map((req) => {
+  1839→                            const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
+  1840→                            const agency = req.recruiter_user.organization?.name;
+  1841→                            const isToday = new Date(req.shift_date).toDateString() === new Date().toDateString();
+  1842→                            return (
+  1843→                              <div
+  1844→                                key={req.id}
+  1845→                                className="flex items-center gap-3 p-3 rounded-lg border border-[#E5E7EB] hover:bg-[#F8F7F4] transition-colors"
+  1846→                              >
+  1847→                                <div className="size-8 rounded-lg bg-[#0D9488]/10 flex items-center justify-center shrink-0">
+  1848→                                  <Phone className="size-4 text-[#0D9488]" />
+  1849→                                </div>
+  1850→                                <div className="flex-1 min-w-0">
+  1851→                                  <p className="text-sm font-medium">
+  1852→                                    {req.position || "Shift"} at {req.facility_name || "TBD"}
+  1853→                                  </p>
+  1854→                                  <p className="text-xs text-muted-foreground mt-0.5">
+  1855→                                    {recruiterName}{agency ? ` (${agency})` : ""}
+  1856→                                    {" · "}
+  1857→                                    {isToday ? "Today" : new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+  1858→                                    {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
+  1859→                                  </p>
+  1860→                                </div>
+  1861→                                <Badge className="text-[10px] bg-[#0D9488]/10 text-[#0D9488] border-[#0D9488]/20">
+  1862→                                  {isToday ? "Today" : "Upcoming"}
+  1863→                                </Badge>
+  1864→                              </div>
+  1865→                            );
+  1866→                          })}
+  1867→                      </div>
+  1868→                    );
+  1869→                  })()}
+  1870→                </CardContent>
+  1871→              </Card>
+  1872→            </div>
+  1873→          )}
+  1874→        </TabsContent>
+  1875→      </Tabs>
+  1876→    </div>
+  1877→  );
+  1878→}
+  1879→
+  1880→
+  1881→

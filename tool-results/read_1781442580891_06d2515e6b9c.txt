@@ -1,0 +1,1780 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef } from "react";
+     4→import { PageHeader } from "@/components/layout/page-header";
+     5→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     6→import { Badge } from "@/components/ui/badge";
+     7→import { Button } from "@/components/ui/button";
+     8→import { Input } from "@/components/ui/input";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Textarea } from "@/components/ui/textarea";
+    11→import { Progress } from "@/components/ui/progress";
+    12→import { Skeleton } from "@/components/ui/skeleton";
+    13→import { Separator } from "@/components/ui/separator";
+    14→import { ScrollArea } from "@/components/ui/scroll-area";
+    15→import {
+    16→  Select,
+    17→  SelectContent,
+    18→  SelectItem,
+    19→  SelectTrigger,
+    20→  SelectValue,
+    21→} from "@/components/ui/select";
+    22→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    23→import {
+    24→  Dialog,
+    25→  DialogContent,
+    26→  DialogHeader,
+    27→  DialogTitle,
+    28→  DialogTrigger,
+    29→} from "@/components/ui/dialog";
+    30→import {
+    31→  Upload,
+    32→  Pencil,
+    33→  FileText,
+    34→  X,
+    35→  Plus,
+    36→  Trash2,
+    37→  Download,
+    38→  Loader2,
+    39→  Calendar,
+    40→  User,
+    41→  Briefcase,
+    42→  GraduationCap,
+    43→  Award,
+    44→  Wrench,
+    45→  Sparkles,
+    46→  Eye,
+    47→  MessageSquare,
+    48→  Send,
+    49→  Bot,
+    50→  Copy,
+    51→  Check,
+    52→} from "lucide-react";
+    53→import { toast } from "sonner";
+    54→import { clientZaiChatCompletion } from "@/lib/ai-client";
+    55→
+    56→interface ResumeData {
+    57→  id: number;
+    58→  fileUrl: string | null;
+    59→  isBuilderResume: boolean;
+    60→  createdAt: string;
+    61→  parsedData: ResumeParsedData | null;
+    62→}
+    63→
+    64→interface ResumeParsedData {
+    65→  contact?: {
+    66→    fullName?: string;
+    67→    phone?: string;
+    68→    email?: string;
+    69→    address?: string;
+    70→  };
+    71→  summary?: string;
+    72→  experience?: {
+    73→    facility: string;
+    74→    unit: string;
+    75→    startDate: string;
+    76→    endDate: string;
+    77→    description: string;
+    78→  }[];
+    79→  education?: {
+    80→    school: string;
+    81→    degree: string;
+    82→    year: string;
+    83→  }[];
+    84→  certifications?: {
+    85→    name: string;
+    86→    issuingOrg: string;
+    87→    year: string;
+    88→  }[];
+    89→  skills?: {
+    90→    skill: string;
+    91→    proficiency: string;
+    92→  }[];
+    93→}
+    94→
+    95→interface ChatMessage {
+    96→  role: "user" | "assistant";
+    97→  content: string;
+    98→}
+    99→
+   100→type PageMode = "loading" | "no-resume" | "builder" | "view";
+   101→
+   102→// ---------- AI Assist Button Component ----------
+   103→function AiAssistButton({
+   104→  label,
+   105→  action,
+   106→  context,
+   107→  currentContent,
+   108→  onResult,
+   109→}: {
+   110→  label: string;
+   111→  action: string;
+   112→  context?: Record<string, unknown>;
+   113→  currentContent?: string;
+   114→  onResult: (result: string) => void;
+   115→}) {
+   116→  const [isLoading, setIsLoading] = useState(false);
+   117→
+   118→  const handleClick = async () => {
+   119→    setIsLoading(true);
+   120→    try {
+   121→      // Build system and user prompts (same logic as server route)
+   122→      let systemPrompt = "";
+   123→      let userPrompt = "";
+   124→
+   125→      switch (action) {
+   126→        case "generate_summary": {
+   127→          systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Write a compelling professional summary for a healthcare professional's resume. The summary should be concise (2-4 sentences), highlight key qualifications, and be tailored to healthcare positions. Return ONLY the summary text, no additional commentary.`;
+   128→          userPrompt = context
+   129→            ? `Generate a professional summary based on this information:\n\n${JSON.stringify(context, null, 2)}`
+   130→            : "Generate a professional summary for an experienced healthcare professional (nurse/therapist/technician).";
+   131→          break;
+   132→        }
+   133→        case "improve_summary": {
+   134→          systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Improve and enhance the given professional summary to make it more compelling, impactful, and tailored for healthcare positions. Keep it concise (2-4 sentences). Return ONLY the improved summary text, no additional commentary.`;
+   135→          userPrompt = `Improve this professional summary:\n\n"${currentContent}"`;
+   136→          break;
+   137→        }
+   138→        case "improve_experience": {
+   139→          systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Improve and enhance the given work experience description to make it more impactful, using strong action verbs and quantifiable achievements where possible. Tailor it for healthcare positions. Return ONLY the improved description text, no additional commentary.`;
+   140→          userPrompt = `Improve this work experience description for a healthcare position:\n\n"${currentContent}"\n\nContext: ${context ? JSON.stringify(context) : "Healthcare professional"}`;
+   141→          break;
+   142→        }
+   143→        case "suggest_skills": {
+   144→          systemPrompt = `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare skills that the candidate should include in their resume. Return a JSON array of objects with "skill" (string) and "proficiency" (one of: Beginner, Intermediate, Advanced, Expert) fields. Return ONLY the JSON array, no additional text.`;
+   145→          userPrompt = context
+   146→            ? `Suggest healthcare skills for this professional:\n\n${JSON.stringify(context, null, 2)}`
+   147→            : "Suggest common healthcare skills for an experienced nurse or healthcare professional.";
+   148→          break;
+   149→        }
+   150→        case "suggest_certifications": {
+   151→          systemPrompt = `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare certifications that the candidate should pursue or include in their resume. Return a JSON array of objects with "name" (string), "issuingOrg" (string), and "year" (string) fields. Return ONLY the JSON array, no additional text.`;
+   152→          userPrompt = context
+   153→            ? `Suggest healthcare certifications for this professional:\n\n${JSON.stringify(context, null, 2)}`
+   154→            : "Suggest common healthcare certifications for an experienced nurse or healthcare professional.";
+   155→          break;
+   156→        }
+   157→        case "generate_full_resume": {
+   158→          systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Generate complete resume data based on the provided information. Return a JSON object with this exact structure:
+   159→{
+   160→  "contact": { "fullName": "", "phone": "", "email": "", "address": "" },
+   161→  "summary": "",
+   162→  "experience": [{ "facility": "", "unit": "", "startDate": "", "endDate": "", "description": "" }],
+   163→  "education": [{ "school": "", "degree": "", "year": "" }],
+   164→  "certifications": [{ "name": "", "issuingOrg": "", "year": "" }],
+   165→  "skills": [{ "skill": "", "proficiency": "Intermediate" }]
+   166→}
+   167→Return ONLY valid JSON, no additional text or markdown.`;
+   168→          userPrompt = `Generate a complete healthcare resume based on this information:\n\n${JSON.stringify(context, null, 2)}`;
+   169→          break;
+   170→        }
+   171→        default: {
+   172→          toast.error("Unknown AI action");
+   173→          return;
+   174→        }
+   175→      }
+   176→
+   177→      // Call AI directly from the browser (bypasses Vercel server network issues)
+   178→      const completion = await clientZaiChatCompletion({
+   179→        messages: [
+   180→          { role: "system", content: systemPrompt },
+   181→          { role: "user", content: userPrompt },
+   182→        ],
+   183→        temperature: 0.7,
+   184→        max_tokens: 2000,
+   185→      });
+   186→
+   187→      const result = completion.choices?.[0]?.message?.content || "";
+   188→
+   189→      if (!result) {
+   190→        toast.error("AI could not generate a suggestion");
+   191→        return;
+   192→      }
+   193→
+   194→      // For structured actions, try to parse JSON
+   195→      if (["suggest_skills", "suggest_certifications", "generate_full_resume"].includes(action)) {
+   196→        try {
+   197→          const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result];
+   198→          const jsonStr = jsonMatch[1].trim();
+   199→          const parsed = JSON.parse(jsonStr);
+   200→          onResult(JSON.stringify(parsed));
+   201→        } catch {
+   202→          onResult(result);
+   203→        }
+   204→      } else {
+   205→        onResult(result);
+   206→      }
+   207→      toast.success("AI suggestion ready!");
+   208→    } catch (err) {
+   209→      const errMsg = err instanceof Error ? err.message : "Unknown error";
+   210→      toast.error("AI assist failed", { description: errMsg });
+   211→    } finally {
+   212→      setIsLoading(false);
+   213→    }
+   214→  };
+   215→
+   216→  return (
+   217→    <Button
+   218→      variant="outline"
+   219→      size="sm"
+   220→      className="gap-1.5 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+   221→      onClick={handleClick}
+   222→      disabled={isLoading}
+   223→    >
+   224→      {isLoading ? (
+   225→        <Loader2 className="size-3.5 animate-spin" />
+   226→      ) : (
+   227→        <Sparkles className="size-3.5" />
+   228→      )}
+   229→      {isLoading ? "Generating..." : label}
+   230→    </Button>
+   231→  );
+   232→}
+   233→
+   234→// ---------- Live Resume Preview Component ----------
+   235→function ResumePreview({ data }: { data: ResumeParsedData }) {
+   236→  return (
+   237→    <div className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-lg border shadow-sm p-6 max-w-full text-sm">
+   238→      {/* Header */}
+   239→      <div className="text-center border-b pb-4 mb-4">
+   240→        <h1 className="text-xl font-bold">
+   241→          {data.contact?.fullName || "Your Name"}
+   242→        </h1>
+   243→        <div className="flex items-center justify-center gap-3 mt-1 text-xs text-zinc-500 dark:text-zinc-400 flex-wrap">
+   244→          {data.contact?.email && <span>{data.contact.email}</span>}
+   245→          {data.contact?.phone && (
+   246→            <>
+   247→              <span>|</span>
+   248→              <span>{data.contact.phone}</span>
+   249→            </>
+   250→          )}
+   251→          {data.contact?.address && (
+   252→            <>
+   253→              <span>|</span>
+   254→              <span>{data.contact.address}</span>
+   255→            </>
+   256→          )}
+   257→        </div>
+   258→      </div>
+   259→
+   260→      {/* Summary */}
+   261→      {data.summary && (
+   262→        <div className="mb-4">
+   263→          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+   264→            Professional Summary
+   265→          </h2>
+   266→          <p className="text-xs leading-relaxed whitespace-pre-wrap">{data.summary}</p>
+   267→        </div>
+   268→      )}
+   269→
+   270→      {/* Experience */}
+   271→      {data.experience && data.experience.length > 0 && (
+   272→        <div className="mb-4">
+   273→          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+   274→            Work Experience
+   275→          </h2>
+   276→          {data.experience.map((exp, idx) => (
+   277→            <div key={idx} className="mb-2 last:mb-0">
+   278→              <div className="flex items-start justify-between">
+   279→                <div>
+   280→                  <p className="font-semibold text-xs">{exp.facility || "Facility"}</p>
+   281→                  <p className="text-xs text-zinc-600 dark:text-zinc-400">{exp.unit}</p>
+   282→                </div>
+   283→                <p className="text-xs text-zinc-500 dark:text-zinc-400 shrink-0 ml-2">
+   284→                  {exp.startDate}{exp.endDate ? ` — ${exp.endDate}` : exp.startDate ? " — Present" : ""}
+   285→                </p>
+   286→              </div>
+   287→              {exp.description && (
+   288→                <p className="text-xs mt-0.5 text-zinc-600 dark:text-zinc-400">{exp.description}</p>
+   289→              )}
+   290→            </div>
+   291→          ))}
+   292→        </div>
+   293→      )}
+   294→
+   295→      {/* Education */}
+   296→      {data.education && data.education.length > 0 && (
+   297→        <div className="mb-4">
+   298→          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+   299→            Education
+   300→          </h2>
+   301→          {data.education.map((edu, idx) => (
+   302→            <div key={idx} className="flex items-start justify-between mb-1 last:mb-0">
+   303→              <div>
+   304→                <p className="font-semibold text-xs">{edu.degree}</p>
+   305→                <p className="text-xs text-zinc-600 dark:text-zinc-400">{edu.school}</p>
+   306→              </div>
+   307→              {edu.year && (
+   308→                <p className="text-xs text-zinc-500 dark:text-zinc-400 shrink-0 ml-2">{edu.year}</p>
+   309→              )}
+   310→            </div>
+   311→          ))}
+   312→        </div>
+   313→      )}
+   314→
+   315→      {/* Certifications */}
+   316→      {data.certifications && data.certifications.length > 0 && (
+   317→        <div className="mb-4">
+   318→          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+   319→            Certifications
+   320→          </h2>
+   321→          {data.certifications.map((cert, idx) => (
+   322→            <div key={idx} className="flex items-start justify-between mb-1 last:mb-0">
+   323→              <div>
+   324→                <p className="font-semibold text-xs">{cert.name}</p>
+   325→                {cert.issuingOrg && (
+   326→                  <p className="text-xs text-zinc-600 dark:text-zinc-400">{cert.issuingOrg}</p>
+   327→                )}
+   328→              </div>
+   329→              {cert.year && (
+   330→                <p className="text-xs text-zinc-500 dark:text-zinc-400 shrink-0 ml-2">{cert.year}</p>
+   331→              )}
+   332→            </div>
+   333→          ))}
+   334→        </div>
+   335→      )}
+   336→
+   337→      {/* Skills */}
+   338→      {data.skills && data.skills.length > 0 && (
+   339→        <div>
+   340→          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+   341→            Skills
+   342→          </h2>
+   343→          <div className="flex flex-wrap gap-1.5">
+   344→            {data.skills.map((s, idx) => (
+   345→              <span
+   346→                key={idx}
+   347→                className="inline-flex items-center rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-medium"
+   348→              >
+   349→                {s.skill}{s.proficiency ? ` (${s.proficiency})` : ""}
+   350→              </span>
+   351→            ))}
+   352→          </div>
+   353→        </div>
+   354→      )}
+   355→    </div>
+   356→  );
+   357→}
+   358→
+   359→// ---------- AI Chat Panel Component ----------
+   360→function AiChatPanel({
+   361→  resumeContext,
+   362→  onApplySuggestion,
+   363→}: {
+   364→  resumeContext: ResumeParsedData;
+   365→  onApplySuggestion: (action: string, result: unknown) => void;
+   366→}) {
+   367→  const [messages, setMessages] = useState<ChatMessage[]>([
+   368→    {
+   369→      role: "assistant",
+   370→      content:
+   371→        "Hi! I'm your AI resume assistant. I can help you improve your resume, suggest content, and answer questions about healthcare resume best practices. How can I help you today?",
+   372→    },
+   373→  ]);
+   374→  const [input, setInput] = useState("");
+   375→  const [isSending, setIsSending] = useState(false);
+   376→  const scrollAreaRef = useRef<HTMLDivElement>(null);
+   377→  const messagesEndRef = useRef<HTMLDivElement>(null);
+   378→
+   379→  // Auto-scroll to bottom when messages change using both methods for reliability
+   380→  useEffect(() => {
+   381→    requestAnimationFrame(() => {
+   382→      // Method 1: Direct scrollTop on the scrollable container
+   383→      if (scrollAreaRef.current) {
+   384→        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+   385→      }
+   386→      // Method 2: scrollIntoView as backup
+   387→      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+   388→    });
+   389→  }, [messages, isSending]);
+   390→
+   391→  const handleSend = async (message?: string) => {
+   392→    const trimmed = (message || input).trim();
+   393→    if (!trimmed || isSending) return;
+   394→
+   395→    const userMsg: ChatMessage = { role: "user", content: trimmed };
+   396→    setMessages((prev) => [...prev, userMsg]);
+   397→    setInput("");
+   398→    setIsSending(true);
+   399→
+   400→    try {
+   401→      const systemPrompt = `You are an AI resume assistant for MyZipVault, a healthcare staffing compliance platform. You help candidates improve their resumes, suggest content, and answer questions about resume best practices for healthcare positions. Be helpful, concise, and professional. If asked about something unrelated to resumes or healthcare careers, politely redirect. Format your responses clearly with bullet points or paragraphs as appropriate.`;
+   402→
+   403→      let userPrompt = trimmed;
+   404→      if (resumeContext) {
+   405→        userPrompt += `\n\nCandidate's current resume data for context:\n${JSON.stringify(resumeContext, null, 2)}`;
+   406→      }
+   407→
+   408→      // Call AI directly from the browser (bypasses Vercel server network issues)
+   409→      const completion = await clientZaiChatCompletion({
+   410→        messages: [
+   411→          { role: "system", content: systemPrompt },
+   412→          { role: "user", content: userPrompt },
+   413→        ],
+   414→        temperature: 0.7,
+   415→        max_tokens: 2000,
+   416→      });
+   417→
+   418→      const resultText = completion.choices?.[0]?.message?.content || "";
+   419→      setMessages((prev) => [
+   420→        ...prev,
+   421→        { role: "assistant", content: resultText || "I couldn't generate a response." },
+   422→      ]);
+   423→    } catch (err) {
+   424→      const errMsg = err instanceof Error ? err.message : "Unknown error";
+   425→      setMessages((prev) => [
+   426→        ...prev,
+   427→        { role: "assistant", content: `Sorry, I encountered an error: ${errMsg}. Please try again later.` },
+   428→      ]);
+   429→    } finally {
+   430→      setIsSending(false);
+   431→    }
+   432→  };
+   433→
+   434→  const quickActions = [
+   435→    { label: "Generate Summary", message: "Generate a professional summary for my resume" },
+   436→    { label: "Suggest Skills", message: "What skills should I add for a healthcare position?" },
+   437→    { label: "Improve Experience", message: "Help me improve my work experience descriptions" },
+   438→    { label: "Suggest Certifications", message: "What certifications are recommended for healthcare workers?" },
+   439→  ];
+   440→
+   441→  return (
+   442→    <div className="flex flex-col h-[calc(100vh-140px)] min-h-[500px] rounded-xl border bg-card text-card-foreground shadow-sm">
+   443→      {/* Header */}
+   444→      <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+   445→        <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+   446→          <Sparkles className="size-4 text-violet-600 dark:text-violet-400" />
+   447→        </div>
+   448→        <span className="text-sm font-semibold">AI Resume Assistant</span>
+   449→        <Badge variant="secondary" className="text-[10px] ml-auto">AI</Badge>
+   450→      </div>
+   451→
+   452→      {/* Scrollable messages - min-h-0 is critical for flex overflow to work */}
+   453→      <div
+   454→        className="flex-1 min-h-0 overflow-y-auto px-4 py-3 scroll-smooth"
+   455→        ref={scrollAreaRef}
+   456→        style={{ scrollbarGutter: "stable" }}
+   457→      >
+   458→        <div className="space-y-3 pr-1">
+   459→          {messages.map((msg, idx) => (
+   460→            <div
+   461→              key={idx}
+   462→              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+   463→            >
+   464→              {msg.role === "assistant" && (
+   465→                <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
+   466→                  <Bot className="size-4 text-violet-600 dark:text-violet-400" />
+   467→                </div>
+   468→              )}
+   469→              <div
+   470→                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
+   471→                  msg.role === "user"
+   472→                    ? "bg-primary text-primary-foreground"
+   473→                    : "bg-muted"
+   474→                }`}
+   475→              >
+   476→                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+   477→              </div>
+   478→            </div>
+   479→          ))}
+   480→          {isSending && (
+   481→            <div className="flex gap-2 justify-start">
+   482→              <div className="size-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+   483→                <Bot className="size-4 text-violet-600 dark:text-violet-400" />
+   484→              </div>
+   485→              <div className="bg-muted rounded-xl px-3.5 py-2.5">
+   486→                <div className="flex items-center gap-2">
+   487→                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+   488→                  <span className="text-xs text-muted-foreground">Thinking...</span>
+   489→                </div>
+   490→              </div>
+   491→            </div>
+   492→          )}
+   493→          {/* Invisible element to scroll to */}
+   494→          <div ref={messagesEndRef} />
+   495→        </div>
+   496→      </div>
+   497→
+   498→      {/* Quick actions */}
+   499→      {messages.length <= 1 && !isSending && (
+   500→        <div className="px-4 pb-2 shrink-0 border-t pt-2">
+   501→          <p className="text-[11px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Quick Actions</p>
+   502→          <div className="flex flex-wrap gap-1.5">
+   503→            {quickActions.map((action) => (
+   504→              <Button
+   505→                key={action.label}
+   506→                variant="outline"
+   507→                size="sm"
+   508→                className="text-xs h-7 gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+   509→                onClick={() => handleSend(action.message)}
+   510→              >
+   511→                <Sparkles className="size-3" />
+   512→                {action.label}
+   513→              </Button>
+   514→            ))}
+   515→          </div>
+   516→        </div>
+   517→      )}
+   518→
+   519→      {/* Input area */}
+   520→      <div className="flex gap-2 shrink-0 p-4 pt-2 border-t bg-card">
+   521→        <Input
+   522→          value={input}
+   523→          onChange={(e) => setInput(e.target.value)}
+   524→          onKeyDown={(e) => {
+   525→            if (e.key === "Enter" && !e.shiftKey) {
+   526→              e.preventDefault();
+   527→              handleSend();
+   528→            }
+   529→          }}
+   530→          placeholder="Ask AI to improve your resume..."
+   531→          className="flex-1"
+   532→          disabled={isSending}
+   533→        />
+   534→        <Button size="icon" onClick={() => handleSend()} disabled={isSending || !input.trim()}>
+   535→          <Send className="size-4" />
+   536→        </Button>
+   537→      </div>
+   538→    </div>
+   539→  );
+   540→}
+   541→
+   542→// ---------- Main Page Component ----------
+   543→export default function CandidateResumePage() {
+   544→  const [mode, setMode] = useState<PageMode>("loading");
+   545→  const [resume, setResume] = useState<ResumeData | null>(null);
+   546→  const [isUploading, setIsUploading] = useState(false);
+   547→  const [isSaving, setIsSaving] = useState(false);
+   548→  const [isExporting, setIsExporting] = useState(false);
+   549→  const [showPreview, setShowPreview] = useState(false);
+   550→  const [showAiChat, setShowAiChat] = useState(false);
+   551→  const [activeBuilderTab, setActiveBuilderTab] = useState("contact");
+   552→  const fileInputRef = useRef<HTMLInputElement>(null);
+   553→
+   554→  // Builder state
+   555→  const [contact, setContact] = useState({
+   556→    fullName: "",
+   557→    phone: "",
+   558→    email: "",
+   559→    address: "",
+   560→  });
+   561→  const [summary, setSummary] = useState("");
+   562→  const [experiences, setExperiences] = useState<ResumeParsedData["experience"]>([]);
+   563→  const [education, setEducation] = useState<ResumeParsedData["education"]>([]);
+   564→  const [certifications, setCertifications] = useState<ResumeParsedData["certifications"]>([]);
+   565→  const [skills, setSkills] = useState<ResumeParsedData["skills"]>([]);
+   566→
+   567→  // Build current preview data from builder state
+   568→  const currentPreviewData: ResumeParsedData = {
+   569→    contact,
+   570→    summary,
+   571→    experience: experiences,
+   572→    education,
+   573→    certifications,
+   574→    skills,
+   575→  };
+   576→
+   577→  const fetchResume = useCallback(async () => {
+   578→    try {
+   579→      const res = await fetch("/api/candidate/resume");
+   580→      if (!res.ok) throw new Error("Failed to fetch resume");
+   581→      const data = await res.json();
+   582→      if (data.resume) {
+   583→        setResume(data.resume);
+   584→        setMode("view");
+   585→      } else {
+   586→        setMode("no-resume");
+   587→      }
+   588→    } catch {
+   589→      toast.error("Failed to load resume");
+   590→      setMode("no-resume");
+   591→    }
+   592→  }, []);
+   593→
+   594→  useEffect(() => {
+   595→    fetchResume();
+   596→  }, [fetchResume]);
+   597→
+   598→  const populateBuilderFromResume = (data: ResumeParsedData) => {
+   599→    if (data.contact) {
+   600→      setContact({
+   601→        fullName: data.contact.fullName || "",
+   602→        phone: data.contact.phone || "",
+   603→        email: data.contact.email || "",
+   604→        address: data.contact.address || "",
+   605→      });
+   606→    }
+   607→    setSummary(data.summary || "");
+   608→    setExperiences(data.experience || []);
+   609→    setEducation(data.education || []);
+   610→    setCertifications(data.certifications || []);
+   611→    setSkills(data.skills || []);
+   612→  };
+   613→
+   614→  const handleUpload = async (file: File) => {
+   615→    const allowedTypes = [
+   616→      "application/pdf",
+   617→      "application/msword",
+   618→      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+   619→    ];
+   620→    if (!allowedTypes.includes(file.type)) {
+   621→      toast.error("Only PDF and Word documents are accepted");
+   622→      return;
+   623→    }
+   624→
+   625→    setIsUploading(true);
+   626→    try {
+   627→      const formData = new FormData();
+   628→      formData.append("file", file);
+   629→
+   630→      const res = await fetch("/api/candidate/resume/upload", {
+   631→        method: "POST",
+   632→        body: formData,
+   633→      });
+   634→
+   635→      if (!res.ok) {
+   636→        const data = await res.json();
+   637→        toast.error("Upload failed", { description: data.error });
+   638→        return;
+   639→      }
+   640→
+   641→      toast.success("Resume uploaded and parsed successfully!");
+   642→      fetchResume();
+   643→    } catch {
+   644→      toast.error("Failed to upload resume");
+   645→    } finally {
+   646→      setIsUploading(false);
+   647→    }
+   648→  };
+   649→
+   650→  const handleDrop = (e: React.DragEvent) => {
+   651→    e.preventDefault();
+   652→    const file = e.dataTransfer.files[0];
+   653→    if (file) handleUpload(file);
+   654→  };
+   655→
+   656→  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+   657→    const file = e.target.files?.[0];
+   658→    if (file) handleUpload(file);
+   659→  };
+   660→
+   661→  const handleSaveBuilder = async () => {
+   662→    setIsSaving(true);
+   663→    try {
+   664→      const parsedData: ResumeParsedData = {
+   665→        contact,
+   666→        summary,
+   667→        experience: experiences,
+   668→        education,
+   669→        certifications,
+   670→        skills,
+   671→      };
+   672→
+   673→      const res = await fetch("/api/candidate/resume", {
+   674→        method: "PUT",
+   675→        headers: { "Content-Type": "application/json" },
+   676→        body: JSON.stringify({ parsedData }),
+   677→      });
+   678→
+   679→      if (!res.ok) {
+   680→        const data = await res.json();
+   681→        toast.error("Save failed", { description: data.error });
+   682→        return;
+   683→      }
+   684→
+   685→      toast.success("Resume saved successfully!");
+   686→      fetchResume();
+   687→    } catch {
+   688→      toast.error("Failed to save resume");
+   689→    } finally {
+   690→      setIsSaving(false);
+   691→    }
+   692→  };
+   693→
+   694→  const handleDelete = async () => {
+   695→    if (!confirm("Are you sure you want to delete your resume?")) return;
+   696→
+   697→    try {
+   698→      const res = await fetch("/api/candidate/resume", { method: "DELETE" });
+   699→      if (!res.ok) {
+   700→        const data = await res.json();
+   701→        toast.error("Delete failed", { description: data.error });
+   702→        return;
+   703→      }
+   704→      toast.success("Resume deleted");
+   705→      setResume(null);
+   706→      setMode("no-resume");
+   707→      setContact({ fullName: "", phone: "", email: "", address: "" });
+   708→      setSummary("");
+   709→      setExperiences([]);
+   710→      setEducation([]);
+   711→      setCertifications([]);
+   712→      setSkills([]);
+   713→    } catch {
+   714→      toast.error("Failed to delete resume");
+   715→    }
+   716→  };
+   717→
+   718→  const handleExportPdf = async () => {
+   719→    setIsExporting(true);
+   720→    try {
+   721→      const res = await fetch("/api/candidate/resume/export-pdf");
+   722→      if (!res.ok) {
+   723→        const data = await res.json();
+   724→        toast.error("Export failed", { description: data.error || "Failed to generate PDF" });
+   725→        return;
+   726→      }
+   727→
+   728→      const blob = await res.blob();
+   729→      const url = window.URL.createObjectURL(blob);
+   730→      const a = document.createElement("a");
+   731→      a.href = url;
+   732→      a.download = `resume-${(resume?.parsedData?.contact?.fullName || "candidate").replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.pdf`;
+   733→      document.body.appendChild(a);
+   734→      a.click();
+   735→      a.remove();
+   736→      window.URL.revokeObjectURL(url);
+   737→      toast.success("Resume PDF exported successfully!");
+   738→    } catch {
+   739→      toast.error("Failed to export resume as PDF");
+   740→    } finally {
+   741→      setIsExporting(false);
+   742→    }
+   743→  };
+   744→
+   745→  // Calculate completeness
+   746→  const calcCompleteness = (data: ResumeParsedData | null) => {
+   747→    if (!data) return 0;
+   748→    let total = 6;
+   749→    let filled = 0;
+   750→    if (data.contact?.fullName) filled++;
+   751→    if (data.contact?.phone) filled++;
+   752→    if (data.contact?.email) filled++;
+   753→    if (data.summary) filled++;
+   754→    if (data.experience && data.experience.length > 0) { total++; filled++; }
+   755→    if (data.education && data.education.length > 0) { total++; filled++; }
+   756→    if (data.certifications && data.certifications.length > 0) { total++; filled++; }
+   757→    if (data.skills && data.skills.length > 0) { total++; filled++; }
+   758→    return Math.round((filled / total) * 100);
+   759→  };
+   760→
+   761→  // Get context for AI suggestions
+   762→  const getAiContext = () => ({
+   763→    contact,
+   764→    summary,
+   765→    experience: experiences,
+   766→    education,
+   767→    certifications,
+   768→    skills,
+   769→  });
+   770→
+   771→  // Loading state
+   772→  if (mode === "loading") {
+   773→    return (
+   774→      <div className="space-y-6">
+   775→        <PageHeader title="Resume" />
+   776→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   777→          <Skeleton className="h-72 w-full" />
+   778→          <Skeleton className="h-72 w-full" />
+   779→        </div>
+   780→      </div>
+   781→    );
+   782→  }
+   783→
+   784→  // No Resume State
+   785→  if (mode === "no-resume") {
+   786→    return (
+   787→      <div className="space-y-6">
+   788→        <PageHeader
+   789→          title="Resume"
+   790→          description="Upload or build your professional resume for healthcare positions."
+   791→        />
+   792→        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+   793→          {/* Upload Option */}
+   794→          <Card
+   795→            className="border-2 border-dashed hover:border-primary/50 transition-colors cursor-pointer"
+   796→            onDrop={handleDrop}
+   797→            onDragOver={(e) => e.preventDefault()}
+   798→            onClick={() => fileInputRef.current?.click()}
+   799→          >
+   800→            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
+   801→              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+   802→                <Upload className="size-8 text-primary" />
+   803→              </div>
+   804→              <h3 className="text-lg font-semibold">Upload Resume</h3>
+   805→              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
+   806→                Drag & drop your resume file or click to browse. AI will automatically parse and extract your information.
+   807→              </p>
+   808→              <p className="text-xs text-muted-foreground mt-1">
+   809→                Accepts PDF and Word documents
+   810→              </p>
+   811→              {isUploading && (
+   812→                <div className="flex items-center gap-2 mt-4 text-primary">
+   813→                  <Loader2 className="size-4 animate-spin" />
+   814→                  <span className="text-sm">Uploading & parsing...</span>
+   815→                </div>
+   816→              )}
+   817→              <input
+   818→                ref={fileInputRef}
+   819→                type="file"
+   820→                className="hidden"
+   821→                accept=".pdf,.doc,.docx"
+   822→                onChange={handleFileSelect}
+   823→              />
+   824→            </CardContent>
+   825→          </Card>
+   826→
+   827→          {/* Builder Option */}
+   828→          <Card className="hover:shadow-md transition-shadow">
+   829→            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
+   830→              <div className="size-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+   831→                <Pencil className="size-8 text-emerald-600 dark:text-emerald-400" />
+   832→              </div>
+   833→              <h3 className="text-lg font-semibold">Use Resume Builder</h3>
+   834→              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
+   835→                Create a professional healthcare resume step by step with our guided builder
+   836→              </p>
+   837→              <Button
+   838→                className="mt-6 gap-2 bg-emerald-600 hover:bg-emerald-700"
+   839→                onClick={() => setMode("builder")}
+   840→              >
+   841→                <Pencil className="size-4" />
+   842→                Start Building
+   843→              </Button>
+   844→            </CardContent>
+   845→          </Card>
+   846→
+   847→          {/* AI Builder Option */}
+   848→          <Card className="hover:shadow-md transition-shadow border-violet-200 dark:border-violet-800">
+   849→            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
+   850→              <div className="size-16 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
+   851→                <Sparkles className="size-8 text-violet-600 dark:text-violet-400" />
+   852→              </div>
+   853→              <h3 className="text-lg font-semibold">AI Resume Builder</h3>
+   854→              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
+   855→                Let AI help you build a professional healthcare resume with smart suggestions and content generation
+   856→              </p>
+   857→              <Button
+   858→                className="mt-6 gap-2 bg-violet-600 hover:bg-violet-700"
+   859→                onClick={() => {
+   860→                  setMode("builder");
+   861→                  setShowAiChat(true);
+   862→                }}
+   863→              >
+   864→                <Sparkles className="size-4" />
+   865→                Start with AI
+   866→              </Button>
+   867→            </CardContent>
+   868→          </Card>
+   869→        </div>
+   870→      </div>
+   871→    );
+   872→  }
+   873→
+   874→  // Builder Mode
+   875→  if (mode === "builder") {
+   876→    // Determine grid columns based on which panels are open
+   877→    const rightPanelCount = (showPreview ? 1 : 0) + (showAiChat ? 1 : 0);
+   878→    const gridCols = rightPanelCount === 0
+   879→      ? "grid-cols-1"
+   880→      : rightPanelCount === 1
+   881→        ? "grid-cols-1 xl:grid-cols-[1fr_420px]"
+   882→        : "grid-cols-1 xl:grid-cols-[1fr_420px_380px]";
+   883→
+   884→    return (
+   885→      <div className="space-y-6">
+   886→        <PageHeader
+   887→          title="Resume Builder"
+   888→          description="Build your professional healthcare resume"
+   889→          actions={
+   890→            <div className="flex items-center gap-2 flex-wrap">
+   891→              <Button
+   892→                variant={showAiChat ? "default" : "outline"}
+   893→                size="sm"
+   894→                className={`gap-1.5 ${!showAiChat ? "text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950" : "bg-violet-600 hover:bg-violet-700"}`}
+   895→                onClick={() => setShowAiChat(!showAiChat)}
+   896→              >
+   897→                <Sparkles className="size-3.5" />
+   898→                {showAiChat ? "Hide AI" : "AI Assist"}
+   899→              </Button>
+   900→              <Button
+   901→                variant={showPreview ? "default" : "outline"}
+   902→                size="sm"
+   903→                className="gap-1.5"
+   904→                onClick={() => setShowPreview(!showPreview)}
+   905→              >
+   906→                <Eye className="size-3.5" />
+   907→                {showPreview ? "Hide Preview" : "Live Preview"}
+   908→              </Button>
+   909→              <Button
+   910→                variant="outline"
+   911→                size="sm"
+   912→                onClick={() => {
+   913→                  if (resume) setMode("view");
+   914→                  else setMode("no-resume");
+   915→                }}
+   916→              >
+   917→                Cancel
+   918→              </Button>
+   919→              <Button
+   920→                size="sm"
+   921→                onClick={handleSaveBuilder}
+   922→                disabled={isSaving}
+   923→                className="gap-1.5"
+   924→              >
+   925→                {isSaving ? (
+   926→                  <>
+   927→                    <Loader2 className="size-3.5 animate-spin" />
+   928→                    Saving...
+   929→                  </>
+   930→                ) : (
+   931→                  "Save Resume"
+   932→                )}
+   933→              </Button>
+   934→              <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting} className="gap-1.5">
+   935→                {isExporting ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+   936→                {isExporting ? "Exporting..." : "Export PDF"}
+   937→              </Button>
+   938→            </div>
+   939→          }
+   940→        />
+   941→
+   942→        <div className={`grid gap-6 ${gridCols}`}>
+   943→          {/* Left: Builder Tabs (always shown) */}
+   944→          <div className="min-w-0">
+   945→            <Tabs value={activeBuilderTab} onValueChange={setActiveBuilderTab} className="space-y-4">
+   946→              <TabsList className="flex-wrap">
+   947→                <TabsTrigger value="contact" className="gap-1.5">
+   948→                  <User className="size-3.5" /> Contact
+   949→                </TabsTrigger>
+   950→                <TabsTrigger value="summary" className="gap-1.5">
+   951→                  <FileText className="size-3.5" /> Summary
+   952→                </TabsTrigger>
+   953→                <TabsTrigger value="experience" className="gap-1.5">
+   954→                  <Briefcase className="size-3.5" /> Experience
+   955→                </TabsTrigger>
+   956→                <TabsTrigger value="education" className="gap-1.5">
+   957→                  <GraduationCap className="size-3.5" /> Education
+   958→                </TabsTrigger>
+   959→                <TabsTrigger value="certifications" className="gap-1.5">
+   960→                  <Award className="size-3.5" /> Certifications
+   961→                </TabsTrigger>
+   962→                <TabsTrigger value="skills" className="gap-1.5">
+   963→                  <Wrench className="size-3.5" /> Skills
+   964→                </TabsTrigger>
+   965→              </TabsList>
+   966→
+   967→              {/* Contact Tab */}
+   968→              <TabsContent value="contact">
+   969→                <Card>
+   970→                  <CardHeader>
+   971→                    <CardTitle className="text-base">Contact Information</CardTitle>
+   972→                  </CardHeader>
+   973→                  <CardContent>
+   974→                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   975→                      <div className="space-y-2">
+   976→                        <Label htmlFor="fullName">Full Name</Label>
+   977→                        <Input
+   978→                          id="fullName"
+   979→                          placeholder="John Smith"
+   980→                          value={contact.fullName}
+   981→                          onChange={(e) => setContact({ ...contact, fullName: e.target.value })}
+   982→                        />
+   983→                      </div>
+   984→                      <div className="space-y-2">
+   985→                        <Label htmlFor="phone">Phone</Label>
+   986→                        <Input
+   987→                          id="phone"
+   988→                          placeholder="(555) 123-4567"
+   989→                          value={contact.phone}
+   990→                          onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+   991→                        />
+   992→                      </div>
+   993→                      <div className="space-y-2">
+   994→                        <Label htmlFor="email">Email</Label>
+   995→                        <Input
+   996→                          id="email"
+   997→                          type="email"
+   998→                          placeholder="john@example.com"
+   999→                          value={contact.email}
+  1000→                          onChange={(e) => setContact({ ...contact, email: e.target.value })}
+  1001→                        />
+  1002→                      </div>
+  1003→                      <div className="space-y-2">
+  1004→                        <Label htmlFor="address">Address</Label>
+  1005→                        <Input
+  1006→                          id="address"
+  1007→                          placeholder="City, State"
+  1008→                          value={contact.address}
+  1009→                          onChange={(e) => setContact({ ...contact, address: e.target.value })}
+  1010→                        />
+  1011→                      </div>
+  1012→                    </div>
+  1013→                  </CardContent>
+  1014→                </Card>
+  1015→              </TabsContent>
+  1016→
+  1017→              {/* Summary Tab */}
+  1018→              <TabsContent value="summary">
+  1019→                <Card>
+  1020→                  <CardHeader>
+  1021→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1022→                      <CardTitle className="text-base">Professional Summary</CardTitle>
+  1023→                      <AiAssistButton
+  1024→                        label={summary ? "AI Improve" : "AI Generate"}
+  1025→                        action={summary ? "improve_summary" : "generate_summary"}
+  1026→                        context={getAiContext()}
+  1027→                        currentContent={summary}
+  1028→                        onResult={(r) => setSummary(r)}
+  1029→                      />
+  1030→                    </div>
+  1031→                  </CardHeader>
+  1032→                  <CardContent className="space-y-3">
+  1033→                    <Textarea
+  1034→                      placeholder="Write a brief summary of your professional background, key skills, and career objectives..."
+  1035→                      rows={6}
+  1036→                      value={summary}
+  1037→                      onChange={(e) => setSummary(e.target.value)}
+  1038→                    />
+  1039→                    <p className="text-xs text-muted-foreground">
+  1040→                      Tip: Use the AI Generate button to create or improve your summary with healthcare-specific language.
+  1041→                    </p>
+  1042→                  </CardContent>
+  1043→                </Card>
+  1044→              </TabsContent>
+  1045→
+  1046→              {/* Experience Tab */}
+  1047→              <TabsContent value="experience">
+  1048→                <Card>
+  1049→                  <CardHeader>
+  1050→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1051→                      <CardTitle className="text-base">Work Experience</CardTitle>
+  1052→                      <Button
+  1053→                        size="sm"
+  1054→                        className="gap-1"
+  1055→                        onClick={() =>
+  1056→                          setExperiences([
+  1057→                            ...experiences,
+  1058→                            { facility: "", unit: "", startDate: "", endDate: "", description: "" },
+  1059→                          ])
+  1060→                        }
+  1061→                      >
+  1062→                        <Plus className="size-3.5" /> Add Experience
+  1063→                      </Button>
+  1064→                    </div>
+  1065→                  </CardHeader>
+  1066→                  <CardContent className="space-y-4">
+  1067→                    {experiences.length === 0 && (
+  1068→                      <div className="text-center py-8 text-muted-foreground">
+  1069→                        <Briefcase className="size-8 mx-auto mb-2 opacity-50" />
+  1070→                        <p className="text-sm">No experience entries yet</p>
+  1071→                        <p className="text-xs mt-1">Add your work experience or use AI to help draft descriptions</p>
+  1072→                      </div>
+  1073→                    )}
+  1074→                    {experiences.map((exp, idx) => (
+  1075→                      <div key={idx}>
+  1076→                        {idx > 0 && <Separator className="mb-4" />}
+  1077→                        <div className="flex items-start gap-2">
+  1078→                          <div className="flex-1 space-y-3">
+  1079→                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  1080→                              <div className="space-y-2">
+  1081→                                <Label>Facility</Label>
+  1082→                                <Input
+  1083→                                  placeholder="Hospital Name"
+  1084→                                  value={exp.facility}
+  1085→                                  onChange={(e) => {
+  1086→                                    const updated = [...experiences];
+  1087→                                    updated[idx] = { ...exp, facility: e.target.value };
+  1088→                                    setExperiences(updated);
+  1089→                                  }}
+  1090→                                />
+  1091→                              </div>
+  1092→                              <div className="space-y-2">
+  1093→                                <Label>Unit / Department</Label>
+  1094→                                <Input
+  1095→                                  placeholder="ICU, ER, Med-Surg..."
+  1096→                                  value={exp.unit}
+  1097→                                  onChange={(e) => {
+  1098→                                    const updated = [...experiences];
+  1099→                                    updated[idx] = { ...exp, unit: e.target.value };
+  1100→                                    setExperiences(updated);
+  1101→                                  }}
+  1102→                                />
+  1103→                              </div>
+  1104→                              <div className="space-y-2">
+  1105→                                <Label>Start Date</Label>
+  1106→                                <Input
+  1107→                                  type="month"
+  1108→                                  value={exp.startDate}
+  1109→                                  onChange={(e) => {
+  1110→                                    const updated = [...experiences];
+  1111→                                    updated[idx] = { ...exp, startDate: e.target.value };
+  1112→                                    setExperiences(updated);
+  1113→                                  }}
+  1114→                                />
+  1115→                              </div>
+  1116→                              <div className="space-y-2">
+  1117→                                <Label>End Date</Label>
+  1118→                                <Input
+  1119→                                  type="month"
+  1120→                                  placeholder="Present"
+  1121→                                  value={exp.endDate}
+  1122→                                  onChange={(e) => {
+  1123→                                    const updated = [...experiences];
+  1124→                                    updated[idx] = { ...exp, endDate: e.target.value };
+  1125→                                    setExperiences(updated);
+  1126→                                  }}
+  1127→                                />
+  1128→                              </div>
+  1129→                            </div>
+  1130→                            <div className="space-y-2">
+  1131→                              <div className="flex items-center justify-between">
+  1132→                                <Label>Description</Label>
+  1133→                                <AiAssistButton
+  1134→                                  label="AI Improve"
+  1135→                                  action="improve_experience"
+  1136→                                  context={{ facility: exp.facility, unit: exp.unit }}
+  1137→                                  currentContent={exp.description}
+  1138→                                  onResult={(r) => {
+  1139→                                    const updated = [...experiences];
+  1140→                                    updated[idx] = { ...exp, description: r };
+  1141→                                    setExperiences(updated);
+  1142→                                  }}
+  1143→                                />
+  1144→                              </div>
+  1145→                              <Textarea
+  1146→                                placeholder="Describe your responsibilities and achievements..."
+  1147→                                rows={3}
+  1148→                                value={exp.description}
+  1149→                                onChange={(e) => {
+  1150→                                  const updated = [...experiences];
+  1151→                                  updated[idx] = { ...exp, description: e.target.value };
+  1152→                                  setExperiences(updated);
+  1153→                                }}
+  1154→                              />
+  1155→                            </div>
+  1156→                          </div>
+  1157→                          <Button
+  1158→                            variant="ghost"
+  1159→                            size="sm"
+  1160→                            className="text-destructive hover:text-destructive shrink-0 mt-6"
+  1161→                            onClick={() => setExperiences(experiences.filter((_, i) => i !== idx))}
+  1162→                          >
+  1163→                            <X className="size-4" />
+  1164→                          </Button>
+  1165→                        </div>
+  1166→                      </div>
+  1167→                    ))}
+  1168→                  </CardContent>
+  1169→                </Card>
+  1170→              </TabsContent>
+  1171→
+  1172→              {/* Education Tab */}
+  1173→              <TabsContent value="education">
+  1174→                <Card>
+  1175→                  <CardHeader>
+  1176→                    <div className="flex items-center justify-between">
+  1177→                      <CardTitle className="text-base">Education</CardTitle>
+  1178→                      <Button
+  1179→                        size="sm"
+  1180→                        className="gap-1"
+  1181→                        onClick={() => setEducation([...education, { school: "", degree: "", year: "" }])}
+  1182→                      >
+  1183→                        <Plus className="size-3.5" /> Add Education
+  1184→                      </Button>
+  1185→                    </div>
+  1186→                  </CardHeader>
+  1187→                  <CardContent className="space-y-4">
+  1188→                    {education.length === 0 && (
+  1189→                      <div className="text-center py-8 text-muted-foreground">
+  1190→                        <GraduationCap className="size-8 mx-auto mb-2 opacity-50" />
+  1191→                        <p className="text-sm">No education entries yet</p>
+  1192→                      </div>
+  1193→                    )}
+  1194→                    {education.map((edu, idx) => (
+  1195→                      <div key={idx} className="flex items-start gap-2">
+  1196→                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+  1197→                          <div className="space-y-2">
+  1198→                            <Label>School</Label>
+  1199→                            <Input
+  1200→                              placeholder="University Name"
+  1201→                              value={edu.school}
+  1202→                              onChange={(e) => {
+  1203→                                const updated = [...education];
+  1204→                                updated[idx] = { ...edu, school: e.target.value };
+  1205→                                setEducation(updated);
+  1206→                              }}
+  1207→                            />
+  1208→                          </div>
+  1209→                          <div className="space-y-2">
+  1210→                            <Label>Degree</Label>
+  1211→                            <Input
+  1212→                              placeholder="BSN, MSN..."
+  1213→                              value={edu.degree}
+  1214→                              onChange={(e) => {
+  1215→                                const updated = [...education];
+  1216→                                updated[idx] = { ...edu, degree: e.target.value };
+  1217→                                setEducation(updated);
+  1218→                              }}
+  1219→                            />
+  1220→                          </div>
+  1221→                          <div className="space-y-2">
+  1222→                            <Label>Year</Label>
+  1223→                            <Input
+  1224→                              placeholder="2020"
+  1225→                              value={edu.year}
+  1226→                              onChange={(e) => {
+  1227→                                const updated = [...education];
+  1228→                                updated[idx] = { ...edu, year: e.target.value };
+  1229→                                setEducation(updated);
+  1230→                              }}
+  1231→                            />
+  1232→                          </div>
+  1233→                        </div>
+  1234→                        <Button
+  1235→                          variant="ghost"
+  1236→                          size="sm"
+  1237→                          className="text-destructive hover:text-destructive shrink-0 mt-6"
+  1238→                          onClick={() => setEducation(education.filter((_, i) => i !== idx))}
+  1239→                        >
+  1240→                          <X className="size-4" />
+  1241→                        </Button>
+  1242→                      </div>
+  1243→                    ))}
+  1244→                  </CardContent>
+  1245→                </Card>
+  1246→              </TabsContent>
+  1247→
+  1248→              {/* Certifications Tab */}
+  1249→              <TabsContent value="certifications">
+  1250→                <Card>
+  1251→                  <CardHeader>
+  1252→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1253→                      <CardTitle className="text-base">Certifications</CardTitle>
+  1254→                      <div className="flex gap-2">
+  1255→                        <AiAssistButton
+  1256→                          label="AI Suggest"
+  1257→                          action="suggest_certifications"
+  1258→                          context={getAiContext()}
+  1259→                          onResult={(r) => {
+  1260→                            try {
+  1261→                              const suggested = JSON.parse(r);
+  1262→                              if (Array.isArray(suggested)) {
+  1263→                                const newCerts = suggested.map(
+  1264→                                  (c: { name?: string; issuingOrg?: string; year?: string }) => ({
+  1265→                                    name: c.name || "",
+  1266→                                    issuingOrg: c.issuingOrg || "",
+  1267→                                    year: c.year || "",
+  1268→                                  })
+  1269→                                );
+  1270→                                setCertifications([...certifications, ...newCerts]);
+  1271→                                toast.success(`Added ${newCerts.length} AI-suggested certifications`);
+  1272→                              }
+  1273→                            } catch {
+  1274→                              toast.error("Could not parse AI suggestions");
+  1275→                            }
+  1276→                          }}
+  1277→                        />
+  1278→                        <Button
+  1279→                          size="sm"
+  1280→                          className="gap-1"
+  1281→                          onClick={() => setCertifications([...certifications, { name: "", issuingOrg: "", year: "" }])}
+  1282→                        >
+  1283→                          <Plus className="size-3.5" /> Add
+  1284→                        </Button>
+  1285→                      </div>
+  1286→                    </div>
+  1287→                  </CardHeader>
+  1288→                  <CardContent className="space-y-4">
+  1289→                    {certifications.length === 0 && (
+  1290→                      <div className="text-center py-8 text-muted-foreground">
+  1291→                        <Award className="size-8 mx-auto mb-2 opacity-50" />
+  1292→                        <p className="text-sm">No certifications added yet</p>
+  1293→                        <p className="text-xs mt-1">Use AI Suggest to get healthcare certification recommendations</p>
+  1294→                      </div>
+  1295→                    )}
+  1296→                    {certifications.map((cert, idx) => (
+  1297→                      <div key={idx} className="flex items-start gap-2">
+  1298→                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+  1299→                          <div className="space-y-2">
+  1300→                            <Label>Name</Label>
+  1301→                            <Input
+  1302→                              placeholder="BLS, ACLS..."
+  1303→                              value={cert.name}
+  1304→                              onChange={(e) => {
+  1305→                                const updated = [...certifications];
+  1306→                                updated[idx] = { ...cert, name: e.target.value };
+  1307→                                setCertifications(updated);
+  1308→                              }}
+  1309→                            />
+  1310→                          </div>
+  1311→                          <div className="space-y-2">
+  1312→                            <Label>Issuing Org</Label>
+  1313→                            <Input
+  1314→                              placeholder="AHA, ANCC..."
+  1315→                              value={cert.issuingOrg}
+  1316→                              onChange={(e) => {
+  1317→                                const updated = [...certifications];
+  1318→                                updated[idx] = { ...cert, issuingOrg: e.target.value };
+  1319→                                setCertifications(updated);
+  1320→                              }}
+  1321→                            />
+  1322→                          </div>
+  1323→                          <div className="space-y-2">
+  1324→                            <Label>Year</Label>
+  1325→                            <Input
+  1326→                              placeholder="2023"
+  1327→                              value={cert.year}
+  1328→                              onChange={(e) => {
+  1329→                                const updated = [...certifications];
+  1330→                                updated[idx] = { ...cert, year: e.target.value };
+  1331→                                setCertifications(updated);
+  1332→                              }}
+  1333→                            />
+  1334→                          </div>
+  1335→                        </div>
+  1336→                        <Button
+  1337→                          variant="ghost"
+  1338→                          size="sm"
+  1339→                          className="text-destructive hover:text-destructive shrink-0 mt-6"
+  1340→                          onClick={() => setCertifications(certifications.filter((_, i) => i !== idx))}
+  1341→                        >
+  1342→                          <X className="size-4" />
+  1343→                        </Button>
+  1344→                      </div>
+  1345→                    ))}
+  1346→                  </CardContent>
+  1347→                </Card>
+  1348→              </TabsContent>
+  1349→
+  1350→              {/* Skills Tab */}
+  1351→              <TabsContent value="skills">
+  1352→                <Card>
+  1353→                  <CardHeader>
+  1354→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1355→                      <CardTitle className="text-base">Skills</CardTitle>
+  1356→                      <div className="flex gap-2">
+  1357→                        <AiAssistButton
+  1358→                          label="AI Suggest"
+  1359→                          action="suggest_skills"
+  1360→                          context={getAiContext()}
+  1361→                          onResult={(r) => {
+  1362→                            try {
+  1363→                              const suggested = JSON.parse(r);
+  1364→                              if (Array.isArray(suggested)) {
+  1365→                                const newSkills = suggested.map(
+  1366→                                  (s: { skill?: string; proficiency?: string }) => ({
+  1367→                                    skill: s.skill || "",
+  1368→                                    proficiency: s.proficiency || "Intermediate",
+  1369→                                  })
+  1370→                                );
+  1371→                                setSkills([...skills, ...newSkills]);
+  1372→                                toast.success(`Added ${newSkills.length} AI-suggested skills`);
+  1373→                              }
+  1374→                            } catch {
+  1375→                              toast.error("Could not parse AI suggestions");
+  1376→                            }
+  1377→                          }}
+  1378→                        />
+  1379→                        <Button
+  1380→                          size="sm"
+  1381→                          className="gap-1"
+  1382→                          onClick={() => setSkills([...skills, { skill: "", proficiency: "Intermediate" }])}
+  1383→                        >
+  1384→                          <Plus className="size-3.5" /> Add
+  1385→                        </Button>
+  1386→                      </div>
+  1387→                    </div>
+  1388→                  </CardHeader>
+  1389→                  <CardContent className="space-y-4">
+  1390→                    {skills.length === 0 && (
+  1391→                      <div className="text-center py-8 text-muted-foreground">
+  1392→                        <Wrench className="size-8 mx-auto mb-2 opacity-50" />
+  1393→                        <p className="text-sm">No skills added yet</p>
+  1394→                        <p className="text-xs mt-1">Use AI Suggest to get healthcare skill recommendations</p>
+  1395→                      </div>
+  1396→                    )}
+  1397→                    {skills.map((s, idx) => (
+  1398→                      <div key={idx} className="flex items-start gap-2">
+  1399→                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+  1400→                          <div className="space-y-2">
+  1401→                            <Label>Skill</Label>
+  1402→                            <Input
+  1403→                              placeholder="IV Therapy, Patient Assessment..."
+  1404→                              value={s.skill}
+  1405→                              onChange={(e) => {
+  1406→                                const updated = [...skills];
+  1407→                                updated[idx] = { ...s, skill: e.target.value };
+  1408→                                setSkills(updated);
+  1409→                              }}
+  1410→                            />
+  1411→                          </div>
+  1412→                          <div className="space-y-2">
+  1413→                            <Label>Proficiency</Label>
+  1414→                            <Select
+  1415→                              value={s.proficiency}
+  1416→                              onValueChange={(value) => {
+  1417→                                const updated = [...skills];
+  1418→                                updated[idx] = { ...s, proficiency: value };
+  1419→                                setSkills(updated);
+  1420→                              }}
+  1421→                            >
+  1422→                              <SelectTrigger className="w-full">
+  1423→                                <SelectValue />
+  1424→                              </SelectTrigger>
+  1425→                              <SelectContent>
+  1426→                                <SelectItem value="Beginner">Beginner</SelectItem>
+  1427→                                <SelectItem value="Intermediate">Intermediate</SelectItem>
+  1428→                                <SelectItem value="Advanced">Advanced</SelectItem>
+  1429→                                <SelectItem value="Expert">Expert</SelectItem>
+  1430→                              </SelectContent>
+  1431→                            </Select>
+  1432→                          </div>
+  1433→                        </div>
+  1434→                        <Button
+  1435→                          variant="ghost"
+  1436→                          size="sm"
+  1437→                          className="text-destructive hover:text-destructive shrink-0 mt-6"
+  1438→                          onClick={() => setSkills(skills.filter((_, i) => i !== idx))}
+  1439→                        >
+  1440→                          <X className="size-4" />
+  1441→                        </Button>
+  1442→                      </div>
+  1443→                    ))}
+  1444→                  </CardContent>
+  1445→                </Card>
+  1446→              </TabsContent>
+  1447→            </Tabs>
+  1448→          </div>
+  1449→
+  1450→          {/* Right Panel 1: Live Preview */}
+  1451→          {showPreview && (
+  1452→            <div className="xl:sticky xl:top-6 self-start">
+  1453→              <div className="flex items-center justify-between mb-3">
+  1454→                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+  1455→                  <Eye className="size-3.5" /> Live Preview
+  1456→                </h3>
+  1457→                <Badge variant="outline" className="text-xs">Auto</Badge>
+  1458→              </div>
+  1459→              <ScrollArea className="h-[calc(100vh-180px)] min-h-[500px]">
+  1460→                <ResumePreview data={currentPreviewData} />
+  1461→              </ScrollArea>
+  1462→            </div>
+  1463→          )}
+  1464→
+  1465→          {/* Right Panel 2: AI Chat Assistant */}
+  1466→          {showAiChat && (
+  1467→            <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-120px)]">
+  1468→              <AiChatPanel
+  1469→                resumeContext={currentPreviewData}
+  1470→                onApplySuggestion={() => {}}
+  1471→              />
+  1472→            </div>
+  1473→          )}
+  1474→        </div>
+  1475→      </div>
+  1476→    );
+  1477→  }
+  1478→
+  1479→  // View Mode
+  1480→  const completeness = calcCompleteness(resume?.parsedData ?? null);
+  1481→  const filename = resume?.fileUrl
+  1482→    ? resume.fileUrl.startsWith("data:")
+  1483→      ? "Uploaded Resume"
+  1484→      : resume.fileUrl.split("/").pop() || "Resume"
+  1485→    : "Builder Resume";
+  1486→
+  1487→  return (
+  1488→    <div className="space-y-6">
+  1489→      <PageHeader
+  1490→        title="Resume"
+  1491→        description="Your professional resume on file"
+  1492→        actions={
+  1493→          <div className="flex items-center gap-2 flex-wrap">
+  1494→            <Button
+  1495→              variant="outline"
+  1496→              className="gap-2 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+  1497→              onClick={() => {
+  1498→                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+  1499→                else {
+  1500→                  setContact({ fullName: "", phone: "", email: "", address: "" });
+  1501→                  setSummary("");
+  1502→                  setExperiences([]);
+  1503→                  setEducation([]);
+  1504→                  setCertifications([]);
+  1505→                  setSkills([]);
+  1506→                }
+  1507→                setMode("builder");
+  1508→                setShowAiChat(true);
+  1509→              }}
+  1510→            >
+  1511→              <Sparkles className="size-4" />
+  1512→              AI Edit
+  1513→            </Button>
+  1514→            <Button
+  1515→              variant="outline"
+  1516→              className="gap-2"
+  1517→              onClick={() => {
+  1518→                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+  1519→                else {
+  1520→                  setContact({ fullName: "", phone: "", email: "", address: "" });
+  1521→                  setSummary("");
+  1522→                  setExperiences([]);
+  1523→                  setEducation([]);
+  1524→                  setCertifications([]);
+  1525→                  setSkills([]);
+  1526→                }
+  1527→                setMode("builder");
+  1528→              }}
+  1529→            >
+  1530→              <Pencil className="size-4" />
+  1531→              Edit in Builder
+  1532→            </Button>
+  1533→            <Button
+  1534→              variant="outline"
+  1535→              className="gap-2"
+  1536→              onClick={handleExportPdf}
+  1537→              disabled={isExporting}
+  1538→            >
+  1539→              {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+  1540→              {isExporting ? "Exporting..." : "Export PDF"}
+  1541→            </Button>
+  1542→            <Button
+  1543→              variant="outline"
+  1544→              className="gap-2"
+  1545→              onClick={() => fileInputRef.current?.click()}
+  1546→            >
+  1547→              <Upload className="size-4" />
+  1548→              Replace
+  1549→            </Button>
+  1550→            <Button
+  1551→              variant="outline"
+  1552→              className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
+  1553→              onClick={handleDelete}
+  1554→            >
+  1555→              <Trash2 className="size-4" />
+  1556→              Delete
+  1557→            </Button>
+  1558→            <input
+  1559→              ref={fileInputRef}
+  1560→              type="file"
+  1561→              className="hidden"
+  1562→              accept=".pdf,.doc,.docx"
+  1563→              onChange={handleFileSelect}
+  1564→            />
+  1565→          </div>
+  1566→        }
+  1567→      />
+  1568→
+  1569→      {/* Resume Preview Card */}
+  1570→      <Card>
+  1571→        <CardContent className="p-6">
+  1572→          <div className="flex items-start gap-4">
+  1573→            <div className="size-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+  1574→              <FileText className="size-7 text-primary" />
+  1575→            </div>
+  1576→            <div className="flex-1 min-w-0">
+  1577→              <div className="flex items-center gap-2 flex-wrap">
+  1578→                <h3 className="font-semibold text-lg">{filename}</h3>
+  1579→                <Badge variant={resume?.isBuilderResume ? "default" : "secondary"} className="text-xs">
+  1580→                  {resume?.isBuilderResume ? "Builder" : "Uploaded"}
+  1581→                </Badge>
+  1582→              </div>
+  1583→              <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+  1584→                <Calendar className="size-3.5" />
+  1585→                Added {resume?.createdAt ? new Date(resume.createdAt).toLocaleDateString() : "N/A"}
+  1586→              </div>
+  1587→            </div>
+  1588→          </div>
+  1589→        </CardContent>
+  1590→      </Card>
+  1591→
+  1592→      {/* Completeness Progress */}
+  1593→      <Card>
+  1594→        <CardContent className="p-4">
+  1595→          <div className="flex items-center justify-between mb-2">
+  1596→            <span className="text-sm font-medium">Resume Completeness</span>
+  1597→            <span className="text-sm font-semibold text-primary">{completeness}%</span>
+  1598→          </div>
+  1599→          <Progress value={completeness} className="h-2" />
+  1600→          <p className="text-xs text-muted-foreground mt-1.5">
+  1601→            {completeness < 50
+  1602→              ? "Add more sections to strengthen your resume"
+  1603→              : completeness < 100
+  1604→                ? "Almost there! Fill in remaining details"
+  1605→                : "Your resume is complete!"}
+  1606→          </p>
+  1607→        </CardContent>
+  1608→      </Card>
+  1609→
+  1610→      {/* Parsed Data Preview Cards */}
+  1611→      {resume?.parsedData && (
+  1612→        <div className="space-y-4">
+  1613→          {/* Contact */}
+  1614→          {resume.parsedData.contact && (
+  1615→            <Card>
+  1616→              <CardHeader className="pb-2">
+  1617→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1618→                  <User className="size-4" /> Contact Information
+  1619→                </CardTitle>
+  1620→              </CardHeader>
+  1621→              <CardContent>
+  1622→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+  1623→                  {resume.parsedData.contact.fullName && (
+  1624→                    <div><span className="text-muted-foreground">Name:</span> {resume.parsedData.contact.fullName}</div>
+  1625→                  )}
+  1626→                  {resume.parsedData.contact.phone && (
+  1627→                    <div><span className="text-muted-foreground">Phone:</span> {resume.parsedData.contact.phone}</div>
+  1628→                  )}
+  1629→                  {resume.parsedData.contact.email && (
+  1630→                    <div><span className="text-muted-foreground">Email:</span> {resume.parsedData.contact.email}</div>
+  1631→                  )}
+  1632→                  {resume.parsedData.contact.address && (
+  1633→                    <div><span className="text-muted-foreground">Address:</span> {resume.parsedData.contact.address}</div>
+  1634→                  )}
+  1635→                </div>
+  1636→              </CardContent>
+  1637→            </Card>
+  1638→          )}
+  1639→
+  1640→          {/* Summary */}
+  1641→          {resume.parsedData.summary && (
+  1642→            <Card>
+  1643→              <CardHeader className="pb-2">
+  1644→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1645→                  <FileText className="size-4" /> Professional Summary
+  1646→                </CardTitle>
+  1647→              </CardHeader>
+  1648→              <CardContent>
+  1649→                <p className="text-sm whitespace-pre-wrap">{resume.parsedData.summary}</p>
+  1650→              </CardContent>
+  1651→            </Card>
+  1652→          )}
+  1653→
+  1654→          {/* Experience */}
+  1655→          {resume.parsedData.experience && resume.parsedData.experience.length > 0 && (
+  1656→            <Card>
+  1657→              <CardHeader className="pb-2">
+  1658→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1659→                  <Briefcase className="size-4" /> Work Experience ({resume.parsedData.experience.length})
+  1660→                </CardTitle>
+  1661→              </CardHeader>
+  1662→              <CardContent className="space-y-3">
+  1663→                {resume.parsedData.experience.map((exp, idx) => (
+  1664→                  <div key={idx} className="border-l-2 border-primary/20 pl-3">
+  1665→                    <p className="font-medium text-sm">{exp.facility}</p>
+  1666→                    <p className="text-xs text-muted-foreground">{exp.unit}</p>
+  1667→                    {(exp.startDate || exp.endDate) && (
+  1668→                      <p className="text-xs text-muted-foreground mt-0.5">
+  1669→                        {exp.startDate}{exp.endDate ? ` — ${exp.endDate}` : " — Present"}
+  1670→                      </p>
+  1671→                    )}
+  1672→                    {exp.description && (
+  1673→                      <p className="text-sm mt-1 text-muted-foreground">{exp.description}</p>
+  1674→                    )}
+  1675→                  </div>
+  1676→                ))}
+  1677→              </CardContent>
+  1678→            </Card>
+  1679→          )}
+  1680→
+  1681→          {/* Education */}
+  1682→          {resume.parsedData.education && resume.parsedData.education.length > 0 && (
+  1683→            <Card>
+  1684→              <CardHeader className="pb-2">
+  1685→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1686→                  <GraduationCap className="size-4" /> Education ({resume.parsedData.education.length})
+  1687→                </CardTitle>
+  1688→              </CardHeader>
+  1689→              <CardContent className="space-y-2">
+  1690→                {resume.parsedData.education.map((edu, idx) => (
+  1691→                  <div key={idx} className="flex justify-between items-start">
+  1692→                    <div>
+  1693→                      <p className="font-medium text-sm">{edu.degree}</p>
+  1694→                      <p className="text-xs text-muted-foreground">{edu.school}</p>
+  1695→                    </div>
+  1696→                    {edu.year && (
+  1697→                      <span className="text-xs text-muted-foreground shrink-0">{edu.year}</span>
+  1698→                    )}
+  1699→                  </div>
+  1700→                ))}
+  1701→              </CardContent>
+  1702→            </Card>
+  1703→          )}
+  1704→
+  1705→          {/* Certifications */}
+  1706→          {resume.parsedData.certifications && resume.parsedData.certifications.length > 0 && (
+  1707→            <Card>
+  1708→              <CardHeader className="pb-2">
+  1709→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1710→                  <Award className="size-4" /> Certifications ({resume.parsedData.certifications.length})
+  1711→                </CardTitle>
+  1712→              </CardHeader>
+  1713→              <CardContent>
+  1714→                <div className="flex flex-wrap gap-2">
+  1715→                  {resume.parsedData.certifications.map((cert, idx) => (
+  1716→                    <Badge key={idx} variant="secondary" className="text-xs">
+  1717→                      {cert.name}{cert.issuingOrg ? ` — ${cert.issuingOrg}` : ""}{cert.year ? ` (${cert.year})` : ""}
+  1718→                    </Badge>
+  1719→                  ))}
+  1720→                </div>
+  1721→              </CardContent>
+  1722→            </Card>
+  1723→          )}
+  1724→
+  1725→          {/* Skills */}
+  1726→          {resume.parsedData.skills && resume.parsedData.skills.length > 0 && (
+  1727→            <Card>
+  1728→              <CardHeader className="pb-2">
+  1729→                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+  1730→                  <Wrench className="size-4" /> Skills ({resume.parsedData.skills.length})
+  1731→                </CardTitle>
+  1732→              </CardHeader>
+  1733→              <CardContent>
+  1734→                <div className="flex flex-wrap gap-2">
+  1735→                  {resume.parsedData.skills.map((s, idx) => (
+  1736→                    <Badge key={idx} variant="outline" className="text-xs">
+  1737→                      {s.skill}{s.proficiency ? ` (${s.proficiency})` : ""}
+  1738→                    </Badge>
+  1739→                  ))}
+  1740→                </div>
+  1741→              </CardContent>
+  1742→            </Card>
+  1743→          )}
+  1744→        </div>
+  1745→      )}
+  1746→
+  1747→      {/* No parsed data available for uploaded resume */}
+  1748→      {resume?.parsedData === null && (
+  1749→        <Card>
+  1750→          <CardContent className="p-8 text-center">
+  1751→            <FileText className="size-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+  1752→            <p className="text-sm text-muted-foreground mb-2">
+  1753→              Your uploaded resume file is on record, but the content could not be parsed automatically.
+  1754→            </p>
+  1755→            <p className="text-xs text-muted-foreground mb-4">
+  1756→              You can use the Resume Builder to manually enter your information, or try uploading a different file format.
+  1757→            </p>
+  1758→            <Button
+  1759→              variant="outline"
+  1760→              className="gap-2"
+  1761→              onClick={() => {
+  1762→                setContact({ fullName: "", phone: "", email: "", address: "" });
+  1763→                setSummary("");
+  1764→                setExperiences([]);
+  1765→                setEducation([]);
+  1766→                setCertifications([]);
+  1767→                setSkills([]);
+  1768→                setMode("builder");
+  1769→              }}
+  1770→            >
+  1771→              <Pencil className="size-4" />
+  1772→              Enter Details Manually
+  1773→            </Button>
+  1774→          </CardContent>
+  1775→        </Card>
+  1776→      )}
+  1777→    </div>
+  1778→  );
+  1779→}
+  1780→

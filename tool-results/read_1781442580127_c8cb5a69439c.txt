@@ -1,0 +1,837 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback } from "react";
+     4→import { PageHeader } from "@/components/layout/page-header";
+     5→import { Card, CardContent } from "@/components/ui/card";
+     6→import { Badge } from "@/components/ui/badge";
+     7→import { Button } from "@/components/ui/button";
+     8→import { Input } from "@/components/ui/input";
+     9→import { Label } from "@/components/ui/label";
+    10→import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+    11→import { Skeleton } from "@/components/ui/skeleton";
+    12→import {
+    13→  Dialog,
+    14→  DialogContent,
+    15→  DialogDescription,
+    16→  DialogFooter,
+    17→  DialogHeader,
+    18→  DialogTitle,
+    19→  DialogTrigger,
+    20→} from "@/components/ui/dialog";
+    21→import {
+    22→  AlertDialog,
+    23→  AlertDialogAction,
+    24→  AlertDialogCancel,
+    25→  AlertDialogContent,
+    26→  AlertDialogDescription,
+    27→  AlertDialogFooter,
+    28→  AlertDialogHeader,
+    29→  AlertDialogTitle,
+    30→  AlertDialogTrigger,
+    31→} from "@/components/ui/alert-dialog";
+    32→import {
+    33→  Users,
+    34→  UserPlus,
+    35→  Clock,
+    36→  CheckCircle2,
+    37→  AlertCircle,
+    38→  Building2,
+    39→  ChevronDown,
+    40→  ChevronUp,
+    41→  Loader2,
+    42→  RefreshCw,
+    43→  XCircle,
+    44→  Send,
+    45→  Trash2,
+    46→} from "@/lib/icons";
+    47→import { Textarea } from "@/components/ui/textarea";
+    48→import { toast } from "sonner";
+    49→
+    50→interface ReferenceItem {
+    51→  id: number;
+    52→  manager_email: string;
+    53→  manager_phone: string;
+    54→  manager_first_name: string | null;
+    55→  manager_last_name: string | null;
+    56→  facility_name: string;
+    57→  employment_status: string;
+    58→  status: string;
+    59→  requested_at: string;
+    60→  manager_user: {
+    61→    first_name: string | null;
+    62→    last_name: string | null;
+    63→  } | null;
+    64→  reference_responses: {
+    65→    id: number;
+    66→    answer_text: string;
+    67→    question_id: number;
+    68→    overall_comment: string | null;
+    69→    question: {
+    70→      question_text: string;
+    71→    };
+    72→  }[];
+    73→}
+    74→
+    75→function getStatusBadge(status: string) {
+    76→  switch (status) {
+    77→    case "completed":
+    78→      return (
+    79→        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 gap-1">
+    80→          <CheckCircle2 className="size-3" /> Completed
+    81→        </Badge>
+    82→      );
+    83→    case "pending_request":
+    84→      return (
+    85→        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 gap-1">
+    86→          <Clock className="size-3" /> Pending
+    87→        </Badge>
+    88→      );
+    89→    case "expired":
+    90→      return (
+    91→        <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 gap-1">
+    92→          <AlertCircle className="size-3" /> Expired
+    93→        </Badge>
+    94→      );
+    95→    case "cancelled":
+    96→      return (
+    97→        <Badge className="bg-gray-100 text-gray-700 dark:bg-gray-800/30 dark:text-gray-400 border-0 gap-1">
+    98→          <XCircle className="size-3" /> Cancelled
+    99→        </Badge>
+   100→      );
+   101→    default:
+   102→      return <Badge variant="secondary">{status}</Badge>;
+   103→  }
+   104→}
+   105→
+   106→function getEmploymentLabel(status: string) {
+   107→  switch (status) {
+   108→    case "current":
+   109→    case "current_employee":
+   110→      return "Current Employee";
+   111→    case "ending_contract":
+   112→      return "Ending Contract";
+   113→    case "past":
+   114→    case "past_employee":
+   115→      return "Past Employee";
+   116→    default:
+   117→      return status;
+   118→  }
+   119→}
+   120→
+   121→export default function CandidateReferencesPage() {
+   122→  const [references, setReferences] = useState<ReferenceItem[]>([]);
+   123→  const [isLoading, setIsLoading] = useState(true);
+   124→  const [isDialogOpen, setIsDialogOpen] = useState(false);
+   125→  const [isSubmitting, setIsSubmitting] = useState(false);
+   126→  const [expandedRef, setExpandedRef] = useState<number | null>(null);
+   127→  const [resendingId, setResendingId] = useState<number | null>(null);
+   128→  const [cancellingId, setCancellingId] = useState<number | null>(null);
+   129→
+   130→  // Delete reference request state
+   131→  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+   132→  const [selectedRefForDeletion, setSelectedRefForDeletion] = useState<number | null>(null);
+   133→  const [deletionReason, setDeletionReason] = useState("");
+   134→  const [isSubmittingDeletion, setIsSubmittingDeletion] = useState(false);
+   135→  const [pendingDeletionRequests, setPendingDeletionRequests] = useState<Set<number>>(new Set());
+   136→
+   137→  // Form state
+   138→  const [managerFirstName, setManagerFirstName] = useState("");
+   139→  const [managerLastName, setManagerLastName] = useState("");
+   140→  const [managerEmail, setManagerEmail] = useState("");
+   141→  const [managerPhone, setManagerPhone] = useState("");
+   142→  const [facilityName, setFacilityName] = useState("");
+   143→  const [employmentStatus, setEmploymentStatus] = useState("current");
+   144→  const [employmentStartMonth, setEmploymentStartMonth] = useState("");
+   145→  const [employmentStartYear, setEmploymentStartYear] = useState("");
+   146→  const [employmentEndMonth, setEmploymentEndMonth] = useState("");
+   147→  const [employmentEndYear, setEmploymentEndYear] = useState("");
+   148→
+   149→  const fetchReferences = useCallback(async () => {
+   150→    try {
+   151→      const res = await fetch("/api/references");
+   152→      if (!res.ok) throw new Error("Failed to fetch references");
+   153→      const data = await res.json();
+   154→      setReferences(data.references || []);
+   155→
+   156→      // Also fetch pending deletion requests to know which refs have pending requests
+   157→      const delRes = await fetch("/api/references/delete-request");
+   158→      if (delRes.ok) {
+   159→        const delData = await delRes.json();
+   160→        const pendingIds = new Set<number>();
+   161→        (delData.requests || []).forEach((r: { reference_id: number; status: string }) => {
+   162→          if (r.status === "pending") pendingIds.add(r.reference_id);
+   163→        });
+   164→        setPendingDeletionRequests(pendingIds);
+   165→      }
+   166→    } catch {
+   167→      toast.error("Failed to load references");
+   168→    } finally {
+   169→      setIsLoading(false);
+   170→    }
+   171→  }, []);
+   172→
+   173→  useEffect(() => {
+   174→    fetchReferences();
+   175→  }, [fetchReferences]);
+   176→
+   177→  const handleSubmit = async (e: React.FormEvent) => {
+   178→    e.preventDefault();
+   179→
+   180→    if (!managerFirstName.trim() || !managerLastName.trim()) {
+   181→      toast.error("Please enter the manager's name");
+   182→      return;
+   183→    }
+   184→    if (!managerEmail.trim()) {
+   185→      toast.error("Please enter the manager's email");
+   186→      return;
+   187→    }
+   188→    if (!facilityName.trim()) {
+   189→      toast.error("Please enter the facility name");
+   190→      return;
+   191→    }
+   192→
+   193→    setIsSubmitting(true);
+   194→    try {
+   195→      const res = await fetch("/api/references/request", {
+   196→        method: "POST",
+   197→        headers: { "Content-Type": "application/json" },
+   198→        body: JSON.stringify({
+   199→          managerFirstName: managerFirstName.trim(),
+   200→          managerLastName: managerLastName.trim(),
+   201→          managerEmail: managerEmail.trim(),
+   202→          managerPhone: managerPhone.trim(),
+   203→          facilityName: facilityName.trim(),
+   204→          employmentStatus,
+   205→          employmentStart: employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : null,
+   206→          employmentEnd: (employmentStatus === "past" || employmentStatus === "ending_contract") && employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : null,
+   207→        }),
+   208→      });
+   209→
+   210→      if (!res.ok) {
+   211→        const data = await res.json();
+   212→        toast.error("Failed to send request", { description: data.error });
+   213→        return;
+   214→      }
+   215→
+   216→      toast.success("Reference request sent!", {
+   217→        description: `Email sent to ${managerFirstName} ${managerLastName}`,
+   218→      });
+   219→
+   220→      setIsDialogOpen(false);
+   221→      setManagerFirstName("");
+   222→      setManagerLastName("");
+   223→      setManagerEmail("");
+   224→      setManagerPhone("");
+   225→      setFacilityName("");
+   226→      setEmploymentStatus("current");
+   227→      setEmploymentStartMonth("");
+   228→      setEmploymentStartYear("");
+   229→      setEmploymentEndMonth("");
+   230→      setEmploymentEndYear("");
+   231→      fetchReferences();
+   232→    } catch {
+   233→      toast.error("Failed to send reference request");
+   234→    } finally {
+   235→      setIsSubmitting(false);
+   236→    }
+   237→  };
+   238→
+   239→  const handleResend = async (referenceId: number) => {
+   240→    setResendingId(referenceId);
+   241→    try {
+   242→      const res = await fetch("/api/references/resend", {
+   243→        method: "POST",
+   244→        headers: { "Content-Type": "application/json" },
+   245→        body: JSON.stringify({ referenceId }),
+   246→      });
+   247→
+   248→      if (!res.ok) {
+   249→        const data = await res.json();
+   250→        throw new Error(data.error || "Failed to resend");
+   251→      }
+   252→
+   253→      toast.success("Reference request resent!", {
+   254→        description: "A new email has been sent to the manager.",
+   255→      });
+   256→      fetchReferences();
+   257→    } catch (err) {
+   258→      toast.error("Failed to resend reference", {
+   259→        description: err instanceof Error ? err.message : undefined,
+   260→      });
+   261→    } finally {
+   262→      setResendingId(null);
+   263→    }
+   264→  };
+   265→
+   266→  const handleCancel = async (referenceId: number) => {
+   267→    setCancellingId(referenceId);
+   268→    try {
+   269→      const res = await fetch("/api/references/cancel", {
+   270→        method: "POST",
+   271→        headers: { "Content-Type": "application/json" },
+   272→        body: JSON.stringify({ referenceId }),
+   273→      });
+   274→
+   275→      if (!res.ok) {
+   276→        const data = await res.json();
+   277→        throw new Error(data.error || "Failed to cancel");
+   278→      }
+   279→
+   280→      toast.success("Reference request cancelled");
+   281→      fetchReferences();
+   282→    } catch (err) {
+   283→      toast.error("Failed to cancel reference", {
+   284→        description: err instanceof Error ? err.message : undefined,
+   285→      });
+   286→    } finally {
+   287→      setCancellingId(null);
+   288→    }
+   289→  };
+   290→
+   291→  const toggleExpand = (refId: number) => {
+   292→    setExpandedRef(expandedRef === refId ? null : refId);
+   293→  };
+   294→
+   295→  const handleDeleteRequest = async () => {
+   296→    if (!selectedRefForDeletion || !deletionReason.trim()) {
+   297→      toast.error("Please provide a reason for the deletion request");
+   298→      return;
+   299→    }
+   300→
+   301→    setIsSubmittingDeletion(true);
+   302→    try {
+   303→      const res = await fetch("/api/references/delete-request", {
+   304→        method: "POST",
+   305→        headers: { "Content-Type": "application/json" },
+   306→        body: JSON.stringify({
+   307→          referenceId: selectedRefForDeletion,
+   308→          reason: deletionReason.trim(),
+   309→        }),
+   310→      });
+   311→
+   312→      if (!res.ok) {
+   313→        const data = await res.json();
+   314→        throw new Error(data.error || "Failed to submit deletion request");
+   315→      }
+   316→
+   317→      toast.success("Deletion request submitted", {
+   318→        description: "A super admin will review your request and make a decision.",
+   319→      });
+   320→
+   321→      setIsDeleteDialogOpen(false);
+   322→      setSelectedRefForDeletion(null);
+   323→      setDeletionReason("");
+   324→      fetchReferences();
+   325→    } catch (err) {
+   326→      toast.error("Failed to submit deletion request", {
+   327→        description: err instanceof Error ? err.message : undefined,
+   328→      });
+   329→    } finally {
+   330→      setIsSubmittingDeletion(false);
+   331→    }
+   332→  };
+   333→
+   334→  if (isLoading) {
+   335→    return (
+   336→      <div className="space-y-6">
+   337→        <PageHeader
+   338→          title="References"
+   339→          actions={<Skeleton className="h-10 w-36" />}
+   340→        />
+   341→        <div className="space-y-3">
+   342→          {[1, 2, 3].map((i) => (
+   343→            <Skeleton key={i} className="h-24 w-full" />
+   344→          ))}
+   345→        </div>
+   346→      </div>
+   347→    );
+   348→  }
+   349→
+   350→  return (
+   351→    <div className="space-y-6">
+   352→      <PageHeader
+   353→        title="References"
+   354→        description="Request and manage professional references from your supervisors and managers."
+   355→        actions={
+   356→          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+   357→            <DialogTrigger asChild>
+   358→              <Button className="gap-2">
+   359→                <UserPlus className="size-4" />
+   360→                Request Reference
+   361→              </Button>
+   362→            </DialogTrigger>
+   363→            <DialogContent className="sm:max-w-md">
+   364→              <form onSubmit={handleSubmit}>
+   365→                <DialogHeader>
+   366→                  <DialogTitle>Request a Reference</DialogTitle>
+   367→                  <DialogDescription>
+   368→                    Ask a supervisor or manager to provide a professional reference
+   369→                  </DialogDescription>
+   370→                </DialogHeader>
+   371→                <div className="space-y-4 py-4">
+   372→                  <div className="grid grid-cols-2 gap-3">
+   373→                    <div className="space-y-2">
+   374→                      <Label htmlFor="mgrFirstName">First Name</Label>
+   375→                      <Input
+   376→                        id="mgrFirstName"
+   377→                        placeholder="Jane"
+   378→                        value={managerFirstName}
+   379→                        onChange={(e) => setManagerFirstName(e.target.value)}
+   380→                        required
+   381→                      />
+   382→                    </div>
+   383→                    <div className="space-y-2">
+   384→                      <Label htmlFor="mgrLastName">Last Name</Label>
+   385→                      <Input
+   386→                        id="mgrLastName"
+   387→                        placeholder="Smith"
+   388→                        value={managerLastName}
+   389→                        onChange={(e) => setManagerLastName(e.target.value)}
+   390→                        required
+   391→                      />
+   392→                    </div>
+   393→                  </div>
+   394→                  <div className="space-y-2">
+   395→                    <Label htmlFor="mgrEmail">Email</Label>
+   396→                    <Input
+   397→                      id="mgrEmail"
+   398→                      type="email"
+   399→                      placeholder="jane.smith@facility.com"
+   400→                      value={managerEmail}
+   401→                      onChange={(e) => setManagerEmail(e.target.value)}
+   402→                      required
+   403→                    />
+   404→                  </div>
+   405→                  <div className="space-y-2">
+   406→                    <Label htmlFor="mgrPhone">Phone (Optional)</Label>
+   407→                    <Input
+   408→                      id="mgrPhone"
+   409→                      type="tel"
+   410→                      placeholder="(555) 123-4567"
+   411→                      value={managerPhone}
+   412→                      onChange={(e) => setManagerPhone(e.target.value)}
+   413→                    />
+   414→                  </div>
+   415→                  <div className="space-y-2">
+   416→                    <Label htmlFor="facility">Facility Name</Label>
+   417→                    <Input
+   418→                      id="facility"
+   419→                      placeholder="General Hospital"
+   420→                      value={facilityName}
+   421→                      onChange={(e) => setFacilityName(e.target.value)}
+   422→                      required
+   423→                    />
+   424→                  </div>
+   425→                  <div className="space-y-3">
+   426→                    <Label>Employment Status</Label>
+   427→                    <RadioGroup value={employmentStatus} onValueChange={setEmploymentStatus}>
+   428→                      <div className="flex items-center gap-2">
+   429→                        <RadioGroupItem value="current" id="emp-current" />
+   430→                        <Label htmlFor="emp-current" className="font-normal text-sm">
+   431→                          Current Employee
+   432→                        </Label>
+   433→                      </div>
+   434→                      <div className="flex items-center gap-2">
+   435→                        <RadioGroupItem value="ending_contract" id="emp-ending" />
+   436→                        <Label htmlFor="emp-ending" className="font-normal text-sm">
+   437→                          Ending Contract
+   438→                        </Label>
+   439→                      </div>
+   440→                      <div className="flex items-center gap-2">
+   441→                        <RadioGroupItem value="past" id="emp-past" />
+   442→                        <Label htmlFor="emp-past" className="font-normal text-sm">
+   443→                          Past Employee
+   444→                        </Label>
+   445→                      </div>
+   446→                    </RadioGroup>
+   447→                  </div>
+   448→                  <div className="space-y-3">
+   449→                    <Label>Employment Start</Label>
+   450→                    <Input
+   451→                      type="month"
+   452→                      value={employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : ""}
+   453→                      onChange={(e) => {
+   454→                        const val = e.target.value;
+   455→                        if (val) {
+   456→                          const [y, m] = val.split("-");
+   457→                          setEmploymentStartYear(y);
+   458→                          setEmploymentStartMonth(m);
+   459→                        } else {
+   460→                          setEmploymentStartYear("");
+   461→                          setEmploymentStartMonth("");
+   462→                        }
+   463→                      }}
+   464→                    />
+   465→                  </div>
+   466→                  {(employmentStatus === "past" || employmentStatus === "ending_contract") && (
+   467→                    <div className="space-y-3">
+   468→                      <Label>Employment End</Label>
+   469→                      <Input
+   470→                        type="month"
+   471→                        value={employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : ""}
+   472→                        onChange={(e) => {
+   473→                          const val = e.target.value;
+   474→                          if (val) {
+   475→                            const [y, m] = val.split("-");
+   476→                            setEmploymentEndYear(y);
+   477→                            setEmploymentEndMonth(m);
+   478→                          } else {
+   479→                            setEmploymentEndYear("");
+   480→                            setEmploymentEndMonth("");
+   481→                          }
+   482→                        }}
+   483→                      />
+   484→                    </div>
+   485→                  )}
+   486→                </div>
+   487→                <DialogFooter>
+   488→                  <Button type="submit" disabled={isSubmitting} className="gap-2">
+   489→                    {isSubmitting ? (
+   490→                      <>
+   491→                        <Loader2 className="size-4 animate-spin" />
+   492→                        Sending...
+   493→                      </>
+   494→                    ) : (
+   495→                      <>
+   496→                        <UserPlus className="size-4" />
+   497→                        Send Request
+   498→                      </>
+   499→                    )}
+   500→                  </Button>
+   501→                </DialogFooter>
+   502→              </form>
+   503→            </DialogContent>
+   504→          </Dialog>
+   505→        }
+   506→      />
+   507→
+   508→      {references.length === 0 ? (
+   509→        <Card>
+   510→          <CardContent className="p-8 text-center">
+   511→            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+   512→              <Users className="size-7 text-primary" />
+   513→            </div>
+   514→            <h3 className="text-lg font-medium">No references yet</h3>
+   515→            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+   516→              Request professional references from your supervisors and facility
+   517→              managers. They&apos;ll receive an email to complete the reference form.
+   518→            </p>
+   519→            <Button className="mt-4 gap-2" onClick={() => setIsDialogOpen(true)}>
+   520→              <UserPlus className="size-4" />
+   521→              Request Your First Reference
+   522→            </Button>
+   523→          </CardContent>
+   524→        </Card>
+   525→      ) : (
+   526→        <div className="space-y-3">
+   527→          {references.map((ref) => {
+   528→            const isCompleted = ref.status === "completed";
+   529→            const isPending = ref.status === "pending_request";
+   530→            const isExpired = ref.status === "expired";
+   531→            const isExpanded = expandedRef === ref.id;
+   532→            const managerName = (() => {
+   533→              // Prefer manager_user relation if it has names
+   534→              if (ref.manager_user?.first_name || ref.manager_user?.last_name) {
+   535→                return `${ref.manager_user.first_name || ""} ${ref.manager_user.last_name || ""}`.trim();
+   536→              }
+   537→              // Fall back to the stored manager_first_name/manager_last_name from the reference request
+   538→              if (ref.manager_first_name || ref.manager_last_name) {
+   539→                return `${ref.manager_first_name || ""} ${ref.manager_last_name || ""}`.trim();
+   540→              }
+   541→              // Last resort: show email
+   542→              return ref.manager_email;
+   543→            })();
+   544→
+   545→            return (
+   546→              <Card key={ref.id} className="group hover:shadow-md transition-shadow">
+   547→                <CardContent className="p-4">
+   548→                  <div className="flex items-start gap-3">
+   549→                    <div
+   550→                      className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${
+   551→                        isCompleted
+   552→                          ? "bg-emerald-100 dark:bg-emerald-900/30"
+   553→                          : ref.status === "cancelled"
+   554→                          ? "bg-gray-100 dark:bg-gray-800/30"
+   555→                          : isExpired
+   556→                          ? "bg-red-100 dark:bg-red-900/30"
+   557→                          : "bg-primary/10"
+   558→                      }`}
+   559→                    >
+   560→                      <Users
+   561→                        className={`size-5 ${
+   562→                          isCompleted
+   563→                            ? "text-emerald-600 dark:text-emerald-400"
+   564→                            : ref.status === "cancelled"
+   565→                            ? "text-gray-500 dark:text-gray-400"
+   566→                            : isExpired
+   567→                            ? "text-red-600 dark:text-red-400"
+   568→                            : "text-primary"
+   569→                        }`}
+   570→                      />
+   571→                    </div>
+   572→                    <div className="flex-1 min-w-0">
+   573→                      <div className="flex items-start justify-between gap-2">
+   574→                        <div>
+   575→                          <p className="font-medium text-sm">{managerName}</p>
+   576→                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+   577→                            <Building2 className="size-3" />
+   578→                            {ref.facility_name}
+   579→                          </div>
+   580→                        </div>
+   581→                        {getStatusBadge(ref.status)}
+   582→                      </div>
+   583→                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+   584→                        <span className="capitalize">
+   585→                          {getEmploymentLabel(ref.employment_status)}
+   586→                        </span>
+   587→                        <span>·</span>
+   588→                        <span>
+   589→                          Requested {new Date(ref.requested_at).toLocaleDateString()}
+   590→                        </span>
+   591→                      </div>
+   592→
+   593→                      {/* Action buttons for pending references */}
+   594→                      {isPending && (
+   595→                        <div className="flex items-center gap-2 mt-3">
+   596→                          <Button
+   597→                            variant="outline"
+   598→                            size="sm"
+   599→                            className="gap-1.5 h-7 text-xs"
+   600→                            disabled={resendingId === ref.id}
+   601→                            onClick={() => handleResend(ref.id)}
+   602→                          >
+   603→                            {resendingId === ref.id ? (
+   604→                              <Loader2 className="size-3 animate-spin" />
+   605→                            ) : (
+   606→                              <RefreshCw className="size-3" />
+   607→                            )}
+   608→                            Resend
+   609→                          </Button>
+   610→                          <AlertDialog>
+   611→                            <AlertDialogTrigger asChild>
+   612→                              <Button
+   613→                                variant="outline"
+   614→                                size="sm"
+   615→                                className="gap-1.5 h-7 text-xs text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+   616→                                disabled={cancellingId === ref.id}
+   617→                              >
+   618→                                {cancellingId === ref.id ? (
+   619→                                  <Loader2 className="size-3 animate-spin" />
+   620→                                ) : (
+   621→                                  <XCircle className="size-3" />
+   622→                                )}
+   623→                                Cancel
+   624→                              </Button>
+   625→                            </AlertDialogTrigger>
+   626→                            <AlertDialogContent>
+   627→                              <AlertDialogHeader>
+   628→                                <AlertDialogTitle>Cancel Reference Request</AlertDialogTitle>
+   629→                                <AlertDialogDescription>
+   630→                                  Are you sure you want to cancel the reference request to {managerName} at {ref.facility_name}? This action cannot be undone.
+   631→                                </AlertDialogDescription>
+   632→                              </AlertDialogHeader>
+   633→                              <AlertDialogFooter>
+   634→                                <AlertDialogCancel>Keep Request</AlertDialogCancel>
+   635→                                <AlertDialogAction
+   636→                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+   637→                                  onClick={() => handleCancel(ref.id)}
+   638→                                >
+   639→                                  Cancel Request
+   640→                                </AlertDialogAction>
+   641→                              </AlertDialogFooter>
+   642→                            </AlertDialogContent>
+   643→                          </AlertDialog>
+   644→                        </div>
+   645→                      )}
+   646→
+   647→                      {/* Action buttons for expired references */}
+   648→                      {isExpired && (
+   649→                        <div className="flex items-center gap-2 mt-3">
+   650→                          <Button
+   651→                            variant="outline"
+   652→                            size="sm"
+   653→                            className="gap-1.5 h-7 text-xs"
+   654→                            disabled={resendingId === ref.id}
+   655→                            onClick={() => handleResend(ref.id)}
+   656→                          >
+   657→                            {resendingId === ref.id ? (
+   658→                              <Loader2 className="size-3 animate-spin" />
+   659→                            ) : (
+   660→                              <RefreshCw className="size-3" />
+   661→                            )}
+   662→                            Re-request
+   663→                          </Button>
+   664→                        </div>
+   665→                      )}
+   666→
+   667→                      {/* View details button for completed references */}
+   668→                      {isCompleted && ref.reference_responses?.length > 0 && (
+   669→                        <div className="mt-3">
+   670→                          <Button
+   671→                            variant="ghost"
+   672→                            size="sm"
+   673→                            className="gap-1 text-xs h-7"
+   674→                            onClick={() => toggleExpand(ref.id)}
+   675→                          >
+   676→                            View Details
+   677→                            {isExpanded ? (
+   678→                              <ChevronUp className="size-3" />
+   679→                            ) : (
+   680→                              <ChevronDown className="size-3" />
+   681→                            )}
+   682→                          </Button>
+   683→                          {isExpanded && (
+   684→                            <div className="mt-2 space-y-2 p-3 bg-muted/50 rounded-lg">
+   685→                              {ref.reference_responses.map((response) => (
+   686→                                <div key={response.id}>
+   687→                                  <p className="text-xs font-medium text-muted-foreground">
+   688→                                    {response.question?.question_text || `Question ${response.question_id}`}
+   689→                                  </p>
+   690→                                  <p className="text-sm mt-0.5">{response.answer_text}</p>
+   691→                                </div>
+   692→                              ))}
+   693→                              {ref.reference_responses[0]?.overall_comment && (
+   694→                                <div className="mt-2 pt-2 border-t">
+   695→                                  <p className="text-xs font-medium text-muted-foreground">
+   696→                                    Overall Comment
+   697→                                  </p>
+   698→                                  <p className="text-sm mt-0.5">
+   699→                                    {ref.reference_responses[0].overall_comment}
+   700→                                  </p>
+   701→                                </div>
+   702→                              )}
+   703→                            </div>
+   704→                          )}
+   705→                        </div>
+   706→                      )}
+   707→
+   708→                      {/* Delete Reference Request button — for completed, cancelled, or expired references */}
+   709→                      {(isCompleted || ref.status === "cancelled" || isExpired) && !isPending && (
+   710→                        <div className="mt-3 pt-3 border-t">
+   711→                          {pendingDeletionRequests.has(ref.id) ? (
+   712→                            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+   713→                              <Clock className="size-3" />
+   714→                              Deletion request pending — awaiting admin review
+   715→                            </p>
+   716→                          ) : (
+   717→                            <Button
+   718→                              variant="ghost"
+   719→                              size="sm"
+   720→                              className="gap-1.5 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+   721→                              onClick={() => {
+   722→                                setSelectedRefForDeletion(ref.id);
+   723→                                setDeletionReason("");
+   724→                                setIsDeleteDialogOpen(true);
+   725→                              }}
+   726→                            >
+   727→                              <Trash2 className="size-3" />
+   728→                              Delete Reference
+   729→                            </Button>
+   730→                          )}
+   731→                        </div>
+   732→                      )}
+   733→                    </div>
+   734→                  </div>
+   735→                </CardContent>
+   736→              </Card>
+   737→            );
+   738→          })}
+   739→        </div>
+   740→      )}
+   741→
+   742→      {/* Delete Reference Request Dialog */}
+   743→      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+   744→        <DialogContent className="sm:max-w-md">
+   745→          <DialogHeader>
+   746→            <DialogTitle className="flex items-center gap-2 text-destructive">
+   747→              <Trash2 className="size-5" />
+   748→              Request to Delete Reference
+   749→            </DialogTitle>
+   750→            <DialogDescription>
+   751→              This will submit a deletion request to a super admin. They will review your reason and decide whether to delete the reference. You cannot undo this request once submitted.
+   752→            </DialogDescription>
+   753→          </DialogHeader>
+   754→          <div className="space-y-4 py-4">
+   755→            {selectedRefForDeletion && (() => {
+   756→              const selectedRef = references.find((r) => r.id === selectedRefForDeletion);
+   757→              if (!selectedRef) return null;
+   758→              const managerName = (() => {
+   759→                // Prefer manager_user relation if it has names
+   760→                if (selectedRef.manager_user?.first_name || selectedRef.manager_user?.last_name) {
+   761→                  return `${selectedRef.manager_user.first_name || ""} ${selectedRef.manager_user.last_name || ""}`.trim();
+   762→                }
+   763→                // Fall back to the stored manager_first_name/manager_last_name
+   764→                if (selectedRef.manager_first_name || selectedRef.manager_last_name) {
+   765→                  return `${selectedRef.manager_first_name || ""} ${selectedRef.manager_last_name || ""}`.trim();
+   766→                }
+   767→                return selectedRef.manager_email;
+   768→              })();
+   769→              return (
+   770→                <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+   771→                  <p className="text-sm font-medium">{managerName}</p>
+   772→                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+   773→                    <Building2 className="size-3" />
+   774→                    {selectedRef.facility_name}
+   775→                  </p>
+   776→                  <p className="text-xs text-muted-foreground">
+   777→                    Status: {selectedRef.status === "completed" ? "Completed" : selectedRef.status === "expired" ? "Expired" : "Cancelled"}
+   778→                  </p>
+   779→                </div>
+   780→              );
+   781→            })()}
+   782→            <div className="space-y-2">
+   783→              <Label htmlFor="deletion-reason">
+   784→                Please mention a valid reason why you want to delete this reference
+   785→              </Label>
+   786→              <Textarea
+   787→                id="deletion-reason"
+   788→                placeholder="e.g., The manager provided incorrect information, I no longer wish to use this reference, etc."
+   789→                value={deletionReason}
+   790→                onChange={(e) => setDeletionReason(e.target.value)}
+   791→                rows={4}
+   792→                className="resize-none"
+   793→              />
+   794→              <p className="text-xs text-muted-foreground">
+   795→                A super admin will review your request and make the final decision.
+   796→              </p>
+   797→            </div>
+   798→          </div>
+   799→          <DialogFooter>
+   800→            <Button
+   801→              type="button"
+   802→              variant="outline"
+   803→              onClick={() => {
+   804→                setIsDeleteDialogOpen(false);
+   805→                setSelectedRefForDeletion(null);
+   806→                setDeletionReason("");
+   807→              }}
+   808→              disabled={isSubmittingDeletion}
+   809→            >
+   810→              Cancel
+   811→            </Button>
+   812→            <Button
+   813→              type="button"
+   814→              variant="destructive"
+   815→              disabled={isSubmittingDeletion || !deletionReason.trim()}
+   816→              className="gap-2"
+   817→              onClick={handleDeleteRequest}
+   818→            >
+   819→              {isSubmittingDeletion ? (
+   820→                <>
+   821→                  <Loader2 className="size-4 animate-spin" />
+   822→                  Submitting...
+   823→                </>
+   824→              ) : (
+   825→                <>
+   826→                  <Send className="size-4" />
+   827→                  Send Request
+   828→                </>
+   829→              )}
+   830→            </Button>
+   831→          </DialogFooter>
+   832→        </DialogContent>
+   833→      </Dialog>
+   834→    </div>
+   835→  );
+   836→}
+   837→

@@ -1,0 +1,1251 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+     4→import { PageHeader } from "@/components/layout/page-header";
+     5→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     6→import { Badge } from "@/components/ui/badge";
+     7→import { Button } from "@/components/ui/button";
+     8→import { Input } from "@/components/ui/input";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Textarea } from "@/components/ui/textarea";
+    11→import { Skeleton } from "@/components/ui/skeleton";
+    12→import { Progress } from "@/components/ui/progress";
+    13→import {
+    14→  Dialog,
+    15→  DialogContent,
+    16→  DialogHeader,
+    17→  DialogTitle,
+    18→  DialogDescription,
+    19→} from "@/components/ui/dialog";
+    20→import {
+    21→  ClipboardCheck,
+    22→  Loader2,
+    23→  Eye,
+    24→  Check,
+    25→  X,
+    26→  ChevronRight,
+    27→  Save,
+    28→  Send,
+    29→  Clock,
+    30→  CheckCircle2,
+    31→  Info,
+    32→} from "@/lib/icons";
+    33→import { toast } from "sonner";
+    34→
+    35→// ─── Types ────────────────────────────────────────────────────────────────
+    36→
+    37→interface Skill {
+    38→  id: number;
+    39→  skillName: string;
+    40→  category: string;
+    41→  questionType: "rating_1_4" | "yes_no" | "text";
+    42→  sortOrder: number;
+    43→  hasNaOption: boolean;
+    44→}
+    45→
+    46→interface Template {
+    47→  id: number;
+    48→  profession: string;
+    49→  specialty: string;
+    50→  name: string;
+    51→  jobTitle: string;
+    52→  isActive: boolean;
+    53→  skills: Skill[];
+    54→}
+    55→
+    56→interface Recruiter {
+    57→  id: number;
+    58→  name: string;
+    59→  organization: string;
+    60→}
+    61→
+    62→interface ExistingRating {
+    63→  skillId: number;
+    64→  ratingValue: string | null;
+    65→  isNa: boolean;
+    66→  textValue?: string;
+    67→}
+    68→
+    69→interface ChecklistItem {
+    70→  id: number;
+    71→  status: "sent" | "opened" | "completed";
+    72→  completionPct: number;
+    73→  openedAt: string | null;
+    74→  createdAt: string;
+    75→  candidateResponseId: number | null;
+    76→  template: Template;
+    77→  recruiter: Recruiter;
+    78→  existingRatings: ExistingRating[];
+    79→  responseStatus: "active" | "submitted" | null;
+    80→  submittedAt: string | null;
+    81→}
+    82→
+    83→interface RatingState {
+    84→  [skillId: number]: {
+    85→    ratingValue: string | null;
+    86→    isNa: boolean;
+    87→    textValue?: string;
+    88→  };
+    89→}
+    90→
+    91→// ─── Status Helpers ───────────────────────────────────────────────────────
+    92→
+    93→type DisplayStatus = "pending" | "in_progress" | "completed";
+    94→
+    95→function getDisplayStatus(item: ChecklistItem): DisplayStatus {
+    96→  if (item.status === "completed") return "completed";
+    97→  if (item.status === "opened" || item.responseStatus === "active")
+    98→    return "in_progress";
+    99→  return "pending";
+   100→}
+   101→
+   102→function getStatusBadge(status: DisplayStatus) {
+   103→  switch (status) {
+   104→    case "pending":
+   105→      return (
+   106→        <Badge className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100">
+   107→          <Clock className="size-3 mr-1" />
+   108→          Pending
+   109→        </Badge>
+   110→      );
+   111→    case "in_progress":
+   112→      return (
+   113→        <Badge className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+   114→          <Loader2 className="size-3 mr-1" />
+   115→          In Progress
+   116→        </Badge>
+   117→      );
+   118→    case "completed":
+   119→      return (
+   120→        <Badge className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
+   121→          <CheckCircle2 className="size-3 mr-1" />
+   122→          Completed
+   123→        </Badge>
+   124→      );
+   125→  }
+   126→}
+   127→
+   128→function getStatusColor(status: DisplayStatus) {
+   129→  switch (status) {
+   130→    case "pending":
+   131→      return "text-amber-600";
+   132→    case "in_progress":
+   133→      return "text-blue-600";
+   134→    case "completed":
+   135→      return "text-green-600";
+   136→  }
+   137→}
+   138→
+   139→// ─── Rating Button Config ─────────────────────────────────────────────────
+   140→
+   141→const ratingLabels: Record<string, string> = {
+   142→  "1": "No theory/experience",
+   143→  "2": "Limited Experience",
+   144→  "3": "Experienced",
+   145→  "4": "Proficient",
+   146→};
+   147→
+   148→interface RatingBtnStyle {
+   149→  selected: string;
+   150→  unselected: string;
+   151→}
+   152→
+   153→const ratingBtnStyles: Record<string, RatingBtnStyle> = {
+   154→  "1": {
+   155→    selected:
+   156→      "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626] shadow-sm",
+   157→    unselected:
+   158→      "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]",
+   159→  },
+   160→  "2": {
+   161→    selected:
+   162→      "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04] shadow-sm",
+   163→    unselected:
+   164→      "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]",
+   165→  },
+   166→  "3": {
+   167→    selected:
+   168→      "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB] shadow-sm",
+   169→    unselected:
+   170→      "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]",
+   171→  },
+   172→  "4": {
+   173→    selected:
+   174→      "bg-[#166534] border-[#166534] text-white shadow-sm",
+   175→    unselected:
+   176→      "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]",
+   177→  },
+   178→};
+   179→
+   180→// ─── Rating Button Component ──────────────────────────────────────────────
+   181→
+   182→function RatingButton({
+   183→  value,
+   184→  label,
+   185→  isSelected,
+   186→  onClick,
+   187→  disabled,
+   188→}: {
+   189→  value: string;
+   190→  label: string;
+   191→  isSelected: boolean;
+   192→  onClick: () => void;
+   193→  disabled: boolean;
+   194→}) {
+   195→  const style = ratingBtnStyles[value];
+   196→  return (
+   197→    <button
+   198→      type="button"
+   199→      disabled={disabled}
+   200→      onClick={onClick}
+   201→      className={`inline-flex items-center justify-center rounded-lg border-2 px-3 py-1.5 text-sm font-semibold transition-all duration-150 min-w-[44px] ${
+   202→        isSelected ? style.selected : style.unselected
+   203→      } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   204→      title={label}
+   205→    >
+   206→      {value}
+   207→    </button>
+   208→  );
+   209→}
+   210→
+   211→// ─── Main Page Component ──────────────────────────────────────────────────
+   212→
+   213→export default function CandidateChecklistsPage() {
+   214→  const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
+   215→  const [isLoading, setIsLoading] = useState(true);
+   216→  const [error, setError] = useState("");
+   217→
+   218→  // Dialog states
+   219→  const [formOpen, setFormOpen] = useState(false);
+   220→  const [viewOpen, setViewOpen] = useState(false);
+   221→  const [selectedChecklist, setSelectedChecklist] =
+   222→    useState<ChecklistItem | null>(null);
+   223→
+   224→  // Form state
+   225→  const [ratings, setRatings] = useState<RatingState>({});
+   226→  const [signatureName, setSignatureName] = useState("");
+   227→  const [isSaving, setIsSaving] = useState(false);
+   228→  const [isSubmitting, setIsSubmitting] = useState(false);
+   229→  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   230→
+   231→  // ─── Fetch Checklists ─────────────────────────────────────────────────
+   232→
+   233→  const fetchChecklists = useCallback(async () => {
+   234→    try {
+   235→      const res = await fetch("/api/candidate/checklists");
+   236→      if (!res.ok) throw new Error("Failed to fetch checklists");
+   237→      const data = await res.json();
+   238→      setChecklists(data.checklists || []);
+   239→    } catch {
+   240→      setError("Failed to load checklists. Please refresh the page.");
+   241→    } finally {
+   242→      setIsLoading(false);
+   243→    }
+   244→  }, []);
+   245→
+   246→  useEffect(() => {
+   247→    fetchChecklists();
+   248→  }, [fetchChecklists]);
+   249→
+   250→  // ─── Stats ────────────────────────────────────────────────────────────
+   251→
+   252→  const stats = useMemo(() => {
+   253→    const pending = checklists.filter(
+   254→      (c) => getDisplayStatus(c) === "pending"
+   255→    ).length;
+   256→    const inProgress = checklists.filter(
+   257→      (c) => getDisplayStatus(c) === "in_progress"
+   258→    ).length;
+   259→    const completed = checklists.filter(
+   260→      (c) => getDisplayStatus(c) === "completed"
+   261→    ).length;
+   262→    return { pending, inProgress, completed };
+   263→  }, [checklists]);
+   264→
+   265→  // ─── Auto-Save ────────────────────────────────────────────────────────
+   266→
+   267→  const autoSave = useCallback(
+   268→    async (
+   269→      requestId: number,
+   270→      updatedRatings: RatingState,
+   271→      skills: Skill[]
+   272→    ) => {
+   273→      try {
+   274→        const ratingPayload = skills.map((skill) => ({
+   275→          skillId: skill.id,
+   276→          ratingValue:
+   277→            skill.questionType === "text"
+   278→              ? updatedRatings[skill.id]?.textValue || null
+   279→              : updatedRatings[skill.id]?.ratingValue || null,
+   280→          isNa: updatedRatings[skill.id]?.isNa || false,
+   281→        }));
+   282→
+   283→        const res = await fetch("/api/candidate/checklists/submit", {
+   284→          method: "POST",
+   285→          headers: { "Content-Type": "application/json" },
+   286→          body: JSON.stringify({
+   287→            requestId,
+   288→            ratings: ratingPayload,
+   289→          }),
+   290→        });
+   291→
+   292→        if (res.ok) {
+   293→          const result = await res.json();
+   294→          // Update the checklist's completion percentage locally
+   295→          setChecklists((prev) =>
+   296→            prev.map((c) =>
+   297→              c.id === requestId
+   298→                ? { ...c, completionPct: result.completionPct }
+   299→                : c
+   300→            )
+   301→          );
+   302→        }
+   303→      } catch {
+   304→        // Silent fail for auto-save
+   305→      }
+   306→    },
+   307→    []
+   308→  );
+   309→
+   310→  const debouncedAutoSave = useCallback(
+   311→    (requestId: number, updatedRatings: RatingState, skills: Skill[]) => {
+   312→      if (autoSaveTimerRef.current) {
+   313→        clearTimeout(autoSaveTimerRef.current);
+   314→      }
+   315→      autoSaveTimerRef.current = setTimeout(() => {
+   316→        autoSave(requestId, updatedRatings, skills);
+   317→      }, 800);
+   318→    },
+   319→    [autoSave]
+   320→  );
+   321→
+   322→  // ─── Rating Change Handler ────────────────────────────────────────────
+   323→
+   324→  const handleRatingChange = useCallback(
+   325→    (
+   326→      skillId: number,
+   327→      value: string | null,
+   328→      isNa: boolean,
+   329→      textValue?: string
+   330→    ) => {
+   331→      if (!selectedChecklist) return;
+   332→
+   333→      setRatings((prev) => {
+   334→        const updated = {
+   335→          ...prev,
+   336→          [skillId]: { ratingValue: value, isNa, textValue },
+   337→        };
+   338→
+   339→        // Trigger auto-save
+   340→        debouncedAutoSave(
+   341→          selectedChecklist.id,
+   342→          updated,
+   343→          selectedChecklist.template.skills
+   344→        );
+   345→
+   346→        return updated;
+   347→      });
+   348→    },
+   349→    [selectedChecklist, debouncedAutoSave]
+   350→  );
+   351→
+   352→  // ─── Open Checklist Dialog ────────────────────────────────────────────
+   353→
+   354→  const handleOpenChecklist = useCallback((checklist: ChecklistItem) => {
+   355→    setSelectedChecklist(checklist);
+   356→
+   357→    // Initialize ratings from existing ratings
+   358→    const initialRatings: RatingState = {};
+   359→    checklist.existingRatings.forEach((r) => {
+   360→      initialRatings[r.skillId] = {
+   361→        ratingValue: r.ratingValue,
+   362→        isNa: r.isNa,
+   363→        textValue: r.ratingValue || "",
+   364→      };
+   365→    });
+   366→    setRatings(initialRatings);
+   367→    setSignatureName("");
+   368→    setFormOpen(true);
+   369→  }, []);
+   370→
+   371→  // ─── View Submission Dialog ───────────────────────────────────────────
+   372→
+   373→  const handleViewSubmission = useCallback((checklist: ChecklistItem) => {
+   374→    setSelectedChecklist(checklist);
+   375→
+   376→    const initialRatings: RatingState = {};
+   377→    checklist.existingRatings.forEach((r) => {
+   378→      initialRatings[r.skillId] = {
+   379→        ratingValue: r.ratingValue,
+   380→        isNa: r.isNa,
+   381→        textValue: r.ratingValue || "",
+   382→      };
+   383→    });
+   384→    setRatings(initialRatings);
+   385→    setViewOpen(true);
+   386→  }, []);
+   387→
+   388→  // ─── Calculate Completion ─────────────────────────────────────────────
+   389→
+   390→  const calculateCompletion = useCallback(
+   391→    (checklist: ChecklistItem, currentRatings?: RatingState) => {
+   392→      const skills = checklist.template.skills;
+   393→      if (skills.length === 0) return 0;
+   394→
+   395→      const ratedCount = skills.filter((skill) => {
+   396→        const rating =
+   397→          currentRatings?.[skill.id] ??
+   398→          checklist.existingRatings.find((r) => r.skillId === skill.id);
+   399→        if (!rating) return false;
+   400→        if (rating.isNa) return true;
+   401→        if (skill.questionType === "text") return !!rating.textValue?.trim();
+   402→        return !!rating.ratingValue;
+   403→      }).length;
+   404→
+   405→      return Math.round((ratedCount / skills.length) * 100);
+   406→    },
+   407→    []
+   408→  );
+   409→
+   410→  const isAllSkillsRated = useMemo(() => {
+   411→    if (!selectedChecklist) return false;
+   412→    return calculateCompletion(selectedChecklist, ratings) === 100;
+   413→  }, [selectedChecklist, ratings, calculateCompletion]);
+   414→
+   415→  // ─── Final Submit ─────────────────────────────────────────────────────
+   416→
+   417→  const handleSubmit = useCallback(async () => {
+   418→    if (!selectedChecklist || !signatureName.trim()) return;
+   419→
+   420→    setIsSubmitting(true);
+   421→    try {
+   422→      const skills = selectedChecklist.template.skills;
+   423→      const ratingPayload = skills.map((skill) => ({
+   424→        skillId: skill.id,
+   425→        ratingValue:
+   426→          skill.questionType === "text"
+   427→            ? ratings[skill.id]?.textValue || null
+   428→            : ratings[skill.id]?.ratingValue || null,
+   429→        isNa: ratings[skill.id]?.isNa || false,
+   430→      }));
+   431→
+   432→      const res = await fetch("/api/candidate/checklists/submit", {
+   433→        method: "POST",
+   434→        headers: { "Content-Type": "application/json" },
+   435→        body: JSON.stringify({
+   436→          requestId: selectedChecklist.id,
+   437→          ratings: ratingPayload,
+   438→          digitalSignature: signatureName.trim(),
+   439→          candidateNameSigned: signatureName.trim(),
+   440→        }),
+   441→      });
+   442→
+   443→      if (!res.ok) {
+   444→        const data = await res.json();
+   445→        throw new Error(data.error || "Failed to submit checklist");
+   446→      }
+   447→
+   448→      toast.success("Checklist submitted successfully!", {
+   449→        description: "Your skills checklist has been saved and submitted.",
+   450→      });
+   451→
+   452→      setFormOpen(false);
+   453→      setSelectedChecklist(null);
+   454→      fetchChecklists();
+   455→    } catch (err) {
+   456→      toast.error("Failed to submit checklist", {
+   457→        description:
+   458→          err instanceof Error ? err.message : "Please try again.",
+   459→      });
+   460→    } finally {
+   461→      setIsSubmitting(false);
+   462→    }
+   463→  }, [selectedChecklist, signatureName, ratings, fetchChecklists]);
+   464→
+   465→  // ─── Group Skills by Category ─────────────────────────────────────────
+   466→
+   467→  const groupSkillsByCategory = (skills: Skill[]) => {
+   468→    const groups: Record<string, Skill[]> = {};
+   469→    skills.forEach((skill) => {
+   470→      if (!groups[skill.category]) {
+   471→        groups[skill.category] = [];
+   472→      }
+   473→      groups[skill.category].push(skill);
+   474→    });
+   475→    return groups;
+   476→  };
+   477→
+   478→  // ─── Rating Legend Component ──────────────────────────────────────────
+   479→
+   480→  const RatingLegend = () => (
+   481→    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+   482→      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+   483→        Rating Scale
+   484→      </p>
+   485→      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+   486→        {(["1", "2", "3", "4"] as const).map((val) => {
+   487→          const style = ratingBtnStyles[val];
+   488→          return (
+   489→            <div key={val} className="flex items-center gap-2">
+   490→              <span
+   491→                className={`inline-flex items-center justify-center rounded-lg border-2 px-2 py-1 text-xs font-bold ${style.selected}`}
+   492→              >
+   493→                {val}
+   494→              </span>
+   495→              <span className="text-xs text-gray-600">
+   496→                {ratingLabels[val]}
+   497→              </span>
+   498→            </div>
+   499→          );
+   500→        })}
+   501→      </div>
+   502→    </div>
+   503→  );
+   504→
+   505→  // ─── Skill Row Component ──────────────────────────────────────────────
+   506→
+   507→  const SkillRow = ({
+   508→    skill,
+   509→    disabled,
+   510→  }: {
+   511→    skill: Skill;
+   512→    disabled: boolean;
+   513→  }) => {
+   514→    const currentRating = ratings[skill.id];
+   515→
+   516→    if (skill.questionType === "yes_no") {
+   517→      const currentVal = currentRating?.ratingValue;
+   518→      const isNa = currentRating?.isNa ?? false;
+   519→
+   520→      return (
+   521→        <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-b-0">
+   522→          <span
+   523→            className={`text-sm font-medium flex-1 ${
+   524→              isNa ? "text-gray-400 line-through" : "text-gray-700"
+   525→            }`}
+   526→          >
+   527→            {skill.skillName}
+   528→          </span>
+   529→          <div className="flex items-center gap-2">
+   530→            <button
+   531→              type="button"
+   532→              disabled={disabled}
+   533→              onClick={() =>
+   534→                handleRatingChange(skill.id, "yes", false)
+   535→              }
+   536→              className={`inline-flex items-center justify-center rounded-lg border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-150 min-w-[52px] ${
+   537→                currentVal === "yes" && !isNa
+   538→                  ? "bg-[#166534] border-[#166534] text-white shadow-sm"
+   539→                  : "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]"
+   540→              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   541→            >
+   542→              Yes
+   543→            </button>
+   544→            <button
+   545→              type="button"
+   546→              disabled={disabled}
+   547→              onClick={() =>
+   548→                handleRatingChange(skill.id, "no", false)
+   549→              }
+   550→              className={`inline-flex items-center justify-center rounded-lg border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-150 min-w-[52px] ${
+   551→                currentVal === "no" && !isNa
+   552→                  ? "bg-[#DC2626] border-[#DC2626] text-white shadow-sm"
+   553→                  : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]"
+   554→              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   555→            >
+   556→              No
+   557→            </button>
+   558→            {skill.hasNaOption && (
+   559→              <button
+   560→                type="button"
+   561→                disabled={disabled}
+   562→                onClick={() =>
+   563→                  handleRatingChange(
+   564→                    skill.id,
+   565→                    isNa ? null : currentVal,
+   566→                    !isNa
+   567→                  )
+   568→                }
+   569→                className={`inline-flex items-center justify-center rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-150 min-w-[44px] ${
+   570→                  isNa
+   571→                    ? "bg-gray-600 border-gray-600 text-white shadow-sm"
+   572→                    : "border-gray-200 text-gray-400 hover:border-gray-500 hover:text-gray-600"
+   573→                } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   574→              >
+   575→                N/A
+   576→              </button>
+   577→            )}
+   578→          </div>
+   579→        </div>
+   580→      );
+   581→    }
+   582→
+   583→    if (skill.questionType === "text") {
+   584→      const textVal = currentRating?.textValue || "";
+   585→      const isNa = currentRating?.isNa ?? false;
+   586→
+   587→      return (
+   588→        <div className="py-3 border-b border-gray-100 last:border-b-0">
+   589→          <Label
+   590→            className={`text-sm font-medium mb-2 block ${
+   591→              isNa ? "text-gray-400 line-through" : "text-gray-700"
+   592→            }`}
+   593→          >
+   594→            {skill.skillName}
+   595→          </Label>
+   596→          <div className="flex items-start gap-2">
+   597→            <Textarea
+   598→              value={isNa ? "" : textVal}
+   599→              onChange={(e) =>
+   600→                handleRatingChange(skill.id, null, false, e.target.value)
+   601→              }
+   602→              disabled={disabled || isNa}
+   603→              placeholder="Enter your response..."
+   604→              className="min-h-[60px] resize-none"
+   605→            />
+   606→            {skill.hasNaOption && (
+   607→              <button
+   608→                type="button"
+   609→                disabled={disabled}
+   610→                onClick={() =>
+   611→                  handleRatingChange(skill.id, null, !isNa, textVal)
+   612→                }
+   613→                className={`inline-flex items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-semibold transition-all duration-150 min-w-[44px] shrink-0 ${
+   614→                  isNa
+   615→                    ? "bg-gray-600 border-gray-600 text-white shadow-sm"
+   616→                    : "border-gray-200 text-gray-400 hover:border-gray-500 hover:text-gray-600"
+   617→                } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   618→              >
+   619→                N/A
+   620→              </button>
+   621→            )}
+   622→          </div>
+   623→        </div>
+   624→      );
+   625→    }
+   626→
+   627→    // Default: rating_1_4
+   628→    const currentVal = currentRating?.ratingValue ?? null;
+   629→    const isNa = currentRating?.isNa ?? false;
+   630→
+   631→    return (
+   632→      <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-b-0">
+   633→        <span
+   634→          className={`text-sm font-medium flex-1 ${
+   635→            isNa ? "text-gray-400 line-through" : "text-gray-700"
+   636→          }`}
+   637→        >
+   638→          {skill.skillName}
+   639→        </span>
+   640→        <div className="flex items-center gap-1.5 shrink-0">
+   641→          {(["1", "2", "3", "4"] as const).map((val) => (
+   642→            <RatingButton
+   643→              key={val}
+   644→              value={val}
+   645→              label={ratingLabels[val]}
+   646→              isSelected={currentVal === val && !isNa}
+   647→              onClick={() => handleRatingChange(skill.id, val, false)}
+   648→              disabled={disabled || isNa}
+   649→            />
+   650→          ))}
+   651→          {skill.hasNaOption && (
+   652→            <button
+   653→              type="button"
+   654→              disabled={disabled}
+   655→              onClick={() =>
+   656→                handleRatingChange(
+   657→                  skill.id,
+   658→                  isNa ? null : currentVal,
+   659→                  !isNa
+   660→                )
+   661→              }
+   662→              className={`inline-flex items-center justify-center rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-150 min-w-[44px] ${
+   663→                isNa
+   664→                  ? "bg-gray-600 border-gray-600 text-white shadow-sm"
+   665→                  : "border-gray-200 text-gray-400 hover:border-gray-500 hover:text-gray-600"
+   666→              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+   667→            >
+   668→              N/A
+   669→            </button>
+   670→          )}
+   671→        </div>
+   672→      </div>
+   673→    );
+   674→  };
+   675→
+   676→  // ─── Checklist Form Content (shared between form and view) ────────────
+   677→
+   678→  const ChecklistContent = ({
+   679→    checklist,
+   680→    readOnly,
+   681→  }: {
+   682→    checklist: ChecklistItem;
+   683→    readOnly: boolean;
+   684→  }) => {
+   685→    const skills = checklist.template.skills;
+   686→    const grouped = groupSkillsByCategory(skills);
+   687→    const categoryCount = Object.keys(grouped).length;
+   688→    const completion = readOnly
+   689→      ? checklist.completionPct
+   690→      : calculateCompletion(checklist, ratings);
+   691→
+   692→    return (
+   693→      <div className="flex flex-col h-full">
+   694→        {/* Progress Bar */}
+   695→        <div className="px-6 pt-4 pb-2">
+   696→          <div className="flex items-center justify-between mb-1.5">
+   697→            <span className="text-xs font-semibold text-gray-500">
+   698→              Completion
+   699→            </span>
+   700→            <span className="text-xs font-bold text-gray-700">
+   701→              {completion}%
+   702→            </span>
+   703→          </div>
+   704→          <Progress value={completion} className="h-2" />
+   705→        </div>
+   706→
+   707→        {/* Sticky Bar */}
+   708→        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3">
+   709→          <div className="flex items-center gap-2 flex-wrap">
+   710→            <span className="text-sm font-semibold text-gray-900 truncate">
+   711→              {checklist.template.name}
+   712→            </span>
+   713→            <Badge className="bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] text-xs hover:bg-[#DCFCE7]">
+   714→              {checklist.template.profession}
+   715→            </Badge>
+   716→            <Badge variant="outline" className="text-xs border-gray-300 text-gray-600">
+   717→              {checklist.template.specialty}
+   718→            </Badge>
+   719→          </div>
+   720→        </div>
+   721→
+   722→        {/* Scrollable Content */}
+   723→        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+   724→          {/* Intro Card */}
+   725→          <Card className="border-gray-200">
+   726→            <CardContent className="p-4">
+   727→              <div className="flex items-start gap-3">
+   728→                <div className="size-10 rounded-lg bg-[#DCFCE7] flex items-center justify-center shrink-0">
+   729→                  <ClipboardCheck className="size-5 text-[#166534]" />
+   730→                </div>
+   731→                <div>
+   732→                  <p className="text-sm text-gray-600">
+   733→                    <span className="font-semibold text-gray-900">
+   734→                      {checklist.recruiter.organization}
+   735→                    </span>{" "}
+   736→                    requests your:
+   737→                  </p>
+   738→                  <p className="text-base font-bold text-gray-900 mt-1">
+   739→                    {checklist.template.name}
+   740→                  </p>
+   741→                  <div className="flex items-center gap-2 mt-2">
+   742→                    <Badge className="bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] text-xs hover:bg-[#DCFCE7]">
+   743→                      {checklist.template.specialty}
+   744→                    </Badge>
+   745→                    <Badge variant="outline" className="text-xs border-gray-300 text-gray-600">
+   746→                      {checklist.template.profession}
+   747→                    </Badge>
+   748→                  </div>
+   749→                </div>
+   750→              </div>
+   751→            </CardContent>
+   752→          </Card>
+   753→
+   754→          {/* Info Box */}
+   755→          <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+   756→            <Info className="size-4 text-blue-600 shrink-0 mt-0.5" />
+   757→            <p className="text-sm text-blue-800">
+   758→              Complete this once and it saves to your vault for 30 days.
+   759→            </p>
+   760→          </div>
+   761→
+   762→          {/* Rating Legend */}
+   763→          <RatingLegend />
+   764→
+   765→          {/* Skills by Category */}
+   766→          {Object.entries(grouped).map(([category, categorySkills]) => (
+   767→            <div key={category} className="space-y-0">
+   768→              <div className="flex items-center gap-2 border-l-4 border-[#166534] pl-3 py-1 mb-2">
+   769→                <h3 className="text-sm font-bold text-gray-800">
+   770→                  {category}
+   771→                </h3>
+   772→                <span className="text-xs text-gray-400">
+   773→                  ({categorySkills.length}{" "}
+   774→                  {categorySkills.length === 1 ? "skill" : "skills"})
+   775→                </span>
+   776→              </div>
+   777→              <Card className="border-gray-200">
+   778→                <CardContent className="p-4">
+   779→                  {categorySkills.map((skill) => (
+   780→                    <SkillRow
+   781→                      key={skill.id}
+   782→                      skill={skill}
+   783→                      disabled={readOnly}
+   784→                    />
+   785→                  ))}
+   786→                </CardContent>
+   787→              </Card>
+   788→            </div>
+   789→          ))}
+   790→
+   791→          {/* Signature Section (only in form mode when all rated) */}
+   792→          {!readOnly && isAllSkillsRated && (
+   793→            <Card className="border-green-200 bg-green-50/50">
+   794→              <CardContent className="p-4 space-y-4">
+   795→                <div className="flex items-center gap-2">
+   796→                  <CheckCircle2 className="size-5 text-[#166534]" />
+   797→                  <h3 className="text-sm font-bold text-gray-800">
+   798→                    Attestation & Signature
+   799→                  </h3>
+   800→                </div>
+   801→                <p className="text-sm text-gray-700 leading-relaxed">
+   802→                  I attest that the information provided in this skills checklist
+   803→                  is accurate and reflects my true level of experience.
+   804→                </p>
+   805→                <div className="space-y-3">
+   806→                  <div>
+   807→                    <Label
+   808→                      htmlFor="signature-name"
+   809→                      className="text-sm font-medium text-gray-700"
+   810→                    >
+   811→                      Type your full legal name
+   812→                    </Label>
+   813→                    <Input
+   814→                      id="signature-name"
+   815→                      value={signatureName}
+   816→                      onChange={(e) => setSignatureName(e.target.value)}
+   817→                      placeholder="Full legal name"
+   818→                      className="mt-1.5"
+   819→                    />
+   820→                  </div>
+   821→                  <div>
+   822→                    <Label className="text-sm font-medium text-gray-700">
+   823→                      Date
+   824→                    </Label>
+   825→                    <Input
+   826→                      value={new Date().toLocaleDateString("en-US", {
+   827→                        year: "numeric",
+   828→                        month: "long",
+   829→                        day: "numeric",
+   830→                      })}
+   831→                      readOnly
+   832→                      className="mt-1.5 bg-gray-50"
+   833→                    />
+   834→                  </div>
+   835→                  <Button
+   836→                    onClick={handleSubmit}
+   837→                    disabled={!signatureName.trim() || isSubmitting}
+   838→                    className="w-full bg-[#166534] hover:bg-[#14532D] text-white gap-2"
+   839→                  >
+   840→                    {isSubmitting ? (
+   841→                      <Loader2 className="size-4 animate-spin" />
+   842→                    ) : (
+   843→                      <Send className="size-4" />
+   844→                    )}
+   845→                    Submit Checklist
+   846→                  </Button>
+   847→                </div>
+   848→              </CardContent>
+   849→            </Card>
+   850→          )}
+   851→
+   852→          {/* Read-only: Submitted Info */}
+   853→          {readOnly && checklist.submittedAt && (
+   854→            <Card className="border-green-200 bg-green-50/50">
+   855→              <CardContent className="p-4 space-y-2">
+   856→                <div className="flex items-center gap-2">
+   857→                  <CheckCircle2 className="size-5 text-[#166534]" />
+   858→                  <h3 className="text-sm font-bold text-gray-800">
+   859→                    Submitted
+   860→                  </h3>
+   861→                </div>
+   862→                <p className="text-sm text-gray-600">
+   863→                  This checklist was submitted on{" "}
+   864→                  <span className="font-semibold">
+   865→                    {new Date(checklist.submittedAt).toLocaleDateString(
+   866→                      "en-US",
+   867→                      {
+   868→                        year: "numeric",
+   869→                        month: "long",
+   870→                        day: "numeric",
+   871→                        hour: "2-digit",
+   872→                        minute: "2-digit",
+   873→                      }
+   874→                    )}
+   875→                  </span>
+   876→                  .
+   877→                </p>
+   878→                {checklist.existingRatings.some((r) => r.isNa === false && r.ratingValue) && (
+   879→                  <p className="text-xs text-gray-500 mt-1">
+   880→                    Signed and attested by the candidate.
+   881→                  </p>
+   882→                )}
+   883→              </CardContent>
+   884→            </Card>
+   885→          )}
+   886→        </div>
+   887→
+   888→        {/* Footer */}
+   889→        <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 flex items-center justify-between">
+   890→          <span className="text-xs text-gray-500">
+   891→            {categoryCount} {categoryCount === 1 ? "category" : "categories"} —{" "}
+   892→            {skills.length} total skills
+   893→          </span>
+   894→          {!readOnly && (
+   895→            <span className="flex items-center gap-1 text-xs text-[#166534]">
+   896→              <Save className="size-3" />
+   897→              Your progress is auto-saved
+   898→            </span>
+   899→          )}
+   900→        </div>
+   901→      </div>
+   902→    );
+   903→  };
+   904→
+   905→  // ─── Loading State ────────────────────────────────────────────────────
+   906→
+   907→  if (isLoading) {
+   908→    return (
+   909→      <div className="space-y-6">
+   910→        <PageHeader
+   911→          title="My Checklists"
+   912→          description="View and complete your skills checklists requested by recruiters."
+   913→        />
+   914→        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   915→          {[1, 2, 3].map((i) => (
+   916→            <Card key={i}>
+   917→              <CardContent className="p-4">
+   918→                <Skeleton className="h-4 w-20 mb-2" />
+   919→                <Skeleton className="h-8 w-12" />
+   920→              </CardContent>
+   921→            </Card>
+   922→          ))}
+   923→        </div>
+   924→        <div className="space-y-4">
+   925→          {[1, 2, 3].map((i) => (
+   926→            <Card key={i}>
+   927→              <CardContent className="p-4">
+   928→                <div className="flex items-center justify-between">
+   929→                  <div className="space-y-2">
+   930→                    <Skeleton className="h-5 w-48" />
+   931→                    <Skeleton className="h-4 w-32" />
+   932→                    <Skeleton className="h-4 w-24" />
+   933→                  </div>
+   934→                  <Skeleton className="h-10 w-28" />
+   935→                </div>
+   936→              </CardContent>
+   937→            </Card>
+   938→          ))}
+   939→        </div>
+   940→      </div>
+   941→    );
+   942→  }
+   943→
+   944→  // ─── Error State ──────────────────────────────────────────────────────
+   945→
+   946→  if (error) {
+   947→    return (
+   948→      <div className="space-y-6">
+   949→        <PageHeader
+   950→          title="My Checklists"
+   951→          description="View and complete your skills checklists requested by recruiters."
+   952→        />
+   953→        <Card>
+   954→          <CardContent className="p-6 text-center">
+   955→            <p className="text-destructive mb-4">{error}</p>
+   956→            <Button onClick={fetchChecklists} variant="outline">
+   957→              Try Again
+   958→            </Button>
+   959→          </CardContent>
+   960→        </Card>
+   961→      </div>
+   962→    );
+   963→  }
+   964→
+   965→  // ─── Main Render ──────────────────────────────────────────────────────
+   966→
+   967→  return (
+   968→    <div className="space-y-6">
+   969→      <PageHeader
+   970→        title="My Checklists"
+   971→        description="View and complete your skills checklists requested by recruiters."
+   972→      />
+   973→
+   974→      {/* Overview Stats */}
+   975→      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   976→        <Card className="hover:shadow-md transition-shadow">
+   977→          <CardContent className="p-4">
+   978→            <div className="flex items-center justify-between">
+   979→              <div>
+   980→                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+   981→                  Pending
+   982→                </p>
+   983→                <p className="text-2xl font-bold text-gray-900 mt-1">
+   984→                  {stats.pending}
+   985→                </p>
+   986→              </div>
+   987→              <div className="size-10 rounded-lg bg-amber-50 flex items-center justify-center">
+   988→                <Clock className="size-5 text-amber-600" />
+   989→              </div>
+   990→            </div>
+   991→            <p className="text-xs text-gray-500 mt-1">
+   992→              Awaiting your response
+   993→            </p>
+   994→          </CardContent>
+   995→        </Card>
+   996→
+   997→        <Card className="hover:shadow-md transition-shadow">
+   998→          <CardContent className="p-4">
+   999→            <div className="flex items-center justify-between">
+  1000→              <div>
+  1001→                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">
+  1002→                  In Progress
+  1003→                </p>
+  1004→                <p className="text-2xl font-bold text-gray-900 mt-1">
+  1005→                  {stats.inProgress}
+  1006→                </p>
+  1007→              </div>
+  1008→              <div className="size-10 rounded-lg bg-blue-50 flex items-center justify-center">
+  1009→                <Loader2 className="size-5 text-blue-600" />
+  1010→              </div>
+  1011→            </div>
+  1012→            <p className="text-xs text-gray-500 mt-1">
+  1013→              Partially completed
+  1014→            </p>
+  1015→          </CardContent>
+  1016→        </Card>
+  1017→
+  1018→        <Card className="hover:shadow-md transition-shadow">
+  1019→          <CardContent className="p-4">
+  1020→            <div className="flex items-center justify-between">
+  1021→              <div>
+  1022→                <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">
+  1023→                  Completed
+  1024→                </p>
+  1025→                <p className="text-2xl font-bold text-gray-900 mt-1">
+  1026→                  {stats.completed}
+  1027→                </p>
+  1028→              </div>
+  1029→              <div className="size-10 rounded-lg bg-green-50 flex items-center justify-center">
+  1030→                <CheckCircle2 className="size-5 text-green-600" />
+  1031→              </div>
+  1032→            </div>
+  1033→            <p className="text-xs text-gray-500 mt-1">
+  1034→              Submitted & verified
+  1035→            </p>
+  1036→          </CardContent>
+  1037→        </Card>
+  1038→      </div>
+  1039→
+  1040→      {/* Checklist List */}
+  1041→      {checklists.length === 0 ? (
+  1042→        <Card>
+  1043→          <CardContent className="p-8 text-center">
+  1044→            <div className="size-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+  1045→              <ClipboardCheck className="size-7 text-gray-400" />
+  1046→            </div>
+  1047→            <h3 className="text-lg font-semibold text-gray-700">
+  1048→              No checklists yet
+  1049→            </h3>
+  1050→            <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+  1051→              When a recruiter sends you a skills checklist, it will appear
+  1052→              here. Check back soon!
+  1053→            </p>
+  1054→          </CardContent>
+  1055→        </Card>
+  1056→      ) : (
+  1057→        <div className="space-y-4">
+  1058→          {checklists.map((checklist) => {
+  1059→            const displayStatus = getDisplayStatus(checklist);
+  1060→            const completionPct = checklist.completionPct;
+  1061→
+  1062→            return (
+  1063→              <Card
+  1064→                key={checklist.id}
+  1065→                className="hover:shadow-md transition-shadow"
+  1066→              >
+  1067→                <CardContent className="p-4 sm:p-6">
+  1068→                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  1069→                    {/* Left: Info */}
+  1070→                    <div className="flex-1 min-w-0 space-y-2">
+  1071→                      <div className="flex items-center gap-2 flex-wrap">
+  1072→                        <h3 className="text-base font-bold text-gray-900 truncate">
+  1073→                          {checklist.template.name}
+  1074→                        </h3>
+  1075→                        {getStatusBadge(displayStatus)}
+  1076→                      </div>
+  1077→                      <div className="flex items-center gap-2 flex-wrap">
+  1078→                        <Badge className="bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] text-xs hover:bg-[#DCFCE7]">
+  1079→                          {checklist.template.profession}
+  1080→                        </Badge>
+  1081→                        <Badge
+  1082→                          variant="outline"
+  1083→                          className="text-xs border-gray-300 text-gray-600"
+  1084→                        >
+  1085→                          {checklist.template.specialty}
+  1086→                        </Badge>
+  1087→                      </div>
+  1088→                      <p className="text-sm text-gray-500">
+  1089→                        From{" "}
+  1090→                        <span className="font-medium text-gray-700">
+  1091→                          {checklist.recruiter.name}
+  1092→                        </span>
+  1093→                        {checklist.recruiter.organization && (
+  1094→                          <>
+  1095→                            {" "}
+  1096→                            at{" "}
+  1097→                            <span className="font-medium text-gray-700">
+  1098→                              {checklist.recruiter.organization}
+  1099→                            </span>
+  1100→                          </>
+  1101→                        )}
+  1102→                      </p>
+  1103→                      {/* Completion bar */}
+  1104→                      <div className="space-y-1.5">
+  1105→                        <div className="flex items-center justify-between">
+  1106→                          <span className="text-xs text-gray-500">
+  1107→                            Progress
+  1108→                          </span>
+  1109→                          <span
+  1110→                            className={`text-xs font-semibold ${getStatusColor(
+  1111→                              displayStatus
+  1112→                            )}`}
+  1113→                          >
+  1114→                            {completionPct}%
+  1115→                          </span>
+  1116→                        </div>
+  1117→                        <Progress value={completionPct} className="h-1.5" />
+  1118→                      </div>
+  1119→                      <p className="text-xs text-gray-400">
+  1120→                        Sent{" "}
+  1121→                        {new Date(checklist.createdAt).toLocaleDateString(
+  1122→                          "en-US",
+  1123→                          {
+  1124→                            month: "short",
+  1125→                            day: "numeric",
+  1126→                            year: "numeric",
+  1127→                          }
+  1128→                        )}
+  1129→                      </p>
+  1130→                    </div>
+  1131→
+  1132→                    {/* Right: Action Button */}
+  1133→                    <div className="shrink-0">
+  1134→                      {displayStatus === "completed" ? (
+  1135→                        <Button
+  1136→                          variant="outline"
+  1137→                          className="gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+  1138→                          onClick={() => handleViewSubmission(checklist)}
+  1139→                        >
+  1140→                          <Eye className="size-4" />
+  1141→                          View Submission
+  1142→                        </Button>
+  1143→                      ) : (
+  1144→                        <Button
+  1145→                          className="gap-2 bg-[#166534] hover:bg-[#14532D] text-white"
+  1146→                          onClick={() => handleOpenChecklist(checklist)}
+  1147→                        >
+  1148→                          <ChevronRight className="size-4" />
+  1149→                          Open Checklist
+  1150→                        </Button>
+  1151→                      )}
+  1152→                    </div>
+  1153→                  </div>
+  1154→                </CardContent>
+  1155→              </Card>
+  1156→            );
+  1157→          })}
+  1158→        </div>
+  1159→      )}
+  1160→
+  1161→      {/* ─── Checklist Form Dialog ────────────────────────────────────────── */}
+  1162→      <Dialog open={formOpen} onOpenChange={(open) => {
+  1163→        if (!open) {
+  1164→          // Flush any pending auto-save
+  1165→          if (autoSaveTimerRef.current) {
+  1166→            clearTimeout(autoSaveTimerRef.current);
+  1167→            autoSaveTimerRef.current = null;
+  1168→          }
+  1169→          if (selectedChecklist) {
+  1170→            autoSave(selectedChecklist.id, ratings, selectedChecklist.template.skills);
+  1171→          }
+  1172→        }
+  1173→        setFormOpen(open);
+  1174→      }}>
+  1175→        <DialogContent
+  1176→          className="max-w-[860px] max-h-[90vh] p-0 gap-0 overflow-hidden"
+  1177→          showCloseButton={false}
+  1178→        >
+  1179→          <DialogHeader className="px-6 pt-4 pb-3 border-b border-gray-200 flex-row items-center justify-between space-y-0">
+  1180→            <div className="flex items-center gap-3">
+  1181→              <div className="size-9 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
+  1182→                <ClipboardCheck className="size-5 text-[#166534]" />
+  1183→              </div>
+  1184→              <div>
+  1185→                <DialogTitle className="text-base font-bold text-gray-900">
+  1186→                  {selectedChecklist?.template.name}
+  1187→                </DialogTitle>
+  1188→                <DialogDescription className="text-xs text-gray-500 mt-0.5">
+  1189→                  {selectedChecklist?.template.profession} •{" "}
+  1190→                  {selectedChecklist?.template.specialty}
+  1191→                </DialogDescription>
+  1192→              </div>
+  1193→            </div>
+  1194→            <button
+  1195→              onClick={() => setFormOpen(false)}
+  1196→              className="size-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+  1197→            >
+  1198→              <X className="size-4" />
+  1199→            </button>
+  1200→          </DialogHeader>
+  1201→
+  1202→          {selectedChecklist && (
+  1203→            <ChecklistContent
+  1204→              checklist={selectedChecklist}
+  1205→              readOnly={false}
+  1206→            />
+  1207→          )}
+  1208→        </DialogContent>
+  1209→      </Dialog>
+  1210→
+  1211→      {/* ─── View Submission Dialog ───────────────────────────────────────── */}
+  1212→      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+  1213→        <DialogContent
+  1214→          className="max-w-[860px] max-h-[90vh] p-0 gap-0 overflow-hidden"
+  1215→          showCloseButton={false}
+  1216→        >
+  1217→          <DialogHeader className="px-6 pt-4 pb-3 border-b border-gray-200 flex-row items-center justify-between space-y-0">
+  1218→            <div className="flex items-center gap-3">
+  1219→              <div className="size-9 rounded-lg bg-green-100 flex items-center justify-center">
+  1220→                <CheckCircle2 className="size-5 text-green-700" />
+  1221→              </div>
+  1222→              <div>
+  1223→                <DialogTitle className="text-base font-bold text-gray-900">
+  1224→                  {selectedChecklist?.template.name}
+  1225→                </DialogTitle>
+  1226→                <DialogDescription className="text-xs text-gray-500 mt-0.5">
+  1227→                  {selectedChecklist?.template.profession} •{" "}
+  1228→                  {selectedChecklist?.template.specialty} — Submitted
+  1229→                </DialogDescription>
+  1230→              </div>
+  1231→            </div>
+  1232→            <button
+  1233→              onClick={() => setViewOpen(false)}
+  1234→              className="size-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+  1235→            >
+  1236→              <X className="size-4" />
+  1237→            </button>
+  1238→          </DialogHeader>
+  1239→
+  1240→          {selectedChecklist && (
+  1241→            <ChecklistContent
+  1242→              checklist={selectedChecklist}
+  1243→              readOnly={true}
+  1244→            />
+  1245→          )}
+  1246→        </DialogContent>
+  1247→      </Dialog>
+  1248→    </div>
+  1249→  );
+  1250→}
+  1251→
