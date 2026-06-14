@@ -36,7 +36,8 @@ export default withAuth({
         pathname.startsWith("/references") ||
         pathname.startsWith("/sharing") ||
         pathname.startsWith("/settings") ||
-        pathname.startsWith("/profile-completion")
+        pathname.startsWith("/profile-completion") ||
+        pathname.startsWith("/notifications")
       ) {
         if (role !== "candidate") return false;
       }
