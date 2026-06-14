@@ -12,13 +12,18 @@ export async function GET() {
 
     const userId = Number(session.user.id);
 
-    const notifications = await db.notification.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-      take: 50,
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      db.notification.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: "desc" },
+        take: 50,
+      }),
+      db.notification.count({
+        where: { user_id: userId, is_read: false },
+      }),
+    ]);
 
-    return NextResponse.json({ notifications });
+    return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
     console.error("[CANDIDATE_NOTIFICATIONS_GET]", error);
     return NextResponse.json(
@@ -40,10 +45,27 @@ export async function PUT(request: Request) {
 
     if (body.markAllRead) {
       // Mark all notifications as read
-      await db.notification.updateMany({
+      const result = await db.notification.updateMany({
         where: { user_id: userId, is_read: false },
         data: { is_read: true },
       });
+      return NextResponse.json({ success: true, count: result.count });
+    } else if (body.notificationId) {
+      // Mark a single notification as read
+      const notification = await db.notification.findFirst({
+        where: { id: body.notificationId, user_id: userId },
+      });
+      if (!notification) {
+        return NextResponse.json(
+          { error: "Notification not found" },
+          { status: 404 }
+        );
+      }
+      await db.notification.update({
+        where: { id: body.notificationId },
+        data: { is_read: true },
+      });
+      return NextResponse.json({ success: true });
     } else if (body.notificationIds && Array.isArray(body.notificationIds)) {
       // Mark specific notifications as read
       await db.notification.updateMany({
@@ -55,7 +77,7 @@ export async function PUT(request: Request) {
       });
     } else {
       return NextResponse.json(
-        { error: "Provide notificationIds or markAllRead" },
+        { error: "Provide notificationId, notificationIds, or markAllRead" },
         { status: 400 }
       );
     }

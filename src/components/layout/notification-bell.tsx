@@ -57,7 +57,7 @@ function getMarkReadEndpoint(role: UserRole): string {
 function getViewAllHref(role: UserRole): string {
   switch (role) {
     case "candidate":
-      return "/dashboard";
+      return "/notifications";
     case "client_recruiter":
     case "client_admin":
       return "/recruiter/notifications";
