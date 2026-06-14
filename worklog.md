@@ -85,3 +85,30 @@ Stage Summary:
 - Both APIs now return accurate `profileCompletionPct` based on real data
 - No dependency on stored `profile_completion_pct` field for display
 - Circular progress bars on dashboard and profile page will show correct percentages
+---
+Task ID: 1
+Agent: main
+Task: Make recruiter dashboard stat cards clickable + shift Credits Usage chart to billing section
+
+Work Log:
+- Analyzed user screenshot showing recruiter dashboard Overview section with 5 stat cards that weren't clickable
+- Made all 5 stat cards clickable with appropriate navigation:
+  - Total Candidates → scrolls to candidate table section
+  - Pending Requests → filters candidates to "pending" status + scrolls to table
+  - Completed Packets → filters candidates to "compliant" status + scrolls to table
+  - Credits Used → navigates to /recruiter/billing
+  - BAA Status → navigates to /recruiter/baa
+- Added cursor-pointer, hover text color transitions, and group/card styling for visual feedback
+- Removed Credits Usage BarChart from recruiter dashboard page
+- Removed unused recharts imports and CreditsByMonth type from dashboard
+- Added creditsByMonth data aggregation to billing API (/api/recruiter/billing/route.ts)
+- Added Credits Usage BarChart to recruiter billing page with empty state handling
+- Added BarChart3 icon import and recharts imports to billing page
+- Added CreditsByMonth interface to billing page types
+- Build verified successfully with no errors
+
+Stage Summary:
+- All 5 recruiter dashboard stat cards are now clickable with appropriate navigation behavior
+- Credits Usage chart moved from dashboard to billing section
+- Billing API now returns creditsByMonth data for the chart
+- Clean build confirmed

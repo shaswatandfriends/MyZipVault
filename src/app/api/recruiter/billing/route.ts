@@ -111,6 +111,37 @@ export async function GET(request: Request) {
       createdAt: inv.created_at,
     }));
 
+    // Credits usage by month (last 6 months) for chart
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const monthlyTransactions = await db.creditTransaction.findMany({
+      where: {
+        organization_id: organizationId,
+        transaction_type: "deduction",
+        created_at: { gte: sixMonthsAgo },
+      },
+      select: { credit_amount: true, created_at: true },
+    });
+
+    const monthMap = new Map<string, number>();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      monthMap.set(key, 0);
+    }
+
+    for (const tx of monthlyTransactions) {
+      const d = new Date(tx.created_at);
+      const key = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      if (monthMap.has(key)) {
+        monthMap.set(key, (monthMap.get(key) ?? 0) + Math.abs(tx.credit_amount));
+      }
+    }
+
+    const creditsByMonth = Array.from(monthMap.entries())
+      .reverse()
+      .map(([month, used]) => ({ month, used }));
+
     return NextResponse.json({
       organization: {
         name: organization?.name ?? "",
@@ -125,6 +156,7 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(totalTransactions / pageSize),
       },
       invoices: invoicesFormatted,
+      creditsByMonth,
     });
   } catch (error) {
     console.error("Billing GET error:", error);

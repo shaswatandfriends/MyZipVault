@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Users,
@@ -18,7 +19,6 @@ import {
   BellRing,
   Loader2,
 } from "@/lib/icons";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,15 +75,9 @@ interface DashboardStats {
   baaStatus: string;
 }
 
-interface CreditsByMonth {
-  month: string;
-  used: number;
-}
-
 interface DashboardData {
   candidates: Candidate[];
   stats: DashboardStats;
-  creditsByMonth: CreditsByMonth[];
   organization: {
     name: string;
     creditsBalance: number;
@@ -230,6 +224,7 @@ export default function RecruiterDashboardPage() {
   }, [data?.candidates, searchQuery, complianceFilter]);
 
   const [sendingReminderId, setSendingReminderId] = useState<number | null>(null);
+  const router = useRouter();
 
   // Send in-app reminder to a candidate
   const handleSendReminder = async (candidateId: number) => {
@@ -327,7 +322,14 @@ export default function RecruiterDashboardPage() {
           </>
         ) : (
           <>
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Total Candidates — clickable: scrolls to candidate table */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => {
+                const el = document.getElementById("candidate-table-section");
+                el?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -336,11 +338,21 @@ export default function RecruiterDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.totalCandidates ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Candidates in pipeline</p>
+                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Candidates in pipeline</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Pending Requests — clickable: filters candidates to pending */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => {
+                setComplianceFilter("pending");
+                setTimeout(() => {
+                  const el = document.getElementById("candidate-table-section");
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
                 <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
@@ -349,11 +361,21 @@ export default function RecruiterDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.pendingRequests ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Awaiting candidate response</p>
+                <p className="text-xs text-muted-foreground group-hover/card:text-amber-700 transition-colors">Awaiting candidate response</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Completed Packets — clickable: filters candidates to compliant */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => {
+                setComplianceFilter("compliant");
+                setTimeout(() => {
+                  const el = document.getElementById("candidate-table-section");
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Completed Packets</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -362,11 +384,15 @@ export default function RecruiterDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.completedPackets ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Fully verified checklists</p>
+                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Fully verified checklists</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Credits Used — clickable: navigates to billing */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/recruiter/billing")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Credits Used{period === "all" ? "" : ` ${period === "week" ? "This Week" : "This Month"}`}</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -375,13 +401,17 @@ export default function RecruiterDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.creditsUsedThisMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">
                   of {stats?.creditsBalance ?? 0} remaining
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* BAA Status — clickable: navigates to BAA page */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/recruiter/baa")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">BAA Status</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -390,42 +420,15 @@ export default function RecruiterDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="mb-1">{getBaaBadge(stats?.baaStatus ?? "pending")}</div>
-                <p className="text-xs text-muted-foreground">Business Associate Agreement</p>
+                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Business Associate Agreement</p>
               </CardContent>
             </Card>
           </>
         )}
       </div>
 
-      {/* ── Credits Usage Chart ─────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Credits Usage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data?.creditsByMonth ?? []} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px" }}
-                    formatter={(value: number) => [`${value} credits`, "Used"]}
-                  />
-                  <Bar dataKey="used" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* ── Filter Bar + Candidate Table ───────────────────────────── */}
-      <Card>
+      <Card id="candidate-table-section">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base">Candidates</CardTitle>

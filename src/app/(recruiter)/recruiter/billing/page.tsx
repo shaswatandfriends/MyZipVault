@@ -14,7 +14,9 @@ import {
   Loader2,
   FileText,
   Download,
+  BarChart3,
 } from "@/lib/icons";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 import { PageHeader } from "@/components/layout/page-header";
 import {
@@ -75,6 +77,11 @@ interface Invoice {
   createdAt: string;
 }
 
+interface CreditsByMonth {
+  month: string;
+  used: number;
+}
+
 interface BillingData {
   organization: {
     name: string;
@@ -84,6 +91,7 @@ interface BillingData {
   transactions: Transaction[];
   pagination: Pagination;
   invoices: Invoice[];
+  creditsByMonth: CreditsByMonth[];
 }
 
 type TransactionFilter = "all" | "purchase" | "deduction" | "refund";
@@ -333,6 +341,49 @@ export default function RecruiterBillingPage() {
               ))}
         </div>
       </div>
+
+      {/* ── Credits Usage Chart ────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <BarChart3 className="size-4 text-emerald-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Credits Usage</CardTitle>
+              <CardDescription>Monthly credit consumption over the last 6 months</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (data?.creditsByMonth ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <BarChart3 className="size-10 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-semibold">No usage data yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Credits usage will appear here as you use credits for verification requests.
+              </p>
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data?.creditsByMonth ?? []} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px" }}
+                    formatter={(value: number) => [`${value} credits`, "Used"]}
+                  />
+                  <Bar dataKey="used" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Invoices ───────────────────────────────────────────────── */}
       <Card>
