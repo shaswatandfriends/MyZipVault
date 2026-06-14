@@ -19,6 +19,7 @@ import {
   Pencil,
   Upload,
   X,
+  AlertTriangle,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -114,6 +115,11 @@ function formatDate(date: string | Date) {
   });
 }
 
+function isBannerExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
 // ─── Banner Channel Tabs Config ─────────────────────────────────────
 const bannerChannels = [
   { key: "candidate", label: "Candidates", value: "candidate" },
@@ -195,8 +201,9 @@ function BannersTab() {
 
   const filteredBanners = banners.filter((b) => b.targetRole === activeChannel);
 
-  const activeCount = filteredBanners.filter((b) => b.isActive).length;
-  const inactiveCount = filteredBanners.filter((b) => !b.isActive).length;
+  const activeCount = filteredBanners.filter((b) => b.isActive && !isBannerExpired(b.expiresAt)).length;
+  const expiredCount = filteredBanners.filter((b) => isBannerExpired(b.expiresAt)).length;
+  const inactiveCount = filteredBanners.filter((b) => !b.isActive && !isBannerExpired(b.expiresAt)).length;
 
   const handleToggle = async (id: number, isActive: boolean) => {
     try {
@@ -236,7 +243,7 @@ function BannersTab() {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
@@ -270,6 +277,19 @@ function BannersTab() {
             </div>
           </CardContent>
         </Card>
+        {expiredCount > 0 && (
+          <Card className="border-amber-200">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="size-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-amber-700">{expiredCount}</p>
+                <p className="text-xs text-amber-600">Expired</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Channel Tabs + Create Button */}
@@ -319,8 +339,13 @@ function BannersTab() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredBanners.map((banner) => (
-            <Card key={banner.id} className={cn(!banner.isActive && "opacity-60")}>
+          {filteredBanners.map((banner) => {
+            const expired = isBannerExpired(banner.expiresAt);
+            return (
+            <Card key={banner.id} className={cn(
+              !banner.isActive && !expired && "opacity-60",
+              expired && "border-amber-300 bg-amber-50/50"
+            )}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Thumbnail */}
@@ -329,7 +354,7 @@ function BannersTab() {
                       <img
                         src={banner.imageUrl}
                         alt={banner.title}
-                        className="size-full object-cover"
+                        className={cn("size-full object-cover", expired && "opacity-50")}
                       />
                     ) : (
                       <div className="flex size-full items-center justify-center">
@@ -347,9 +372,16 @@ function BannersTab() {
                           <Pin className="size-3 mr-0.5" /> Pinned
                         </Badge>
                       )}
-                      <Badge variant={banner.isActive ? "default" : "secondary"} className="text-xs">
-                        {banner.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      {expired ? (
+                        <Badge variant="destructive" className="text-xs gap-1">
+                          <AlertTriangle className="size-3" />
+                          Expired
+                        </Badge>
+                      ) : (
+                        <Badge variant={banner.isActive ? "default" : "secondary"} className="text-xs">
+                          {banner.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      )}
                     </div>
                     {banner.description && (
                       <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-1">{banner.description}</p>
@@ -360,8 +392,9 @@ function BannersTab() {
                         {banner.carouselDuration}s per slide
                       </span>
                       {banner.expiresAt && (
-                        <span className="flex items-center gap-1">
-                          Expires {formatDate(banner.expiresAt)}
+                        <span className={cn("flex items-center gap-1", expired && "text-amber-600 font-medium")}>
+                          {expired && <AlertTriangle className="size-3" />}
+                          {expired ? "Expired" : "Expires"} {formatDate(banner.expiresAt)}
                         </span>
                       )}
                       {banner.ctaText && (
@@ -401,7 +434,8 @@ function BannersTab() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
 
