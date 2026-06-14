@@ -1,0 +1,1187 @@
+     1→"use client";
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from "react";
+     4→import { useRouter } from "next/navigation";
+     5→import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
+     6→import { useEditor, EditorContent } from "@tiptap/react";
+     7→import StarterKit from "@tiptap/starter-kit";
+     8→import FontFamily from "@tiptap/extension-font-family";
+     9→import { TextStyle } from "@tiptap/extension-text-style";
+    10→import Color from "@tiptap/extension-color";
+    11→import Highlight from "@tiptap/extension-highlight";
+    12→import TextAlign from "@tiptap/extension-text-align";
+    13→import Underline from "@tiptap/extension-underline";
+    14→import Subscript from "@tiptap/extension-subscript";
+    15→import Superscript from "@tiptap/extension-superscript";
+    16→import { Table } from "@tiptap/extension-table";
+    17→import TableRow from "@tiptap/extension-table-row";
+    18→import TableCell from "@tiptap/extension-table-cell";
+    19→import TableHeader from "@tiptap/extension-table-header";
+    20→import Image from "@tiptap/extension-image";
+    21→import TaskList from "@tiptap/extension-task-list";
+    22→import TaskItem from "@tiptap/extension-task-item";
+    23→import CharacterCount from "@tiptap/extension-character-count";
+    24→import Placeholder from "@tiptap/extension-placeholder";
+    25→import { FontSize } from "@/lib/vaultsign/tiptap-font-size";
+    26→import { LineHeight } from "@/lib/vaultsign/tiptap-line-height";
+    27→import { ParagraphSpacing } from "@/lib/vaultsign/tiptap-paragraph-spacing";
+    28→import { PageBreak } from "@/lib/vaultsign/tiptap-page-break";
+    29→import { SignFieldExtension } from "@/lib/vaultsign/tiptap-sign-field";
+    30→import { toast } from "sonner";
+    31→import {
+    32→  ArrowLeft, Save, Bold, Italic, Underline as UnderlineIcon,
+    33→  Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+    34→  List, ListOrdered, Undo2, Redo2, Palette,
+    35→  Highlighter, Plus, Trash2,
+    36→  Variable, ChevronDown, X, Loader2, TableIcon, ImagePlus, Minus,
+    37→  PanelLeftIcon, PanelRightIcon, MoreVertical, ArrowUpDown, FileText,
+    38→} from "@/lib/icons";
+    39→import { Button } from "@/components/ui/button";
+    40→import { Input } from "@/components/ui/input";
+    41→import { Badge } from "@/components/ui/badge";
+    42→import { Separator } from "@/components/ui/separator";
+    43→import { ScrollArea } from "@/components/ui/scroll-area";
+    44→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    45→import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+    46→import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+    47→import { Skeleton } from "@/components/ui/skeleton";
+    48→import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+    49→import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+    50→import { SYSTEM_VARIABLES, SIGNER_COLORS, FIELD_TYPE_LABELS, FIELD_TYPE_ICONS, type SignField, type SignFieldType } from "@/lib/vaultsign/types";
+    51→
+    52→// Template placeholder variables for superadmin editor
+    53→const TEMPLATE_VARIABLES = [
+    54→  { key: "candidate_name", label: "{{candidate_name}}" },
+    55→  { key: "company_name", label: "{{company_name}}" },
+    56→  { key: "date", label: "{{date}}" },
+    57→  { key: "position", label: "{{position}}" },
+    58→  { key: "specialty", label: "{{specialty}}" },
+    59→  { key: "facility_name", label: "{{facility_name}}" },
+    60→  { key: "recruiter_name", label: "{{recruiter_name}}" },
+    61→  { key: "start_date", label: "{{start_date}}" },
+    62→  { key: "salary", label: "{{salary}}" },
+    63→  { key: "manager_name", label: "{{manager_name}}" },
+    64→];
+    65→
+    66→// Sign field types available for templates
+    67→const TEMPLATE_SIGN_FIELD_TYPES: SignFieldType[] = ["signature", "date", "full_name", "initials", "email", "checkbox", "text"];
+    68→
+    69→export default function SuperAdminTemplateEditorPage({ params }: { params: Promise<{ id: string }> }) {
+    70→  const router = useRouter();
+    71→  const [templateId, setTemplateId] = useState<string>("");
+    72→  const [template, setTemplate] = useState<any>(null);
+    73→  const [loading, setLoading] = useState(true);
+    74→  const [saving, setSaving] = useState(false);
+    75→  const [templateName, setTemplateName] = useState("");
+    76→  const [templateDescription, setTemplateDescription] = useState("");
+    77→  const [signFields, setSignFields] = useState<SignField[]>([]);
+    78→  const [customVariables, setCustomVariables] = useState<Array<{ key: string; label: string }>>([]);
+    79→  const [newVarKey, setNewVarKey] = useState("");
+    80→  const [newVarLabel, setNewVarLabel] = useState("");
+    81→  const [signerSlots, setSignerSlots] = useState<Array<{ index: number; label: string }>>([
+    82→    { index: 0, label: "Signer 1" },
+    83→    { index: 1, label: "Signer 2" },
+    84→    { index: 2, label: "Signer 3" },
+    85→  ]);
+    86→  const [showVariablesPanel, setShowVariablesPanel] = useState(false);
+    87→  const [showSignersPanel, setShowSignersPanel] = useState(false);
+    88→  const [showHeaderFooter, setShowHeaderFooter] = useState(true);
+    89→  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+    90→
+    91→  // Unwrap params
+    92→  useEffect(() => {
+    93→    params.then((p) => setTemplateId(p.id));
+    94→  }, [params]);
+    95→
+    96→  // Initialize TipTap editor
+    97→  const editor = useEditor({
+    98→    extensions: [
+    99→      StarterKit.configure({
+   100→        heading: { levels: [1, 2, 3] },
+   101→      }),
+   102→      FontFamily,
+   103→      TextStyle,
+   104→      Color,
+   105→      FontSize,
+   106→      LineHeight,
+   107→      ParagraphSpacing,
+   108→      PageBreak,
+   109→      SignFieldExtension,
+   110→      Highlight.configure({ multicolor: true }),
+   111→      TextAlign.configure({ types: ["heading", "paragraph"] }),
+   112→      Underline,
+   113→      Subscript,
+   114→      Superscript,
+   115→      Table.configure({ resizable: true }),
+   116→      TableRow,
+   117→      TableCell,
+   118→      TableHeader,
+   119→      Image,
+   120→      TaskList,
+   121→      TaskItem.configure({ nested: true }),
+   122→      CharacterCount,
+   123→      Placeholder.configure({ placeholder: "Start building your template..." }),
+   124→    ],
+   125→    content: "",
+   126→    onUpdate: ({ editor }) => {
+   127→      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+   128→      autoSaveTimer.current = setTimeout(() => {
+   129→        handleAutoSave(editor.getJSON());
+   130→      }, 5000);
+   131→    },
+   132→    editorProps: {
+   133→      attributes: {
+   134→        class: "prose prose-sm max-w-none focus:outline-none min-h-[500px] px-8 py-6",
+   135→      },
+   136→    },
+   137→  });
+   138→
+   139→  // Fetch template data
+   140→  const fetchTemplate = useCallback(async () => {
+   141→    if (!templateId) return;
+   142→    try {
+   143→      setLoading(true);
+   144→      const res = await fetch(`/api/superadmin/vaultsign/templates/${templateId}`);
+   145→      if (!res.ok) throw new Error("Failed to fetch template");
+   146→      const data = await res.json();
+   147→      setTemplate(data);
+   148→      setTemplateName(data.name || "");
+   149→      setTemplateDescription(data.description || "");
+   150→
+   151→      // Parse sign fields
+   152→      if (data.predefined_sign_fields) {
+   153→        const fields = typeof data.predefined_sign_fields === "string"
+   154→          ? JSON.parse(data.predefined_sign_fields)
+   155→          : data.predefined_sign_fields;
+   156→        setSignFields(Array.isArray(fields) ? fields : []);
+   157→      }
+   158→
+   159→      // Parse placeholder variables
+   160→      if (data.placeholder_variables) {
+   161→        const vars = typeof data.placeholder_variables === "string"
+   162→          ? JSON.parse(data.placeholder_variables)
+   163→          : data.placeholder_variables;
+   164→        setCustomVariables(vars.filter((v: any) => v.category === "custom"));
+   165→      }
+   166→
+   167→      // Parse show_header_footer
+   168→      if (data.show_header_footer !== undefined) {
+   169→        setShowHeaderFooter(data.show_header_footer);
+   170→      } else if (data.header_config || data.footer_config) {
+   171→        // Backward compat
+   172→        try {
+   173→          const hc = typeof data.header_config === "string" ? JSON.parse(data.header_config) : data.header_config;
+   174→          const fc = typeof data.footer_config === "string" ? JSON.parse(data.footer_config) : data.footer_config;
+   175→          const anyHeaderOn = hc && (hc.show_logo || hc.show_company_name || hc.show_contact || hc.show_address || hc.show_document_title);
+   176→          const anyFooterOn = fc && (fc.show_rights_reserved || fc.show_powered_by || fc.show_page_numbers);
+   177→          setShowHeaderFooter(!!anyHeaderOn || !!anyFooterOn);
+   178→        } catch {
+   179→          setShowHeaderFooter(true);
+   180→        }
+   181→      }
+   182→
+   183→      // Set editor content
+   184→      if (editor && data.tiptap_content) {
+   185→        try {
+   186→          const rawContent = typeof data.tiptap_content === "string"
+   187→            ? data.tiptap_content
+   188→            : JSON.stringify(data.tiptap_content);
+   189→
+   190→          try {
+   191→            const parsed = JSON.parse(rawContent);
+   192→            if (parsed.type === "doc" && parsed.content) {
+   193→              editor.commands.setContent(parsed);
+   194→            } else {
+   195→              editor.commands.setContent(rawContent);
+   196→            }
+   197→          } catch {
+   198→            editor.commands.setContent(rawContent);
+   199→          }
+   200→        } catch (setContentErr) {
+   201→          console.error("Failed to set editor content:", setContentErr);
+   202→          try {
+   203→            editor.commands.setContent(data.tiptap_content);
+   204→          } catch {
+   205→            // Give up silently
+   206→          }
+   207→        }
+   208→      }
+   209→    } catch (err) {
+   210→      console.error("Fetch error:", err);
+   211→      toast.error("Failed to load template");
+   212→    } finally {
+   213→      setLoading(false);
+   214→    }
+   215→  }, [templateId, editor]);
+   216→
+   217→  useEffect(() => {
+   218→    fetchTemplate();
+   219→  }, [fetchTemplate]);
+   220→
+   221→  // Auto-save
+   222→  const handleAutoSave = async (content?: any) => {
+   223→    if (!templateId || !editor) return;
+   224→    try {
+   225→      setSaving(true);
+   226→      const editorContent = content || editor.getJSON();
+   227→      await fetch(`/api/superadmin/vaultsign/templates/${templateId}`, {
+   228→        method: "PATCH",
+   229→        headers: { "Content-Type": "application/json" },
+   230→        body: JSON.stringify({
+   231→          name: templateName,
+   232→          description: templateDescription,
+   233→          tiptap_content: JSON.stringify(editorContent),
+   234→          predefined_sign_fields: signFields,
+   235→          placeholder_variables: [
+   236→            ...SYSTEM_VARIABLES,
+   237→            ...customVariables.map((v) => ({ ...v, category: "custom" as const })),
+   238→          ],
+   239→          show_header_footer: showHeaderFooter,
+   240→        }),
+   241→      });
+   242→    } catch (err) {
+   243→      console.error("Auto-save error:", err);
+   244→    } finally {
+   245→      setSaving(false);
+   246→    }
+   247→  };
+   248→
+   249→  // Manual save
+   250→  const handleSave = async () => {
+   251→    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+   252→    try {
+   253→      setSaving(true);
+   254→      const editorContent = editor?.getJSON();
+   255→      const res = await fetch(`/api/superadmin/vaultsign/templates/${templateId}`, {
+   256→        method: "PATCH",
+   257→        headers: { "Content-Type": "application/json" },
+   258→        body: JSON.stringify({
+   259→          name: templateName,
+   260→          description: templateDescription,
+   261→          tiptap_content: JSON.stringify(editorContent),
+   262→          predefined_sign_fields: signFields,
+   263→          placeholder_variables: [
+   264→            ...SYSTEM_VARIABLES,
+   265→            ...customVariables.map((v) => ({ ...v, category: "custom" as const })),
+   266→          ],
+   267→          show_header_footer: showHeaderFooter,
+   268→        }),
+   269→      });
+   270→      if (res.ok) {
+   271→        toast.success("Template saved");
+   272→      } else {
+   273→        const data = await res.json().catch(() => ({}));
+   274→        toast.error(data.error || "Failed to save template");
+   275→      }
+   276→    } catch {
+   277→      toast.error("Failed to save template");
+   278→    } finally {
+   279→      setSaving(false);
+   280→    }
+   281→  };
+   282→
+   283→  // Insert variable at cursor
+   284→  const insertVariable = (varLabel: string) => {
+   285→    if (!editor) return;
+   286→    editor.chain().focus().insertContent(varLabel).run();
+   287→  };
+   288→
+   289→  // Add sign field
+   290→  const addSignField = (type: SignFieldType, signerIndex: number) => {
+   291→    const newField: SignField = {
+   292→      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+   293→      type,
+   294→      page: 1,
+   295→      x_percent: 0,
+   296→      y_percent: 0,
+   297→      width_percent: 20,
+   298→      height_percent: 3,
+   299→      assigned_to_signer_index: signerIndex,
+   300→      label: FIELD_TYPE_LABELS[type],
+   301→      required: true,
+   302→      value: null,
+   303→    };
+   304→    setSignFields([...signFields, newField]);
+   305→
+   306→    if (editor) {
+   307→      editor.chain().focus().insertSignField({
+   308→        fieldType: type,
+   309→        assignedToSignerIndex: signerIndex,
+   310→        signerLabel: signerSlots.find(s => s.index === signerIndex)?.label || `Signer ${signerIndex + 1}`,
+   311→        fieldId: newField.id,
+   312→      }).run();
+   313→    }
+   314→  };
+   315→
+   316→  // Remove sign field
+   317→  const removeSignField = (fieldId: string) => {
+   318→    setSignFields(signFields.filter((f) => f.id !== fieldId));
+   319→  };
+   320→
+   321→  // Add custom variable
+   322→  const addCustomVariable = () => {
+   323→    if (!newVarKey || !newVarLabel) return;
+   324→    setCustomVariables([...customVariables, { key: newVarKey, label: newVarLabel }]);
+   325→    setNewVarKey("");
+   326→    setNewVarLabel("");
+   327→  };
+   328→
+   329→  // Add signer slot
+   330→  const addSignerSlot = () => {
+   331→    setSignerSlots([...signerSlots, { index: signerSlots.length, label: `Signer ${signerSlots.length + 1}` }]);
+   332→  };
+   333→
+   334→  // Remove signer slot
+   335→  const removeSignerSlot = (index: number) => {
+   336→    setSignerSlots(signerSlots.filter((s) => s.index !== index));
+   337→    setSignFields(signFields.filter((f) => f.assigned_to_signer_index !== index));
+   338→  };
+   339→
+   340→  // Loading skeleton
+   341→  if (loading) {
+   342→    return (
+   343→      <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+   344→        <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-3">
+   345→          <Skeleton className="h-8 w-16" />
+   346→          <Skeleton className="h-6 w-px" />
+   347→          <Skeleton className="h-6 w-40" />
+   348→          <Skeleton className="h-5 w-24" />
+   349→          <div className="ml-auto flex items-center gap-2">
+   350→            <Skeleton className="h-8 w-24" />
+   351→            <Skeleton className="h-8 w-24" />
+   352→          </div>
+   353→        </div>
+   354→        <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center gap-1">
+   355→          {Array.from({ length: 14 }).map((_, i) => (
+   356→            <Skeleton key={i} className="h-8 w-8 rounded" />
+   357→          ))}
+   358→          <Skeleton className="h-8 w-[120px] rounded ml-1" />
+   359→        </div>
+   360→        <div className="flex-1 flex overflow-hidden">
+   361→          <div className="hidden lg:flex w-64 border-r border-[#E5E7EB] bg-white flex-col">
+   362→            <div className="p-3 border-b border-[#E5E7EB]">
+   363→              <Skeleton className="h-5 w-24" />
+   364→              <Skeleton className="h-3 w-36 mt-1" />
+   365→            </div>
+   366→            <div className="p-3 space-y-2">
+   367→              {Array.from({ length: 6 }).map((_, i) => (
+   368→                <Skeleton key={i} className="h-7 w-full rounded" />
+   369→              ))}
+   370→            </div>
+   371→          </div>
+   372→          <div className="flex-1 overflow-y-auto bg-white p-6">
+   373→            <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-[#E5E7EB] shadow-sm min-h-[800px] p-8 space-y-4">
+   374→              <Skeleton className="h-8 w-3/4" />
+   375→              <Skeleton className="h-4 w-full" />
+   376→              <Skeleton className="h-4 w-full" />
+   377→              <Skeleton className="h-4 w-5/6" />
+   378→            </div>
+   379→          </div>
+   380→          <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
+   381→            <div className="p-3 border-b border-[#E5E7EB]">
+   382→              <Skeleton className="h-5 w-32" />
+   383→            </div>
+   384→            <div className="p-3 space-y-3">
+   385→              {Array.from({ length: 3 }).map((_, i) => (
+   386→                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+   387→              ))}
+   388→            </div>
+   389→          </div>
+   390→        </div>
+   391→      </div>
+   392→    );
+   393→  }
+   394→
+   395→  // Variables panel content
+   396→  const variablesPanelContent = (
+   397→    <>
+   398→      <ScrollArea className="flex-1">
+   399→        <div className="p-3">
+   400→          <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Template Variables</h4>
+   401→          <p className="text-[10px] text-[#9CA3AF] mb-2">Click to insert a placeholder into the template</p>
+   402→          <div className="space-y-1.5">
+   403→            {TEMPLATE_VARIABLES.map((v) => (
+   404→              <button
+   405→                key={v.key}
+   406→                onClick={() => { insertVariable(v.label); setShowVariablesPanel(false); }}
+   407→                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#166534] font-mono font-medium transition-colors border border-transparent hover:border-[#166534]/20"
+   408→              >
+   409→                {v.label}
+   410→              </button>
+   411→            ))}
+   412→          </div>
+   413→
+   414→          <Separator className="my-3" />
+   415→
+   416→          <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">System Variables</h4>
+   417→          <div className="space-y-1.5">
+   418→            {SYSTEM_VARIABLES.map((v) => (
+   419→              <button
+   420→                key={v.key}
+   421→                onClick={() => { insertVariable(`{{${v.key}}}`); setShowVariablesPanel(false); }}
+   422→                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#166534] font-mono font-medium transition-colors border border-transparent hover:border-[#166534]/20"
+   423→              >
+   424→                {`{{${v.key}}}`}
+   425→              </button>
+   426→            ))}
+   427→          </div>
+   428→
+   429→          <Separator className="my-3" />
+   430→
+   431→          <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Custom Variables</h4>
+   432→          <div className="space-y-1.5">
+   433→            {customVariables.map((v) => (
+   434→              <div key={v.key} className="flex items-center gap-1">
+   435→                <button
+   436→                  onClick={() => { insertVariable(`{{${v.key}}}`); setShowVariablesPanel(false); }}
+   437→                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#1D4ED8] font-mono font-medium transition-colors"
+   438→                >
+   439→                  {`{{${v.key}}}`}
+   440→                </button>
+   441→                <Button
+   442→                  variant="ghost"
+   443→                  size="sm"
+   444→                  className="h-6 w-6 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+   445→                  onClick={() => setCustomVariables(customVariables.filter((cv) => cv.key !== v.key))}
+   446→                >
+   447→                  <X className="h-3 w-3" />
+   448→                </Button>
+   449→              </div>
+   450→            ))}
+   451→          </div>
+   452→
+   453→          <div className="mt-3 p-2 rounded-lg border border-dashed border-[#E5E7EB]">
+   454→            <Input
+   455→              placeholder="Variable key"
+   456→              value={newVarKey}
+   457→              onChange={(e) => setNewVarKey(e.target.value)}
+   458→              className="h-7 text-xs mb-1.5"
+   459→            />
+   460→            <Input
+   461→              placeholder="Display label"
+   462→              value={newVarLabel}
+   463→              onChange={(e) => setNewVarLabel(e.target.value)}
+   464→              className="h-7 text-xs mb-1.5"
+   465→            />
+   466→            <Button
+   467→              size="sm"
+   468→              className="w-full h-7 text-xs bg-[#166534] hover:bg-[#14532D]"
+   469→              onClick={addCustomVariable}
+   470→              disabled={!newVarKey || !newVarLabel}
+   471→            >
+   472→              <Plus className="h-3 w-3 mr-1" /> Add
+   473→            </Button>
+   474→          </div>
+   475→        </div>
+   476→      </ScrollArea>
+   477→    </>
+   478→  );
+   479→
+   480→  // Sign fields panel content
+   481→  const signersPanelContent = (
+   482→    <>
+   483→      <ScrollArea className="flex-1">
+   484→        <div className="p-3 space-y-4">
+   485→          {/* Header & Footer Settings */}
+   486→          <div>
+   487→            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+   488→              <div>
+   489→                <span className="text-xs font-medium text-[#374151]">Header & Footer</span>
+   490→                <p className="text-[9px] text-[#9CA3AF]">Company header and footer on document</p>
+   491→              </div>
+   492→              <button 
+   493→                onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
+   494→                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+   495→              >
+   496→                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
+   497→              </button>
+   498→            </div>
+   499→          </div>
+   500→
+   501→          <Separator />
+   502→
+   503→          {/* Signer Slots */}
+   504→          <div>
+   505→            <div className="flex items-center justify-between mb-2">
+   506→              <h4 className="text-xs font-semibold text-[#6B7280] uppercase">Signer Slots</h4>
+   507→              <Button
+   508→                variant="ghost"
+   509→                size="sm"
+   510→                className="h-6 text-xs text-[#166534]"
+   511→                onClick={addSignerSlot}
+   512→              >
+   513→                <Plus className="h-3 w-3 mr-1" /> Add
+   514→              </Button>
+   515→            </div>
+   516→
+   517→            {signerSlots.map((slot, idx) => (
+   518→              <div
+   519→                key={slot.index}
+   520→                className="flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] mb-1.5"
+   521→              >
+   522→                <div
+   523→                  className="w-3 h-3 rounded-full flex-shrink-0"
+   524→                  style={{ backgroundColor: SIGNER_COLORS[idx % SIGNER_COLORS.length] }}
+   525→                />
+   526→                <Input
+   527→                  value={slot.label}
+   528→                  onChange={(e) => {
+   529→                    const updated = [...signerSlots];
+   530→                    updated[idx] = { ...updated[idx], label: e.target.value };
+   531→                    setSignerSlots(updated);
+   532→                  }}
+   533→                  className="h-6 text-xs border-none shadow-none p-0 flex-1 min-w-0 font-medium text-[#111827]"
+   534→                />
+   535→                {signerSlots.length > 1 && (
+   536→                  <Button
+   537→                    variant="ghost"
+   538→                    size="sm"
+   539→                    className="h-6 w-6 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+   540→                    onClick={() => removeSignerSlot(slot.index)}
+   541→                  >
+   542→                    <Trash2 className="h-3 w-3" />
+   543→                  </Button>
+   544→                )}
+   545→              </div>
+   546→            ))}
+   547→          </div>
+   548→
+   549→          {/* Sign Fields */}
+   550→          <div>
+   551→            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Sign Fields</h4>
+   552→            {signerSlots.map((slot, idx) => (
+   553→              <div key={slot.index} className="mb-3">
+   554→                <div className="flex items-center gap-1.5 mb-1.5">
+   555→                  <div
+   556→                    className="w-2.5 h-2.5 rounded-full"
+   557→                    style={{ backgroundColor: SIGNER_COLORS[idx % SIGNER_COLORS.length] }}
+   558→                  />
+   559→                  <span className="text-xs font-medium text-[#111827]">{slot.label}</span>
+   560→                </div>
+   561→                <div className="grid grid-cols-2 gap-1">
+   562→                  {TEMPLATE_SIGN_FIELD_TYPES.map((type) => (
+   563→                    <TooltipProvider key={type}>
+   564→                      <Tooltip>
+   565→                        <TooltipTrigger asChild>
+   566→                          <button
+   567→                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-[#E5E7EB] hover:border-[#166534]/30 hover:bg-[#F0FDF4] transition-colors text-[#374151] cursor-pointer"
+   568→                            onClick={() => addSignField(type, slot.index)}
+   569→                          >
+   570→                            <span className="text-sm">{FIELD_TYPE_ICONS[type]}</span>
+   571→                            <span className="truncate">{FIELD_TYPE_LABELS[type]}</span>
+   572→                          </button>
+   573→                        </TooltipTrigger>
+   574→                        <TooltipContent side="bottom" className="text-xs">
+   575→                          Add {FIELD_TYPE_LABELS[type]} field for {slot.label}
+   576→                        </TooltipContent>
+   577→                      </Tooltip>
+   578→                    </TooltipProvider>
+   579→                  ))}
+   580→                </div>
+   581→
+   582→                {/* Assigned fields for this signer */}
+   583→                {signFields.filter((f) => f.assigned_to_signer_index === slot.index).map((field) => (
+   584→                  <div
+   585→                    key={field.id}
+   586→                    className="flex items-center justify-between mt-1 px-2 py-1 rounded bg-[#F8F7F4] border border-[#E5E7EB]"
+   587→                  >
+   588→                    <span className="text-[10px] text-[#6B7280]">
+   589→                      {FIELD_TYPE_ICONS[field.type]} {field.label}
+   590→                    </span>
+   591→                    <Button
+   592→                      variant="ghost"
+   593→                      size="sm"
+   594→                      className="h-4 w-4 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+   595→                      onClick={() => removeSignField(field.id)}
+   596→                    >
+   597→                      <X className="h-2.5 w-2.5" />
+   598→                    </Button>
+   599→                  </div>
+   600→                ))}
+   601→              </div>
+   602→            ))}
+   603→          </div>
+   604→        </div>
+   605→      </ScrollArea>
+   606→    </>
+   607→  );
+   608→
+   609→  return (
+   610→    <VaultSignErrorBoundary>
+   611→    <TooltipProvider>
+   612→    <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+   613→      {/* Top Bar */}
+   614→      <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between gap-4">
+   615→        <div className="flex items-center gap-3 min-w-0 flex-1">
+   616→          {/* Mobile panel toggle buttons */}
+   617→          <div className="flex items-center gap-1 lg:hidden">
+   618→            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]" onClick={() => setShowVariablesPanel(true)}>
+   619→              <PanelLeftIcon className="h-4 w-4" />
+   620→            </Button>
+   621→            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]" onClick={() => setShowSignersPanel(true)}>
+   622→              <PanelRightIcon className="h-4 w-4" />
+   623→            </Button>
+   624→          </div>
+   625→          <Button variant="ghost" size="sm" onClick={() => router.push("/superadmin/vaultsign")} className="text-[#6B7280] hover:text-[#111827]">
+   626→            <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back to VaultSign</span>
+   627→          </Button>
+   628→          <Separator orientation="vertical" className="h-6" />
+   629→          <Input
+   630→            value={templateName}
+   631→            onChange={(e) => setTemplateName(e.target.value)}
+   632→            className="font-semibold text-[#111827] border-none shadow-none focus-visible:ring-0 p-0 h-auto text-lg max-w-xs min-w-0"
+   633→            placeholder="Template Name"
+   634→          />
+   635→          <Badge variant="outline" className="text-xs bg-[#F8F7F4] hidden sm:inline-flex">
+   636→            Template Editor
+   637→          </Badge>
+   638→        </div>
+   639→        <div className="flex items-center gap-2 flex-shrink-0">
+   640→          {saving && (
+   641→            <span className="text-xs text-[#6B7280] flex items-center gap-1">
+   642→              <Loader2 className="h-3 w-3 animate-spin" /> <span className="hidden sm:inline">Saving...</span>
+   643→            </span>
+   644→          )}
+   645→          <Button variant="outline" size="sm" onClick={handleSave} className="border-[#166534] text-[#166534]">
+   646→            <Save className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save</span>
+   647→          </Button>
+   648→
+   649→          <DropdownMenu>
+   650→            <DropdownMenuTrigger asChild>
+   651→              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]">
+   652→                <MoreVertical className="h-4 w-4" />
+   653→              </Button>
+   654→            </DropdownMenuTrigger>
+   655→            <DropdownMenuContent align="end" className="w-48">
+   656→              <DropdownMenuItem onClick={handleSave}>
+   657→                <Save className="h-4 w-4 mr-2" /> Save Template
+   658→              </DropdownMenuItem>
+   659→            </DropdownMenuContent>
+   660→          </DropdownMenu>
+   661→        </div>
+   662→      </div>
+   663→
+   664→      {/* Desktop Toolbar — Word-style ribbon */}
+   665→      <div className="hidden lg:flex bg-[#F8F9FA] border-b border-[#E5E7EB] px-1 py-0.5 flex-wrap gap-y-0">
+   666→        {/* Clipboard Group */}
+   667→        <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
+   668→          <div className="flex items-center gap-0.5">
+   669→            <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)" isActive={false}>
+   670→              <Undo2 className="h-4 w-4" />
+   671→            </ToolbarButton>
+   672→            <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)" isActive={false}>
+   673→              <Redo2 className="h-4 w-4" />
+   674→            </ToolbarButton>
+   675→          </div>
+   676→          <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Undo</span>
+   677→        </div>
+   678→
+   679→        {/* Font Group */}
+   680→        <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
+   681→          <div className="flex items-center gap-0.5 flex-wrap">
+   682→            <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
+   683→              if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
+   684→              else editor?.chain().focus().setFontFamily(val).run();
+   685→            }}>
+   686→              <SelectTrigger className="w-[110px] h-7 text-[11px]">
+   687→                <SelectValue placeholder="Font" />
+   688→              </SelectTrigger>
+   689→              <SelectContent>
+   690→                <SelectItem value="Default">Default</SelectItem>
+   691→                <SelectItem value="Arial">Arial</SelectItem>
+   692→                <SelectItem value="Georgia">Georgia</SelectItem>
+   693→                <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+   694→                <SelectItem value="Courier New">Courier New</SelectItem>
+   695→                <SelectItem value="Verdana">Verdana</SelectItem>
+   696→              </SelectContent>
+   697→            </Select>
+   698→
+   699→            <Select value={((): string => {
+   700→              const fs = editor?.getAttributes("textStyle").fontSize;
+   701→              if (!fs) return "11";
+   702→              const num = parseInt(String(fs));
+   703→              return isNaN(num) ? "11" : String(num);
+   704→            })()} onValueChange={(val) => {
+   705→              editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
+   706→            }}>
+   707→              <SelectTrigger className="w-[60px] h-7 text-[11px]">
+   708→                <SelectValue placeholder="Size" />
+   709→              </SelectTrigger>
+   710→              <SelectContent>
+   711→                {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
+   712→                  <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+   713→                ))}
+   714→              </SelectContent>
+   715→            </Select>
+   716→
+   717→            <Separator orientation="vertical" className="h-5 mx-0.5" />
+   718→
+   719→            <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold (Ctrl+B)">
+   720→              <Bold className="h-4 w-4" />
+   721→            </ToolbarButton>
+   722→            <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic (Ctrl+I)">
+   723→              <Italic className="h-4 w-4" />
+   724→            </ToolbarButton>
+   725→            <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline (Ctrl+U)">
+   726→              <UnderlineIcon className="h-4 w-4" />
+   727→            </ToolbarButton>
+   728→            <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+   729→              <Strikethrough className="h-4 w-4" />
+   730→            </ToolbarButton>
+   731→
+   732→            <Separator orientation="vertical" className="h-5 mx-0.5" />
+   733→
+   734→            <Popover>
+   735→              <PopoverTrigger asChild>
+   736→                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Font Color">
+   737→                  <Palette className="h-4 w-4" />
+   738→                </Button>
+   739→              </PopoverTrigger>
+   740→              <PopoverContent className="w-auto p-2" align="start">
+   741→                <div className="grid grid-cols-6 gap-1">
+   742→                  {["#000000", "#374151", "#6B7280", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
+   743→                    <button key={color} className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
+   744→                  ))}
+   745→                </div>
+   746→              </PopoverContent>
+   747→            </Popover>
+   748→
+   749→            <Popover>
+   750→              <PopoverTrigger asChild>
+   751→                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-[#166534]" : "text-[#6B7280]"}`} title="Highlight">
+   752→                  <Highlighter className="h-4 w-4" />
+   753→                </Button>
+   754→              </PopoverTrigger>
+   755→              <PopoverContent className="w-auto p-2" align="start">
+   756→                <div className="grid grid-cols-5 gap-1">
+   757→                  {[
+   758→                    { color: "#FEF08A", label: "Yellow" },
+   759→                    { color: "#BBF7D0", label: "Green" },
+   760→                    { color: "#BFDBFE", label: "Blue" },
+   761→                    { color: "#FECACA", label: "Red" },
+   762→                    { color: "#E9D5FF", label: "Purple" },
+   763→                  ].map(({ color, label }) => (
+   764→                    <button key={color} className="w-6 h-6 rounded border border-[#E5E7EB] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
+   765→                  ))}
+   766→                  <button className="w-6 h-6 rounded border border-[#E5E7EB] text-xs flex items-center justify-center hover:scale-110 transition-transform" onClick={() => editor?.chain().focus().unsetHighlight().run()} title="Remove highlight">
+   767→                    <Minus className="h-3 w-3" />
+   768→                  </button>
+   769→                </div>
+   770→              </PopoverContent>
+   771→            </Popover>
+   772→          </div>
+   773→          <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Font</span>
+   774→        </div>
+   775→
+   776→        {/* Paragraph Group */}
+   777→        <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
+   778→          <div className="flex items-center gap-0.5 flex-wrap">
+   779→            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+   780→              <AlignLeft className="h-4 w-4" />
+   781→            </ToolbarButton>
+   782→            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
+   783→              <AlignCenter className="h-4 w-4" />
+   784→            </ToolbarButton>
+   785→            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
+   786→              <AlignRight className="h-4 w-4" />
+   787→            </ToolbarButton>
+   788→            <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
+   789→              <AlignJustify className="h-4 w-4" />
+   790→            </ToolbarButton>
+   791→
+   792→            <Separator orientation="vertical" className="h-5 mx-0.5" />
+   793→
+   794→            <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+   795→              <List className="h-4 w-4" />
+   796→            </ToolbarButton>
+   797→            <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+   798→              <ListOrdered className="h-4 w-4" />
+   799→            </ToolbarButton>
+   800→
+   801→            <Separator orientation="vertical" className="h-5 mx-0.5" />
+   802→
+   803→            <DropdownMenu>
+   804→              <DropdownMenuTrigger asChild>
+   805→                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#6B7280]" title="Line Spacing">
+   806→                  <ArrowUpDown className="h-4 w-4" />
+   807→                </Button>
+   808→              </DropdownMenuTrigger>
+   809→              <DropdownMenuContent align="start" className="w-32">
+   810→                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
+   811→                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
+   812→                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
+   813→                <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
+   814→              </DropdownMenuContent>
+   815→            </DropdownMenu>
+   816→          </div>
+   817→          <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Paragraph</span>
+   818→        </div>
+   819→
+   820→        {/* Insert Group */}
+   821→        <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
+   822→          <div className="flex items-center gap-0.5">
+   823→            <ToolbarButton onClick={() => {
+   824→              const url = prompt("Enter image URL:");
+   825→              if (url) editor?.chain().focus().setImage({ src: url }).run();
+   826→            }} title="Insert Image">
+   827→              <ImagePlus className="h-4 w-4" />
+   828→            </ToolbarButton>
+   829→            <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
+   830→              <TableIcon className="h-4 w-4" />
+   831→            </ToolbarButton>
+   832→            <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Insert Page Break (Ctrl+Enter)">
+   833→              <FileText className="h-4 w-4" />
+   834→            </ToolbarButton>
+   835→          </div>
+   836→          <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Insert</span>
+   837→        </div>
+   838→
+   839→        {/* Styles Group */}
+   840→        <div className="flex flex-col bg-white rounded-md border border-[#E5E7EB]/60 mx-0.5 px-1.5 py-1">
+   841→          <Select value={
+   842→            editor?.isActive("heading", { level: 1 }) ? "1"
+   843→            : editor?.isActive("heading", { level: 2 }) ? "2"
+   844→            : editor?.isActive("heading", { level: 3 }) ? "3"
+   845→            : "0"
+   846→          } onValueChange={(val) => {
+   847→            if (val === "0") editor?.chain().focus().setParagraph().run();
+   848→            else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
+   849→          }}>
+   850→            <SelectTrigger className="w-[110px] h-7 text-[11px]">
+   851→              <SelectValue placeholder="Style" />
+   852→            </SelectTrigger>
+   853→            <SelectContent>
+   854→              <SelectItem value="0">Normal Text</SelectItem>
+   855→              <SelectItem value="1">Heading 1</SelectItem>
+   856→              <SelectItem value="2">Heading 2</SelectItem>
+   857→              <SelectItem value="3">Heading 3</SelectItem>
+   858→            </SelectContent>
+   859→          </Select>
+   860→          <span className="text-[9px] text-[#6B7280] mt-0.5 select-none text-center font-medium">Styles</span>
+   861→        </div>
+   862→      </div>
+   863→
+   864→      {/* Mobile Toolbar (simplified) */}
+   865→      <div className="lg:hidden bg-white border-b border-[#E5E7EB] px-2 py-1.5 flex items-center gap-1 overflow-x-auto">
+   866→        <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold">
+   867→          <Bold className="h-4 w-4" />
+   868→        </ToolbarButton>
+   869→        <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic">
+   870→          <Italic className="h-4 w-4" />
+   871→        </ToolbarButton>
+   872→        <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline">
+   873→          <UnderlineIcon className="h-4 w-4" />
+   874→        </ToolbarButton>
+   875→        <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+   876→          <Strikethrough className="h-4 w-4" />
+   877→        </ToolbarButton>
+   878→        <Separator orientation="vertical" className="h-6 mx-0.5" />
+   879→        <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+   880→          <AlignLeft className="h-4 w-4" />
+   881→        </ToolbarButton>
+   882→        <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Center">
+   883→          <AlignCenter className="h-4 w-4" />
+   884→        </ToolbarButton>
+   885→        <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+   886→          <List className="h-4 w-4" />
+   887→        </ToolbarButton>
+   888→        <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+   889→          <ListOrdered className="h-4 w-4" />
+   890→        </ToolbarButton>
+   891→        <Separator orientation="vertical" className="h-6 mx-0.5" />
+   892→        <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo">
+   893→          <Undo2 className="h-4 w-4" />
+   894→        </ToolbarButton>
+   895→        <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo">
+   896→          <Redo2 className="h-4 w-4" />
+   897→        </ToolbarButton>
+   898→        <DropdownMenu>
+   899→          <DropdownMenuTrigger asChild>
+   900→            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6B7280]">
+   901→              <MoreVertical className="h-4 w-4" />
+   902→            </Button>
+   903→          </DropdownMenuTrigger>
+   904→          <DropdownMenuContent align="end" className="w-48">
+   905→            <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("right").run()}>
+   906→              <AlignRight className="h-4 w-4 mr-2" /> Align Right
+   907→            </DropdownMenuItem>
+   908→            <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("justify").run()}>
+   909→              <AlignJustify className="h-4 w-4 mr-2" /> Justify
+   910→            </DropdownMenuItem>
+   911→            <DropdownMenuItem onClick={() => editor?.chain().focus().insertPageBreak().run()}>
+   912→              <FileText className="h-4 w-4 mr-2" /> Page Break
+   913→            </DropdownMenuItem>
+   914→            <DropdownMenuItem onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+   915→              <TableIcon className="h-4 w-4 mr-2" /> Insert Table
+   916→            </DropdownMenuItem>
+   917→            <DropdownMenuItem onClick={() => { const url = prompt("Enter image URL:"); if (url) editor?.chain().focus().setImage({ src: url }).run(); }}>
+   918→              <ImagePlus className="h-4 w-4 mr-2" /> Insert Image
+   919→            </DropdownMenuItem>
+   920→          </DropdownMenuContent>
+   921→        </DropdownMenu>
+   922→      </div>
+   923→
+   924→      {/* Main Content — Three Column Layout */}
+   925→      <div className="flex-1 flex overflow-hidden">
+   926→        {/* Left Panel — Variables (desktop only) */}
+   927→        <div className="hidden lg:flex w-64 border-r border-[#E5E7EB] bg-white flex-col">
+   928→          <div className="p-3 border-b border-[#E5E7EB]">
+   929→            <h3 className="font-semibold text-sm text-[#111827] flex items-center gap-2">
+   930→              <Variable className="h-4 w-4 text-[#166534]" /> Variables
+   931→            </h3>
+   932→            <p className="text-xs text-[#6B7280] mt-1">Click to insert at cursor</p>
+   933→          </div>
+   934→          {variablesPanelContent}
+   935→        </div>
+   936→
+   937→        {/* Center — Editor */}
+   938→        <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
+   939→          <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-[#E5E7EB] bg-white min-h-[800px]">
+   940→            <EditorContent editor={editor} className="tiptap-editor" />
+   941→          </div>
+   942→        </div>
+   943→
+   944→        {/* Right Panel — Signer Fields (desktop only) */}
+   945→        <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
+   946→          <div className="p-3 border-b border-[#E5E7EB]">
+   947→            <h3 className="font-semibold text-sm text-[#111827]">Sign Fields</h3>
+   948→            <p className="text-xs text-[#6B7280] mt-1">Define placeholder sign fields for this template</p>
+   949→          </div>
+   950→          {signersPanelContent}
+   951→        </div>
+   952→      </div>
+   953→
+   954→      {/* Mobile: Variables Sheet */}
+   955→      <Sheet open={showVariablesPanel} onOpenChange={setShowVariablesPanel}>
+   956→        <SheetContent side="left" className="w-80 p-0 flex flex-col">
+   957→          <SheetHeader className="p-3 border-b border-[#E5E7EB]">
+   958→            <SheetTitle className="flex items-center gap-2 text-sm">
+   959→              <Variable className="h-4 w-4 text-[#166534]" /> Variables
+   960→            </SheetTitle>
+   961→            <SheetDescription className="text-xs">Click to insert at cursor</SheetDescription>
+   962→          </SheetHeader>
+   963→          {variablesPanelContent}
+   964→        </SheetContent>
+   965→      </Sheet>
+   966→
+   967→      {/* Mobile: Signers Sheet */}
+   968→      <Sheet open={showSignersPanel} onOpenChange={setShowSignersPanel}>
+   969→        <SheetContent side="right" className="w-80 p-0 flex flex-col">
+   970→          <SheetHeader className="p-3 border-b border-[#E5E7EB]">
+   971→            <SheetTitle className="text-sm">Sign Fields</SheetTitle>
+   972→            <SheetDescription className="text-xs">Define placeholder sign fields</SheetDescription>
+   973→          </SheetHeader>
+   974→          {signersPanelContent}
+   975→        </SheetContent>
+   976→      </Sheet>
+   977→
+   978→      {/* TipTap Editor Styles */}
+   979→      <style jsx global>{`
+   980→        .tiptap-editor .tiptap {
+   981→          outline: none;
+   982→          min-height: 500px;
+   983→          padding: 24px 32px;
+   984→        }
+   985→        .tiptap-editor .tiptap p {
+   986→          margin-bottom: 0.5em;
+   987→          color: #374151;
+   988→          line-height: 1.6;
+   989→        }
+   990→        .tiptap-editor .tiptap h1 {
+   991→          font-size: 1.75rem;
+   992→          font-weight: 700;
+   993→          color: #111827;
+   994→          margin-top: 1.5em;
+   995→          margin-bottom: 0.5em;
+   996→        }
+   997→        .tiptap-editor .tiptap h2 {
+   998→          font-size: 1.4rem;
+   999→          font-weight: 600;
+  1000→          color: #111827;
+  1001→          margin-top: 1.2em;
+  1002→          margin-bottom: 0.4em;
+  1003→        }
+  1004→        .tiptap-editor .tiptap h3 {
+  1005→          font-size: 1.15rem;
+  1006→          font-weight: 600;
+  1007→          color: #111827;
+  1008→          margin-top: 1em;
+  1009→          margin-bottom: 0.3em;
+  1010→        }
+  1011→        .tiptap-editor .tiptap ul {
+  1012→          list-style-type: disc;
+  1013→          padding-left: 1.5em;
+  1014→          margin-bottom: 0.5em;
+  1015→        }
+  1016→        .tiptap-editor .tiptap ol {
+  1017→          list-style-type: decimal;
+  1018→          padding-left: 1.5em;
+  1019→          margin-bottom: 0.5em;
+  1020→        }
+  1021→        .tiptap-editor .tiptap li {
+  1022→          margin-bottom: 0.2em;
+  1023→        }
+  1024→        .tiptap-editor .tiptap table {
+  1025→          border-collapse: collapse;
+  1026→          width: 100%;
+  1027→          margin: 1em 0;
+  1028→        }
+  1029→        .tiptap-editor .tiptap table td,
+  1030→        .tiptap-editor .tiptap table th {
+  1031→          border: 1px solid #E5E7EB;
+  1032→          padding: 8px;
+  1033→          min-width: 60px;
+  1034→        }
+  1035→        .tiptap-editor .tiptap table th {
+  1036→          background: #F3F4F6;
+  1037→          font-weight: 600;
+  1038→        }
+  1039→        .tiptap-editor .tiptap img {
+  1040→          max-width: 100%;
+  1041→          height: auto;
+  1042→          border-radius: 8px;
+  1043→          margin: 0.5em 0;
+  1044→        }
+  1045→        .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+  1046→          content: attr(data-placeholder);
+  1047→          float: left;
+  1048→          color: #9CA3AF;
+  1049→          pointer-events: none;
+  1050→          height: 0;
+  1051→        }
+  1052→        .tiptap-editor .tiptap mark {
+  1053→          border-radius: 2px;
+  1054→          padding: 0 2px;
+  1055→        }
+  1056→        .tiptap-editor .tiptap .task-list {
+  1057→          list-style: none;
+  1058→          padding-left: 0;
+  1059→        }
+  1060→        .tiptap-editor .tiptap .task-list li {
+  1061→          display: flex;
+  1062→          align-items: center;
+  1063→          gap: 0.5rem;
+  1064→        }
+  1065→        .tiptap-editor .tiptap .task-list li label {
+  1066→          display: flex;
+  1067→          align-items: center;
+  1068→        }
+  1069→        .tiptap-editor .tiptap hr.page-break,
+  1070→        .tiptap-editor .tiptap hr[data-page-break] {
+  1071→          border: none;
+  1072→          margin: 0;
+  1073→          padding: 24px 0;
+  1074→          position: relative;
+  1075→          min-height: 56px;
+  1076→          background: linear-gradient(to bottom,
+  1077→            #ffffff 0%,
+  1078→            #ffffff 38%,
+  1079→            #E5E7EB 38%,
+  1080→            #E5E7EB 40%,
+  1081→            #ffffff 40%,
+  1082→            #ffffff 60%,
+  1083→            #E5E7EB 60%,
+  1084→            #E5E7EB 62%,
+  1085→            #ffffff 62%,
+  1086→            #ffffff 100%
+  1087→          );
+  1088→        }
+  1089→        .tiptap-editor .tiptap hr.page-break::before,
+  1090→        .tiptap-editor .tiptap hr[data-page-break]::before {
+  1091→          content: "PAGE BREAK";
+  1092→          position: absolute;
+  1093→          top: 50%;
+  1094→          left: 50%;
+  1095→          transform: translate(-50%, -50%);
+  1096→          font-size: 9px;
+  1097→          font-weight: 700;
+  1098→          letter-spacing: 2px;
+  1099→          color: #166534;
+  1100→          background: #F0FDF4;
+  1101→          border: 1px solid #166534/30;
+  1102→          padding: 3px 16px;
+  1103→          border-radius: 4px;
+  1104→          white-space: nowrap;
+  1105→          z-index: 1;
+  1106→        }
+  1107→        .tiptap-editor .tiptap hr[style*="page-break"] {
+  1108→          border: none;
+  1109→          margin: 0;
+  1110→          padding: 24px 0;
+  1111→          position: relative;
+  1112→          min-height: 56px;
+  1113→          background: linear-gradient(to bottom,
+  1114→            #ffffff 0%,
+  1115→            #ffffff 38%,
+  1116→            #E5E7EB 38%,
+  1117→            #E5E7EB 40%,
+  1118→            #ffffff 40%,
+  1119→            #ffffff 60%,
+  1120→            #E5E7EB 60%,
+  1121→            #E5E7EB 62%,
+  1122→            #ffffff 62%,
+  1123→            #ffffff 100%
+  1124→          );
+  1125→        }
+  1126→        .tiptap-editor .tiptap hr[style*="page-break"]::before {
+  1127→          content: "PAGE BREAK";
+  1128→          position: absolute;
+  1129→          top: 50%;
+  1130→          left: 50%;
+  1131→          transform: translate(-50%, -50%);
+  1132→          font-size: 9px;
+  1133→          font-weight: 700;
+  1134→          letter-spacing: 2px;
+  1135→          color: #166534;
+  1136→          background: #F0FDF4;
+  1137→          border: 1px solid #166534/30;
+  1138→          padding: 3px 16px;
+  1139→          border-radius: 4px;
+  1140→          white-space: nowrap;
+  1141→          z-index: 1;
+  1142→        }
+  1143→      `}</style>
+  1144→    </div>
+  1145→    </TooltipProvider>
+  1146→    </VaultSignErrorBoundary>
+  1147→  );
+  1148→}
+  1149→
+  1150→// Toolbar button component — Word-style ribbon button
+  1151→function ToolbarButton({
+  1152→  onClick,
+  1153→  isActive,
+  1154→  children,
+  1155→  title,
+  1156→}: {
+  1157→  onClick: () => void;
+  1158→  isActive?: boolean;
+  1159→  children: React.ReactNode;
+  1160→  title: string;
+  1161→}) {
+  1162→  return (
+  1163→    <TooltipProvider>
+  1164→      <Tooltip>
+  1165→        <TooltipTrigger asChild>
+  1166→          <Button
+  1167→            variant="ghost"
+  1168→            size="sm"
+  1169→            className={`h-7 w-7 p-0 transition-all rounded ${
+  1170→              isActive
+  1171→                ? "bg-[#DCFCE7] text-[#166534] shadow-[inset_0_0_0_1px_#166534/30]"
+  1172→                : "text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827] active:bg-[#E5E7EB]"
+  1173→            }`}
+  1174→            onClick={onClick}
+  1175→            title={title}
+  1176→          >
+  1177→            {children}
+  1178→          </Button>
+  1179→        </TooltipTrigger>
+  1180→        <TooltipContent side="bottom" className="text-xs">
+  1181→          {title}
+  1182→        </TooltipContent>
+  1183→      </Tooltip>
+  1184→    </TooltipProvider>
+  1185→  );
+  1186→}
+  1187→

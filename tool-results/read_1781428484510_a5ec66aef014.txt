@@ -1,0 +1,704 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→import { toast } from "sonner";
+     5→import {
+     6→  Mail,
+     7→  MessageSquare,
+     8→  Save,
+     9→  Eye,
+    10→  Variable,
+    11→  FileText,
+    12→  Send,
+    13→  Loader2,
+    14→  ChevronDown,
+    15→  ChevronUp,
+    16→  Plus,
+    17→} from "@/lib/icons";
+    18→
+    19→import { useAuth } from "@/components/providers/auth-provider";
+    20→import { PageHeader } from "@/components/layout/page-header";
+    21→import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+    22→import { Button } from "@/components/ui/button";
+    23→import { Input } from "@/components/ui/input";
+    24→import { Textarea } from "@/components/ui/textarea";
+    25→import { Label } from "@/components/ui/label";
+    26→import { Badge } from "@/components/ui/badge";
+    27→import { Skeleton } from "@/components/ui/skeleton";
+    28→import { Separator } from "@/components/ui/separator";
+    29→import {
+    30→  Dialog,
+    31→  DialogContent,
+    32→  DialogDescription,
+    33→  DialogFooter,
+    34→  DialogHeader,
+    35→  DialogTitle,
+    36→} from "@/components/ui/dialog";
+    37→
+    38→// ─── Types ──────────────────────────────────────────────────────────
+    39→interface Template {
+    40→  id: number;
+    41→  templateKey: string;
+    42→  subject: string;
+    43→  body: string;
+    44→  updatedBy: number | null;
+    45→  updatedAt: string;
+    46→}
+    47→
+    48→// ─── Variables Reference ────────────────────────────────────────────
+    49→const TEMPLATE_VARIABLES = [
+    50→  { name: "candidate_name", description: "Full name of the candidate" },
+    51→  { name: "organization_name", description: "Name of the staffing organization" },
+    52→  { name: "agency_name", description: "Name of the recruiting agency" },
+    53→  { name: "client_name", description: "Full name of the client/recruiter" },
+    54→  { name: "recruiter_name", description: "Full name of the recruiter" },
+    55→  { name: "facility_name", description: "Name of the healthcare facility" },
+    56→  { name: "checklist_name", description: "Name of the checklist template" },
+    57→  { name: "document_name", description: "Name of the credential/document" },
+    58→  { name: "expiry_date", description: "Expiration date of the credential" },
+    59→  { name: "days_remaining", description: "Days until credential expires" },
+    60→  { name: "verification_status", description: "Current verification status" },
+    61→  { name: "invite_link", description: "Onboarding invitation link" },
+    62→  { name: "share_link", description: "Link to the consent share" },
+    63→  { name: "login_link", description: "Link to log in to the platform" },
+    64→  { name: "reset_link", description: "Password reset link" },
+    65→  { name: "purchase_link", description: "Link to purchase credits" },
+    66→  { name: "manager_name", description: "Full name of the reference manager" },
+    67→  { name: "nurse_name", description: "Full name of the nurse/candidate" },
+    68→  { name: "review_notes", description: "Notes from the credential reviewer" },
+    69→  { name: "credits_remaining", description: "Number of credits remaining" },
+    70→  { name: "deletion_date", description: "Date the account will be deleted" },
+    71→  { name: "platform_name", description: "MyZipVault" },
+    72→];
+    73→
+    74→const SAMPLE_DATA: Record<string, string> = {
+    75→  candidate_name: "Jane Nurse",
+    76→  organization_name: "Acme Staffing",
+    77→  agency_name: "Acme Staffing",
+    78→  client_name: "Sarah Recruiter",
+    79→  recruiter_name: "Sarah Recruiter",
+    80→  facility_name: "Sunrise Medical Center",
+    81→  checklist_name: "ICU Nurse Skills Checklist",
+    82→  document_name: "BLS Certification",
+    83→  expiry_date: "Apr 15, 2026",
+    84→  days_remaining: "14",
+    85→  verification_status: "Verified",
+    86→  invite_link: "https://myzipvault.com/onboard?token=abc123",
+    87→  share_link: "https://myzipvault.com/share/abc123",
+    88→  login_link: "https://myzipvault.com/login",
+    89→  reset_link: "https://myzipvault.com/reset?token=xyz789",
+    90→  purchase_link: "https://myzipvault.com/credits",
+    91→  manager_name: "Dr. Robert Chen",
+    92→  nurse_name: "Jane Nurse",
+    93→  review_notes: "Document appears to be expired. Please upload a current certification.",
+    94→  credits_remaining: "12",
+    95→  deletion_date: "Mar 20, 2026",
+    96→  platform_name: "MyZipVault",
+    97→};
+    98→
+    99→// ─── Helper: extract {{variables}} from text ────────────────────────
+   100→function extractVariables(text: string): string[] {
+   101→  const matches = text.match(/\{\{(\w+)\}\}/g);
+   102→  if (!matches) return [];
+   103→  return [...new Set(matches.map((m) => m.replace(/\{\{|\}\}/g, "")))];
+   104→}
+   105→
+   106→// ─── Helper: replace variables with sample data ─────────────────────
+   107→function renderWithSampleData(text: string): string {
+   108→  let result = text;
+   109→  const variables = extractVariables(text);
+   110→  for (const v of variables) {
+   111→    if (SAMPLE_DATA[v]) {
+   112→      result = result.replaceAll(`{{${v}}}`, SAMPLE_DATA[v]);
+   113→    }
+   114→  }
+   115→  return result;
+   116→}
+   117→
+   118→// ─── Skeleton ───────────────────────────────────────────────────────
+   119→function TemplateSkeleton() {
+   120→  return (
+   121→    <div className="space-y-4">
+   122→      <Skeleton className="h-5 w-40" />
+   123→      <Skeleton className="h-10 w-full" />
+   124→      <Skeleton className="h-5 w-32" />
+   125→      <Skeleton className="h-48 w-full" />
+   126→    </div>
+   127→  );
+   128→}
+   129→
+   130→// ─── Main Component ─────────────────────────────────────────────────
+   131→export default function SuperadminTemplatesPage() {
+   132→  const { user } = useAuth();
+   133→  const [templates, setTemplates] = useState<Template[]>([]);
+   134→  const [isLoading, setIsLoading] = useState(true);
+   135→  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+   136→  const [editSubject, setEditSubject] = useState("");
+   137→  const [editBody, setEditBody] = useState("");
+   138→  const [saving, setSaving] = useState(false);
+   139→  const [previewOpen, setPreviewOpen] = useState(false);
+   140→  const [smsEnabled, setSmsEnabled] = useState(false);
+   141→  const [sendingTest, setSendingTest] = useState(false);
+   142→  const [testEmailOpen, setTestEmailOpen] = useState(false);
+   143→  const [testEmailAddress, setTestEmailAddress] = useState("");
+   144→  const [varsPanelOpen, setVarsPanelOpen] = useState(true);
+   145→
+   146→  const bodyRef = useRef<HTMLTextAreaElement>(null);
+   147→  const subjectRef = useRef<HTMLInputElement>(null);
+   148→  const [cursorTarget, setCursorTarget] = useState<"subject" | "body">("body");
+   149→
+   150→  // Extract variables from current template
+   151→  const detectedSubjectVars = useMemo(() => extractVariables(editSubject), [editSubject]);
+   152→  const detectedBodyVars = useMemo(() => extractVariables(editBody), [editBody]);
+   153→  const allDetectedVars = useMemo(
+   154→    () => [...new Set([...detectedSubjectVars, ...detectedBodyVars])],
+   155→    [detectedSubjectVars, detectedBodyVars]
+   156→  );
+   157→
+   158→  const fetchTemplates = useCallback(async () => {
+   159→    try {
+   160→      setIsLoading(true);
+   161→      const res = await fetch("/api/superadmin/templates");
+   162→      if (!res.ok) {
+   163→        const body = await res.json().catch(() => ({}));
+   164→        throw new Error(body.error || "Failed to fetch templates");
+   165→      }
+   166→      const json = await res.json();
+   167→      setTemplates(json.templates);
+   168→      if (json.templates.length > 0 && !selectedKey) {
+   169→        setSelectedKey(json.templates[0].templateKey);
+   170→      }
+   171→    } catch (err) {
+   172→      const message = err instanceof Error ? err.message : "Something went wrong";
+   173→      toast.error("Failed to load templates", { description: message });
+   174→    } finally {
+   175→      setIsLoading(false);
+   176→    }
+   177→  }, [selectedKey]);
+   178→
+   179→  useEffect(() => {
+   180→    fetchTemplates();
+   181→  }, [fetchTemplates]);
+   182→
+   183→  // Sync edit fields when selection changes
+   184→  useEffect(() => {
+   185→    const t = templates.find((t) => t.templateKey === selectedKey);
+   186→    if (t) {
+   187→      setEditSubject(t.subject);
+   188→      setEditBody(t.body);
+   189→    }
+   190→  }, [selectedKey, templates]);
+   191→
+   192→  // Check SMS feature flag
+   193→  useEffect(() => {
+   194→    fetch("/api/superadmin/settings")
+   195→      .then((r) => r.json())
+   196→      .then((data) => {
+   197→        const flag = data.featureFlags?.find(
+   198→          (f: { flagName: string; isEnabled: boolean }) => f.flagName === "sms_notifications"
+   199→        );
+   200→        setSmsEnabled(flag?.isEnabled ?? false);
+   201→      })
+   202→      .catch(() => {});
+   203→  }, []);
+   204→
+   205→  // Set test email from session user
+   206→  useEffect(() => {
+   207→    if (user?.email) setTestEmailAddress(user.email);
+   208→  }, [user]);
+   209→
+   210→  const selectedTemplate = templates.find((t) => t.templateKey === selectedKey);
+   211→
+   212→  const handleSave = async () => {
+   213→    if (!selectedKey) return;
+   214→    try {
+   215→      setSaving(true);
+   216→      const res = await fetch("/api/superadmin/templates", {
+   217→        method: "POST",
+   218→        headers: { "Content-Type": "application/json" },
+   219→        body: JSON.stringify({
+   220→          templateKey: selectedKey,
+   221→          subject: editSubject,
+   222→          body: editBody,
+   223→        }),
+   224→      });
+   225→      const json = await res.json();
+   226→      if (!res.ok) throw new Error(json.error || "Failed to save");
+   227→      toast.success("Template saved successfully");
+   228→      fetchTemplates();
+   229→    } catch (err) {
+   230→      const message = err instanceof Error ? err.message : "Failed to save";
+   231→      toast.error("Save failed", { description: message });
+   232→    } finally {
+   233→      setSaving(false);
+   234→    }
+   235→  };
+   236→
+   237→  const handleInsertVariable = (varName: string) => {
+   238→    const varTag = `{{${varName}}}`;
+   239→    if (cursorTarget === "subject") {
+   240→      const el = subjectRef.current;
+   241→      if (el) {
+   242→        const start = el.selectionStart;
+   243→        const end = el.selectionEnd;
+   244→        const newSubject = editSubject.slice(0, start) + varTag + editSubject.slice(end);
+   245→        setEditSubject(newSubject);
+   246→        setTimeout(() => {
+   247→          el.selectionStart = el.selectionEnd = start + varTag.length;
+   248→          el.focus();
+   249→        }, 0);
+   250→      } else {
+   251→        setEditSubject(editSubject + varTag);
+   252→      }
+   253→    } else {
+   254→      const el = bodyRef.current;
+   255→      if (el) {
+   256→        const start = el.selectionStart;
+   257→        const end = el.selectionEnd;
+   258→        const newBody = editBody.slice(0, start) + varTag + editBody.slice(end);
+   259→        setEditBody(newBody);
+   260→        setTimeout(() => {
+   261→          el.selectionStart = el.selectionEnd = start + varTag.length;
+   262→          el.focus();
+   263→        }, 0);
+   264→      } else {
+   265→        setEditBody(editBody + varTag);
+   266→      }
+   267→    }
+   268→    toast.success(`Inserted {{${varName}}}`);
+   269→  };
+   270→
+   271→  const handleSendTestEmail = async () => {
+   272→    if (!selectedKey || !testEmailAddress) return;
+   273→    try {
+   274→      setSendingTest(true);
+   275→      const res = await fetch("/api/superadmin/templates/send-test", {
+   276→        method: "POST",
+   277→        headers: { "Content-Type": "application/json" },
+   278→        body: JSON.stringify({
+   279→          templateKey: selectedKey,
+   280→          subject: editSubject,
+   281→          body: editBody,
+   282→          toEmail: testEmailAddress,
+   283→        }),
+   284→      });
+   285→      const json = await res.json();
+   286→      if (!res.ok) throw new Error(json.error || "Failed to send test email");
+   287→      toast.success("Test email sent", {
+   288→        description: `Sent to ${testEmailAddress}`,
+   289→      });
+   290→      setTestEmailOpen(false);
+   291→    } catch (err) {
+   292→      const message = err instanceof Error ? err.message : "Failed to send test email";
+   293→      toast.error("Send test email failed", { description: message });
+   294→    } finally {
+   295→      setSendingTest(false);
+   296→    }
+   297→  };
+   298→
+   299→  return (
+   300→    <div className="space-y-6">
+   301→      <PageHeader
+   302→        title="Email & SMS Templates"
+   303→        description="Edit system email and SMS templates. Use variables to personalize messages."
+   304→      />
+   305→
+   306→      {isLoading ? (
+   307→        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   308→          <Card><CardContent className="p-4"><TemplateSkeleton /></CardContent></Card>
+   309→          <Card className="lg:col-span-2"><CardContent className="p-4"><TemplateSkeleton /></CardContent></Card>
+   310→        </div>
+   311→      ) : (
+   312→        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   313→          {/* ── Template List Sidebar ──────────────────────────────── */}
+   314→          <Card>
+   315→            <CardHeader>
+   316→              <div className="flex items-center gap-2">
+   317→                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+   318→                  <Mail className="size-4 text-teal-600" />
+   319→                </div>
+   320→                <div>
+   321→                  <CardTitle className="text-base">Templates</CardTitle>
+   322→                  <CardDescription>{templates.length} email templates</CardDescription>
+   323→                </div>
+   324→              </div>
+   325→            </CardHeader>
+   326→            <CardContent className="p-0">
+   327→              <div className="max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+   328→                {templates.length === 0 ? (
+   329→                  <div className="flex flex-col items-center justify-center py-12 text-center">
+   330→                    <FileText className="size-10 text-muted-foreground mb-3" />
+   331→                    <p className="text-sm text-muted-foreground">No templates found</p>
+   332→                  </div>
+   333→                ) : (
+   334→                  templates.map((t) => (
+   335→                    <button
+   336→                      key={t.templateKey}
+   337→                      onClick={() => setSelectedKey(t.templateKey)}
+   338→                      className={`w-full text-left px-4 py-3 border-b transition-colors hover:bg-teal-50/50 ${
+   339→                        selectedKey === t.templateKey
+   340→                          ? "bg-teal-50 border-l-2 border-l-teal-600"
+   341→                          : ""
+   342→                      }`}
+   343→                    >
+   344→                      <p className="text-sm font-medium truncate">{t.templateKey.replace(/_/g, " ")}</p>
+   345→                      <p className="text-xs text-muted-foreground truncate mt-0.5">{t.subject}</p>
+   346→                    </button>
+   347→                  ))
+   348→                )}
+   349→              </div>
+   350→
+   351→              <Separator />
+   352→
+   353→              {/* SMS Section */}
+   354→              <div className="p-4">
+   355→                <div className="flex items-center gap-2">
+   356→                  <MessageSquare className="size-4 text-muted-foreground" />
+   357→                  <span className="text-sm font-medium">SMS Templates</span>
+   358→                  {smsEnabled ? (
+   359→                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs">
+   360→                      Enabled
+   361→                    </Badge>
+   362→                  ) : (
+   363→                    <Badge variant="outline" className="text-xs">Coming Soon</Badge>
+   364→                  )}
+   365→                </div>
+   366→                {!smsEnabled && (
+   367→                  <p className="text-xs text-muted-foreground mt-1">
+   368→                    SMS notifications will be available in a future release.
+   369→                  </p>
+   370→                )}
+   371→              </div>
+   372→            </CardContent>
+   373→          </Card>
+   374→
+   375→          {/* ── Editor Panel ───────────────────────────────────────── */}
+   376→          <div className="lg:col-span-2 space-y-4">
+   377→            {selectedTemplate ? (
+   378→              <>
+   379→                <Card>
+   380→                  <CardHeader>
+   381→                    <div className="flex items-center justify-between flex-wrap gap-2">
+   382→                      <div className="flex items-center gap-2">
+   383→                        <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+   384→                          <FileText className="size-4 text-emerald-600" />
+   385→                        </div>
+   386→                        <div>
+   387→                          <CardTitle className="text-base">
+   388→                            {selectedTemplate.templateKey.replace(/_/g, " ")}
+   389→                          </CardTitle>
+   390→                          <CardDescription>
+   391→                            Last updated: {new Date(selectedTemplate.updatedAt).toLocaleDateString()}
+   392→                          </CardDescription>
+   393→                        </div>
+   394→                      </div>
+   395→                      <div className="flex items-center gap-2 flex-wrap">
+   396→                        <Button
+   397→                          variant="outline"
+   398→                          size="sm"
+   399→                          onClick={() => setPreviewOpen(true)}
+   400→                        >
+   401→                          <Eye className="size-4" />
+   402→                          Preview
+   403→                        </Button>
+   404→                        <Button
+   405→                          variant="outline"
+   406→                          size="sm"
+   407→                          onClick={() => setTestEmailOpen(true)}
+   408→                        >
+   409→                          <Send className="size-4" />
+   410→                          Send Test
+   411→                        </Button>
+   412→                        <Button
+   413→                          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+   414→                          size="sm"
+   415→                          onClick={handleSave}
+   416→                          disabled={saving}
+   417→                        >
+   418→                          <Save className="size-4" />
+   419→                          {saving ? "Saving…" : "Save"}
+   420→                        </Button>
+   421→                      </div>
+   422→                    </div>
+   423→                  </CardHeader>
+   424→                  <CardContent className="space-y-4">
+   425→                    <div className="space-y-2">
+   426→                      <Label htmlFor="subject">Subject Line</Label>
+   427→                      <Input
+   428→                        ref={subjectRef}
+   429→                        id="subject"
+   430→                        value={editSubject}
+   431→                        onChange={(e) => setEditSubject(e.target.value)}
+   432→                        onFocus={() => setCursorTarget("subject")}
+   433→                        placeholder="Email subject line…"
+   434→                      />
+   435→                    </div>
+   436→                    <div className="space-y-2">
+   437→                      <Label htmlFor="body">Email Body</Label>
+   438→                      <Textarea
+   439→                        ref={bodyRef}
+   440→                        id="body"
+   441→                        value={editBody}
+   442→                        onChange={(e) => setEditBody(e.target.value)}
+   443→                        onFocus={() => setCursorTarget("body")}
+   444→                        placeholder="Email body content…"
+   445→                        className="min-h-[16rem] font-mono text-sm"
+   446→                      />
+   447→                      <p className="text-xs text-muted-foreground">
+   448→                        Use double curly braces for variables, e.g. {`{{candidate_name}}`}
+   449→                      </p>
+   450→                    </div>
+   451→                  </CardContent>
+   452→                </Card>
+   453→
+   454→                {/* ── Detected Variables in This Template ──────────── */}
+   455→                {allDetectedVars.length > 0 && (
+   456→                  <Card>
+   457→                    <CardHeader className="pb-3">
+   458→                      <div className="flex items-center justify-between">
+   459→                        <div className="flex items-center gap-2">
+   460→                          <div className="size-8 rounded-lg bg-violet-50 flex items-center justify-center">
+   461→                            <Variable className="size-4 text-violet-600" />
+   462→                          </div>
+   463→                          <div>
+   464→                            <CardTitle className="text-base">Detected Variables</CardTitle>
+   465→                            <CardDescription>
+   466→                              {allDetectedVars.length} variable{allDetectedVars.length !== 1 ? "s" : ""} found in this template — click to insert at cursor
+   467→                            </CardDescription>
+   468→                          </div>
+   469→                        </div>
+   470→                        <Badge variant="outline" className="text-xs">
+   471→                          {cursorTarget} field
+   472→                        </Badge>
+   473→                      </div>
+   474→                    </CardHeader>
+   475→                    <CardContent>
+   476→                      <div className="flex flex-wrap gap-2">
+   477→                        {allDetectedVars.map((v) => {
+   478→                          const meta = TEMPLATE_VARIABLES.find((tv) => tv.name === v);
+   479→                          const hasSample = SAMPLE_DATA[v] !== undefined;
+   480→                          return (
+   481→                            <button
+   482→                              key={v}
+   483→                              onClick={() => handleInsertVariable(v)}
+   484→                              className="group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-violet-200 bg-violet-50 hover:bg-violet-100 transition-colors text-left"
+   485→                              title={meta?.description || `Insert {{${v}}}`}
+   486→                            >
+   487→                              <Plus className="size-3 text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+   488→                              <code className="text-xs font-mono text-violet-800">
+   489→                                {`{{${v}}}`}
+   490→                              </code>
+   491→                              {hasSample && (
+   492→                                <span className="text-xs text-muted-foreground">
+   493→                                  → {SAMPLE_DATA[v]}
+   494→                                </span>
+   495→                              )}
+   496→                            </button>
+   497→                          );
+   498→                        })}
+   499→                      </div>
+   500→                    </CardContent>
+   501→                  </Card>
+   502→                )}
+   503→
+   504→                {/* ── Variable Reference ──────────────────────────────── */}
+   505→                <Card>
+   506→                  <CardHeader className="pb-3">
+   507→                    <button
+   508→                      className="flex items-center justify-between w-full"
+   509→                      onClick={() => setVarsPanelOpen(!varsPanelOpen)}
+   510→                    >
+   511→                      <div className="flex items-center gap-2">
+   512→                        <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+   513→                          <Variable className="size-4 text-teal-600" />
+   514→                        </div>
+   515→                        <div className="text-left">
+   516→                          <CardTitle className="text-base">Available Variables</CardTitle>
+   517→                          <CardDescription>Click a variable to insert at cursor position</CardDescription>
+   518→                        </div>
+   519→                      </div>
+   520→                      {varsPanelOpen ? (
+   521→                        <ChevronUp className="size-4 text-muted-foreground" />
+   522→                      ) : (
+   523→                        <ChevronDown className="size-4 text-muted-foreground" />
+   524→                      )}
+   525→                    </button>
+   526→                  </CardHeader>
+   527→                  {varsPanelOpen && (
+   528→                    <CardContent>
+   529→                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+   530→                        {TEMPLATE_VARIABLES.map((v) => {
+   531→                          const isDetected = allDetectedVars.includes(v.name);
+   532→                          return (
+   533→                            <button
+   534→                              key={v.name}
+   535→                              onClick={() => handleInsertVariable(v.name)}
+   536→                              className={`flex items-start gap-2 p-2 rounded-md transition-colors text-left ${
+   537→                                isDetected
+   538→                                  ? "bg-violet-50 hover:bg-violet-100"
+   539→                                  : "hover:bg-teal-50"
+   540→                              }`}
+   541→                            >
+   542→                              <code
+   543→                                className={`text-xs font-mono px-1.5 py-0.5 rounded shrink-0 ${
+   544→                                  isDetected
+   545→                                    ? "bg-violet-100 text-violet-800"
+   546→                                    : "bg-teal-100 text-teal-800"
+   547→                                }`}
+   548→                              >
+   549→                                {`{{${v.name}}}`}
+   550→                              </code>
+   551→                              <span className="text-xs text-muted-foreground">{v.description}</span>
+   552→                              {isDetected && (
+   553→                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0 ml-auto">
+   554→                                  used
+   555→                                </Badge>
+   556→                              )}
+   557→                            </button>
+   558→                          );
+   559→                        })}
+   560→                      </div>
+   561→                    </CardContent>
+   562→                  )}
+   563→                </Card>
+   564→              </>
+   565→            ) : (
+   566→              <Card>
+   567→                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+   568→                  <Mail className="size-12 text-muted-foreground mb-4" />
+   569→                  <h3 className="text-lg font-semibold mb-1">Select a template</h3>
+   570→                  <p className="text-sm text-muted-foreground max-w-sm">
+   571→                    Choose a template from the sidebar to start editing.
+   572→                  </p>
+   573→                </CardContent>
+   574→              </Card>
+   575→            )}
+   576→          </div>
+   577→        </div>
+   578→      )}
+   579→
+   580→      {/* ── Preview Dialog ──────────────────────────────────────────── */}
+   581→      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+   582→        <DialogContent className="max-w-lg">
+   583→          <DialogHeader>
+   584→            <DialogTitle>Template Preview</DialogTitle>
+   585→            <DialogDescription>
+   586→              Preview with sample data filled in
+   587→            </DialogDescription>
+   588→          </DialogHeader>
+   589→          {selectedTemplate && (
+   590→            <div className="space-y-3">
+   591→              <div>
+   592→                <p className="text-xs font-medium text-muted-foreground mb-1">Subject</p>
+   593→                <p className="text-sm font-medium">{renderWithSampleData(editSubject)}</p>
+   594→              </div>
+   595→              <Separator />
+   596→              <div>
+   597→                <p className="text-xs font-medium text-muted-foreground mb-1">Body</p>
+   598→                <div className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-md max-h-96 overflow-y-auto">
+   599→                  {renderWithSampleData(editBody)}
+   600→                </div>
+   601→              </div>
+   602→              {allDetectedVars.length > 0 && (
+   603→                <>
+   604→                  <Separator />
+   605→                  <div>
+   606→                    <p className="text-xs font-medium text-muted-foreground mb-2">Variable Preview Mapping</p>
+   607→                    <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+   608→                      {allDetectedVars.map((v) => (
+   609→                        <div key={v} className="flex items-center gap-2 text-xs">
+   610→                          <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+   611→                            {`{{${v}}}`}
+   612→                          </code>
+   613→                          <span className="text-muted-foreground">→</span>
+   614→                          <span className="font-medium">
+   615→                            {SAMPLE_DATA[v] || <span className="italic text-amber-600">No sample data</span>}
+   616→                          </span>
+   617→                        </div>
+   618→                      ))}
+   619→                    </div>
+   620→                  </div>
+   621→                </>
+   622→              )}
+   623→            </div>
+   624→          )}
+   625→          <DialogFooter>
+   626→            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+   627→              Close
+   628→            </Button>
+   629→          </DialogFooter>
+   630→        </DialogContent>
+   631→      </Dialog>
+   632→
+   633→      {/* ── Send Test Email Dialog ──────────────────────────────────── */}
+   634→      <Dialog open={testEmailOpen} onOpenChange={setTestEmailOpen}>
+   635→        <DialogContent className="max-w-md">
+   636→          <DialogHeader>
+   637→            <DialogTitle>Send Test Email</DialogTitle>
+   638→            <DialogDescription>
+   639→              Send a preview of this template with sample data to your email address.
+   640→            </DialogDescription>
+   641→          </DialogHeader>
+   642→          <div className="space-y-4">
+   643→            <div className="space-y-2">
+   644→              <Label htmlFor="testEmail">Recipient Email</Label>
+   645→              <Input
+   646→                id="testEmail"
+   647→                type="email"
+   648→                value={testEmailAddress}
+   649→                onChange={(e) => setTestEmailAddress(e.target.value)}
+   650→                placeholder="your@email.com"
+   651→              />
+   652→              <p className="text-xs text-muted-foreground">
+   653→                The email will be sent with sample data replacing all template variables.
+   654→              </p>
+   655→            </div>
+   656→            {allDetectedVars.length > 0 && (
+   657→              <div className="space-y-2">
+   658→                <p className="text-xs font-medium text-muted-foreground">Sample data that will be used:</p>
+   659→                <div className="bg-muted/50 rounded-md p-3 max-h-40 overflow-y-auto">
+   660→                  <div className="grid grid-cols-1 gap-1.5">
+   661→                    {allDetectedVars.map((v) => (
+   662→                      <div key={v} className="flex items-center gap-2 text-xs">
+   663→                        <code className="font-mono bg-background px-1.5 py-0.5 rounded">
+   664→                          {`{{${v}}}`}
+   665→                        </code>
+   666→                        <span className="text-muted-foreground">→</span>
+   667→                        <span className="font-medium">
+   668→                          {SAMPLE_DATA[v] || <span className="italic text-amber-600">N/A</span>}
+   669→                        </span>
+   670→                      </div>
+   671→                    ))}
+   672→                  </div>
+   673→                </div>
+   674→              </div>
+   675→            )}
+   676→          </div>
+   677→          <DialogFooter>
+   678→            <Button variant="outline" onClick={() => setTestEmailOpen(false)}>
+   679→              Cancel
+   680→            </Button>
+   681→            <Button
+   682→              onClick={handleSendTestEmail}
+   683→              disabled={sendingTest || !testEmailAddress}
+   684→              className="gap-2"
+   685→            >
+   686→              {sendingTest ? (
+   687→                <>
+   688→                  <Loader2 className="size-4 animate-spin" />
+   689→                  Sending…
+   690→                </>
+   691→              ) : (
+   692→                <>
+   693→                  <Send className="size-4" />
+   694→                  Send Test Email
+   695→                </>
+   696→              )}
+   697→            </Button>
+   698→          </DialogFooter>
+   699→        </DialogContent>
+   700→      </Dialog>
+   701→    </div>
+   702→  );
+   703→}
+   704→

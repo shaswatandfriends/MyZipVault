@@ -1,0 +1,1141 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useState } from "react";
+     4→import { toast } from "sonner";
+     5→import {
+     6→  Monitor,
+     7→  Smartphone,
+     8→  Save,
+     9→  RotateCcw,
+    10→  ChevronDown,
+    11→  Palette,
+    12→  Type,
+    13→  LayoutGrid,
+    14→  Shield,
+    15→  ListOrdered,
+    16→  PanelBottom,
+    17→  Loader2,
+    18→  CheckCircle2,
+    19→} from "@/lib/icons";
+    20→
+    21→import { Button } from "@/components/ui/button";
+    22→import { Input } from "@/components/ui/input";
+    23→import { Textarea } from "@/components/ui/textarea";
+    24→import { Label } from "@/components/ui/label";
+    25→import {
+    26→  Select,
+    27→  SelectContent,
+    28→  SelectItem,
+    29→  SelectTrigger,
+    30→  SelectValue,
+    31→} from "@/components/ui/select";
+    32→
+    33→// ─── Types ──────────────────────────────────────────────────────────
+    34→interface HeroContent {
+    35→  candidateHeadline: string;
+    36→  candidateGradientText: string;
+    37→  candidateSubheadline: string;
+    38→  candidateCtaText: string;
+    39→  recruiterHeadline: string;
+    40→  recruiterGradientText: string;
+    41→  recruiterSubheadline: string;
+    42→  recruiterCtaText: string;
+    43→  trustLine1: string;
+    44→  trustLine2: string;
+    45→  trustLine3: string;
+    46→}
+    47→
+    48→interface ColorSettings {
+    49→  primary: string;
+    50→  accent: string;
+    51→  background: string;
+    52→  textPrimary: string;
+    53→  textSecondary: string;
+    54→}
+    55→
+    56→interface FeatureCard {
+    57→  icon: string;
+    58→  heading: string;
+    59→  body: string;
+    60→}
+    61→
+    62→interface PrivacyItem {
+    63→  icon: string;
+    64→  heading: string;
+    65→  body: string;
+    66→}
+    67→
+    68→interface HowItWorksStep {
+    69→  title: string;
+    70→  description: string;
+    71→}
+    72→
+    73→interface FooterContent {
+    74→  copyrightText: string;
+    75→  hipaaBadgeText: string;
+    76→}
+    77→
+    78→interface LandingPageData {
+    79→  hero: HeroContent;
+    80→  colors: ColorSettings;
+    81→  featureCards: FeatureCard[];
+    82→  privacySection: PrivacyItem[];
+    83→  howItWorks: HowItWorksStep[];
+    84→  footer: FooterContent;
+    85→}
+    86→
+    87→// ─── Icon Options ───────────────────────────────────────────────────
+    88→const iconOptions = [
+    89→  "ClipboardCheck",
+    90→  "FileText",
+    91→  "Bell",
+    92→  "Users",
+    93→  "Lock",
+    94→  "Shield",
+    95→  "Eye",
+    96→  "FolderOpen",
+    97→  "BadgeCheck",
+    98→  "Handshake",
+    99→  "Timer",
+   100→  "Trash2",
+   101→  "Zap",
+   102→  "Upload",
+   103→  "CheckCircle2",
+   104→  "Stethoscope",
+   105→  "Briefcase",
+   106→  "Clock",
+   107→  "ShieldCheck",
+   108→  "ArrowRight",
+   109→  "Heart",
+   110→  "Star",
+   111→  "Award",
+   112→  "Globe",
+   113→  "Search",
+   114→  "Settings",
+   115→  "Link2",
+   116→  "Database",
+   117→  "Server",
+   118→  "Code",
+   119→];
+   120→
+   121→// ─── Default Values ─────────────────────────────────────────────────
+   122→const defaultData: LandingPageData = {
+   123→  hero: {
+   124→    candidateHeadline: "Stop Filling Out the Same Checklists.",
+   125→    candidateGradientText: "Own Your Career",
+   126→    candidateSubheadline:
+   127→      "The secure, candidate-controlled vault for healthcare professionals. Complete your skills checklists once, store your credentials, collect references, and share with recruiters on your terms.",
+   128→    candidateCtaText: "Create Your Free Vault",
+   129→    recruiterHeadline: "Stop Chasing Nurses for",
+   130→    recruiterGradientText: "Checklists and References.",
+   131→    recruiterSubheadline:
+   132→      "MyZipVault automates the healthcare compliance packet. Request a checklist, credentials, and references — and watch them complete in real time. No more endless email threads.",
+   133→    recruiterCtaText: "Get Started",
+   134→    trustLine1: "HIPAA-Aligned Security",
+   135→    trustLine2: "You Control Access",
+   136→    trustLine3: "100% Free for Nurses",
+   137→  },
+   138→  colors: {
+   139→    primary: "#166534",
+   140→    accent: "#0D9488",
+   141→    background: "#F8F7F4",
+   142→    textPrimary: "#111827",
+   143→    textSecondary: "#6B7280",
+   144→  },
+   145→  featureCards: [
+   146→    {
+   147→      icon: "ClipboardCheck",
+   148→      heading: "Complete Once, Reuse for 30 Days",
+   149→      body: "Receive a checklist request from an agency. Rate yourself on our industry-standard lists. Once submitted, it's saved in your vault. If another agency asks for the same list within 30 days, just click Share. No retakes. No redundancy.",
+   150→    },
+   151→    {
+   152→      icon: "FileText",
+   153→      heading: "Never Start From Scratch",
+   154→      body: "Upload your current resume and our builder auto-fills your profile. Next time you need to add a new assignment, click Add Experience. Edit, update, and export a formatted resume in seconds.",
+   155→    },
+   156→    {
+   157→      icon: "Bell",
+   158→      heading: "Never Let a Cert Expire Unnoticed",
+   159→      body: "Upload your BLS, ACLS, RN License, and Immunizations. Turn on expiration reminders and we'll alert you 30 days before it's time to renew.",
+   160→    },
+   161→    {
+   162→      icon: "Users",
+   163→      heading: "Build Your Verified Reference Network",
+   164→      body: "Connect with your managers and request an evaluation. They get a free vault too. Store their verified signed reference in your vault, ready to share the second a recruiter asks.",
+   165→    },
+   166→  ],
+   167→  privacySection: [
+   168→    {
+   169→      icon: "Lock",
+   170→      heading: "Explicit Consent",
+   171→      body: "A recruiter only sees what you share. Nothing is ever visible by default.",
+   172→    },
+   173→    {
+   174→      icon: "Timer",
+   175→      heading: "Expiring Access",
+   176→      body: "You set the timer — 7, 14, or 30 days. Access ends automatically.",
+   177→    },
+   178→    {
+   179→      icon: "Trash2",
+   180→      heading: "No Data Hoarding",
+   181→      body: "If you delete your account, all recruiter access is killed instantly.",
+   182→    },
+   183→  ],
+   184→  howItWorks: [
+   185→    {
+   186→      title: "Create Your Vault",
+   187→      description:
+   188→        "Sign up free. Upload your resume and our builder auto-fills your profile. Add your BLS, ACLS, RN License, and immunizations in minutes.",
+   189→    },
+   190→    {
+   191→      title: "Complete Your Checklists",
+   192→      description:
+   193→        "When an agency requests a skills checklist, fill it out once. It stays in your vault for 30 days. Next agency asks? Click Share. No retakes.",
+   194→    },
+   195→    {
+   196→      title: "Share On Your Terms",
+   197→      description:
+   198→        "Grant expiring access to any recruiter — 7, 14, or 30 days. Revoke anytime. They see only what you allow. Nothing more.",
+   199→    },
+   200→  ],
+   201→  footer: {
+   202→    copyrightText: "\u00A9 2025 MyZipVault. All rights reserved.",
+   203→    hipaaBadgeText: "HIPAA-Aligned Security",
+   204→  },
+   205→};
+   206→
+   207→// ─── Color Picker Field ─────────────────────────────────────────────
+   208→function ColorPickerField({
+   209→  label,
+   210→  value,
+   211→  onChange,
+   212→}: {
+   213→  label: string;
+   214→  value: string;
+   215→  onChange: (val: string) => void;
+   216→}) {
+   217→  return (
+   218→    <div className="flex items-center gap-3">
+   219→      <div className="relative">
+   220→        <input
+   221→          type="color"
+   222→          value={value}
+   223→          onChange={(e) => onChange(e.target.value)}
+   224→          className="size-10 cursor-pointer rounded-lg border border-[#E5E7EB] p-0.5"
+   225→        />
+   226→      </div>
+   227→      <div className="flex-1">
+   228→        <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+   229→          {label}
+   230→        </Label>
+   231→        <div className="flex items-center gap-2 mt-1">
+   232→          <div
+   233→            className="size-5 rounded border border-[#E5E7EB]"
+   234→            style={{ backgroundColor: value }}
+   235→          />
+   236→          <span className="text-sm text-[#9CA3AF] font-mono">{value}</span>
+   237→        </div>
+   238→      </div>
+   239→    </div>
+   240→  );
+   241→}
+   242→
+   243→// ─── Live Preview Panel ─────────────────────────────────────────────
+   244→function LivePreview({
+   245→  data,
+   246→  previewMode,
+   247→}: {
+   248→  data: LandingPageData;
+   249→  previewMode: "desktop" | "mobile";
+   250→}) {
+   251→  const previewWidth = previewMode === "mobile" ? "375px" : "100%";
+   252→
+   253→  return (
+   254→    <div
+   255→      className="mx-auto bg-[#F8F7F4] overflow-y-auto overflow-x-hidden custom-scrollbar"
+   256→      style={{
+   257→        width: previewWidth,
+   258→        maxHeight: "calc(100vh - 220px)",
+   259→        minHeight: 500,
+   260→      }}
+   261→    >
+   262→      {/* Mini Header */}
+   263→      <div
+   264→        className="border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-between"
+   265→        style={{ backgroundColor: data.colors.background + "CC" }}
+   266→      >
+   267→        <div className="flex items-center gap-1.5">
+   268→          <div
+   269→            className="size-5 rounded-md flex items-center justify-center text-white text-[8px] font-bold"
+   270→            style={{ backgroundColor: data.colors.primary }}
+   271→          >
+   272→            ZV
+   273→          </div>
+   274→          <span
+   275→            className="text-[10px] font-semibold"
+   276→            style={{
+   277→              color: data.colors.textPrimary,
+   278→              fontFamily: "'Clash Display', sans-serif",
+   279→            }}
+   280→          >
+   281→            MyZipVault
+   282→          </span>
+   283→        </div>
+   284→        <div className="flex gap-1">
+   285→          <div
+   286→            className="rounded-md px-2 py-0.5 text-[8px] font-medium border"
+   287→            style={{ borderColor: "#D1D5DB", color: data.colors.textSecondary }}
+   288→          >
+   289→            Log In
+   290→          </div>
+   291→          <div
+   292→            className="rounded-md px-2 py-0.5 text-[8px] font-medium text-white"
+   293→            style={{ backgroundColor: data.colors.primary }}
+   294→          >
+   295→            Sign Up
+   296→          </div>
+   297→        </div>
+   298→      </div>
+   299→
+   300→      {/* Hero Section Preview */}
+   301→      <div
+   302→        className="px-4 py-8 text-center"
+   303→        style={{
+   304→          background: `linear-gradient(to bottom, ${data.colors.primary}15, ${data.colors.background})`,
+   305→        }}
+   306→      >
+   307→        <div
+   308→          className="inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-medium"
+   309→          style={{
+   310→            backgroundColor: data.colors.primary + "20",
+   311→            color: data.colors.primary,
+   312→          }}
+   313→        >
+   314→          ✦ Trusted by Healthcare Professionals
+   315→        </div>
+   316→        <h2
+   317→          className="mt-2 text-sm font-bold leading-tight"
+   318→          style={{
+   319→            color: data.colors.textPrimary,
+   320→            fontFamily: "'Clash Display', sans-serif",
+   321→          }}
+   322→        >
+   323→          {data.hero.candidateHeadline}{" "}
+   324→          <span
+   325→            style={{
+   326→              background: `linear-gradient(to right, ${data.colors.primary}, ${data.colors.accent})`,
+   327→              WebkitBackgroundClip: "text",
+   328→              WebkitTextFillColor: "transparent",
+   329→            }}
+   330→          >
+   331→            {data.hero.candidateGradientText}
+   332→          </span>{" "}
+   333→          with MyZipVault.
+   334→        </h2>
+   335→        <p
+   336→          className="mt-1.5 text-[8px] leading-relaxed max-w-[200px] mx-auto"
+   337→          style={{ color: data.colors.textSecondary }}
+   338→        >
+   339→          {data.hero.candidateSubheadline.slice(0, 100)}...
+   340→        </p>
+   341→        <div
+   342→          className="mt-3 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[9px] font-semibold text-white"
+   343→          style={{ backgroundColor: data.colors.primary }}
+   344→        >
+   345→          {data.hero.candidateCtaText}
+   346→        </div>
+   347→        <div className="mt-2 flex flex-wrap justify-center gap-2">
+   348→          {[data.hero.trustLine1, data.hero.trustLine2, data.hero.trustLine3].map(
+   349→            (line, i) => (
+   350→              <span
+   351→                key={i}
+   352→                className="text-[7px]"
+   353→                style={{ color: "#9CA3AF" }}
+   354→              >
+   355→                {line}
+   356→              </span>
+   357→            )
+   358→          )}
+   359→        </div>
+   360→      </div>
+   361→
+   362→      {/* Feature Cards Preview */}
+   363→      <div className="px-3 py-4" style={{ backgroundColor: "#F3F4F6" }}>
+   364→        <p
+   365→          className="text-center text-[7px] font-medium tracking-widest uppercase"
+   366→          style={{ color: data.colors.accent }}
+   367→        >
+   368→          Features
+   369→        </p>
+   370→        <p
+   371→          className="text-center text-[10px] font-bold mt-0.5"
+   372→          style={{
+   373→            color: data.colors.textPrimary,
+   374→            fontFamily: "'Clash Display', sans-serif",
+   375→          }}
+   376→        >
+   377→          Everything You Need
+   378→        </p>
+   379→        <div className="mt-2 grid grid-cols-2 gap-1.5">
+   380→          {data.featureCards.map((card, i) => (
+   381→            <div
+   382→              key={i}
+   383→              className="bg-white border border-[#E5E7EB] rounded-lg p-2"
+   384→            >
+   385→              <p
+   386→                className="text-[8px] font-semibold"
+   387→                style={{
+   388→                  color: data.colors.textPrimary,
+   389→                  fontFamily: "'Clash Display', sans-serif",
+   390→                }}
+   391→              >
+   392→                {card.heading}
+   393→              </p>
+   394→              <p
+   395→                className="mt-0.5 text-[6px] leading-relaxed"
+   396→                style={{ color: data.colors.textSecondary }}
+   397→              >
+   398→                {card.body.slice(0, 60)}...
+   399→              </p>
+   400→            </div>
+   401→          ))}
+   402→        </div>
+   403→      </div>
+   404→
+   405→      {/* Privacy Section Preview */}
+   406→      <div className="px-4 py-5 text-white" style={{ backgroundColor: data.colors.primary }}>
+   407→        <p
+   408→          className="text-center text-[10px] font-bold"
+   409→          style={{ fontFamily: "'Clash Display', sans-serif" }}
+   410→        >
+   411→          Your Vault. Your Rules.
+   412→        </p>
+   413→        <div className="mt-2 grid grid-cols-3 gap-1.5">
+   414→          {data.privacySection.map((item, i) => (
+   415→            <div key={i} className="text-center">
+   416→              <div className="size-5 rounded-full bg-white/10 mx-auto flex items-center justify-center text-[7px]">
+   417→                {item.icon.slice(0, 2)}
+   418→              </div>
+   419→              <p className="mt-1 text-[7px] font-semibold">{item.heading}</p>
+   420→              <p className="text-[6px] text-white/70 mt-0.5">
+   421→                {item.body.slice(0, 30)}...
+   422→              </p>
+   423→            </div>
+   424→          ))}
+   425→        </div>
+   426→      </div>
+   427→
+   428→      {/* How It Works Preview */}
+   429→      <div className="px-4 py-5" style={{ backgroundColor: data.colors.background }}>
+   430→        <p
+   431→          className="text-center text-[7px] font-medium tracking-widest uppercase"
+   432→          style={{ color: data.colors.accent }}
+   433→        >
+   434→          How It Works
+   435→        </p>
+   436→        <p
+   437→          className="text-center text-[10px] font-bold mt-0.5"
+   438→          style={{
+   439→            color: data.colors.textPrimary,
+   440→            fontFamily: "'Clash Display', sans-serif",
+   441→          }}
+   442→        >
+   443→          From Request to Hired in Minutes
+   444→        </p>
+   445→        <div className="mt-2 grid grid-cols-3 gap-2">
+   446→          {data.howItWorks.map((step, i) => (
+   447→            <div key={i} className="text-center">
+   448→              <div
+   449→                className="size-6 rounded-full mx-auto flex items-center justify-center text-[9px] font-bold"
+   450→                style={{
+   451→                  backgroundColor: data.colors.primary + "20",
+   452→                  color: data.colors.primary,
+   453→                  fontFamily: "'Clash Display', sans-serif",
+   454→                }}
+   455→              >
+   456→                {i + 1}
+   457→              </div>
+   458→              <p
+   459→                className="mt-1 text-[7px] font-semibold"
+   460→                style={{ color: data.colors.textPrimary }}
+   461→              >
+   462→                {step.title}
+   463→              </p>
+   464→              <p
+   465→                className="mt-0.5 text-[6px] leading-relaxed"
+   466→                style={{ color: data.colors.textSecondary }}
+   467→              >
+   468→                {step.description.slice(0, 40)}...
+   469→              </p>
+   470→            </div>
+   471→          ))}
+   472→        </div>
+   473→      </div>
+   474→
+   475→      {/* Footer Preview */}
+   476→      <div className="bg-[#111827] px-4 py-3 text-center">
+   477→        <p className="text-[7px] text-white/40">{data.footer.copyrightText}</p>
+   478→        <span className="inline-flex items-center gap-0.5 mt-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[7px] text-white/80">
+   479→          {data.footer.hipaaBadgeText}
+   480→        </span>
+   481→      </div>
+   482→    </div>
+   483→  );
+   484→}
+   485→
+   486→// ─── Section Wrapper ────────────────────────────────────────────────
+   487→function EditorSection({
+   488→  icon: Icon,
+   489→  title,
+   490→  children,
+   491→}: {
+   492→  icon: React.ElementType;
+   493→  title: string;
+   494→  children: React.ReactNode;
+   495→}) {
+   496→  return (
+   497→    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6">
+   498→      <div className="flex items-center gap-2 mb-5">
+   499→        <div className="size-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
+   500→          <Icon className="size-4 text-[#166534]" />
+   501→        </div>
+   502→        <h2
+   503→          className="text-lg font-semibold text-[#111827]"
+   504→          style={{ fontFamily: "'Clash Display', sans-serif" }}
+   505→        >
+   506→          {title}
+   507→        </h2>
+   508→      </div>
+   509→      {children}
+   510→    </div>
+   511→  );
+   512→}
+   513→
+   514→// ─── Form Field ─────────────────────────────────────────────────────
+   515→function FormField({
+   516→  label,
+   517→  children,
+   518→}: {
+   519→  label: string;
+   520→  children: React.ReactNode;
+   521→}) {
+   522→  return (
+   523→    <div className="space-y-1.5">
+   524→      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+   525→        {label}
+   526→      </Label>
+   527→      {children}
+   528→    </div>
+   529→  );
+   530→}
+   531→
+   532→// ─── Main Component ─────────────────────────────────────────────────
+   533→export default function LandingPageEditorPage() {
+   534→  const [data, setData] = useState<LandingPageData>(defaultData);
+   535→  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
+   536→    "desktop"
+   537→  );
+   538→  const [saving, setSaving] = useState(false);
+   539→  const [loading, setLoading] = useState(true);
+   540→  const [lastSaved, setLastSaved] = useState<string | null>(null);
+   541→  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+   542→  const [loadedFromServer, setLoadedFromServer] = useState(false);
+   543→
+   544→  // ── Load content from API on mount ──
+   545→  const loadContent = useCallback(async () => {
+   546→    try {
+   547→      setLoading(true);
+   548→      const res = await fetch("/api/superadmin/landing-page");
+   549→      if (res.ok) {
+   550→        const json = await res.json();
+   551→        setData(json as LandingPageData);
+   552→        setLoadedFromServer(true);
+   553→        setHasUnsavedChanges(false);
+   554→      }
+   555→    } catch {
+   556→      // Silently fail — will use default data
+   557→    } finally {
+   558→      setLoading(false);
+   559→    }
+   560→  }, []);
+   561→
+   562→  useEffect(() => {
+   563→    loadContent();
+   564→  }, [loadContent]);
+   565→
+   566→  // ── Hero helpers ──
+   567→  const updateHero = (key: keyof HeroContent, value: string) => {
+   568→    setData((prev) => ({ ...prev, hero: { ...prev.hero, [key]: value } }));
+   569→    setHasUnsavedChanges(true);
+   570→  };
+   571→
+   572→  // ── Color helpers ──
+   573→  const updateColor = (key: keyof ColorSettings, value: string) => {
+   574→    setData((prev) => ({ ...prev, colors: { ...prev.colors, [key]: value } }));
+   575→    setHasUnsavedChanges(true);
+   576→  };
+   577→
+   578→  // ── Feature card helpers ──
+   579→  const updateFeatureCard = (
+   580→    index: number,
+   581→    key: keyof FeatureCard,
+   582→    value: string
+   583→  ) => {
+   584→    setData((prev) => {
+   585→      const cards = [...prev.featureCards];
+   586→      cards[index] = { ...cards[index], [key]: value };
+   587→      return { ...prev, featureCards: cards };
+   588→    });
+   589→    setHasUnsavedChanges(true);
+   590→  };
+   591→
+   592→  // ── Privacy item helpers ──
+   593→  const updatePrivacyItem = (
+   594→    index: number,
+   595→    key: keyof PrivacyItem,
+   596→    value: string
+   597→  ) => {
+   598→    setData((prev) => {
+   599→      const items = [...prev.privacySection];
+   600→      items[index] = { ...items[index], [key]: value };
+   601→      return { ...prev, privacySection: items };
+   602→    });
+   603→    setHasUnsavedChanges(true);
+   604→  };
+   605→
+   606→  // ── How It Works helpers ──
+   607→  const updateHowItWorksStep = (
+   608→    index: number,
+   609→    key: keyof HowItWorksStep,
+   610→    value: string
+   611→  ) => {
+   612→    setData((prev) => {
+   613→      const steps = [...prev.howItWorks];
+   614→      steps[index] = { ...steps[index], [key]: value };
+   615→      return { ...prev, howItWorks: steps };
+   616→    });
+   617→    setHasUnsavedChanges(true);
+   618→  };
+   619→
+   620→  // ── Footer helpers ──
+   621→  const updateFooter = (key: keyof FooterContent, value: string) => {
+   622→    setData((prev) => ({ ...prev, footer: { ...prev.footer, [key]: value } }));
+   623→    setHasUnsavedChanges(true);
+   624→  };
+   625→
+   626→  // ── Save & Publish ──
+   627→  const handleSavePublish = async () => {
+   628→    try {
+   629→      setSaving(true);
+   630→      const res = await fetch("/api/superadmin/landing-page", {
+   631→        method: "POST",
+   632→        headers: { "Content-Type": "application/json" },
+   633→        body: JSON.stringify(data),
+   634→      });
+   635→      if (!res.ok) {
+   636→        const body = await res.json().catch(() => ({}));
+   637→        throw new Error(body.error || "Failed to save");
+   638→      }
+   639→      const result = await res.json();
+   640→      setLastSaved(result.savedAt || new Date().toISOString());
+   641→      setHasUnsavedChanges(false);
+   642→      toast.success("Landing page published successfully!");
+   643→    } catch (err) {
+   644→      const message =
+   645→        err instanceof Error ? err.message : "Something went wrong";
+   646→      toast.error("Failed to publish", { description: message });
+   647→    } finally {
+   648→      setSaving(false);
+   649→    }
+   650→  };
+   651→
+   652→  // ── Discard Changes ──
+   653→  const handleDiscard = async () => {
+   654→    if (loadedFromServer) {
+   655→      // Reload from server
+   656→      await loadContent();
+   657→    } else {
+   658→      setData(defaultData);
+   659→    }
+   660→    setHasUnsavedChanges(false);
+   661→    toast.info("Changes discarded");
+   662→  };
+   663→
+   664→  // Format last saved time
+   665→  const formatLastSaved = (isoStr: string) => {
+   666→    const date = new Date(isoStr);
+   667→    return date.toLocaleTimeString("en-US", {
+   668→      hour: "numeric",
+   669→      minute: "2-digit",
+   670→      hour12: true,
+   671→    });
+   672→  };
+   673→
+   674→  if (loading) {
+   675→    return (
+   676→      <div className="space-y-6">
+   677→        <div className="flex items-center justify-between">
+   678→          <div>
+   679→            <div className="h-8 w-64 bg-gray-100 rounded-lg animate-pulse" />
+   680→            <div className="h-4 w-96 bg-gray-50 rounded mt-2 animate-pulse" />
+   681→          </div>
+   682→          <div className="flex items-center gap-2">
+   683→            <div className="h-10 w-36 bg-gray-100 rounded-xl animate-pulse" />
+   684→            <div className="h-10 w-36 bg-gray-100 rounded-xl animate-pulse" />
+   685→          </div>
+   686→        </div>
+   687→        <div className="h-96 bg-gray-50 rounded-2xl animate-pulse" />
+   688→      </div>
+   689→    );
+   690→  }
+   691→
+   692→  return (
+   693→    <div className="space-y-6">
+   694→      {/* Top Bar */}
+   695→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   696→        <div>
+   697→          <h1
+   698→            className="text-2xl font-bold tracking-tight text-[#111827]"
+   699→            style={{ fontFamily: "'Clash Display', sans-serif" }}
+   700→          >
+   701→            Landing Page Editor
+   702→          </h1>
+   703→          <p className="text-sm text-[#6B7280] mt-0.5">
+   704→            Edit and preview your landing page content in real-time.
+   705→          </p>
+   706→        </div>
+   707→        <div className="flex items-center gap-2">
+   708→          {/* Save status indicator */}
+   709→          <div className="flex items-center gap-1.5 text-xs">
+   710→            {saving ? (
+   711→              <>
+   712→                <Loader2 className="size-3.5 animate-spin text-[#0D9488]" />
+   713→                <span className="text-[#6B7280]">Saving…</span>
+   714→              </>
+   715→            ) : hasUnsavedChanges ? (
+   716→              <>
+   717→                <div className="size-2 rounded-full bg-amber-400" />
+   718→                <span className="text-amber-600 font-medium">Unsaved changes</span>
+   719→              </>
+   720→            ) : lastSaved ? (
+   721→              <>
+   722→                <CheckCircle2 className="size-3.5 text-emerald-500" />
+   723→                <span className="text-emerald-600">
+   724→                  Saved at {formatLastSaved(lastSaved)}
+   725→                </span>
+   726→              </>
+   727→            ) : loadedFromServer ? (
+   728→              <>
+   729→                <CheckCircle2 className="size-3.5 text-emerald-500" />
+   730→                <span className="text-emerald-600">Loaded from server</span>
+   731→              </>
+   732→            ) : null}
+   733→          </div>
+   734→          <Button
+   735→            variant="outline"
+   736→            onClick={handleDiscard}
+   737→            className="border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#111827]"
+   738→          >
+   739→            <RotateCcw className="size-4 mr-1.5" />
+   740→            Discard Changes
+   741→          </Button>
+   742→          <Button
+   743→            onClick={handleSavePublish}
+   744→            disabled={saving}
+   745→            className="bg-[#166534] text-white rounded-xl hover:bg-[#14532D]"
+   746→          >
+   747→            <Save className="size-4 mr-1.5" />
+   748→            {saving ? "Publishing..." : "Save & Publish"}
+   749→          </Button>
+   750→        </div>
+   751→      </div>
+   752→
+   753→      {/* Split View */}
+   754→      <div className="flex flex-col lg:flex-row gap-6">
+   755→        {/* Left: Editor Form (60%) */}
+   756→        <div className="w-full lg:w-[60%] space-y-6">
+   757→          {/* Section 1: Hero Content */}
+   758→          <EditorSection icon={Type} title="Hero Content">
+   759→            <div className="space-y-4">
+   760→              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   761→                <FormField label="Candidate Headline">
+   762→                  <Input
+   763→                    value={data.hero.candidateHeadline}
+   764→                    onChange={(e) =>
+   765→                      updateHero("candidateHeadline", e.target.value)
+   766→                    }
+   767→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   768→                  />
+   769→                </FormField>
+   770→                <FormField label="Candidate Gradient Text">
+   771→                  <Input
+   772→                    value={data.hero.candidateGradientText}
+   773→                    onChange={(e) =>
+   774→                      updateHero("candidateGradientText", e.target.value)
+   775→                    }
+   776→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   777→                  />
+   778→                </FormField>
+   779→              </div>
+   780→              <FormField label="Candidate Subheadline">
+   781→                <Textarea
+   782→                  value={data.hero.candidateSubheadline}
+   783→                  onChange={(e) =>
+   784→                    updateHero("candidateSubheadline", e.target.value)
+   785→                  }
+   786→                  rows={3}
+   787→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+   788→                />
+   789→              </FormField>
+   790→              <FormField label="Candidate CTA Button Text">
+   791→                <Input
+   792→                  value={data.hero.candidateCtaText}
+   793→                  onChange={(e) =>
+   794→                    updateHero("candidateCtaText", e.target.value)
+   795→                  }
+   796→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   797→                />
+   798→              </FormField>
+   799→
+   800→              <div className="border-t border-[#E5E7EB] pt-4 mt-4" />
+   801→
+   802→              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   803→                <FormField label="Recruiter Headline">
+   804→                  <Input
+   805→                    value={data.hero.recruiterHeadline}
+   806→                    onChange={(e) =>
+   807→                      updateHero("recruiterHeadline", e.target.value)
+   808→                    }
+   809→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   810→                  />
+   811→                </FormField>
+   812→                <FormField label="Recruiter Gradient Text">
+   813→                  <Input
+   814→                    value={data.hero.recruiterGradientText}
+   815→                    onChange={(e) =>
+   816→                      updateHero("recruiterGradientText", e.target.value)
+   817→                    }
+   818→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   819→                  />
+   820→                </FormField>
+   821→              </div>
+   822→              <FormField label="Recruiter Subheadline">
+   823→                <Textarea
+   824→                  value={data.hero.recruiterSubheadline}
+   825→                  onChange={(e) =>
+   826→                    updateHero("recruiterSubheadline", e.target.value)
+   827→                  }
+   828→                  rows={3}
+   829→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+   830→                />
+   831→              </FormField>
+   832→              <FormField label="Recruiter CTA Button Text">
+   833→                <Input
+   834→                  value={data.hero.recruiterCtaText}
+   835→                  onChange={(e) =>
+   836→                    updateHero("recruiterCtaText", e.target.value)
+   837→                  }
+   838→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   839→                />
+   840→              </FormField>
+   841→
+   842→              <div className="border-t border-[#E5E7EB] pt-4 mt-4" />
+   843→
+   844→              <p className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+   845→                Trust Line Items
+   846→              </p>
+   847→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   848→                <FormField label="Line 1">
+   849→                  <Input
+   850→                    value={data.hero.trustLine1}
+   851→                    onChange={(e) => updateHero("trustLine1", e.target.value)}
+   852→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   853→                  />
+   854→                </FormField>
+   855→                <FormField label="Line 2">
+   856→                  <Input
+   857→                    value={data.hero.trustLine2}
+   858→                    onChange={(e) => updateHero("trustLine2", e.target.value)}
+   859→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   860→                  />
+   861→                </FormField>
+   862→                <FormField label="Line 3">
+   863→                  <Input
+   864→                    value={data.hero.trustLine3}
+   865→                    onChange={(e) => updateHero("trustLine3", e.target.value)}
+   866→                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   867→                  />
+   868→                </FormField>
+   869→              </div>
+   870→            </div>
+   871→          </EditorSection>
+   872→
+   873→          {/* Section 2: Colors */}
+   874→          <EditorSection icon={Palette} title="Colors">
+   875→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   876→              <ColorPickerField
+   877→                label="Primary"
+   878→                value={data.colors.primary}
+   879→                onChange={(val) => updateColor("primary", val)}
+   880→              />
+   881→              <ColorPickerField
+   882→                label="Accent"
+   883→                value={data.colors.accent}
+   884→                onChange={(val) => updateColor("accent", val)}
+   885→              />
+   886→              <ColorPickerField
+   887→                label="Background"
+   888→                value={data.colors.background}
+   889→                onChange={(val) => updateColor("background", val)}
+   890→              />
+   891→              <ColorPickerField
+   892→                label="Text Primary"
+   893→                value={data.colors.textPrimary}
+   894→                onChange={(val) => updateColor("textPrimary", val)}
+   895→              />
+   896→              <ColorPickerField
+   897→                label="Text Secondary"
+   898→                value={data.colors.textSecondary}
+   899→                onChange={(val) => updateColor("textSecondary", val)}
+   900→              />
+   901→            </div>
+   902→          </EditorSection>
+   903→
+   904→          {/* Section 3: Feature Cards */}
+   905→          <EditorSection icon={LayoutGrid} title="Feature Cards">
+   906→            <div className="space-y-6">
+   907→              {data.featureCards.map((card, i) => (
+   908→                <div key={i}>
+   909→                  <p
+   910→                    className="text-xs font-semibold text-[#111827] mb-3"
+   911→                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+   912→                  >
+   913→                    Card {i + 1}
+   914→                  </p>
+   915→                  <div className="space-y-3">
+   916→                    <FormField label="Icon">
+   917→                      <Select
+   918→                        value={card.icon}
+   919→                        onValueChange={(val) =>
+   920→                          updateFeatureCard(i, "icon", val)
+   921→                        }
+   922→                      >
+   923→                        <SelectTrigger className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]">
+   924→                          <SelectValue />
+   925→                        </SelectTrigger>
+   926→                        <SelectContent className="rounded-xl border-[#E5E7EB] max-h-48 overflow-y-auto">
+   927→                          {iconOptions.map((icon) => (
+   928→                            <SelectItem key={icon} value={icon}>
+   929→                              {icon}
+   930→                            </SelectItem>
+   931→                          ))}
+   932→                        </SelectContent>
+   933→                      </Select>
+   934→                    </FormField>
+   935→                    <FormField label="Heading">
+   936→                      <Input
+   937→                        value={card.heading}
+   938→                        onChange={(e) =>
+   939→                          updateFeatureCard(i, "heading", e.target.value)
+   940→                        }
+   941→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+   942→                      />
+   943→                    </FormField>
+   944→                    <FormField label="Body Text">
+   945→                      <Textarea
+   946→                        value={card.body}
+   947→                        onChange={(e) =>
+   948→                          updateFeatureCard(i, "body", e.target.value)
+   949→                        }
+   950→                        rows={3}
+   951→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+   952→                      />
+   953→                    </FormField>
+   954→                  </div>
+   955→                  {i < data.featureCards.length - 1 && (
+   956→                    <div className="border-t border-[#E5E7EB] mt-6" />
+   957→                  )}
+   958→                </div>
+   959→              ))}
+   960→            </div>
+   961→          </EditorSection>
+   962→
+   963→          {/* Section 4: Privacy Section */}
+   964→          <EditorSection icon={Shield} title="Privacy Section">
+   965→            <div className="space-y-6">
+   966→              {data.privacySection.map((item, i) => (
+   967→                <div key={i}>
+   968→                  <p
+   969→                    className="text-xs font-semibold text-[#111827] mb-3"
+   970→                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+   971→                  >
+   972→                    Item {i + 1}
+   973→                  </p>
+   974→                  <div className="space-y-3">
+   975→                    <FormField label="Icon">
+   976→                      <Select
+   977→                        value={item.icon}
+   978→                        onValueChange={(val) =>
+   979→                          updatePrivacyItem(i, "icon", val)
+   980→                        }
+   981→                      >
+   982→                        <SelectTrigger className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]">
+   983→                          <SelectValue />
+   984→                        </SelectTrigger>
+   985→                        <SelectContent className="rounded-xl border-[#E5E7EB] max-h-48 overflow-y-auto">
+   986→                          {iconOptions.map((icon) => (
+   987→                            <SelectItem key={icon} value={icon}>
+   988→                              {icon}
+   989→                            </SelectItem>
+   990→                          ))}
+   991→                        </SelectContent>
+   992→                      </Select>
+   993→                    </FormField>
+   994→                    <FormField label="Heading">
+   995→                      <Input
+   996→                        value={item.heading}
+   997→                        onChange={(e) =>
+   998→                          updatePrivacyItem(i, "heading", e.target.value)
+   999→                        }
+  1000→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+  1001→                      />
+  1002→                    </FormField>
+  1003→                    <FormField label="Body Text">
+  1004→                      <Textarea
+  1005→                        value={item.body}
+  1006→                        onChange={(e) =>
+  1007→                          updatePrivacyItem(i, "body", e.target.value)
+  1008→                        }
+  1009→                        rows={2}
+  1010→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+  1011→                      />
+  1012→                    </FormField>
+  1013→                  </div>
+  1014→                  {i < data.privacySection.length - 1 && (
+  1015→                    <div className="border-t border-[#E5E7EB] mt-6" />
+  1016→                  )}
+  1017→                </div>
+  1018→              ))}
+  1019→            </div>
+  1020→          </EditorSection>
+  1021→
+  1022→          {/* Section 5: How It Works */}
+  1023→          <EditorSection icon={ListOrdered} title="How It Works">
+  1024→            <div className="space-y-6">
+  1025→              {data.howItWorks.map((step, i) => (
+  1026→                <div key={i}>
+  1027→                  <p
+  1028→                    className="text-xs font-semibold text-[#111827] mb-3"
+  1029→                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+  1030→                  >
+  1031→                    Step {i + 1}
+  1032→                  </p>
+  1033→                  <div className="space-y-3">
+  1034→                    <FormField label="Title">
+  1035→                      <Input
+  1036→                        value={step.title}
+  1037→                        onChange={(e) =>
+  1038→                          updateHowItWorksStep(i, "title", e.target.value)
+  1039→                        }
+  1040→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+  1041→                      />
+  1042→                    </FormField>
+  1043→                    <FormField label="Description">
+  1044→                      <Textarea
+  1045→                        value={step.description}
+  1046→                        onChange={(e) =>
+  1047→                          updateHowItWorksStep(i, "description", e.target.value)
+  1048→                        }
+  1049→                        rows={3}
+  1050→                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+  1051→                      />
+  1052→                    </FormField>
+  1053→                  </div>
+  1054→                  {i < data.howItWorks.length - 1 && (
+  1055→                    <div className="border-t border-[#E5E7EB] mt-6" />
+  1056→                  )}
+  1057→                </div>
+  1058→              ))}
+  1059→            </div>
+  1060→          </EditorSection>
+  1061→
+  1062→          {/* Section 6: Footer */}
+  1063→          <EditorSection icon={PanelBottom} title="Footer">
+  1064→            <div className="space-y-4">
+  1065→              <FormField label="Copyright Text">
+  1066→                <Input
+  1067→                  value={data.footer.copyrightText}
+  1068→                  onChange={(e) => updateFooter("copyrightText", e.target.value)}
+  1069→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+  1070→                />
+  1071→              </FormField>
+  1072→              <FormField label="HIPAA Badge Text">
+  1073→                <Input
+  1074→                  value={data.footer.hipaaBadgeText}
+  1075→                  onChange={(e) => updateFooter("hipaaBadgeText", e.target.value)}
+  1076→                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+  1077→                />
+  1078→              </FormField>
+  1079→            </div>
+  1080→          </EditorSection>
+  1081→        </div>
+  1082→
+  1083→        {/* Right: Live Preview (40%) */}
+  1084→        <div className="w-full lg:w-[40%]">
+  1085→          <div className="sticky top-24">
+  1086→            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
+  1087→              <div className="flex items-center justify-between mb-4">
+  1088→                <h3
+  1089→                  className="text-sm font-semibold text-[#111827]"
+  1090→                  style={{ fontFamily: "'Clash Display', sans-serif" }}
+  1091→                >
+  1092→                  Live Preview
+  1093→                </h3>
+  1094→                <div className="flex items-center rounded-lg border border-[#E5E7EB] p-0.5">
+  1095→                  <button
+  1096→                    onClick={() => setPreviewMode("desktop")}
+  1097→                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+  1098→                      previewMode === "desktop"
+  1099→                        ? "bg-[#DCFCE7] text-[#166534]"
+  1100→                        : "text-[#6B7280] hover:text-[#111827]"
+  1101→                    }`}
+  1102→                  >
+  1103→                    <Monitor className="size-3.5" />
+  1104→                    Desktop
+  1105→                  </button>
+  1106→                  <button
+  1107→                    onClick={() => setPreviewMode("mobile")}
+  1108→                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+  1109→                      previewMode === "mobile"
+  1110→                        ? "bg-[#DCFCE7] text-[#166534]"
+  1111→                        : "text-[#6B7280] hover:text-[#111827]"
+  1112→                    }`}
+  1113→                  >
+  1114→                    <Smartphone className="size-3.5" />
+  1115→                    Mobile
+  1116→                  </button>
+  1117→                </div>
+  1118→              </div>
+  1119→
+  1120→              {/* Preview Container */}
+  1121→              <div
+  1122→                className="rounded-xl border border-[#E5E7EB] overflow-hidden flex justify-center"
+  1123→                style={{
+  1124→                  backgroundColor: "#F3F4F6",
+  1125→                  transition: "all 0.3s ease",
+  1126→                }}
+  1127→              >
+  1128→                <LivePreview data={data} previewMode={previewMode} />
+  1129→              </div>
+  1130→
+  1131→              <p className="mt-3 text-[10px] text-[#9CA3AF] text-center">
+  1132→                Preview updates in real-time as you edit
+  1133→              </p>
+  1134→            </div>
+  1135→          </div>
+  1136→        </div>
+  1137→      </div>
+  1138→    </div>
+  1139→  );
+  1140→}
+  1141→

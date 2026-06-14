@@ -1,0 +1,598 @@
+     1→import { db } from "@/lib/db";
+     2→
+     3→const BREVO_API_KEY = process.env.BREVO_API_KEY;
+     4→const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
+     5→const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+     6→const APP_URL = process.env.NEXTAUTH_URL || "https://myzipvault.com";
+     7→
+     8→interface VaultSignEmailParams {
+     9→  to: string;
+    10→  toName?: string;
+    11→  subject: string;
+    12→  htmlContent: string;
+    13→}
+    14→
+    15→/**
+    16→ * Send a VaultSign email directly (bypassing the template system for VaultSign-specific emails).
+    17→ */
+    18→async function sendVaultSignEmail({ to, toName, subject, htmlContent }: VaultSignEmailParams): Promise<boolean> {
+    19→  if (BREVO_API_KEY) {
+    20→    try {
+    21→      const response = await fetch(BREVO_API_URL, {
+    22→        method: "POST",
+    23→        headers: {
+    24→          "api-key": BREVO_API_KEY,
+    25→          "Content-Type": "application/json",
+    26→        },
+    27→        body: JSON.stringify({
+    28→          sender: { email: BREVO_SENDER_EMAIL, name: "VaultSign by MyZipVault" },
+    29→          to: [{ email: to, name: toName || to.split("@")[0] }],
+    30→          subject,
+    31→          htmlContent,
+    32→        }),
+    33→      });
+    34→
+    35→      if (response.ok) {
+    36→        console.log(`[VAULTSIGN-EMAIL] Sent to ${to}: ${subject}`);
+    37→        return true;
+    38→      } else {
+    39→        const error = await response.text();
+    40→        console.error(`[VAULTSIGN-EMAIL] Brevo API error: ${error}`);
+    41→      }
+    42→    } catch (error) {
+    43→      console.error("[VAULTSIGN-EMAIL] Brevo API call failed:", error);
+    44→    }
+    45→  }
+    46→
+    47→  // Fallback: log to console
+    48→  console.log(`[VAULTSIGN-EMAIL] To: ${to}`);
+    49→  console.log(`[VAULTSIGN-EMAIL] Subject: ${subject}`);
+    50→  console.log(`[VAULTSIGN-EMAIL] Body: ${htmlContent.substring(0, 300)}...`);
+    51→  return true;
+    52→}
+    53→
+    54→// ─── Common Template Wrapper ─────────────────────────────────────────────────
+    55→
+    56→const FONT_STACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    57→
+    58→/**
+    59→ * Build a polished HTML email wrapper with consistent branding.
+    60→ * @param bodyContent  The inner HTML for the email body card.
+    61→ * @param accentColor  The top-bar / accent color (default green).
+    62→ * @param footerVariant  Optional variant: "default" | "signer" — signer footers omit dashboard links.
+    63→ */
+    64→function buildEmailHtml(bodyContent: string, accentColor = "#166534", footerVariant: "default" | "signer" = "default"): string {
+    65→  const contactLink = footerVariant === "signer"
+    66→    ? `<a href="mailto:support@myzipvault.com" style="color: #0D9488; text-decoration: underline;">contact the sender</a>`
+    67→    : `<a href="mailto:support@myzipvault.com" style="color: #0D9488; text-decoration: underline;">contact support</a>`;
+    68→
+    69→  return `
+    70→<!DOCTYPE html>
+    71→<html lang="en">
+    72→<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+    73→<body style="margin:0; padding:0; background-color:#F3F4F6; font-family:${FONT_STACK};">
+    74→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F3F4F6; padding:32px 16px;">
+    75→    <tr>
+    76→      <td align="center">
+    77→        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px; width:100%;">
+    78→
+    79→          <!-- Gradient Top Bar -->
+    80→          <tr>
+    81→            <td style="background:linear-gradient(135deg, #166534 0%, #0D9488 100%); border-radius:12px 12px 0 0; height:6px; font-size:0; line-height:0;">&nbsp;</td>
+    82→          </tr>
+    83→
+    84→          <!-- Header -->
+    85→          <tr>
+    86→            <td style="background-color:#FFFFFF; padding:28px 40px 20px 40px; text-align:center; border-bottom:1px solid #E5E7EB;">
+    87→              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    88→                <tr>
+    89→                  <td align="center">
+    90→                    <span style="font-size:26px; font-weight:800; color:${accentColor}; letter-spacing:-0.5px;">&#x1F510; VaultSign</span>
+    91→                    <br>
+    92→                    <span style="font-size:11px; color:#6B7280; letter-spacing:1px; text-transform:uppercase;">by MyZipVault</span>
+    93→                  </td>
+    94→                </tr>
+    95→              </table>
+    96→            </td>
+    97→          </tr>
+    98→
+    99→          <!-- Body Card -->
+   100→          <tr>
+   101→            <td style="background-color:#FFFFFF; padding:36px 40px 32px 40px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+   102→              ${bodyContent}
+   103→            </td>
+   104→          </tr>
+   105→
+   106→          <!-- Accent stripe before footer -->
+   107→          <tr>
+   108→            <td style="background-color:#FFFFFF; padding:0 40px;">
+   109→              <div style="height:1px; background:linear-gradient(90deg, ${accentColor}, #0D9488); border-radius:1px;">&nbsp;</div>
+   110→            </td>
+   111→          </tr>
+   112→
+   113→          <!-- Footer -->
+   114→          <tr>
+   115→            <td style="background-color:#FFFFFF; padding:24px 40px 32px 40px; border-radius:0 0 12px 12px; text-align:center;">
+   116→              <p style="margin:0 0 8px 0; font-size:12px; color:#6B7280; line-height:1.5;">
+   117→                This email was sent by <strong style="color:#374151;">VaultSign</strong>, a product of <strong style="color:#374151;">MyZipVault</strong>.
+   118→              </p>
+   119→              <p style="margin:0 0 8px 0; font-size:11px; color:#9CA3AF; line-height:1.5;">
+   120→                Electronic signatures are legally binding under the ESIGN Act and UETA.
+   121→              </p>
+   122→              <p style="margin:0; font-size:11px; color:#9CA3AF; line-height:1.5;">
+   123→                Questions? ${contactLink}
+   124→              </p>
+   125→            </td>
+   126→          </tr>
+   127→
+   128→        </table>
+   129→      </td>
+   130→    </tr>
+   131→  </table>
+   132→</body>
+   133→</html>`;
+   134→}
+   135→
+   136→// ─── VML Button Helper (Outlook Fallback) ────────────────────────────────────
+   137→
+   138→function vmlButton(href: string, label: string, bgColor: string): string {
+   139→  return `
+   140→  <!--[if mso]>
+   141→  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:44px;v-text-anchor:middle;width:240px;" arcsize="18%" strokecolor="${bgColor}" fillcolor="${bgColor}">
+   142→    <w:anchorlock/>
+   143→    <center style="color:#ffffff;font-family:${FONT_STACK};font-size:16px;font-weight:bold;">${label}</center>
+   144→  </v:roundrect>
+   145→  <![endif]-->
+   146→  <!--[if !mso]><!-->
+   147→  <a href="${href}" style="display:inline-block; background-color:${bgColor}; color:#FFFFFF; padding:12px 36px; border-radius:8px; text-decoration:none; font-size:16px; font-weight:600; font-family:${FONT_STACK}; border:2px solid ${bgColor}; mso-hide:all;">${label}</a>
+   148→  <!--<![endif]-->`;
+   149→}
+   150→
+   151→// ─── Expiry Urgency Helper ───────────────────────────────────────────────────
+   152→
+   153→function expiryBlock(expiryDate?: string): string {
+   154→  if (!expiryDate) return "";
+   155→
+   156→  let daysLeft = Infinity;
+   157→  try {
+   158→    const expiry = new Date(expiryDate);
+   159→    const now = new Date();
+   160→    daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+   161→  } catch {
+   162→    // keep Infinity
+   163→  }
+   164→
+   165→  const isUrgent = daysLeft <= 3;
+   166→  const isWarning = daysLeft <= 7 && daysLeft > 3;
+   167→
+   168→  const bg = isUrgent ? "#FEF2F2" : isWarning ? "#FFFBEB" : "#F8F7F4";
+   169→  const border = isUrgent ? "#DC2626" : isWarning ? "#D97706" : "#E5E7EB";
+   170→  const color = isUrgent ? "#DC2626" : isWarning ? "#D97706" : "#6B7280";
+   171→  const icon = isUrgent ? "&#x26A0;&#xFE0F;" : isWarning ? "&#x23F0;" : "&#x1F4C5;";
+   172→  const label = isUrgent
+   173→    ? `Expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — Action required!`
+   174→    : isWarning
+   175→      ? `Expires in ${daysLeft} days`
+   176→      : `Expires on ${expiryDate}`;
+   177→
+   178→  return `
+   179→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;">
+   180→    <tr>
+   181→      <td style="background-color:${bg}; border:1px solid ${border}; border-radius:8px; padding:12px 16px; text-align:center;">
+   182→        <span style="font-size:13px; color:${color}; font-family:${FONT_STACK};">${icon} ${label}</span>
+   183→      </td>
+   184→    </tr>
+   185→  </table>`;
+   186→}
+   187→
+   188→// ─── 1. Document Sent Email ──────────────────────────────────────────────────
+   189→
+   190→export async function sendDocumentSentEmail(params: {
+   191→  signerName: string;
+   192→  signerEmail: string;
+   193→  documentName: string;
+   194→  senderName: string;
+   195→  organizationName: string;
+   196→  signingLink: string;
+   197→  personalMessage?: string;
+   198→  expiryDate?: string;
+   199→}): Promise<boolean> {
+   200→  const messageSection = params.personalMessage
+   201→    ? `
+   202→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   203→    <tr>
+   204→      <td style="background-color:#F0FDF4; border-left:4px solid #166534; border-radius:0 8px 8px 0; padding:16px 20px;">
+   205→        <p style="margin:0 0 6px 0; font-size:13px; color:#166534; font-weight:600; font-family:${FONT_STACK};">Message from ${params.senderName}:</p>
+   206→        <p style="margin:0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK}; font-style:italic;">"${params.personalMessage}"</p>
+   207→      </td>
+   208→    </tr>
+   209→  </table>`
+   210→    : "";
+   211→
+   212→  const body = `
+   213→  <!-- Green document icon header -->
+   214→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   215→    <tr>
+   216→      <td align="center" style="padding-bottom:8px;">
+   217→        <div style="width:56px; height:56px; background-color:#DCFCE7; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">
+   218→          <span style="font-size:28px; line-height:1;">&#x1F4C4;</span>
+   219→        </div>
+   220→      </td>
+   221→    </tr>
+   222→  </table>
+   223→
+   224→  <h2 style="margin:0 0 4px 0; font-size:22px; font-weight:700; color:#111827; text-align:center; font-family:${FONT_STACK};">You've been asked to sign</h2>
+   225→  <p style="margin:0 0 20px 0; font-size:14px; color:#6B7280; text-align:center; font-family:${FONT_STACK};">Review and sign your document securely</p>
+   226→
+   227→  <p style="margin:0 0 12px 0; font-size:15px; color:#111827; font-family:${FONT_STACK};">Hello ${params.signerName},</p>
+   228→  <p style="margin:0 0 20px 0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};"><strong style="color:#111827;">${params.senderName}</strong> from <strong style="color:#111827;">${params.organizationName}</strong> has sent you a document that requires your signature.</p>
+   229→
+   230→  <!-- Document info card -->
+   231→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   232→    <tr>
+   233→      <td style="background-color:#F8F7F4; border:1px solid #E5E7EB; border-radius:10px; padding:16px 20px;">
+   234→        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   235→          <tr>
+   236→            <td width="36" style="vertical-align:middle;">
+   237→              <span style="font-size:22px;">&#x1F4C4;</span>
+   238→            </td>
+   239→            <td style="vertical-align:middle; padding-left:12px;">
+   240→              <p style="margin:0; font-size:16px; font-weight:600; color:#166534; font-family:${FONT_STACK};">${params.documentName}</p>
+   241→              <p style="margin:4px 0 0 0; font-size:12px; color:#6B7280; font-family:${FONT_STACK};">Signature requested</p>
+   242→            </td>
+   243→          </tr>
+   244→        </table>
+   245→      </td>
+   246→    </tr>
+   247→  </table>
+   248→
+   249→  ${messageSection}
+   250→  ${expiryBlock(params.expiryDate)}
+   251→
+   252→  <!-- CTA Button -->
+   253→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0;">
+   254→    <tr>
+   255→      <td align="center">
+   256→        ${vmlButton(params.signingLink, "Review &amp; Sign Document", "#166534")}
+   257→      </td>
+   258→    </tr>
+   259→  </table>
+   260→
+   261→  <p style="margin:16px 0 0 0; font-size:12px; color:#6B7280; text-align:center; line-height:1.5; font-family:${FONT_STACK};">
+   262→    If the button doesn't work, copy and paste this link into your browser:<br>
+   263→    <a href="${params.signingLink}" style="color:#0D9488; word-break:break-all; text-decoration:underline;">${params.signingLink}</a>
+   264→  </p>`;
+   265→
+   266→  const html = buildEmailHtml(body, "#166534", "signer");
+   267→
+   268→  return sendVaultSignEmail({
+   269→    to: params.signerEmail,
+   270→    toName: params.signerName,
+   271→    subject: `${params.senderName} sent you a document to sign — ${params.documentName}`,
+   272→    htmlContent: html,
+   273→  });
+   274→}
+   275→
+   276→// ─── 2. Reminder Email ───────────────────────────────────────────────────────
+   277→
+   278→export async function sendReminderEmail(params: {
+   279→  signerName: string;
+   280→  signerEmail: string;
+   281→  documentName: string;
+   282→  senderName: string;
+   283→  organizationName: string;
+   284→  signingLink: string;
+   285→  reminderType: "auto" | "manual";
+   286→  expiryDate?: string;
+   287→}): Promise<boolean> {
+   288→  const isAuto = params.reminderType === "auto";
+   289→
+   290→  const badgeLabel = isAuto ? "AUTOMATED REMINDER" : "MANUAL REMINDER";
+   291→  const badgeBg = isAuto ? "#FEF3C7" : "#FFEDD5";
+   292→  const badgeColor = isAuto ? "#92400E" : "#9A3412";
+   293→  const badgeBorder = isAuto ? "#F59E0B" : "#FB923C";
+   294→  const introText = isAuto
+   295→    ? `This is an automated reminder that you still have a document waiting for your signature.`
+   296→    : `<strong style="color:#111827;">${params.senderName}</strong> has asked us to remind you about a document that still needs your signature.`;
+   297→
+   298→  const body = `
+   299→  <!-- Clock icon header -->
+   300→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   301→    <tr>
+   302→      <td align="center" style="padding-bottom:8px;">
+   303→        <div style="width:56px; height:56px; background-color:#FEF3C7; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">
+   304→          <span style="font-size:28px; line-height:1;">&#x23F0;</span>
+   305→        </div>
+   306→      </td>
+   307→    </tr>
+   308→  </table>
+   309→
+   310→  <!-- Reminder badge -->
+   311→  <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 12px auto;">
+   312→    <tr>
+   313→      <td style="background-color:${badgeBg}; border:1px solid ${badgeBorder}; border-radius:20px; padding:4px 16px; text-align:center;">
+   314→        <span style="font-size:11px; font-weight:700; color:${badgeColor}; letter-spacing:0.5px; font-family:${FONT_STACK};">${badgeLabel}</span>
+   315→      </td>
+   316→    </tr>
+   317→  </table>
+   318→
+   319→  <h2 style="margin:0 0 4px 0; font-size:22px; font-weight:700; color:#111827; text-align:center; font-family:${FONT_STACK};">Don't forget to sign</h2>
+   320→  <p style="margin:0 0 20px 0; font-size:14px; color:#6B7280; text-align:center; font-family:${FONT_STACK};">Your signature is still needed</p>
+   321→
+   322→  <p style="margin:0 0 12px 0; font-size:15px; color:#111827; font-family:${FONT_STACK};">Hello ${params.signerName},</p>
+   323→  <p style="margin:0 0 20px 0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};">${introText}</p>
+   324→
+   325→  <!-- Document info card -->
+   326→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   327→    <tr>
+   328→      <td style="background-color:#F8F7F4; border:1px solid #E5E7EB; border-radius:10px; padding:16px 20px;">
+   329→        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   330→          <tr>
+   331→            <td width="36" style="vertical-align:middle;">
+   332→              <span style="font-size:22px;">&#x1F4C4;</span>
+   333→            </td>
+   334→            <td style="vertical-align:middle; padding-left:12px;">
+   335→              <p style="margin:0; font-size:16px; font-weight:600; color:#166534; font-family:${FONT_STACK};">${params.documentName}</p>
+   336→              <p style="margin:4px 0 0 0; font-size:12px; color:#6B7280; font-family:${FONT_STACK};">Awaiting your signature</p>
+   337→            </td>
+   338→          </tr>
+   339→        </table>
+   340→      </td>
+   341→    </tr>
+   342→  </table>
+   343→
+   344→  ${expiryBlock(params.expiryDate)}
+   345→
+   346→  <!-- CTA Button — slightly different shade for reminders -->
+   347→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0;">
+   348→    <tr>
+   349→      <td align="center">
+   350→        ${vmlButton(params.signingLink, "Sign Now", "#15803D")}
+   351→      </td>
+   352→    </tr>
+   353→  </table>
+   354→
+   355→  <p style="margin:16px 0 0 0; font-size:12px; color:#6B7280; text-align:center; line-height:1.5; font-family:${FONT_STACK};">
+   356→    If the button doesn't work, copy and paste this link into your browser:<br>
+   357→    <a href="${params.signingLink}" style="color:#0D9488; word-break:break-all; text-decoration:underline;">${params.signingLink}</a>
+   358→  </p>`;
+   359→
+   360→  const html = buildEmailHtml(body, "#D97706", "signer");
+   361→
+   362→  return sendVaultSignEmail({
+   363→    to: params.signerEmail,
+   364→    toName: params.signerName,
+   365→    subject: `Reminder: ${params.documentName} is waiting for your signature`,
+   366→    htmlContent: html,
+   367→  });
+   368→}
+   369→
+   370→// ─── 3. Document Completed Email ─────────────────────────────────────────────
+   371→
+   372→export async function sendDocumentCompletedEmail(params: {
+   373→  recipientEmail: string;
+   374→  recipientName: string;
+   375→  documentName: string;
+   376→  organizationName: string;
+   377→  downloadLink?: string;
+   378→}): Promise<boolean> {
+   379→  const completionDate = new Date().toLocaleDateString("en-US", {
+   380→    year: "numeric",
+   381→    month: "long",
+   382→    day: "numeric",
+   383→  });
+   384→  const completionTime = new Date().toLocaleTimeString("en-US", {
+   385→    hour: "2-digit",
+   386→    minute: "2-digit",
+   387→  });
+   388→  const hashRef = `VS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+   389→
+   390→  const downloadSection = params.downloadLink
+   391→    ? `
+   392→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;">
+   393→    <tr>
+   394→      <td align="center">
+   395→        ${vmlButton(params.downloadLink, "Download Signed Document", "#166534")}
+   396→      </td>
+   397→    </tr>
+   398→  </table>`
+   399→    : "";
+   400→
+   401→  const body = `
+   402→  <!-- Celebration checkmark header -->
+   403→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   404→    <tr>
+   405→      <td align="center" style="padding-bottom:8px;">
+   406→        <div style="width:64px; height:64px; background-color:#DCFCE7; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:3px solid #166534;">
+   407→          <span style="font-size:32px; line-height:1;">&#x2705;</span>
+   408→        </div>
+   409→      </td>
+   410→    </tr>
+   411→  </table>
+   412→
+   413→  <!-- Green success banner -->
+   414→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px 0;">
+   415→    <tr>
+   416→      <td style="background-color:#DCFCE7; border:1px solid #BBF7D0; border-radius:10px; padding:16px 20px; text-align:center;">
+   417→        <p style="margin:0; font-size:16px; font-weight:700; color:#166534; font-family:${FONT_STACK};">All parties have signed</p>
+   418→      </td>
+   419→    </tr>
+   420→  </table>
+   421→
+   422→  <p style="margin:0 0 12px 0; font-size:15px; color:#111827; font-family:${FONT_STACK};">Hello ${params.recipientName},</p>
+   423→  <p style="margin:0 0 20px 0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};">Great news! The document <strong style="color:#111827;">${params.documentName}</strong> has been fully signed by all parties and is now complete.</p>
+   424→
+   425→  <!-- Completion timestamp -->
+   426→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;">
+   427→    <tr>
+   428→      <td style="background-color:#F8F7F4; border-radius:10px; padding:16px 20px; text-align:center;">
+   429→        <p style="margin:0 0 4px 0; font-size:13px; color:#6B7280; font-family:${FONT_STACK};">Completed on</p>
+   430→        <p style="margin:0; font-size:15px; font-weight:600; color:#111827; font-family:${FONT_STACK};">${completionDate} at ${completionTime}</p>
+   431→      </td>
+   432→    </tr>
+   433→  </table>
+   434→
+   435→  ${downloadSection}
+   436→
+   437→  <!-- Certificate-style completion notice -->
+   438→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   439→    <tr>
+   440→      <td style="background-color:#F0FDF4; border:2px solid #BBF7D0; border-radius:10px; padding:16px 20px; text-align:center;">
+   441→        <p style="margin:0 0 6px 0; font-size:12px; color:#166534; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; font-family:${FONT_STACK};">Completion Certificate</p>
+   442→        <p style="margin:0 0 4px 0; font-size:11px; color:#6B7280; font-family:${FONT_STACK};">Reference: <strong style="color:#374151;">${hashRef}</strong></p>
+   443→        <p style="margin:0; font-size:11px; color:#9CA3AF; font-family:${FONT_STACK};">This document is legally binding under the ESIGN Act and UETA.</p>
+   444→      </td>
+   445→    </tr>
+   446→  </table>`;
+   447→
+   448→  const html = buildEmailHtml(body, "#166534", "default");
+   449→
+   450→  return sendVaultSignEmail({
+   451→    to: params.recipientEmail,
+   452→    toName: params.recipientName,
+   453→    subject: `Document completed: ${params.documentName}`,
+   454→    htmlContent: html,
+   455→  });
+   456→}
+   457→
+   458→// ─── 4. Document Declined Email ──────────────────────────────────────────────
+   459→
+   460→export async function sendDocumentDeclinedEmail(params: {
+   461→  senderEmail: string;
+   462→  senderName: string;
+   463→  documentName: string;
+   464→  signerName: string;
+   465→  declineReason?: string;
+   466→}): Promise<boolean> {
+   467→  const reasonSection = params.declineReason
+   468→    ? `
+   469→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   470→    <tr>
+   471→      <td style="background-color:#FEF2F2; border-left:4px solid #DC2626; border-radius:0 8px 8px 0; padding:16px 20px;">
+   472→        <p style="margin:0 0 6px 0; font-size:12px; color:#DC2626; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; font-family:${FONT_STACK};">Reason for declining</p>
+   473→        <p style="margin:0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};">"${params.declineReason}"</p>
+   474→      </td>
+   475→    </tr>
+   476→  </table>`
+   477→    : "";
+   478→
+   479→  const body = `
+   480→  <!-- Decline icon header -->
+   481→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   482→    <tr>
+   483→      <td align="center" style="padding-bottom:8px;">
+   484→        <div style="width:56px; height:56px; background-color:#FEF2F2; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:2px solid #FECACA;">
+   485→          <span style="font-size:28px; line-height:1;">&#x274C;</span>
+   486→        </div>
+   487→      </td>
+   488→    </tr>
+   489→  </table>
+   490→
+   491→  <h2 style="margin:0 0 4px 0; font-size:22px; font-weight:700; color:#111827; text-align:center; font-family:${FONT_STACK};">Document Declined</h2>
+   492→  <p style="margin:0 0 20px 0; font-size:14px; color:#6B7280; text-align:center; font-family:${FONT_STACK};">A signer has chosen not to sign</p>
+   493→
+   494→  <p style="margin:0 0 12px 0; font-size:15px; color:#111827; font-family:${FONT_STACK};">Hello ${params.senderName},</p>
+   495→  <p style="margin:0 0 20px 0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};"><strong style="color:#111827;">${params.signerName}</strong> has declined to sign the document <strong style="color:#111827;">${params.documentName}</strong>.</p>
+   496→
+   497→  ${reasonSection}
+   498→
+   499→  <!-- Revise & Resend suggestion -->
+   500→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;">
+   501→    <tr>
+   502→      <td style="background-color:#F8F7F4; border:1px solid #E5E7EB; border-radius:10px; padding:16px 20px; text-align:center;">
+   503→        <p style="margin:0 0 8px 0; font-size:13px; color:#6B7280; font-family:${FONT_STACK};">What would you like to do?</p>
+   504→        <p style="margin:0; font-size:14px; color:#111827; font-family:${FONT_STACK};">You can <strong>revise and resend</strong> the document from your VaultSign dashboard, or create a new document.</p>
+   505→      </td>
+   506→    </tr>
+   507→  </table>
+   508→
+   509→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   510→    <tr>
+   511→      <td align="center">
+   512→        ${vmlButton(`${APP_URL}/recruiter/vaultsign`, "Go to Dashboard", "#166534")}
+   513→      </td>
+   514→    </tr>
+   515→  </table>`;
+   516→
+   517→  const html = buildEmailHtml(body, "#DC2626", "default");
+   518→
+   519→  return sendVaultSignEmail({
+   520→    to: params.senderEmail,
+   521→    toName: params.senderName,
+   522→    subject: `${params.signerName} declined to sign: ${params.documentName}`,
+   523→    htmlContent: html,
+   524→  });
+   525→}
+   526→
+   527→// ─── 5. Document Voided Email ────────────────────────────────────────────────
+   528→
+   529→export async function sendDocumentVoidedEmail(params: {
+   530→  signerEmail: string;
+   531→  signerName: string;
+   532→  documentName: string;
+   533→  voidedByName: string;
+   534→}): Promise<boolean> {
+   535→  const body = `
+   536→  <!-- Voided stamp-style header -->
+   537→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   538→    <tr>
+   539→      <td align="center" style="padding-bottom:8px;">
+   540→        <div style="width:64px; height:64px; background-color:#F3F4F6; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:2px dashed #9CA3AF;">
+   541→          <span style="font-size:26px; line-height:1; color:#6B7280;">&#x1F6AB;</span>
+   542→        </div>
+   543→      </td>
+   544→    </tr>
+   545→  </table>
+   546→
+   547→  <!-- VOIDED stamp visual -->
+   548→  <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 16px auto;">
+   549→    <tr>
+   550→      <td style="border:3px solid #6B7280; border-radius:8px; padding:6px 24px; transform:rotate(-3deg); text-align:center;">
+   551→        <span style="font-size:20px; font-weight:900; color:#6B7280; letter-spacing:4px; font-family:${FONT_STACK};">VOIDED</span>
+   552→      </td>
+   553→    </tr>
+   554→  </table>
+   555→
+   556→  <h2 style="margin:0 0 4px 0; font-size:22px; font-weight:700; color:#111827; text-align:center; font-family:${FONT_STACK};">Document Voided</h2>
+   557→  <p style="margin:0 0 20px 0; font-size:14px; color:#6B7280; text-align:center; font-family:${FONT_STACK};">No further action is needed</p>
+   558→
+   559→  <p style="margin:0 0 12px 0; font-size:15px; color:#111827; font-family:${FONT_STACK};">Hello ${params.signerName},</p>
+   560→  <p style="margin:0 0 20px 0; font-size:14px; color:#374151; line-height:1.6; font-family:${FONT_STACK};">The document <strong style="color:#111827;">${params.documentName}</strong> has been voided by <strong style="color:#111827;">${params.voidedByName}</strong>.</p>
+   561→
+   562→  <!-- Explanation card -->
+   563→  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">
+   564→    <tr>
+   565→      <td style="background-color:#F8F7F4; border:1px solid #E5E7EB; border-radius:10px; padding:20px 24px;">
+   566→        <p style="margin:0 0 8px 0; font-size:14px; font-weight:600; color:#374151; font-family:${FONT_STACK};">What does this mean?</p>
+   567→        <p style="margin:0 0 12px 0; font-size:13px; color:#6B7280; line-height:1.6; font-family:${FONT_STACK};">When a document is voided, the signing process is cancelled. The document can no longer be signed and any pending signatures are invalidated.</p>
+   568→        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+   569→          <tr>
+   570→            <td style="background-color:#DCFCE7; border-radius:8px; padding:12px 16px; text-align:center;">
+   571→              <p style="margin:0; font-size:14px; font-weight:600; color:#166534; font-family:${FONT_STACK};">&#x2705; No further action needed from you</p>
+   572→            </td>
+   573→          </tr>
+   574→        </table>
+   575→      </td>
+   576→    </tr>
+   577→  </table>
+   578→
+   579→  <p style="margin:16px 0 0 0; font-size:13px; color:#6B7280; text-align:center; line-height:1.5; font-family:${FONT_STACK};">
+   580→    If you believe this was done in error or have any questions, please <a href="mailto:support@myzipvault.com" style="color:#0D9488; text-decoration:underline;">contact the sender</a>.
+   581→  </p>`;
+   582→
+   583→  const html = buildEmailHtml(body, "#6B7280", "signer");
+   584→
+   585→  return sendVaultSignEmail({
+   586→    to: params.signerEmail,
+   587→    toName: params.signerName,
+   588→    subject: `Document voided: ${params.documentName}`,
+   589→    htmlContent: html,
+   590→  });
+   591→}
+   592→
+   593→// ─── Signing Link Generator ──────────────────────────────────────────────────
+   594→
+   595→export function generateSigningLink(signToken: string): string {
+   596→  return `${APP_URL}/sign/${signToken}`;
+   597→}
+   598→
