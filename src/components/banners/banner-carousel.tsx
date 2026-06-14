@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, X, Pin } from "@/lib/icons";
+import { ChevronLeft, ChevronRight, ExternalLink, Pin } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface BannerData {
@@ -26,22 +26,9 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
-
-  // Load dismissed banner IDs from sessionStorage
-  useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem("dismissedBanners");
-      if (stored) {
-        setDismissedIds(new Set(JSON.parse(stored)));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
   // Fetch banners
   useEffect(() => {
@@ -59,8 +46,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
     fetchBanners();
   }, []);
 
-  // Filter out dismissed banners
-  const visibleBanners = banners.filter((b) => !dismissedIds.has(b.id));
+  const visibleBanners = banners;
 
   // Auto-advance carousel
   const currentBanner = visibleBanners[currentIndex];
@@ -115,17 +101,6 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
       setCurrentIndex(0);
     }
   }, [visibleBanners.length, currentIndex]);
-
-  const dismissBanner = (id: number) => {
-    const newDismissed = new Set(dismissedIds);
-    newDismissed.add(id);
-    setDismissedIds(newDismissed);
-    try {
-      sessionStorage.setItem("dismissedBanners", JSON.stringify([...newDismissed]));
-    } catch {
-      // ignore
-    }
-  };
 
   const handleImageError = (bannerId: number) => {
     setImageErrors((prev) => new Set(prev).add(bannerId));
@@ -307,21 +282,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
         </>
       )}
 
-      {/* Dismiss Button (only for non-pinned) */}
-      {currentBanner && !currentBanner.isPinned && (
-        <button
-          onClick={() => dismissBanner(currentBanner.id)}
-          className={cn(
-            "absolute right-2 top-2 flex size-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors border",
-            hasValidImage
-              ? "bg-white/20 text-white/70 border-white/20 hover:bg-white/30 hover:text-white"
-              : "bg-white/90 text-[#9CA3AF] border-[#E5E7EB] hover:bg-white hover:text-[#6B7280]"
-          )}
-          aria-label="Dismiss banner"
-        >
-          <X className="size-3.5" />
-        </button>
-      )}
+
     </div>
   );
 }
