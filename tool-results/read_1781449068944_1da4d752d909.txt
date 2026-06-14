@@ -1,0 +1,802 @@
+     1→generator client {
+     2→  provider = "prisma-client-js"
+     3→}
+     4→
+     5→datasource db {
+     6→  provider  = "postgresql"
+     7→  url       = env("DATABASE_URL")
+     8→  directUrl = env("DIRECT_URL")
+     9→}
+    10→
+    11→// ─── 1. Organizations ────────────────────────────────────────────────
+    12→model Organization {
+    13→  id                  Int                  @id @default(autoincrement())
+    14→  name                String
+    15→  credits_balance     Int                  @default(0)
+    16→  baa_status          String               @default("pending")
+    17→  baa_document_url    String?
+    18→  baa_signed_by_name  String?
+    19→  baa_signed_by_title String?
+    20→  baa_signed_at       DateTime?
+    21→  seat_limit          Int                  @default(5)
+    22→  custom_pricing_notes String?
+    23→  account_status      String               @default("pending")
+    24→  created_at          DateTime             @default(now())
+    25→
+    26→  // VaultSign document settings
+    27→  company_logo_url    String?              // Logo for document headers
+    28→  company_address     String?              // Address for document headers/footers
+    29→  company_phone       String?              // Phone for document headers
+    30→  company_email       String?              // Email for document headers
+    31→  company_website     String?              // Website for document headers
+    32→
+    33→  users               User[]
+    34→  credit_transactions CreditTransaction[]
+    35→  invoices            Invoice[]
+    36→  invite_tokens       InviteToken[]
+    37→  recruiter_leads     RecruiterLead[]
+    38→  vault_sign_documents VaultSignDocument[]
+    39→}
+    40→
+    41→// ─── 2. Users ────────────────────────────────────────────────────────
+    42→model User {
+    43→  id                   Int                   @id @default(autoincrement())
+    44→  email                String                @unique
+    45→  password_hash        String
+    46→  role                 String
+    47→  organization_id      Int?
+    48→  must_change_pass     Boolean               @default(false)
+    49→  tos_accepted_at      DateTime?
+    50→  account_status       String                @default("active")
+    51→  deletion_requested_at DateTime?
+    52→  is_approved          Boolean               @default(true)
+    53→  first_name           String?
+    54→  last_name            String?
+    55→  email_verified_at    DateTime?
+    56→  phone                String?
+    57→  last_activity_at     DateTime?
+    58→  created_at           DateTime              @default(now())
+    59→
+    60→  organization         Organization?         @relation(fields: [organization_id], references: [id])
+    61→
+    62→  admin_permissions    AdminPermission[]
+    63→  candidate_profile    CandidateProfile?
+    64→  checklist_requests_as_client   ChecklistRequest[]   @relation("ClientChecklistRequests")
+    65→  checklist_requests_as_candidate ChecklistRequest[]   @relation("CandidateChecklistRequests")
+    66→  credentials          Credential[]
+    67→  credentials_reviewed Credential[]          @relation("CredentialReviewer")
+    68→  resumes              Resume[]
+    69→  candidate_references CandidateReference[]
+    70→  candidate_references_manager CandidateReference[]  @relation("ReferenceManager")
+    71→  consent_shares_as_candidate ConsentShare[]  @relation("CandidateConsentShares")
+    72→  consent_shares_as_client   ConsentShare[]  @relation("ClientConsentShares")
+    73→  unlocked_documents   UnlockedDocument[]
+    74→  notifications        Notification[]
+    75→  audit_logs           AuditLog[]
+    76→  pending_reminders_target  PendingReminder[] @relation("ReminderTarget")
+    77→  pending_reminders_actioned PendingReminder[] @relation("ReminderActioner")
+    78→  platform_settings_updated PlatformSetting[]
+    79→  feature_flags_updated FeatureFlag[]
+    80→  email_templates_updated EmailTemplate[]
+    81→  candidate_checklist_responses CandidateChecklistResponse[]
+    82→  document_flags_reviewed  DocumentFlag[]     @relation("DocumentFlagReviewer")
+    83→  invite_tokens           InviteToken[]
+    84→  api_keys_updated       ApiKey[]
+    85→  share_requests_as_candidate ShareRequest[]  @relation("CandidateShareRequests")
+    86→  share_requests_as_client   ShareRequest[]  @relation("ClientShareRequests")
+    87→
+    88→  // Calendar & Scheduler relations
+    89→  calendar_availabilities     CalendarAvailability[]
+    90→  calendar_shares_as_candidate CalendarShare[]  @relation("CandidateCalendarShares")
+    91→  calendar_shares_as_recruiter CalendarShare[]  @relation("RecruiterCalendarShares")
+    92→  recruiter_leads             RecruiterLead[]
+    93→  recruiter_availability      RecruiterAvailability[]
+    94→  shift_requests_as_candidate ShiftRequest[]   @relation("CandidateShiftRequests")
+    95→  shift_requests_as_recruiter ShiftRequest[]   @relation("RecruiterShiftRequests")
+    96→  call_schedules         CallSchedule[]
+    97→  call_logs              CallLog[]
+    98→  reference_deletion_requests ReferenceDeletionRequest[] @relation("CandidateDeletionRequests")
+    99→  reference_deletion_reviewed ReferenceDeletionRequest[] @relation("AdminDeletionReviews")
+   100→
+   101→  // VaultSign relations
+   102→  vault_sign_templates_created VaultSignTemplate[] @relation("VaultSignTemplateCreator")
+   103→  vault_sign_documents_created VaultSignDocument[] @relation("VaultSignDocumentCreator")
+   104→  vault_sign_signers VaultSignSigner[] @relation("VaultSignSignerUser")
+   105→
+   106→  // Banner relations
+   107→  banners_created Banner[]
+   108→}
+   109→
+   110→// ─── 3. Admin Permissions ────────────────────────────────────────────
+   111→model AdminPermission {
+   112→  id              Int      @id @default(autoincrement())
+   113→  user_id         Int
+   114→  permission_name String
+   115→  is_allowed      Boolean  @default(false)
+   116→
+   117→  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   118→
+   119→  @@unique([user_id, permission_name])
+   120→}
+   121→
+   122→// ─── 4. Candidate Profiles ──────────────────────────────────────────
+   123→model CandidateProfile {
+   124→  id                     Int       @id @default(autoincrement())
+   125→  user_id                Int       @unique
+   126→  first_name             String
+   127→  last_name              String
+   128→  phone                  String
+   129→  resume_id              Int?      @unique
+   130→  profile_completion_pct Int       @default(0)
+   131→  notification_preferences String? // JSON string: { email_notifications, sms_notifications, reminder_notifications }
+   132→
+   133→  user                   User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   134→  resume                 Resume?   @relation("CandidateProfileResume", fields: [resume_id], references: [id])
+   135→}
+   136→
+   137→// ─── 5. Checklist Templates ─────────────────────────────────────────
+   138→model ChecklistTemplate {
+   139→  id            Int                        @id @default(autoincrement())
+   140→  profession    String
+   141→  specialty     String
+   142→  name          String
+   143→  job_title     String?
+   144→  is_active     Boolean                    @default(true)
+   145→  created_at    DateTime                   @default(now())
+   146→
+   147→  skills        Skill[]
+   148→  checklist_requests ChecklistRequest[]
+   149→  candidate_checklist_responses CandidateChecklistResponse[]
+   150→}
+   151→
+   152→// ─── 6. Skills ───────────────────────────────────────────────────────
+   153→model Skill {
+   154→  id                    Int               @id @default(autoincrement())
+   155→  checklist_template_id Int
+   156→  skill_name            String
+   157→  category              String
+   158→  question_type         String
+   159→  sort_order            Int
+   160→  has_na_option         Boolean           @default(true)
+   161→
+   162→  checklist_template    ChecklistTemplate @relation(fields: [checklist_template_id], references: [id], onDelete: Cascade)
+   163→  skill_ratings         SkillRating[]
+   164→}
+   165→
+   166→// ─── 7. Checklist Requests ──────────────────────────────────────────
+   167→model ChecklistRequest {
+   168→  id                     Int                    @id @default(autoincrement())
+   169→  client_user_id         Int
+   170→  candidate_user_id      Int
+   171→  checklist_template_id  Int
+   172→  status                 String                 @default("sent")
+   173→  completion_pct         Int                    @default(0)
+   174→  candidate_response_id  Int?
+   175→  opened_at              DateTime?
+   176→  created_at             DateTime               @default(now())
+   177→
+   178→  client_user            User                   @relation("ClientChecklistRequests", fields: [client_user_id], references: [id])
+   179→  candidate_user         User                   @relation("CandidateChecklistRequests", fields: [candidate_user_id], references: [id])
+   180→  checklist_template     ChecklistTemplate      @relation(fields: [checklist_template_id], references: [id])
+   181→  candidate_response     CandidateChecklistResponse? @relation(fields: [candidate_response_id], references: [id])
+   182→}
+   183→
+   184→// ─── 8. Candidate Checklist Responses ───────────────────────────────
+   185→model CandidateChecklistResponse {
+   186→  id                     Int                @id @default(autoincrement())
+   187→  candidate_user_id      Int
+   188→  checklist_template_id  Int
+   189→  status                 String             @default("active")
+   190→  valid_until            DateTime
+   191→  submitted_at           DateTime?
+   192→  digital_signature      String?
+   193→  candidate_name_signed  String?
+   194→  signature_date         DateTime?
+   195→
+   196→  candidate_user         User               @relation(fields: [candidate_user_id], references: [id])
+   197→  checklist_template     ChecklistTemplate  @relation(fields: [checklist_template_id], references: [id])
+   198→  skill_ratings          SkillRating[]
+   199→  checklist_requests     ChecklistRequest[]
+   200→  consent_shares         ConsentShare[]
+   201→}
+   202→
+   203→// ─── 9. Skill Ratings ───────────────────────────────────────────────
+   204→model SkillRating {
+   205→  id                    Int                     @id @default(autoincrement())
+   206→  checklist_response_id Int
+   207→  skill_id              Int
+   208→  rating_value          String?
+   209→  is_na                 Boolean                 @default(false)
+   210→  updated_at            DateTime                @default(now())
+   211→
+   212→  checklist_response    CandidateChecklistResponse @relation(fields: [checklist_response_id], references: [id], onDelete: Cascade)
+   213→  skill                 Skill                   @relation(fields: [skill_id], references: [id])
+   214→
+   215→  @@unique([checklist_response_id, skill_id])
+   216→}
+   217→
+   218→// ─── 10. Credentials ────────────────────────────────────────────────
+   219→model Credential {
+   220→  id                   Int           @id @default(autoincrement())
+   221→  candidate_user_id    Int
+   222→  document_name        String
+   223→  file_url             String
+   224→  expiration_date      DateTime?
+   225→  reminder_enabled     Boolean       @default(false)
+   226→  status               String        @default("active")
+   227→  verification_status  String        @default("pending_review")
+   228→  reviewed_by          Int?
+   229→  review_notes         String?
+   230→  uploaded_at          DateTime      @default(now())
+   231→
+   232→  candidate_user       User          @relation(fields: [candidate_user_id], references: [id])
+   233→  reviewer             User?         @relation("CredentialReviewer", fields: [reviewed_by], references: [id])
+   234→  document_flags       DocumentFlag[]
+   235→  consent_shares       ConsentShare[]
+   236→}
+   237→
+   238→// ─── 11. Resumes ────────────────────────────────────────────────────
+   239→model Resume {
+   240→  id                  Int               @id @default(autoincrement())
+   241→  candidate_user_id   Int
+   242→  file_url            String?
+   243→  parsed_data         String?
+   244→  is_builder_resume   Boolean           @default(false)
+   245→  created_at          DateTime          @default(now())
+   246→
+   247→  candidate_user      User              @relation(fields: [candidate_user_id], references: [id])
+   248→  candidate_profile   CandidateProfile? @relation("CandidateProfileResume")
+   249→  consent_shares      ConsentShare[]
+   250→}
+   251→
+   252→// ─── 12. Candidate References ───────────────────────────────────────
+   253→model CandidateReference {
+   254→  id                  Int                @id @default(autoincrement())
+   255→  candidate_user_id   Int
+   256→  manager_user_id     Int?
+   257→  manager_first_name  String?
+   258→  manager_last_name   String?
+   259→  manager_email       String
+   260→  manager_phone       String
+   261→  facility_name       String
+   262→  employment_status   String
+   263→  status              String             @default("pending_request")
+   264→  requested_at        DateTime           @default(now())
+   265→
+   266→  candidate_user      User               @relation(fields: [candidate_user_id], references: [id])
+   267→  manager_user        User?              @relation("ReferenceManager", fields: [manager_user_id], references: [id])
+   268→  reference_responses ReferenceResponse[]
+   269→  consent_shares      ConsentShare[]
+   270→  deletion_requests  ReferenceDeletionRequest[]
+   271→}
+   272→
+   273→// ─── 13. Reference Questions ────────────────────────────────────────
+   274→model ReferenceQuestion {
+   275→  id                Int       @id @default(autoincrement())
+   276→  employment_status String
+   277→  question_text     String
+   278→  response_type     String
+   279→  sort_order        Int
+   280→
+   281→  reference_responses ReferenceResponse[]
+   282→}
+   283→
+   284→// ─── 14. Reference Responses ────────────────────────────────────────
+   285→model ReferenceResponse {
+   286→  id                    Int               @id @default(autoincrement())
+   287→  candidate_reference_id Int
+   288→  question_id           Int
+   289→  answer_text           String
+   290→  overall_comment       String?
+   291→  digital_signature     String?
+   292→  signature_date        DateTime?
+   293→  submitted_at          DateTime?
+   294→
+   295→  candidate_reference   CandidateReference @relation(fields: [candidate_reference_id], references: [id])
+   296→  question              ReferenceQuestion  @relation(fields: [question_id], references: [id])
+   297→
+   298→  @@unique([candidate_reference_id, question_id])
+   299→}
+   300→
+   301→// ─── 15. Consent Shares ─────────────────────────────────────────────
+   302→model ConsentShare {
+   303→  id                    Int                   @id @default(autoincrement())
+   304→  candidate_user_id     Int
+   305→  client_user_id        Int
+   306→  checklist_response_id Int?
+   307→  credential_id         Int?
+   308→  resume_id             Int?
+   309→  reference_id          Int?
+   310→  is_deleted            Boolean               @default(false)
+   311→  shared_at             DateTime              @default(now())
+   312→  expires_at            DateTime
+   313→
+   314→  candidate_user        User                  @relation("CandidateConsentShares", fields: [candidate_user_id], references: [id])
+   315→  client_user           User                  @relation("ClientConsentShares", fields: [client_user_id], references: [id])
+   316→  checklist_response    CandidateChecklistResponse? @relation(fields: [checklist_response_id], references: [id])
+   317→  credential            Credential?           @relation(fields: [credential_id], references: [id])
+   318→  resume                Resume?               @relation(fields: [resume_id], references: [id])
+   319→  reference             CandidateReference?   @relation(fields: [reference_id], references: [id])
+   320→  unlocked_documents    UnlockedDocument[]
+   321→}
+   322→
+   323→// ─── 16. Unlocked Documents ─────────────────────────────────────────
+   324→model UnlockedDocument {
+   325→  id                Int          @id @default(autoincrement())
+   326→  client_user_id    Int
+   327→  consent_share_id  Int
+   328→  entity_type       String
+   329→  entity_id         Int
+   330→  credits_charged   Int          @default(1)
+   331→  unlocked_at       DateTime     @default(now())
+   332→
+   333→  client_user       User         @relation(fields: [client_user_id], references: [id])
+   334→  consent_share     ConsentShare @relation(fields: [consent_share_id], references: [id])
+   335→}
+   336→
+   337→// ─── 17. Credit Transactions ────────────────────────────────────────
+   338→model CreditTransaction {
+   339→  id               Int           @id @default(autoincrement())
+   340→  organization_id  Int
+   341→  transaction_type String
+   342→  credit_amount    Int
+   343→  description      String
+   344→  created_at       DateTime      @default(now())
+   345→
+   346→  organization     Organization  @relation(fields: [organization_id], references: [id])
+   347→}
+   348→
+   349→// ─── 18. Invoices ───────────────────────────────────────────────────
+   350→model Invoice {
+   351→  id               Int           @id @default(autoincrement())
+   352→  organization_id  Int
+   353→  credit_amount    Int
+   354→  total_price      Float
+   355→  pdf_url          String?
+   356→  created_at       DateTime      @default(now())
+   357→
+   358→  organization     Organization  @relation(fields: [organization_id], references: [id])
+   359→}
+   360→
+   361→// ─── 19. Notifications ──────────────────────────────────────────────
+   362→model Notification {
+   363→  id                  Int       @id @default(autoincrement())
+   364→  user_id             Int
+   365→  title               String?
+   366→  message             String
+   367→  type                String    // call_scheduled, call_reminder, call_follow_up, shift_accepted, shift_declined, lead_stage_change, share_request
+   368→  is_read             Boolean   @default(false)
+   369→  related_entity_id   Int?
+   370→  related_entity_type String?   // lead, call_schedule, shift_request, share_request
+   371→  metadata            String?   // JSON string for extra data (lead name, schedule date, etc.)
+   372→  snoozed_until       DateTime?
+   373→  created_at          DateTime  @default(now())
+   374→
+   375→  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   376→}
+   377→
+   378→// ─── 20. Pending Reminders ──────────────────────────────────────────
+   379→model PendingReminder {
+   380→  id             Int            @id @default(autoincrement())
+   381→  rule_id        Int
+   382→  target_user_id Int
+   383→  message_preview String
+   384→  status         String         @default("awaiting_approval")
+   385→  created_at     DateTime       @default(now())
+   386→  actioned_by    Int?
+   387→  actioned_at    DateTime?
+   388→
+   389→  rule           AutomatedRule  @relation(fields: [rule_id], references: [id])
+   390→  target_user    User           @relation("ReminderTarget", fields: [target_user_id], references: [id])
+   391→  actioner       User?          @relation("ReminderActioner", fields: [actioned_by], references: [id])
+   392→}
+   393→
+   394→// ─── 21. Platform Settings ──────────────────────────────────────────
+   395→model PlatformSetting {
+   396→  id            Int       @id @default(autoincrement())
+   397→  setting_key   String    @unique
+   398→  setting_value String
+   399→  updated_by    Int?
+   400→  updated_at    DateTime  @default(now())
+   401→
+   402→  updater       User?     @relation(fields: [updated_by], references: [id])
+   403→}
+   404→
+   405→// ─── 22. Feature Flags ──────────────────────────────────────────────
+   406→model FeatureFlag {
+   407→  id          Int       @id @default(autoincrement())
+   408→  flag_name   String    @unique
+   409→  is_enabled  Boolean   @default(false)
+   410→  updated_by  Int?
+   411→  updated_at  DateTime  @default(now())
+   412→
+   413→  updater     User?     @relation(fields: [updated_by], references: [id])
+   414→}
+   415→
+   416→// ─── 23. Email Templates ────────────────────────────────────────────
+   417→model EmailTemplate {
+   418→  id           Int       @id @default(autoincrement())
+   419→  template_key String    @unique
+   420→  subject      String
+   421→  body         String
+   422→  updated_by   Int?
+   423→  updated_at   DateTime  @default(now())
+   424→
+   425→  updater      User?     @relation(fields: [updated_by], references: [id])
+   426→  automated_rules AutomatedRule[]
+   427→}
+   428→
+   429→// ─── 24. Announcements ──────────────────────────────────────────────
+   430→model Announcement {
+   431→  id          Int       @id @default(autoincrement())
+   432→  message     String
+   433→  target_role String
+   434→  is_active   Boolean   @default(false)
+   435→  created_at  DateTime  @default(now())
+   436→}
+   437→
+   438→// ─── 24b. In-App Banners ────────────────────────────────────────────
+   439→model Banner {
+   440→  id                Int       @id @default(autoincrement())
+   441→  title             String
+   442→  description       String?
+   443→  image_url         String?   // Supabase Storage URL for banner image
+   444→  cta_text          String?   // e.g. "Learn More"
+   445→  cta_link          String?   // URL the CTA button navigates to
+   446→  target_role       String    // "candidate" | "client_recruiter" | "client_admin"
+   447→  is_active         Boolean   @default(true)
+   448→  is_pinned         Boolean   @default(false)  // Sticky — always shows first
+   449→  expires_at        DateTime? // Auto-hide after this date (null = no expiry)
+   450→  carousel_duration Int       @default(5)      // Seconds per slide in carousel
+   451→  created_by        Int?
+   452→  created_at        DateTime  @default(now())
+   453→  updated_at        DateTime  @updatedAt
+   454→
+   455→  creator           User?     @relation(fields: [created_by], references: [id])
+   456→}
+   457→
+   458→// ─── 25. Document Flags ─────────────────────────────────────────────
+   459→model DocumentFlag {
+   460→  id            Int        @id @default(autoincrement())
+   461→  credential_id Int
+   462→  flag_reason   String
+   463→  status        String     @default("pending_review")
+   464→  reviewed_by   Int?
+   465→  created_at    DateTime   @default(now())
+   466→
+   467→  credential    Credential @relation(fields: [credential_id], references: [id])
+   468→  reviewer      User?      @relation("DocumentFlagReviewer", fields: [reviewed_by], references: [id])
+   469→}
+   470→
+   471→// ─── 26. System Error Logs ──────────────────────────────────────────
+   472→model SystemErrorLog {
+   473→  id            Int       @id @default(autoincrement())
+   474→  severity      String
+   475→  service       String
+   476→  error_message String
+   477→  created_at    DateTime  @default(now())
+   478→}
+   479→
+   480→// ─── 27. Audit Logs ─────────────────────────────────────────────────
+   481→model AuditLog {
+   482→  id           Int       @id @default(autoincrement())
+   483→  user_id      Int?
+   484→  role         String?
+   485→  action       String
+   486→  entity_type  String?
+   487→  entity_id    Int?
+   488→  ip_address   String?
+   489→  created_at   DateTime  @default(now())
+   490→
+   491→  user         User?     @relation(fields: [user_id], references: [id])
+   492→}
+   493→
+   494→// ─── 28. Automated Rules ────────────────────────────────────────────
+   495→model AutomatedRule {
+   496→  id                Int               @id @default(autoincrement())
+   497→  rule_name         String
+   498→  trigger_condition String
+   499→  action_type       String
+   500→  template_id       Int?
+   501→  is_active         Boolean           @default(true)
+   502→
+   503→  email_template    EmailTemplate?    @relation(fields: [template_id], references: [id])
+   504→  pending_reminders PendingReminder[]
+   505→}
+   506→
+   507→// ─── 29. Invite Tokens ─────────────────────────────────────────────
+   508→model InviteToken {
+   509→  id              Int       @id @default(autoincrement())
+   510→  token           String    @unique
+   511→  email           String
+   512→  role            String    @default("candidate")
+   513→  token_type      String    @default("candidate_invite")
+   514→  invited_by      Int?
+   515→  organization_id Int?
+   516→  agency_name     String?
+   517→  facility_name   String?
+   518→  nurse_name      String?
+   519→  is_used         Boolean   @default(false)
+   520→  expires_at      DateTime
+   521→  created_at      DateTime  @default(now())
+   522→
+   523→  inviter         User?     @relation(fields: [invited_by], references: [id])
+   524→  organization    Organization? @relation(fields: [organization_id], references: [id])
+   525→}
+   526→
+   527→// ─── 30. API Keys ────────────────────────────────────────────────────
+   528→model ApiKey {
+   529→  id            Int       @id @default(autoincrement())
+   530→  service_name  String    @unique
+   531→  encrypted_key String
+   532→  updated_by    Int?
+   533→  updated_at    DateTime  @default(now())
+   534→
+   535→  updater       User?     @relation(fields: [updated_by], references: [id])
+   536→}
+   537→
+   538→// ─── 31. Share Requests ─────────────────────────────────────────────
+   539→model ShareRequest {
+   540→  id                    Int       @id @default(autoincrement())
+   541→  candidate_user_id     Int
+   542→  client_user_id        Int
+   543→  request_checklists    Boolean   @default(false)
+   544→  request_credentials   Boolean   @default(false)
+   545→  request_resume        Boolean   @default(false)
+   546→  request_references    Boolean   @default(false)
+   547→  status                String    @default("pending")
+   548→  message               String?
+   549→  created_at            DateTime  @default(now())
+   550→
+   551→  candidate_user        User      @relation("CandidateShareRequests", fields: [candidate_user_id], references: [id])
+   552→  client_user           User      @relation("ClientShareRequests", fields: [client_user_id], references: [id])
+   553→}
+   554→
+   555→// ─── 32. Calendar Availability (Candidate) ──────────────────────────
+   556→model CalendarAvailability {
+   557→  id                Int       @id @default(autoincrement())
+   558→  candidate_user_id Int
+   559→  day_of_week       Int?      // 0=Sun, 1=Mon, ..., 6=Sat (null for specific dates)
+   560→  specific_date     DateTime? // For block-out dates or one-time overrides
+   561→  start_time        String?   // "09:00" format, null = all day
+   562→  end_time          String?   // "17:00" format, null = all day
+   563→  is_available      Boolean   @default(true) // true = available, false = blocked
+   564→  is_recurring      Boolean   @default(false) // true = weekly recurring
+   565→  label             String?   // "Lunch break", "Night shift available", etc.
+   566→  template_name     String?   // "Morning Person", "Night Owl", etc.
+   567→  min_notice_hours  Int       @default(24)
+   568→  shift_duration_pref String? // "8hr", "12hr", "4hr_min"
+   569→  availability_status String  @default("actively_looking") // actively_looking, open, not_available
+   570→
+   571→  candidate_user    User      @relation(fields: [candidate_user_id], references: [id], onDelete: Cascade)
+   572→}
+   573→
+   574→// ─── 33. Calendar Shares ────────────────────────────────────────────
+   575→model CalendarShare {
+   576→  id                Int       @id @default(autoincrement())
+   577→  candidate_user_id Int
+   578→  recruiter_user_id Int?      // Direct share to specific recruiter
+   579→  share_token       String?   @unique // For link-based sharing
+   580→  share_type        String    @default("direct") // "direct" or "link"
+   581→  expiry_type       String    @default("30_days") // "1_day", "1_month", "1_year", "never"
+   582→  expires_at        DateTime?
+   583→  is_revoked        Boolean   @default(false)
+   584→  created_at        DateTime  @default(now())
+   585→
+   586→  candidate_user    User      @relation("CandidateCalendarShares", fields: [candidate_user_id], references: [id], onDelete: Cascade)
+   587→  recruiter_user    User?     @relation("RecruiterCalendarShares", fields: [recruiter_user_id], references: [id])
+   588→}
+   589→
+   590→// ─── 34. Recruiter Leads ────────────────────────────────────────────
+   591→model RecruiterLead {
+   592→  id                Int       @id @default(autoincrement())
+   593→  recruiter_user_id Int
+   594→  organization_id   Int
+   595→  first_name        String
+   596→  last_name         String
+   597→  email             String?
+   598→  phone             String?
+   599→  job_title         String?
+   600→  specialty         String?
+   601→  reached_for       String?   // What position/role they were contacted for
+   602→  remark            String?   // How the call went, what was discussed
+   603→  source            String    @default("cold_call") // cold_call, referral, job_board, walk_in, linkedin, other
+   604→  pipeline_stage    String    @default("new_lead") // new_lead, doc_pending, submitted, interested_no_job, interview_scheduled, offer_sent, onboarding, started, not_interested
+   605→  star_rating       Int?      // 1-5, optional
+   606→  is_active         Boolean   @default(true)
+   607→  created_at        DateTime  @default(now())
+   608→  updated_at        DateTime  @default(now())
+   609→
+   610→  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+   611→  organization      Organization @relation(fields: [organization_id], references: [id])
+   612→  call_schedules    CallSchedule[]
+   613→  call_logs         CallLog[]
+   614→}
+   615→
+   616→// ─── 35. Call Schedules ─────────────────────────────────────────────
+   617→model CallSchedule {
+   618→  id                Int       @id @default(autoincrement())
+   619→  lead_id           Int
+   620→  recruiter_user_id Int
+   621→  scheduled_date    DateTime? // Specific date/time (null for month-range)
+   622→  scheduled_month   String?   // "2026-12" for month-range scheduling
+   623→  status            String    @default("scheduled") // scheduled, completed, rescheduled, cancelled, no_answer
+   624→  reminder_sent_at  DateTime?
+   625→  created_at        DateTime  @default(now())
+   626→
+   627→  lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+   628→  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+   629→  call_logs         CallLog[]
+   630→}
+   631→
+   632→// ─── 36. Call Logs ──────────────────────────────────────────────────
+   633→model CallLog {
+   634→  id                Int       @id @default(autoincrement())
+   635→  lead_id           Int
+   636→  call_schedule_id  Int?
+   637→  recruiter_user_id Int
+   638→  call_date         DateTime  @default(now())
+   639→  outcome           String    // good, no_answer, voicemail, not_interested
+   640→  remark            String?   // What was discussed
+   641→  next_action       String?   // What the next step is
+   642→  created_at        DateTime  @default(now())
+   643→
+   644→  lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+   645→  call_schedule     CallSchedule? @relation(fields: [call_schedule_id], references: [id], onDelete: SetNull)
+   646→  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+   647→}
+   648→
+   649→// ─── 37. Recruiter Availability ─────────────────────────────────────
+   650→model RecruiterAvailability {
+   651→  id                Int       @id @default(autoincrement())
+   652→  recruiter_user_id Int
+   653→  day_of_week       Int?      // 0=Sun, 1=Mon, ..., 6=Sat
+   654→  specific_date     DateTime?
+   655→  start_time        String?   // "09:00"
+   656→  end_time          String?   // "17:00"
+   657→  is_available      Boolean   @default(true)
+   658→  is_recurring      Boolean   @default(false)
+   659→  label             String?   // "Free before lunch", "Available evenings"
+   660→  created_at        DateTime  @default(now())
+   661→
+   662→  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+   663→}
+   664→
+   665→// ─── 38. Reference Deletion Requests ────────────────────────────────
+   666→model ReferenceDeletionRequest {
+   667→  id                  Int       @id @default(autoincrement())
+   668→  candidate_user_id   Int
+   669→  reference_id        Int
+   670→  reason              String
+   671→  status              String    @default("pending") // pending, approved, rejected
+   672→  reviewed_by         Int?
+   673→  review_notes        String?
+   674→  reviewed_at         DateTime?
+   675→  created_at          DateTime  @default(now())
+   676→
+   677→  candidate_user      User               @relation("CandidateDeletionRequests", fields: [candidate_user_id], references: [id])
+   678→  reference           CandidateReference @relation(fields: [reference_id], references: [id])
+   679→  reviewer            User?              @relation("AdminDeletionReviews", fields: [reviewed_by], references: [id])
+   680→}
+   681→
+   682→// ─── 39. Shift Requests ─────────────────────────────────────────────
+   683→model ShiftRequest {
+   684→  id                Int       @id @default(autoincrement())
+   685→  recruiter_user_id Int
+   686→  candidate_user_id Int
+   687→  shift_date        DateTime
+   688→  start_time        String?
+   689→  end_time          String?
+   690→  position          String?   // Role/position for the shift
+   691→  facility_name     String?
+   692→  notes             String?
+   693→  status            String    @default("pending") // pending, accepted, declined, expired
+   694→  response_deadline DateTime? // When the request auto-expires
+   695→  responded_at      DateTime?
+   696→  response_note     String?
+   697→  created_at        DateTime  @default(now())
+   698→
+   699→  recruiter_user    User      @relation("RecruiterShiftRequests", fields: [recruiter_user_id], references: [id])
+   700→  candidate_user    User      @relation("CandidateShiftRequests", fields: [candidate_user_id], references: [id])
+   701→}
+   702→
+   703→// ─── 40. VaultSign Templates ────────────────────────────────────────
+   704→model VaultSignTemplate {
+   705→  id                      Int       @id @default(autoincrement())
+   706→  name                    String
+   707→  description             String?
+   708→  document_type           String    @default("custom") // right_to_represent, pre_offer_acceptance, offer_letter, nda, background_check_authorization, employment_contract, onboarding_form, custom
+   709→  source_type             String    @default("word") // word or pdf
+   710→  original_file_url       String    // .docx or .pdf in Supabase Storage
+   711→  tiptap_content          String?   // TipTap document JSON for word templates
+   712→  predefined_sign_fields  String    @default("[]") // JSON array of preset field positions
+   713→  placeholder_variables   String    @default("[]") // JSON array of {key, label, description, category}
+   714→  header_config           String    @default("{}") // JSON: {show_logo, show_company_name, show_contact, show_address, show_document_title}
+   715→  footer_config           String    @default("{}") // JSON: {show_rights_reserved, show_powered_by, show_page_numbers}
+   716→  show_header_footer      Boolean   @default(true) // Combined toggle for header & footer
+   717→  is_active               Boolean   @default(true)
+   718→  created_by              Int
+   719→  created_at              DateTime  @default(now())
+   720→  updated_at              DateTime  @default(now())
+   721→
+   722→  creator                 User      @relation("VaultSignTemplateCreator", fields: [created_by], references: [id])
+   723→  vault_sign_documents    VaultSignDocument[]
+   724→}
+   725→
+   726→// ─── 41. VaultSign Documents ────────────────────────────────────────
+   727→model VaultSignDocument {
+   728→  id                       Int       @id @default(autoincrement())
+   729→  organization_id          Int
+   730→  created_by_user_id       Int
+   731→  template_id              Int?
+   732→  document_name            String
+   733→  document_type            String    @default("custom")
+   734→  source_type              String    @default("word") // word or pdf
+   735→  original_file_url        String?   // uploaded .docx or .pdf in Supabase Storage
+   736→  tiptap_content           String?   // saved TipTap editor state JSON
+   737→  edited_pdf_url           String?   // PDF generated from Word editor
+   738→  final_document_url       String?   // completed signed PDF
+   739→  signing_order            String    @default("sequential") // sequential, parallel
+   740→  expiry_date              DateTime
+   741→  personal_message         String?
+   742→  status                   String    @default("draft") // draft, sent, partially_signed, completed, declined, expired, voided
+   743→  placeholder_values       String    @default("{}") // JSON object {key: value} — all variable values filled by recruiter
+   744→  sign_fields              String    @default("[]") // JSON array of {id, type, page, x_percent, y_percent, width_percent, height_percent, assigned_to_signer_index, label, required, value}
+   745→  header_config            String    @default("{}") // JSON: {show_logo, show_company_name, show_contact, show_address, show_document_title, logo_url}
+   746→  footer_config            String    @default("{}") // JSON: {show_rights_reserved, show_powered_by, show_page_numbers}
+   747→  show_header_footer       Boolean   @default(true) // Combined toggle for header & footer
+   748→  audit_trail              String    @default("[]") // JSON array of {event, user_name, ip_address, device_info, timestamp}
+   749→  document_hash            String?   // SHA-256 of final PDF
+   750→  revised_from_document_id Int?
+   751→  created_at               DateTime  @default(now())
+   752→  updated_at               DateTime  @default(now())
+   753→
+   754→  organization             Organization      @relation(fields: [organization_id], references: [id])
+   755→  creator                  User              @relation("VaultSignDocumentCreator", fields: [created_by_user_id], references: [id])
+   756→  template                 VaultSignTemplate? @relation(fields: [template_id], references: [id])
+   757→  revised_from_document    VaultSignDocument? @relation("VaultSignDocumentRevision", fields: [revised_from_document_id], references: [id])
+   758→  revised_documents        VaultSignDocument[] @relation("VaultSignDocumentRevision")
+   759→  signers                  VaultSignSigner[]
+   760→  reminders                VaultSignReminder[]
+   761→}
+   762→
+   763→// ─── 42. VaultSign Signers ──────────────────────────────────────────
+   764→model VaultSignSigner {
+   765→  id                     Int       @id @default(autoincrement())
+   766→  document_id            Int
+   767→  user_id                Int?      // null for external signers
+   768→  name                   String
+   769→  email                  String
+   770→  role                   String    // Candidate, Recruiter, Client Employer, Witness, etc.
+   771→  signer_index           Int       // 0-based index, used to assign fields
+   772→  signing_order_position Int       @default(1) // 1,2,3 for sequential. All same for parallel.
+   773→  status                 String    @default("pending") // pending, sent, viewed, signed, declined
+   774→  signed_at              DateTime?
+   775→  declined_at            DateTime?
+   776→  decline_reason         String?
+   777→  sign_token             String    @unique
+   778→  token_used             Boolean   @default(false)
+   779→  ip_address             String?
+   780→  device_info            String?
+   781→  signature_data         String?   // JSON {type, font_name, text, image_base64}
+   782→  created_at             DateTime  @default(now())
+   783→  updated_at             DateTime  @default(now())
+   784→
+   785→  document               VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+   786→  user                   User?     @relation("VaultSignSignerUser", fields: [user_id], references: [id])
+   787→  reminders              VaultSignReminder[]
+   788→}
+   789→
+   790→// ─── 43. VaultSign Reminders ────────────────────────────────────────
+   791→model VaultSignReminder {
+   792→  id            Int       @id @default(autoincrement())
+   793→  document_id   Int
+   794→  signer_id     Int
+   795→  reminder_type String    @default("auto") // auto, manual
+   796→  sent_at       DateTime  @default(now())
+   797→  created_at    DateTime  @default(now())
+   798→
+   799→  document      VaultSignDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+   800→  signer        VaultSignSigner   @relation(fields: [signer_id], references: [id], onDelete: Cascade)
+   801→}
+   802→

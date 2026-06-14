@@ -68,7 +68,27 @@ export async function GET() {
       take: 5,
     });
 
-    const profileCompletion = profile?.profile_completion_pct ?? 0;
+    // Calculate profile completion dynamically with new weights:
+    // Profile info 20%, Email verified 15%, Resume 25%, Credential 15%, Reference 15%, Calendar 10%
+    const hasProfileInfo = !!(profile?.first_name && profile?.last_name && profile?.phone);
+    const hasEmailVerified = !!user?.email_verified_at;
+    const hasResume = !!resume?.file_url;
+    const hasCredential = credentials.length > 0;
+    const hasReference = completedReferences.length > 0;
+    const calendarAvailabilities = await db.calendarAvailability.findMany({
+      where: { candidate_user_id: userId },
+      take: 1,
+      select: { id: true },
+    });
+    const hasCalendar = calendarAvailabilities.length > 0;
+
+    const profileCompletion =
+      (hasProfileInfo ? 20 : 0) +
+      (hasEmailVerified ? 15 : 0) +
+      (hasResume ? 25 : 0) +
+      (hasCredential ? 15 : 0) +
+      (hasReference ? 15 : 0) +
+      (hasCalendar ? 10 : 0);
 
     // VaultSign stats - find signer records for this candidate
     const vaultSignSigners = await db.vaultSignSigner.findMany({

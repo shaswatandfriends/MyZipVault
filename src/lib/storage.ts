@@ -5,6 +5,7 @@ const BUCKET_CREDENTIALS = "credentials";
 const BUCKET_RESUMES = "resumes";
 const BUCKET_BAA = "baa-documents";
 const BUCKET_INVOICES = "invoice-pdfs";
+const BUCKET_BANNERS = "banners";
 
 /**
  * Upload a file to Supabase Storage.
@@ -140,4 +141,5 @@ export const STORAGE_BUCKETS = {
   RESUMES: BUCKET_RESUMES,
   BAA: BUCKET_BAA,
   INVOICES: BUCKET_INVOICES,
+  BANNERS: BUCKET_BANNERS,
 } as const;
