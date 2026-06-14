@@ -4,7 +4,6 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/components/providers/auth-provider";
-import { NotificationBell } from "@/components/layout/notification-bell";
 import { CreditLowPopup } from "@/components/credit-low-popup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,7 +74,6 @@ export default function RecruiterLayout({
                   Send Request
                 </Link>
               </Button>
-              <NotificationBell />
             </div>
           </div>
         </header>

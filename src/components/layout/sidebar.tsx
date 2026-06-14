@@ -30,31 +30,18 @@ import {
   ShieldCheck,
   AlertTriangle,
   LogOut,
-  CheckCheck,
-  Info,
-  Loader2,
   ScrollText,
-  Trash2,
-  XCircle,
   ChevronDown,
   Eye,
   Database,
   Activity,
   UserCheck,
   ClipboardList,
-  DollarSign,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Sidebar } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +53,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import type { UserRole } from "@/lib/types";
 
 // ─── Nav Item Types ────────────────────────────────────────────────────
@@ -250,156 +238,7 @@ function getNavItems(role: UserRole): NavItem[] {
   }
 }
 
-// ─── Notification Type Icons ─────────────────────────────────────────
-const notificationTypeIcons: Record<string, LucideIcon> = {
-  credential: FileText,
-  checklist: ClipboardCheck,
-  reference: Users,
-  sharing: Share2,
-  system: Info,
-  reference_deletion: ScrollText,
-  reference_deleted: Trash2,
-  reference_deletion_rejected: XCircle,
-};
 
-// ─── Notification Shape ──────────────────────────────────────────────
-interface SidebarNotification {
-  id: number;
-  type: string;
-  message: string;
-  createdAt: string;
-  isRead: boolean;
-}
-
-// ─── Notification Bell Sub-component ─────────────────────────────────
-function NotificationBell({ role }: { role: UserRole }) {
-  const [notifications, setNotifications] = useState<SidebarNotification[]>([]);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-
-  const apiEndpoint =
-    role === "candidate"
-      ? "/api/candidate/notifications"
-      : "/api/recruiter/notifications";
-
-  useEffect(() => {
-    let mounted = true;
-
-    const doFetch = () => {
-      fetch(apiEndpoint)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (!mounted || !data) return;
-          setNotifications(
-            Array.isArray(data) ? data : data.notifications ?? []
-          );
-        })
-        .catch(() => {});
-    };
-
-    const initialTimer = setTimeout(doFetch, 0);
-    const interval = setInterval(doFetch, 30000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(initialTimer);
-      clearInterval(interval);
-    };
-  }, [apiEndpoint]);
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAllRead = async () => {
-    try {
-      await fetch(apiEndpoint, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ markAllRead: true }),
-      });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    } catch {
-      // silently fail
-    }
-  };
-
-  const formatDate = (date: string | Date) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return d.toLocaleDateString();
-  };
-
-  return (
-    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-      <PopoverTrigger asChild>
-        <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[#111827]">
-          <Bell className="size-5 shrink-0" />
-          <span>Notifications</span>
-          {unreadCount > 0 && (
-            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[#166534] text-[10px] font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent side="right" align="start" className="w-80 rounded-xl border-[#E5E7EB] bg-white p-0 shadow-lg">
-        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
-          <h4
-            className="text-sm font-semibold text-[#111827]"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
-          >
-            Notifications
-          </h4>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="flex items-center gap-1 text-xs text-[#166534] hover:underline"
-            >
-              <CheckCheck className="size-3" />
-              Mark all read
-            </button>
-          )}
-        </div>
-        <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-[#9CA3AF]">
-              No notifications
-            </p>
-          ) : (
-            <div className="flex flex-col">
-              {notifications.map((n) => {
-                const IconComp = notificationTypeIcons[n.type] ?? Bell;
-                return (
-                  <div
-                    key={n.id}
-                    className="flex items-start gap-3 border-b border-[#E5E7EB] px-4 py-3 transition-colors last:border-b-0 hover:bg-[#F8F7F4]"
-                  >
-                    <IconComp className="mt-0.5 size-4 shrink-0 text-[#9CA3AF]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-[#111827]">{n.message}</p>
-                      <p className="mt-0.5 text-xs text-[#9CA3AF]">
-                        {formatDate(n.createdAt)}
-                      </p>
-                    </div>
-                    {!n.isRead && (
-                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[#166534]" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 // ─── Collapsible Nav Group Component ─────────────────────────────────
 function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: string }) {
@@ -593,10 +432,8 @@ export function AppSidebar() {
 
         {/* ── Bottom Section: User + Sign Out ── */}
         <div className="shrink-0 space-y-2 border-t border-[#E5E7EB] p-3">
-          {/* Notification Bell (candidates & recruiters) */}
-          {(role === "candidate" || role === "client_admin" || role === "client_recruiter") && (
-            <NotificationBell role={role} />
-          )}
+          {/* Notification Bell (all roles) */}
+          <NotificationBell variant="sidebar" />
 
           {/* User Info */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-2">
