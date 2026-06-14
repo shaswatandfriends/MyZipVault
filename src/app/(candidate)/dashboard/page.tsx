@@ -21,74 +21,10 @@ import {
   Mail,
   Loader2,
   FileSignature,
-  ArrowUpRight,
 } from "@/lib/icons";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
-
-// ─── Circular Progress Component ─────────────────────────────────
-function CircularProgress({
-  percentage,
-  size = 80,
-  strokeWidth = 6,
-}: {
-  percentage: number;
-  size?: number;
-  strokeWidth?: number;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  // Color based on completion
-  const color =
-    percentage >= 100
-      ? "#166534"
-      : percentage >= 50
-        ? "#16A34A"
-        : percentage >= 25
-          ? "#F59E0B"
-          : "#EF4444";
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#E5E7EB"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-700 ease-out"
-        />
-      </svg>
-      {/* Percentage text in center */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          className="text-sm font-bold"
-          style={{ color }}
-        >
-          {percentage}%
-        </span>
-      </div>
-    </div>
-  );
-}
 
 // ─── Dashboard Data Interface ─────────────────────────────────────
 interface DashboardData {
@@ -199,14 +135,6 @@ export default function CandidateDashboardPage() {
 
   const dismissThankYou = () => setThankYouState(null);
 
-  const displayName =
-    data?.profile?.firstName && data?.profile?.lastName
-      ? `${data.profile.firstName} ${data.profile.lastName}`
-      : user?.firstName && user?.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : "there";
-
-  const profileCompletion = data?.profile?.profileCompletionPct ?? 0;
   const hasResume = !!data?.resume?.fileUrl;
   const isEmptyState =
     !data?.checklists?.total &&
@@ -258,35 +186,6 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="space-y-3">
-      {/* ── Welcome Section with Profile Circle ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1
-            className="text-lg font-semibold text-[#111827] sm:text-xl"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
-          >
-            Welcome, {displayName}
-          </h1>
-          <p className="text-xs text-[#6B7280]">
-            Here&apos;s an overview of your vault
-          </p>
-        </div>
-        <Link href="/profile-completion" className="group">
-          <div className="relative flex items-center gap-2 cursor-pointer">
-            <CircularProgress percentage={profileCompletion} size={44} strokeWidth={4} />
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-[#111827] group-hover:text-[#166534] transition-colors">
-                Profile
-              </span>
-              <span className="text-[10px] text-[#6B7280]">
-                {profileCompletion}% done
-              </span>
-            </div>
-            <ArrowUpRight className="absolute -top-0.5 -right-1 size-3 text-[#9CA3AF] group-hover:text-[#166534] transition-colors" />
-          </div>
-        </Link>
-      </div>
-
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 

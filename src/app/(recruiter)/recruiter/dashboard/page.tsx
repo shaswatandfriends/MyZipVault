@@ -7,15 +7,12 @@ import {
   Users,
   Clock,
   CheckCircle2,
-  CreditCard,
-  Send,
   Search,
   FileText,
   AlertCircle,
   ArrowUpRight,
 } from "@/lib/icons";
 
-import { PageHeader } from "@/components/layout/page-header";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -216,35 +213,6 @@ export default function RecruiterDashboardPage() {
 
   return (
     <div className="space-y-3">
-      {/* ── Header with credit balance ─────────────────────────────── */}
-      <PageHeader
-        title="Dashboard"
-        description="Manage your candidate verification requests and track your organization's activity."
-        actions={
-          <div className="flex items-center gap-3">
-            {/* Credit Balance Badge — always visible */}
-            <Card className="shadow-none border-dashed py-0">
-              <CardContent className="flex items-center gap-2 px-3 py-2">
-                <CreditCard className="size-4 text-emerald-600" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Credits
-                </span>
-                <Badge className="bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-600 text-sm px-2">
-                  {isLoading ? "…" : stats?.creditsBalance ?? 0}
-                </Badge>
-              </CardContent>
-            </Card>
-
-            <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Link href="/recruiter/send">
-                <Send className="size-4" />
-                Send New Request
-              </Link>
-            </Button>
-          </div>
-        }
-      />
-
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
