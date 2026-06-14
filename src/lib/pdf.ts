@@ -1,4 +1,6 @@
 // pdfmake has ESM/CJS compatibility issues with Turbopack, so we use dynamic import
+import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont } from 'pdf-lib';
+
 let printerInstance: any = null;
 
 async function getPrinter(): Promise<any> {
@@ -454,7 +456,7 @@ export async function generateInvoicePdf(data: {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 3. Checklist PDF
+// 3. Checklist PDF  (pdf-lib — works reliably on Vercel)
 // ─────────────────────────────────────────────────────────────
 
 const RATING_LABELS: Record<string, string> = {
@@ -463,6 +465,60 @@ const RATING_LABELS: Record<string, string> = {
   '3': 'Experienced',
   '4': 'Proficient',
 };
+
+// Colour constants for pdf-lib (rgb 0-1)
+const C_BRAND     = rgb(15/255, 118/255, 110/255);   // #0f766e
+const C_BRAND_BG  = rgb(240/255, 253/255, 250/255);   // #f0fdfa
+const C_DARK      = rgb(26/255, 26/255, 26/255);      // #1a1a1a
+const C_MEDIUM    = rgb(74/255, 74/255, 74/255);       // #4a4a4a
+const C_LIGHT     = rgb(107/255, 114/255, 128/255);    // #6b7280
+const C_BORDER    = rgb(209/255, 213/255, 219/255);    // #d1d5db
+const C_WHITE     = rgb(1, 1, 1);
+
+/** Helper: draw text, return the new Y position */
+function drawText(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  color: Parameters<PDFPage['drawText']>[1]['color'] = C_DARK,
+  opts?: { bold?: boolean; maxWidth?: number; align?: 'left' | 'center' | 'right' }
+): number {
+  const options: any = { size, color, font };
+  if (opts?.maxWidth) options.maxWidth = opts.maxWidth;
+  page.drawText(text, { x, y, ...options });
+  return y - size * 1.4;
+}
+
+/** Draw a filled rectangle */
+function drawRect(page: PDFPage, x: number, y: number, w: number, h: number, color: Parameters<PDFPage['drawRectangle']>[1]['color']) {
+  page.drawRectangle({ x, y, width: w, height: h, color });
+}
+
+/** Draw a horizontal line */
+function drawHLine(page: PDFPage, x: number, y: number, w: number, color: Parameters<PDFPage['drawLine']>[1]['color'] = C_BORDER, thickness = 0.5) {
+  page.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness, color });
+}
+
+/** Word-wrap text into lines that fit maxWidth */
+function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(test, fontSize) > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
 
 export async function generateChecklistPdf(data: {
   candidateName: string;
@@ -479,6 +535,20 @@ export async function generateChecklistPdf(data: {
   signatureDate: string;
   signatureBase64?: string;
 }): Promise<Buffer> {
+  const pdfDoc = await PDFDocument.create();
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  // Page dimensions (US Letter)
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const M_LEFT = 50;
+  const M_RIGHT = 50;
+  const M_TOP = 60;
+  const M_BOTTOM = 50;
+  const CONTENT_W = PAGE_W - M_LEFT - M_RIGHT; // 512
+
   // Group skills by category
   const categoryMap = new Map<string, Array<{ skillName: string; rating: string; isNa: boolean }>>();
   for (const skill of data.skills) {
@@ -488,195 +558,215 @@ export async function generateChecklistPdf(data: {
   }
   const categories = Array.from(categoryMap.entries());
 
-  // Build skill table body
-  const skillTableBody: any[] = [
-    [
-      { text: 'Skill', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
-      { text: 'Rating', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
-      { text: 'N/A', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
-    ],
-  ];
+  // ── Column layout ──
+  const COL_SKILL = M_LEFT;
+  const COL_SKILL_W = CONTENT_W * 0.60;
+  const COL_RATING = COL_SKILL + COL_SKILL_W;
+  const COL_RATING_W = CONTENT_W * 0.25;
+  const COL_NA = COL_RATING + COL_RATING_W;
+  const COL_NA_W = CONTENT_W * 0.15;
+
+  let page: PDFPage = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  let curY = PAGE_H - M_TOP;
+  let pageNum = 1;
+
+  function footer(p: PDFPage, num: number) {
+    const fSize = 7;
+    const fY = M_BOTTOM - 15;
+    p.drawText('MyZipVault — Skills Checklist', { x: M_LEFT, y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
+    p.drawText(`Page ${num}`, { x: PAGE_W - M_RIGHT - fontRegular.widthOfTextAtSize(`Page ${num}`, fSize), y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
+  }
+
+  function newPage(): PDFPage {
+    footer(page, pageNum);
+    pageNum++;
+    page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    curY = PAGE_H - M_TOP;
+    // Continuation header
+    page.drawText(data.checklistName, { x: M_LEFT, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
+    const nameW = fontRegular.widthOfTextAtSize(data.candidateName, 8);
+    page.drawText(data.candidateName, { x: PAGE_W - M_RIGHT - nameW, y: PAGE_H - 30, size: 8, font: fontRegular, color: C_LIGHT });
+    curY = PAGE_H - M_TOP - 10;
+    return page;
+  }
+
+  function ensureSpace(needed: number) {
+    if (curY - needed < M_BOTTOM + 10) newPage();
+  }
+
+  // ── HEADER BANNER ──
+  drawRect(page, 0, curY - 45, PAGE_W, 50, C_BRAND);
+  const titleSize = 18;
+  page.drawText(data.checklistName.toUpperCase(), {
+    x: M_LEFT,
+    y: curY - 30,
+    size: titleSize,
+    font: fontBold,
+    color: C_WHITE,
+    maxWidth: CONTENT_W,
+  });
+  curY -= 60;
+
+  // ── CANDIDATE INFO ──
+  const infoBoxH = 40;
+  const col3 = CONTENT_W / 3;
+  // Background
+  drawRect(page, M_LEFT, curY - infoBoxH, CONTENT_W, infoBoxH, C_BRAND_BG);
+  // Borders
+  page.drawRectangle({ x: M_LEFT, y: curY - infoBoxH, width: CONTENT_W, height: infoBoxH, borderColor: C_BORDER, borderWidth: 0.5 });
+  page.drawLine({ start: { x: M_LEFT + col3, y: curY }, end: { x: M_LEFT + col3, y: curY - infoBoxH }, thickness: 0.5, color: C_BORDER });
+  page.drawLine({ start: { x: M_LEFT + col3 * 2, y: curY }, end: { x: M_LEFT + col3 * 2, y: curY - infoBoxH }, thickness: 0.5, color: C_BORDER });
+
+  // Labels
+  const lSize = 7;
+  const vSize = 10;
+  page.drawText('Candidate', { x: M_LEFT + 8, y: curY - 13, size: lSize, font: fontBold, color: C_LIGHT });
+  page.drawText(truncate(data.candidateName, fontBold, vSize, col3 - 20), { x: M_LEFT + 8, y: curY - 28, size: vSize, font: fontBold, color: C_DARK });
+
+  page.drawText('Specialty', { x: M_LEFT + col3 + 8, y: curY - 13, size: lSize, font: fontBold, color: C_LIGHT });
+  page.drawText(truncate(data.specialty || 'N/A', fontBold, vSize, col3 - 20), { x: M_LEFT + col3 + 8, y: curY - 28, size: vSize, font: fontBold, color: C_DARK });
+
+  page.drawText('Date Completed', { x: M_LEFT + col3 * 2 + 8, y: curY - 13, size: lSize, font: fontBold, color: C_LIGHT });
+  page.drawText(truncate(data.completedDate || 'N/A', fontBold, vSize, col3 - 20), { x: M_LEFT + col3 * 2 + 8, y: curY - 28, size: vSize, font: fontBold, color: C_DARK });
+
+  curY -= infoBoxH + 16;
+
+  // ── SKILLS TABLE ──
+  const ROW_H = 18;
+  const HEADER_H = 22;
+  const CAT_H = 20;
+  const fTable = 8.5;
+  const fTableHead = 8.5;
+
+  // Table header row
+  ensureSpace(HEADER_H + ROW_H);
+  drawRect(page, COL_SKILL, curY - HEADER_H, CONTENT_W, HEADER_H, C_BRAND);
+  page.drawText('Skill',   { x: COL_SKILL + 6, y: curY - 15, size: fTableHead, font: fontBold, color: C_WHITE });
+  page.drawText('Rating',  { x: COL_RATING + 6, y: curY - 15, size: fTableHead, font: fontBold, color: C_WHITE });
+  page.drawText('N/A',     { x: COL_NA + 6, y: curY - 15, size: fTableHead, font: fontBold, color: C_WHITE });
+  curY -= HEADER_H;
 
   for (const [category, skills] of categories) {
-    // Category header row
-    skillTableBody.push([
-      { text: category, bold: true, fontSize: 9, color: BRAND_COLOR, fillColor: BRAND_LIGHT, colSpan: 3, margin: [6, 5, 6, 5] },
-      {},
-      {},
-    ]);
+    // Category row
+    ensureSpace(CAT_H + ROW_H);
+    drawRect(page, COL_SKILL, curY - CAT_H, CONTENT_W, CAT_H, C_BRAND_BG);
+    page.drawText(truncate(category, fontBold, fTable, CONTENT_W - 16), { x: COL_SKILL + 8, y: curY - 14, size: fTable, font: fontBold, color: C_BRAND });
+    curY -= CAT_H;
+
     // Skill rows
     for (const skill of skills) {
-      skillTableBody.push([
-        { text: skill.skillName, fontSize: 9, color: TEXT_DARK, margin: [16, 4, 6, 4] },
-        { text: skill.isNa ? '\u2014' : (RATING_LABELS[skill.rating] || skill.rating), fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
-        { text: skill.isNa ? '✓' : '', fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
-      ]);
+      ensureSpace(ROW_H + 10);
+
+      // Light bottom border
+      drawHLine(page, COL_SKILL, curY - ROW_H, CONTENT_W, C_BORDER, 0.3);
+
+      // Skill name (may need wrapping for long names)
+      const skillLabel = skill.skillName;
+      if (fontRegular.widthOfTextAtSize(skillLabel, fTable) <= COL_SKILL_W - 20) {
+        page.drawText(truncate(skillLabel, fontRegular, fTable, COL_SKILL_W - 20), { x: COL_SKILL + 16, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
+      } else {
+        // Wrap long skill names
+        const lines = wrapText(skillLabel, fontRegular, fTable, COL_SKILL_W - 20);
+        let ly = curY - 13;
+        for (const line of lines.slice(0, 2)) {
+          page.drawText(line, { x: COL_SKILL + 16, y: ly, size: fTable, font: fontRegular, color: C_DARK });
+          ly -= fTable + 2;
+        }
+      }
+
+      // Rating
+      const ratingText = skill.isNa ? '\u2014' : (RATING_LABELS[skill.rating] || skill.rating);
+      const ratingW = fontRegular.widthOfTextAtSize(ratingText, fTable);
+      page.drawText(ratingText, { x: COL_RATING + (COL_RATING_W - ratingW) / 2, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
+
+      // N/A check
+      if (skill.isNa) {
+        const naW = fontRegular.widthOfTextAtSize('\u2713', fTable);
+        page.drawText('\u2713', { x: COL_NA + (COL_NA_W - naW) / 2, y: curY - 13, size: fTable, font: fontRegular, color: C_DARK });
+      }
+
+      curY -= ROW_H;
     }
   }
 
-  const docDefinition: any = {
-    pageSize: 'LETTER',
-    pageMargins: [50, 70, 50, 60],
-    styles: baseStyles,
-    header: (currentPage: number) => {
-      if (currentPage === 1) return {};
-      return {
-        columns: [
-          { text: data.checklistName, style: 'smallText', alignment: 'left', margin: [50, 20, 0, 0] },
-          { text: data.candidateName, style: 'smallText', alignment: 'right', margin: [0, 20, 50, 0] },
-        ],
-      };
-    },
-    footer: (currentPage: number, pageCount: number) => {
-      return {
-        columns: [
-          { text: 'MyZipVault — Skills Checklist', style: 'footer', margin: [50, 0, 0, 0] },
-          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 50, 0], alignment: 'right' },
-        ],
-        margin: [0, 20, 0, 0],
-      };
-    },
-    content: [
-      // Header
-      {
-        canvas: [
-          { type: 'rect', x: 0, y: 0, w: 515, h: 45, color: BRAND_COLOR },
-        ],
-      },
-      {
-        text: data.checklistName.toUpperCase(),
-        fontSize: 20,
-        bold: true,
-        color: '#ffffff',
-        absolutePosition: { x: 50, y: 12 },
-      },
-      { text: '', margin: [0, 10] },
+  // Table bottom border
+  drawHLine(page, COL_SKILL, curY, CONTENT_W, C_BRAND, 1);
+  curY -= 20;
 
-      // Candidate info
-      {
-        table: {
-          widths: ['*', '*', '*'],
-          body: [
-            [
-              {
-                stack: [
-                  { text: 'Candidate', style: 'label' },
-                  { text: data.candidateName, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-              {
-                stack: [
-                  { text: 'Specialty', style: 'label' },
-                  { text: data.specialty, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-              {
-                stack: [
-                  { text: 'Date Completed', style: 'label' },
-                  { text: data.completedDate, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 16],
-      },
+  // ── ATTESTATION ──
+  ensureSpace(80);
+  drawHLine(page, M_LEFT, curY, CONTENT_W, C_BRAND, 2);
+  curY -= 18;
+  page.drawText('ATTESTATION', { x: M_LEFT, y: curY, size: 12, font: fontBold, color: C_BRAND });
+  curY -= 20;
 
-      // Skills table
-      {
-        table: {
-          headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
-          body: skillTableBody,
-        },
-        layout: {
-          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 20],
-      },
+  // Attestation box
+  const attestLines = wrapText(data.attestationText, fontOblique, 8.5, CONTENT_W - 24);
+  const attestBoxH = Math.max(40, attestLines.length * 13 + 20);
+  ensureSpace(attestBoxH + 10);
+  drawRect(page, M_LEFT, curY - attestBoxH, CONTENT_W, attestBoxH, rgb(1,1,1));
+  page.drawRectangle({ x: M_LEFT, y: curY - attestBoxH, width: CONTENT_W, height: attestBoxH, borderColor: C_BORDER, borderWidth: 0.5 });
+  let attestY = curY - 14;
+  for (const line of attestLines) {
+    page.drawText(line, { x: M_LEFT + 12, y: attestY, size: 8.5, font: fontOblique, color: C_MEDIUM });
+    attestY -= 13;
+  }
+  curY -= attestBoxH + 24;
 
-      // Attestation
-      createBrandLine(),
-      { text: 'ATTESTATION', style: 'sectionHeader' },
-      {
-        table: {
-          widths: ['*'],
-          body: [
-            [
-              {
-                text: data.attestationText,
-                fontSize: 9,
-                color: TEXT_MEDIUM,
-                lineHeight: 1.5,
-                italics: true,
-                margin: [10, 10, 10, 10],
-                border: [true, true, true, true],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 20],
-      },
+  // ── SIGNATURE ──
+  ensureSpace(70);
 
-      // Signature
-      {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              // Show signature image if available, otherwise show a line
-              ...(data.signatureBase64
-                ? [{
-                    image: data.signatureBase64.startsWith('data:')
-                      ? data.signatureBase64
-                      : `data:image/png;base64,${data.signatureBase64}`,
-                    width: 180,
-                    margin: [0, 0, 0, 4],
-                  }]
-                : [{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 30, 0, 4] }]
-              ),
-              { text: `Signed by: ${data.signatureName}`, fontSize: 9, color: TEXT_MEDIUM },
-              { text: `Valid until: ${data.validUntil || 'N/A'}`, fontSize: 8, color: TEXT_LIGHT, margin: [0, 2, 0, 0] },
-            ],
-          },
-          {
-            width: 'auto',
-            stack: [
-              { text: `Date: ${data.signatureDate}`, fontSize: 9, color: TEXT_MEDIUM },
-              ...(data.agencyName ? [{ text: `Agency: ${data.agencyName}`, fontSize: 8, color: TEXT_LIGHT, margin: [0, 2, 0, 0] }] : []),
-            ],
-            alignment: 'right',
-          },
-        ],
-      },
-    ],
-  };
+  // Embed signature image if available
+  if (data.signatureBase64) {
+    try {
+      const sigData = data.signatureBase64.startsWith('data:')
+        ? data.signatureBase64.split(',')[1]
+        : data.signatureBase64;
+      const sigBytes = Buffer.from(sigData, 'base64');
+      const sigImage = await pdfDoc.embedPng(sigBytes).catch(() => pdfDoc.embedJpg(sigBytes));
+      const sigDims = sigImage.scale(0.4);
+      ensureSpace(sigDims.height + 40);
+      page.drawImage(sigImage, { x: M_LEFT, y: curY - sigDims.height, width: sigDims.width, height: sigDims.height });
+      curY -= sigDims.height + 4;
+    } catch {
+      // If signature image fails, draw a line
+      drawHLine(page, M_LEFT, curY - 30, 200, C_DARK, 1);
+      curY -= 34;
+    }
+  } else {
+    drawHLine(page, M_LEFT, curY - 30, 200, C_DARK, 1);
+    curY -= 34;
+  }
 
-  return pdfDocToBuffer(docDefinition);
+  page.drawText(`Signed by: ${data.signatureName}`, { x: M_LEFT, y: curY, size: 9, font: fontRegular, color: C_MEDIUM });
+  curY -= 14;
+  page.drawText(`Valid until: ${data.validUntil || 'N/A'}`, { x: M_LEFT, y: curY, size: 8, font: fontRegular, color: C_LIGHT });
+
+  // Date and agency on right
+  const dateText = `Date: ${data.signatureDate}`;
+  const dateW = fontRegular.widthOfTextAtSize(dateText, 9);
+  page.drawText(dateText, { x: PAGE_W - M_RIGHT - dateW, y: curY + 14, size: 9, font: fontRegular, color: C_MEDIUM });
+  if (data.agencyName) {
+    const agencyText = `Agency: ${data.agencyName}`;
+    const agencyW = fontRegular.widthOfTextAtSize(agencyText, 8);
+    page.drawText(agencyText, { x: PAGE_W - M_RIGHT - agencyW, y: curY, size: 8, font: fontRegular, color: C_LIGHT });
+  }
+
+  // Finalize — add footer to last page
+  footer(page, pageNum);
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
+/** Truncate text with ellipsis if wider than maxWidth */
+function truncate(text: string, font: PDFFont, fontSize: number, maxWidth: number): string {
+  if (font.widthOfTextAtSize(text, fontSize) <= maxWidth) return text;
+  let t = text;
+  while (t.length > 0 && font.widthOfTextAtSize(t + '...', fontSize) > maxWidth) {
+    t = t.slice(0, -1);
+  }
+  return t + '...';
 }
 
 // ─────────────────────────────────────────────────────────────

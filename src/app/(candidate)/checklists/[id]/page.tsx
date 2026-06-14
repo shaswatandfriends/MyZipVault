@@ -631,7 +631,7 @@ export default function ChecklistAssessmentPage({
           </CardContent>
         </Card>
 
-        {/* Inline PDF preview */}
+        {/* Inline PDF preview — use object tag for better cross-browser support */}
         <Card className="border-[#E5E7EB] overflow-hidden">
           <CardHeader className="px-5 py-3 border-b border-[#E5E7EB] bg-[#FAFAF8]">
             <div className="flex items-center justify-between">
@@ -639,18 +639,41 @@ export default function ChecklistAssessmentPage({
                 <FileDown className="size-4 text-[#166534]" />
                 <span className="text-sm font-semibold text-[#111827]">Checklist PDF</span>
               </div>
-              <Badge variant="outline" className="text-xs text-[#166534] border-[#166534]/30">
-                Completed
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs text-[#166534] border-[#166534]/30">
+                  Completed
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-[#166534] hover:bg-[#DCFCE7] h-7 px-2"
+                  onClick={() => window.open(pdfPreviewUrl, '_blank')}
+                >
+                  <Eye className="size-3.5" /> Open in new tab
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <iframe
-              src={pdfPreviewUrl}
+            <object
+              data={pdfPreviewUrl}
+              type="application/pdf"
               className="w-full border-0"
               style={{ height: '70vh' }}
-              title="Checklist PDF Preview"
-            />
+            >
+              {/* Fallback when browser can't embed PDFs */}
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <FileDown className="size-12 text-[#9CA3AF] mb-4" />
+                <p className="text-sm font-medium text-[#374151] mb-1">PDF preview not available</p>
+                <p className="text-xs text-[#6B7280] mb-4">Your browser may not support embedded PDFs.</p>
+                <Button
+                  className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+                  onClick={() => window.open(pdfDownloadUrl, '_blank')}
+                >
+                  <Download className="size-4" /> Download PDF
+                </Button>
+              </div>
+            </object>
           </CardContent>
         </Card>
 
