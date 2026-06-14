@@ -640,13 +640,11 @@ export async function generateChecklistPdf(data: {
   const overallScore = totalRated > 0 ? Math.round((sumRatings / (totalRated * 4)) * 100) : 0;
   const proficiencyPct = totalRated > 0 ? Math.round((countByRating['4'] / totalRated) * 100) : 0;
 
-  // ── Column layout ──
+  // ── Column layout ── (no separate N/A column - use badge within rating column)
   const COL_SKILL = M_LEFT;
   const COL_SKILL_W = CONTENT_W * 0.52;
   const COL_RATING = COL_SKILL + COL_SKILL_W;
-  const COL_RATING_W = CONTENT_W * 0.33;
-  const COL_NA = COL_RATING + COL_RATING_W;
-  const COL_NA_W = CONTENT_W * 0.15;
+  const COL_RATING_W = CONTENT_W * 0.48;
 
   let page: PDFPage = pdfDoc.addPage([PAGE_W, PAGE_H]);
   let curY = PAGE_H - M_TOP;
@@ -654,11 +652,11 @@ export async function generateChecklistPdf(data: {
 
   function footer(p: PDFPage, num: number) {
     const fSize = 7;
-    const fY = M_BOTTOM - 15;
+    const fY = M_BOTTOM - 12;
     // Footer line
-    drawHLine(p, M_LEFT, fY + 10, CONTENT_W, C_BORDER, 0.5);
-    p.drawText(sanitizeForPdf('MyZipVault - Skills Checklist'), { x: M_LEFT, y: fY - 2, size: fSize, font: fontRegular, color: C_LIGHT });
-    p.drawText(`Page ${num}`, { x: PAGE_W - M_RIGHT - fontRegular.widthOfTextAtSize(`Page ${num}`, fSize), y: fY - 2, size: fSize, font: fontRegular, color: C_LIGHT });
+    drawHLine(p, M_LEFT, fY + 12, CONTENT_W, C_BORDER, 0.5);
+    p.drawText(sanitizeForPdf('MyZipVault - Skills Checklist'), { x: M_LEFT, y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
+    p.drawText(`Page ${num}`, { x: PAGE_W - M_RIGHT - fontRegular.widthOfTextAtSize(`Page ${num}`, fSize), y: fY, size: fSize, font: fontRegular, color: C_LIGHT });
   }
 
   function newPage(): PDFPage {
@@ -716,7 +714,7 @@ export async function generateChecklistPdf(data: {
   // ═══════════════════════════════════════════════════════════
   // CANDIDATE INFO - Modern card with info fields
   // ═══════════════════════════════════════════════════════════
-  const infoCardH = 50;
+  const infoCardH = 54;
   const infoFields = [
     { label: 'CANDIDATE', value: data.candidateName },
     { label: 'SPECIALTY', value: data.specialty || 'N/A' },
@@ -742,36 +740,40 @@ export async function generateChecklistPdf(data: {
     // Vertical separator
     if (i > 0) {
       page.drawLine({
-        start: { x: fx, y: curY - 4 },
-        end: { x: fx, y: curY - infoCardH + 4 },
+        start: { x: fx, y: curY - 6 },
+        end: { x: fx, y: curY - infoCardH + 6 },
         thickness: 0.3, color: C_BORDER,
       });
     }
-    // Label
-    page.drawText(field.label, { x: fx + 8, y: curY - 15, size: 6.5, font: fontBold, color: C_LIGHT });
-    // Value (may need truncation)
-    const valText = truncate(field.value, fontBold, 9, infoColW - 18);
-    page.drawText(valText, { x: fx + 8, y: curY - 32, size: 9, font: fontBold, color: C_DARK });
+    // Label - more padding from top
+    page.drawText(field.label, { x: fx + 10, y: curY - 16, size: 7, font: fontBold, color: C_LIGHT });
+    // Value - more padding between label and value, bigger font
+    const valText = truncate(field.value, fontBold, 9.5, infoColW - 22);
+    page.drawText(valText, { x: fx + 10, y: curY - 36, size: 9.5, font: fontBold, color: C_DARK });
   }
-  curY -= infoCardH + 14;
+  curY -= infoCardH + 16;
 
   // ═══════════════════════════════════════════════════════════
   // SCORE SUMMARY DASHBOARD
   // ═══════════════════════════════════════════════════════════
-  ensureSpace(78);
-  const dashH = 72;
+  ensureSpace(80);
+  const dashH = 76;
   // Dashboard background
-  drawRect(page, M_LEFT, curY - dashH, CONTENT_W, dashH, rgb(248/255, 250/255, 252/255)); // #f8fafc
+  drawRect(page, M_LEFT, curY - dashH, CONTENT_W, dashH, rgb(248/255, 250/255, 252/255));
   page.drawRectangle({
     x: M_LEFT, y: curY - dashH, width: CONTENT_W, height: dashH,
     borderColor: C_BORDER, borderWidth: 0.5,
   });
 
+  const dashPadTop = 8;
+  const dashPadSide = 10;
+  const innerH = dashH - dashPadTop * 2; // usable height inside dashboard
+
   // Left side: Overall Score badge
-  const scoreBoxW = 120;
-  const scoreBoxH = dashH - 12;
-  const scoreBoxX = M_LEFT + 8;
-  const scoreBoxY = curY - 6 - scoreBoxH;
+  const scoreBoxW = 110;
+  const scoreBoxH = innerH;
+  const scoreBoxX = M_LEFT + dashPadSide;
+  const scoreBoxY = curY - dashPadTop - scoreBoxH;
 
   // Score background - tinted by score level
   const scoreColor = overallScore >= 75 ? C_RATE_PROFICIENT
@@ -791,29 +793,29 @@ export async function generateChecklistPdf(data: {
 
   // Score number - large and prominent
   const scoreStr = `${overallScore}%`;
-  const scoreNumSize = 26;
+  const scoreNumSize = 24;
   const scoreNumW = fontBold.widthOfTextAtSize(scoreStr, scoreNumSize);
   page.drawText(scoreStr, {
     x: scoreBoxX + (scoreBoxW - scoreNumW) / 2,
-    y: scoreBoxY + scoreBoxH - 32,
+    y: scoreBoxY + scoreBoxH - 30,
     size: scoreNumSize,
     font: fontBold,
     color: scoreColor,
   });
   // "Overall Score" label
   const scoreLabel = 'OVERALL SCORE';
-  const scoreLabelW = fontBold.widthOfTextAtSize(scoreLabel, 7);
+  const scoreLabelW = fontBold.widthOfTextAtSize(scoreLabel, 6.5);
   page.drawText(scoreLabel, {
     x: scoreBoxX + (scoreBoxW - scoreLabelW) / 2,
-    y: scoreBoxY + 10,
-    size: 7,
+    y: scoreBoxY + 8,
+    size: 6.5,
     font: fontBold,
     color: C_LIGHT,
   });
 
   // Middle: Proficiency rate
-  const profBoxX = scoreBoxX + scoreBoxW + 10;
-  const profBoxW = 100;
+  const profBoxX = scoreBoxX + scoreBoxW + dashPadSide;
+  const profBoxW = 90;
   const profBoxH = scoreBoxH;
   const profBoxY = scoreBoxY;
 
@@ -824,11 +826,11 @@ export async function generateChecklistPdf(data: {
   });
 
   const profStr = `${proficiencyPct}%`;
-  const profNumW = fontBold.widthOfTextAtSize(profStr, 20);
+  const profNumW = fontBold.widthOfTextAtSize(profStr, 18);
   page.drawText(profStr, {
     x: profBoxX + (profBoxW - profNumW) / 2,
-    y: profBoxY + profBoxH - 26,
-    size: 20,
+    y: profBoxY + profBoxH - 24,
+    size: 18,
     font: fontBold,
     color: C_RATE_PROFICIENT,
   });
@@ -836,7 +838,7 @@ export async function generateChecklistPdf(data: {
   const profLabelW = fontBold.widthOfTextAtSize(profLabel, 6.5);
   page.drawText(profLabel, {
     x: profBoxX + (profBoxW - profLabelW) / 2,
-    y: profBoxY + 14,
+    y: profBoxY + 16,
     size: 6.5,
     font: fontBold,
     color: C_LIGHT,
@@ -845,21 +847,20 @@ export async function generateChecklistPdf(data: {
   const profSubW = fontRegular.widthOfTextAtSize(profSubLabel, 6);
   page.drawText(profSubLabel, {
     x: profBoxX + (profBoxW - profSubW) / 2,
-    y: profBoxY + 5,
+    y: profBoxY + 6,
     size: 6,
     font: fontRegular,
     color: C_LIGHT,
   });
 
-  // Right side: Distribution bar chart
-  const distX = profBoxX + profBoxW + 14;
-  const distW = CONTENT_W - (distX - M_LEFT) - 8;
-  const distY = scoreBoxY + 4;
+  // Right side: Distribution bar chart - properly aligned
+  const distX = profBoxX + profBoxW + dashPadSide;
+  const distW = PAGE_W - M_RIGHT - distX - dashPadSide;
 
   // "SKILL DISTRIBUTION" label
-  page.drawText('SKILL DISTRIBUTION', { x: distX, y: curY - 15, size: 7, font: fontBold, color: C_LIGHT });
+  page.drawText('SKILL DISTRIBUTION', { x: distX, y: curY - 12, size: 6.5, font: fontBold, color: C_LIGHT });
 
-  // Distribution bars
+  // Distribution bars - consistent vertical alignment
   const distItems = [
     { label: 'Proficient', count: countByRating['4'], color: C_RATE_PROFICIENT },
     { label: 'Experienced', count: countByRating['3'], color: C_RATE_EXPERIENCED },
@@ -867,40 +868,57 @@ export async function generateChecklistPdf(data: {
     { label: 'No Exp.', count: countByRating['1'], color: C_RATE_NONE },
   ];
 
-  const barMaxW = distW - 70;
-  const barH = 10;
-  const barGap = 4;
-  let barY = distY + distItems.length * (barH + barGap) - barH;
+  const barLabelW = 52;   // fixed width for labels
+  const barCountW = 20;   // fixed width for count numbers
+  const barGapX = 4;
+  const barMaxW = distW - barLabelW - barCountW - barGapX * 2;
+  const barH = 11;
+  const barGapY = 3;
 
-  for (const item of distItems) {
+  // Start bars aligned from same Y position
+  const barStartY = curY - dashPadTop - 8;
+
+  for (let bi = 0; bi < distItems.length; bi++) {
+    const item = distItems[bi];
     const pct = totalRated > 0 ? item.count / totalRated : 0;
     const filledW = Math.max(pct > 0 ? 6 : 0, barMaxW * pct);
 
-    // Label
-    page.drawText(item.label, { x: distX, y: barY + 2, size: 7, font: fontRegular, color: C_MEDIUM });
+    // Y position for this bar (top-to-bottom)
+    const by = barStartY - bi * (barH + barGapY);
+
+    // Label - right-aligned within barLabelW
+    const labelW = fontRegular.widthOfTextAtSize(item.label, 6.5);
+    page.drawText(item.label, {
+      x: distX + barLabelW - labelW,
+      y: by + 2.5,
+      size: 6.5, font: fontRegular, color: C_MEDIUM,
+    });
+
+    const barX = distX + barLabelW + barGapX;
+
     // Background bar
-    drawRect(page, distX + 50, barY, barMaxW, barH, rgb(229/255, 231/255, 235/255)); // #e5e7eb
+    drawRect(page, barX, by, barMaxW, barH, rgb(229/255, 231/255, 235/255));
     // Filled bar
     if (filledW > 0) {
-      drawRect(page, distX + 50, barY, filledW, barH, item.color);
+      drawRect(page, barX, by, filledW, barH, item.color);
     }
-    // Count text
+
+    // Count text - left-aligned after bar
     const countText = `${item.count}`;
-    const countW = fontBold.widthOfTextAtSize(countText, 7);
     page.drawText(countText, {
-      x: distX + 50 + barMaxW + 4,
-      y: barY + 2,
+      x: barX + barMaxW + barGapX,
+      y: by + 2.5,
       size: 7,
       font: fontBold,
       color: item.color,
     });
-    barY -= (barH + barGap);
   }
 
   // N/A count note
   if (totalNa > 0) {
+    const naBarY = barStartY - distItems.length * (barH + barGapY);
     const naText = `${totalNa} skill${totalNa > 1 ? 's' : ''} marked N/A`;
-    page.drawText(naText, { x: distX, y: barY - 4, size: 6, font: fontOblique, color: C_LIGHT });
+    page.drawText(naText, { x: distX, y: naBarY, size: 6, font: fontOblique, color: C_LIGHT });
   }
 
   curY -= dashH + 16;
@@ -913,16 +931,15 @@ export async function generateChecklistPdf(data: {
   const CAT_H = 22;
   const fTable = 8;
   const fTableHead = 8.5;
+  const barPadX = 12;   // horizontal padding inside rating column
+  const barH3 = 14;     // rating bar height
+  const barOffsetY = (ROW_H - barH3) / 2; // vertically center bar in row
 
   // Table header row
   ensureSpace(HEADER_H + ROW_H);
   drawRect(page, COL_SKILL, curY - HEADER_H, CONTENT_W, HEADER_H, C_BRAND);
-  page.drawText('SKILL', { x: COL_SKILL + 10, y: curY - 16, size: fTableHead, font: fontBold, color: C_WHITE });
-  page.drawText('PROFICIENCY LEVEL', { x: COL_RATING + 10, y: curY - 16, size: fTableHead, font: fontBold, color: C_WHITE });
-  page.drawText('N/A', {
-    x: COL_NA + (COL_NA_W - fontBold.widthOfTextAtSize('N/A', fTableHead)) / 2,
-    y: curY - 16, size: fTableHead, font: fontBold, color: C_WHITE,
-  });
+  page.drawText('SKILL', { x: COL_SKILL + 12, y: curY - 16, size: fTableHead, font: fontBold, color: C_WHITE });
+  page.drawText('PROFICIENCY LEVEL', { x: COL_RATING + barPadX, y: curY - 16, size: fTableHead, font: fontBold, color: C_WHITE });
   curY -= HEADER_H;
 
   let rowIndex = 0;
@@ -953,39 +970,43 @@ export async function generateChecklistPdf(data: {
 
       // ── Skill name ──
       const skillLabel = sanitizeForPdf(skill.skillName);
-      if (fontRegular.widthOfTextAtSize(skillLabel, fTable) <= COL_SKILL_W - 24) {
-        page.drawText(truncate(skill.skillName, fontRegular, fTable, COL_SKILL_W - 24), {
-          x: COL_SKILL + 10, y: curY - 14, size: fTable, font: fontRegular, color: C_DARK,
+      const skillTextMaxW = COL_SKILL_W - 28;
+      if (fontRegular.widthOfTextAtSize(skillLabel, fTable) <= skillTextMaxW) {
+        page.drawText(truncate(skill.skillName, fontRegular, fTable, skillTextMaxW), {
+          x: COL_SKILL + 12, y: curY - 14, size: fTable, font: fontRegular, color: C_DARK,
         });
       } else {
         // Wrap long skill names
-        const lines = wrapText(skillLabel, fontRegular, fTable, COL_SKILL_W - 24);
+        const lines = wrapText(skillLabel, fontRegular, fTable, skillTextMaxW);
         let ly = curY - 12;
         for (const line of lines.slice(0, 2)) {
           page.drawText(sanitizeForPdf(line), {
-            x: COL_SKILL + 10, y: ly, size: fTable, font: fontRegular, color: C_DARK,
+            x: COL_SKILL + 12, y: ly, size: fTable, font: fontRegular, color: C_DARK,
           });
           ly -= fTable + 2;
         }
       }
 
       // ── Rating bar with color-coded fill ──
+      const barX = COL_RATING + barPadX;
+      const barTotalW = COL_RATING_W - barPadX * 2;
+      const barY3 = curY - ROW_H + barOffsetY;
+
       if (skill.isNa) {
-        // N/A badge
+        // N/A badge - centered in rating column
         const naBadgeText = 'N/A';
-        const naBadgeW = 36;
-        const naBadgeH = 14;
-        const naBadgeX = COL_RATING + 10;
-        const naBadgeY = curY - ROW_H + 3;
-        drawRect(page, naBadgeX, naBadgeY, naBadgeW, naBadgeH, C_BRAND_BG);
+        const naBadgeW = 40;
+        const naBadgeH = barH3;
+        const naBadgeX = COL_RATING + (COL_RATING_W - naBadgeW) / 2;
+        drawRect(page, naBadgeX, barY3, naBadgeW, naBadgeH, C_BRAND_BG);
         page.drawRectangle({
-          x: naBadgeX, y: naBadgeY, width: naBadgeW, height: naBadgeH,
+          x: naBadgeX, y: barY3, width: naBadgeW, height: naBadgeH,
           borderColor: C_BORDER, borderWidth: 0.3,
         });
         const naTextW = fontBold.widthOfTextAtSize(naBadgeText, 7);
         page.drawText(naBadgeText, {
           x: naBadgeX + (naBadgeW - naTextW) / 2,
-          y: naBadgeY + 4,
+          y: barY3 + 4,
           size: 7, font: fontBold, color: C_LIGHT,
         });
       } else {
@@ -993,46 +1014,19 @@ export async function generateChecklistPdf(data: {
         const ratingLabel = sanitizeForPdf(RATING_LABELS[ratingVal] || skill.rating);
         const rColor = getRatingColor(ratingVal);
 
-        // Rating bar background (full width)
-        const barX = COL_RATING + 10;
-        const barTotalW = COL_RATING_W - 20;
-        const barH2 = 14;
-        const barY2 = curY - ROW_H + 3;
-
         // Light background bar
-        drawRect(page, barX, barY2, barTotalW, barH2, rgb(229/255, 231/255, 235/255));
+        drawRect(page, barX, barY3, barTotalW, barH3, rgb(229/255, 231/255, 235/255));
         // Filled portion based on rating level (1=25%, 2=50%, 3=75%, 4=100%)
         const fillPct = parseInt(ratingVal) > 0 ? parseInt(ratingVal) / 4 : 0;
-        const fillW = Math.max(6, barTotalW * fillPct);
-        drawRect(page, barX, barY2, fillW, barH2, rColor);
+        const fillW = Math.max(8, barTotalW * fillPct);
+        drawRect(page, barX, barY3, fillW, barH3, rColor);
 
-        // Rating text on top of bar
+        // Rating text centered on the bar
         const rTextW = fontBold.widthOfTextAtSize(ratingLabel, 7);
         page.drawText(ratingLabel, {
           x: barX + (barTotalW - rTextW) / 2,
-          y: barY2 + 4,
+          y: barY3 + 4,
           size: 7, font: fontBold, color: C_DARK,
-        });
-      }
-
-      // ── N/A checkbox ──
-      if (skill.isNa) {
-        // Draw a checked box
-        const boxX = COL_NA + (COL_NA_W - 10) / 2;
-        const boxY = curY - ROW_H + 5;
-        const boxSize = 10;
-        page.drawRectangle({
-          x: boxX, y: boxY, width: boxSize, height: boxSize,
-          borderColor: C_BRAND, borderWidth: 0.8,
-        });
-        // Draw X inside
-        page.drawLine({
-          start: { x: boxX + 2, y: boxY + 2 }, end: { x: boxX + boxSize - 2, y: boxY + boxSize - 2 },
-          thickness: 0.8, color: C_BRAND,
-        });
-        page.drawLine({
-          start: { x: boxX + boxSize - 2, y: boxY + 2 }, end: { x: boxX + 2, y: boxY + boxSize - 2 },
-          thickness: 0.8, color: C_BRAND,
         });
       }
 
@@ -1048,15 +1042,20 @@ export async function generateChecklistPdf(data: {
   // ═══════════════════════════════════════════════════════════
   // ATTESTATION SECTION
   // ═══════════════════════════════════════════════════════════
-  ensureSpace(100);
+  ensureSpace(110);
   // Section header with accent
   drawRect(page, M_LEFT, curY - 20, 4, 20, C_BRAND);
   page.drawText('ATTESTATION', { x: M_LEFT + 10, y: curY - 15, size: 11, font: fontBold, color: C_BRAND });
-  curY -= 28;
+  curY -= 30;
 
-  // Attestation box with styled border
-  const attestLines = wrapText(sanitizeForPdf(data.attestationText), fontOblique, 8.5, CONTENT_W - 28);
-  const attestBoxH = Math.max(44, attestLines.length * 14 + 24);
+  // Attestation box with styled border - generous padding
+  const attestPadLeft = 18;
+  const attestPadRight = 14;
+  const attestPadTop = 14;
+  const attestPadBottom = 14;
+  const attestTextMaxW = CONTENT_W - attestPadLeft - attestPadRight - 4; // 4 for accent bar
+  const attestLines = wrapText(sanitizeForPdf(data.attestationText), fontOblique, 8.5, attestTextMaxW);
+  const attestBoxH = Math.max(50, attestLines.length * 14 + attestPadTop + attestPadBottom);
   ensureSpace(attestBoxH + 10);
   drawRect(page, M_LEFT, curY - attestBoxH, CONTENT_W, attestBoxH, C_BRAND_BG);
   // Left accent bar for attestation
@@ -1066,24 +1065,25 @@ export async function generateChecklistPdf(data: {
     borderColor: C_BORDER, borderWidth: 0.5,
   });
 
-  let attestY = curY - 16;
+  let attestY = curY - attestPadTop;
   for (const line of attestLines) {
-    page.drawText(line, { x: M_LEFT + 14, y: attestY, size: 8.5, font: fontOblique, color: C_MEDIUM });
+    page.drawText(line, { x: M_LEFT + attestPadLeft, y: attestY, size: 8.5, font: fontOblique, color: C_MEDIUM });
     attestY -= 14;
   }
-  curY -= attestBoxH + 20;
+  curY -= attestBoxH + 24;
 
   // ═══════════════════════════════════════════════════════════
   // SIGNATURE SECTION
   // ═══════════════════════════════════════════════════════════
-  ensureSpace(80);
+  ensureSpace(100);
   // Section header with accent
   drawRect(page, M_LEFT, curY - 20, 4, 20, C_BRAND);
   page.drawText('SIGNATURE', { x: M_LEFT + 10, y: curY - 15, size: 11, font: fontBold, color: C_BRAND });
-  curY -= 28;
+  curY -= 30;
 
-  // Signature area
-  const sigColW = CONTENT_W * 0.55;
+  // Signature line area
+  const sigLineW = CONTENT_W * 0.50;
+  const sigMetaX = M_LEFT + sigLineW + 30;
 
   // Embed signature image if available
   if (data.signatureBase64) {
@@ -1093,44 +1093,52 @@ export async function generateChecklistPdf(data: {
         : data.signatureBase64;
       const sigBytes = Buffer.from(sigData, 'base64');
       const sigImage = await pdfDoc.embedPng(sigBytes).catch(() => pdfDoc.embedJpg(sigBytes));
-      const sigDims = sigImage.scale(0.35);
-      ensureSpace(sigDims.height + 50);
-      page.drawImage(sigImage, { x: M_LEFT, y: curY - sigDims.height, width: sigDims.width, height: sigDims.height });
-      curY -= sigDims.height + 4;
+      const sigDims = sigImage.scale(0.3);
+      ensureSpace(sigDims.height + 70);
+      page.drawImage(sigImage, { x: M_LEFT + 4, y: curY - sigDims.height, width: sigDims.width, height: sigDims.height });
+      curY -= sigDims.height + 6;
     } catch {
       // If signature image fails, draw a signature line
-      drawHLine(page, M_LEFT, curY - 30, sigColW, C_DARK, 1);
-      curY -= 34;
+      drawHLine(page, M_LEFT, curY - 30, sigLineW, C_DARK, 1);
+      curY -= 36;
     }
   } else {
-    drawHLine(page, M_LEFT, curY - 30, sigColW, C_DARK, 1);
-    curY -= 34;
+    drawHLine(page, M_LEFT, curY - 30, sigLineW, C_DARK, 1);
+    curY -= 36;
   }
 
-  // Signature details in a structured format - two columns
+  // Signature details - structured as a compact card with label/value pairs
   const sigDetails = [
     { label: 'Signed by', value: data.signatureName },
-    { label: 'Date', value: data.signatureDate },
     { label: 'Agency', value: data.agencyName || 'N/A' },
+  ];
+
+  const sigMetaDetails = [
+    { label: 'Date', value: data.signatureDate },
     { label: 'Valid until', value: data.validUntil || 'N/A' },
   ];
 
-  const sigDetailY = curY;
-  const halfItems = Math.ceil(sigDetails.length / 2);
+  // Left column details
   for (let i = 0; i < sigDetails.length; i++) {
     const item = sigDetails[i];
-    const col = i < halfItems ? 0 : 1;
-    const row = i < halfItems ? i : i - halfItems;
-    const ix = M_LEFT + col * (CONTENT_W / 2);
-    const iy = sigDetailY - row * 18;
-
+    const iy = curY - i * 22;
     // Label
-    page.drawText(item.label, { x: ix, y: iy, size: 7, font: fontBold, color: C_LIGHT });
+    page.drawText(item.label, { x: M_LEFT, y: iy, size: 7, font: fontBold, color: C_LIGHT });
     // Value
-    page.drawText(sanitizeForPdf(item.value), { x: ix, y: iy - 11, size: 9, font: fontBold, color: C_DARK });
+    page.drawText(sanitizeForPdf(item.value), { x: M_LEFT, y: iy - 12, size: 9, font: fontBold, color: C_DARK });
   }
 
-  curY -= 50;
+  // Right column details
+  for (let i = 0; i < sigMetaDetails.length; i++) {
+    const item = sigMetaDetails[i];
+    const iy = curY - i * 22;
+    // Label
+    page.drawText(item.label, { x: sigMetaX, y: iy, size: 7, font: fontBold, color: C_LIGHT });
+    // Value
+    page.drawText(sanitizeForPdf(item.value), { x: sigMetaX, y: iy - 12, size: 9, font: fontBold, color: C_DARK });
+  }
+
+  curY -= 60;
 
   // Finalize — add footer to last page
   footer(page, pageNum);
