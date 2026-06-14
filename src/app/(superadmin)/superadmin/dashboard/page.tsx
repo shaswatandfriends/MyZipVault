@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Users,
@@ -16,6 +17,9 @@ import {
   Download,
   BarChart3,
   Sparkles,
+  Building2,
+  Settings,
+  Bell,
 } from "@/lib/icons";
 import {
   BarChart,
@@ -68,6 +72,7 @@ interface DashboardData {
   pendingAdminApprovals: number;
   errorCountToday: number;
   activeAnnouncements: number;
+  organizationsCount: number;
   recentErrors: {
     id: number;
     severity: string;
@@ -195,6 +200,7 @@ export default function SuperadminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState<string>("all");
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const router = useRouter();
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -360,9 +366,11 @@ export default function SuperadminDashboardPage() {
       )}
 
       {/* ── Stats Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {isLoading ? (
           <>
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
             <StatsCardSkeleton />
             <StatsCardSkeleton />
             <StatsCardSkeleton />
@@ -370,7 +378,11 @@ export default function SuperadminDashboardPage() {
           </>
         ) : (
           <>
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Total Users — clickable → /superadmin/users */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/users")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                 <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
@@ -379,42 +391,53 @@ export default function SuperadminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground group-hover/card:text-teal-700 transition-colors">
                   {stats?.candidates ?? 0} candidates, {stats?.clientRecruiters ?? 0} recruiters
                 </p>
               </CardContent>
             </Card>
 
-            {/* Fix #10 - Changed from "Revenue This Month" to "Credits Purchased This Month" */}
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Credits Purchased This Month — clickable → /superadmin/analytics */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/analytics")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Credits Purchased This Month</CardTitle>
+                <CardTitle className="text-sm font-medium">Credits Purchased</CardTitle>
                 <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <CreditCard className="size-4 text-emerald-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{data?.revenueThisMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground">This month&apos;s total</p>
+                <div className="text-2xl font-bold">{data?.creditsPurchasedMonth ?? 0}</div>
+                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">This month&apos;s total</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Credits Purchased Today — clickable → /superadmin/analytics */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/analytics")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Credits Purchased Today</CardTitle>
+                <CardTitle className="text-sm font-medium">Credits Today</CardTitle>
                 <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
                   <CreditCard className="size-4 text-teal-600" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data?.creditsPurchasedToday ?? 0}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground group-hover/card:text-teal-700 transition-colors">
                   Spent: {data?.creditsSpentToday ?? 0}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow">
+            {/* Active Errors — clickable → /superadmin/errors */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/errors")}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Active Errors</CardTitle>
                 <div className="size-8 rounded-lg bg-red-50 flex items-center justify-center">
@@ -423,7 +446,41 @@ export default function SuperadminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data?.errorCountToday ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Errors logged today</p>
+                <p className="text-xs text-muted-foreground group-hover/card:text-red-700 transition-colors">Errors logged today</p>
+              </CardContent>
+            </Card>
+
+            {/* Pending Admin Approvals — clickable → /superadmin/admins */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/admins")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+                <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <ShieldCheck className="size-4 text-amber-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data?.pendingAdminApprovals ?? 0}</div>
+                <p className="text-xs text-muted-foreground group-hover/card:text-amber-700 transition-colors">Admin accounts awaiting review</p>
+              </CardContent>
+            </Card>
+
+            {/* Active Announcements — clickable → /superadmin/announcements */}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+              onClick={() => router.push("/superadmin/announcements")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Announcements</CardTitle>
+                <div className="size-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <Megaphone className="size-4 text-purple-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data?.activeAnnouncements ?? 0}</div>
+                <p className="text-xs text-muted-foreground group-hover/card:text-purple-700 transition-colors">Currently active</p>
               </CardContent>
             </Card>
           </>
@@ -469,8 +526,11 @@ export default function SuperadminDashboardPage() {
 
       {/* ── Revenue Snapshot & Announcements ───────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Credits Purchased vs Spent ──────────────────────────── */}
-        <Card>
+        {/* ── Credits Purchased vs Spent — clickable → /superadmin/analytics ──── */}
+        <Card
+          className="hover:shadow-md transition-shadow cursor-pointer group/card"
+          onClick={() => router.push("/superadmin/analytics")}
+        >
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Revenue Snapshot</CardTitle>
@@ -640,7 +700,11 @@ export default function SuperadminDashboardPage() {
                   </TableHeader>
                   <TableBody>
                     {(data?.recentErrors ?? []).map((err) => (
-                      <TableRow key={err.id}>
+                      <TableRow
+                        key={err.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => router.push("/superadmin/errors")}
+                      >
                         <TableCell>{getSeverityBadge(err.severity)}</TableCell>
                         <TableCell className="text-sm font-medium">{err.service}</TableCell>
                         <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
@@ -721,11 +785,16 @@ export default function SuperadminDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 {isLoading ? "…" : data?.activeAnnouncements ?? 0} active announcements
               </span>
+              <span className="text-muted-foreground">·</span>
+              <Building2 className="size-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {isLoading ? "…" : data?.organizationsCount ?? 0} organizations
+              </span>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/users">
                 <Users className="size-5 text-teal-600" />
@@ -734,7 +803,7 @@ export default function SuperadminDashboardPage() {
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/companies">
-                <CreditCard className="size-5 text-emerald-600" />
+                <Building2 className="size-5 text-emerald-600" />
                 <span className="text-sm">Companies</span>
               </Link>
             </Button>
@@ -745,8 +814,14 @@ export default function SuperadminDashboardPage() {
               </Link>
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
+              <Link href="/superadmin/announcements">
+                <Megaphone className="size-5 text-purple-600" />
+                <span className="text-sm">Announcements</span>
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/settings">
-                <CreditCard className="size-5 text-emerald-600" />
+                <Settings className="size-5 text-muted-foreground" />
                 <span className="text-sm">Settings</span>
               </Link>
             </Button>

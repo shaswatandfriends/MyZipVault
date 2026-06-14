@@ -79,6 +79,9 @@ export async function GET(request: Request) {
       where: { is_active: true },
     });
 
+    // Organizations count
+    const organizationsCount = await db.organization.count();
+
     // Last 5 errors
     const recentErrors = await db.systemErrorLog.findMany({
       orderBy: { created_at: "desc" },
@@ -178,6 +181,7 @@ export async function GET(request: Request) {
       pendingAdminApprovals,
       errorCountToday,
       activeAnnouncements,
+      organizationsCount,
       recentErrors: recentErrors.map((e) => ({
         id: e.id,
         severity: e.severity,
