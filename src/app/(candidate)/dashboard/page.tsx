@@ -257,27 +257,32 @@ export default function CandidateDashboardPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* ── Welcome Section with Profile Circle ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="text-xl font-semibold text-[#111827] sm:text-2xl"
+            className="text-lg font-semibold text-[#111827] sm:text-xl"
             style={{ fontFamily: "'Clash Display', sans-serif" }}
           >
             Welcome, {displayName}
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">
+          <p className="text-xs text-[#6B7280]">
             Here&apos;s an overview of your vault
           </p>
         </div>
         <Link href="/profile-completion" className="group">
-          <div className="relative flex flex-col items-center gap-1 cursor-pointer">
-            <CircularProgress percentage={profileCompletion} size={80} strokeWidth={6} />
-            <span className="text-[10px] font-medium text-[#6B7280] group-hover:text-[#166534] transition-colors">
-              Profile
-            </span>
-            <ArrowUpRight className="absolute -top-1 -right-1 size-3.5 text-[#9CA3AF] group-hover:text-[#166534] transition-colors" />
+          <div className="relative flex items-center gap-2 cursor-pointer">
+            <CircularProgress percentage={profileCompletion} size={44} strokeWidth={4} />
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-[#111827] group-hover:text-[#166534] transition-colors">
+                Profile
+              </span>
+              <span className="text-[10px] text-[#6B7280]">
+                {profileCompletion}% done
+              </span>
+            </div>
+            <ArrowUpRight className="absolute -top-0.5 -right-1 size-3 text-[#9CA3AF] group-hover:text-[#166534] transition-colors" />
           </div>
         </Link>
       </div>
