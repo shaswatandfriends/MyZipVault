@@ -1,0 +1,1035 @@
+     1→// pdfmake has ESM/CJS compatibility issues with Turbopack, so we use dynamic import
+     2→let printerInstance: any = null;
+     3→
+     4→async function getPrinter(): Promise<any> {
+     5→  if (printerInstance) return printerInstance;
+     6→  
+     7→  // Dynamic import to handle ESM/CJS compatibility
+     8→  const pdfmake = await import('pdfmake');
+     9→  const PdfPrinter = pdfmake.default || pdfmake;
+    10→  
+    11→  const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
+    12→  const vfs = (vfsFontsModule as any).default?.pdfMake?.vfs || (vfsFontsModule as any).pdfMake?.vfs || (vfsFontsModule as any).default || vfsFontsModule;
+    13→  
+    14→  const fonts = {
+    15→    Roboto: {
+    16→      normal: 'Roboto-Regular.ttf',
+    17→      bold: 'Roboto-Medium.ttf',
+    18→      italics: 'Roboto-Italic.ttf',
+    19→      bolditalics: 'Roboto-MediumItalic.ttf',
+    20→    },
+    21→  };
+    22→  
+    23→  const printer = new PdfPrinter(fonts);
+    24→  printer.vfs = vfs;
+    25→  printerInstance = printer;
+    26→  return printerInstance;
+    27→}
+    28→
+    29→const BRAND_COLOR = '#0f766e';
+    30→const BRAND_LIGHT = '#f0fdfa';
+    31→const TEXT_DARK = '#1a1a1a';
+    32→const TEXT_MEDIUM = '#4a4a4a';
+    33→const TEXT_LIGHT = '#6b7280';
+    34→const BORDER_COLOR = '#d1d5db';
+    35→
+    36→function formatDate(date: Date): string {
+    37→  return date.toLocaleDateString('en-US', {
+    38→    year: 'numeric',
+    39→    month: 'long',
+    40→    day: 'numeric',
+    41→  });
+    42→}
+    43→
+    44→function createHeader(title: string): any[] {
+    45→  return [
+    46→    {
+    47→      canvas: [
+    48→        {
+    49→          type: 'rect',
+    50→          x: 0,
+    51→          y: 0,
+    52→          w: 515,
+    53→          h: 50,
+    54→          color: BRAND_COLOR,
+    55→        },
+    56→      ],
+    57→    },
+    58→    {
+    59→      text: title,
+    60→      style: 'headerTitle',
+    61→      absolutePosition: { x: 40, y: 14 },
+    62→    },
+    63→    { text: '', margin: [0, 10] },
+    64→  ];
+    65→}
+    66→
+    67→function createBrandLine(): any {
+    68→  return {
+    69→    canvas: [
+    70→      {
+    71→        type: 'line',
+    72→        x1: 0,
+    73→        y1: 0,
+    74→        x2: 515,
+    75→        y2: 0,
+    76→        lineWidth: 2,
+    77→        lineColor: BRAND_COLOR,
+    78→      },
+    79→    ],
+    80→    margin: [0, 0, 0, 15],
+    81→  };
+    82→}
+    83→
+    84→async function pdfDocToBuffer(docDefinition: any): Promise<Buffer> {
+    85→  const printer = await getPrinter();
+    86→  return new Promise((resolve, reject) => {
+    87→    const doc = printer.createPdfKitDocument(docDefinition);
+    88→    const chunks: Buffer[] = [];
+    89→    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    90→    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    91→    doc.on('error', (err: Error) => reject(err));
+    92→    doc.end();
+    93→  });
+    94→}
+    95→
+    96→const baseStyles: any = {
+    97→  headerTitle: {
+    98→    fontSize: 22,
+    99→    bold: true,
+   100→    color: '#ffffff',
+   101→  },
+   102→  subHeader: {
+   103→    fontSize: 16,
+   104→    bold: true,
+   105→    color: BRAND_COLOR,
+   106→    margin: [0, 0, 0, 8],
+   107→  },
+   108→  sectionHeader: {
+   109→    fontSize: 13,
+   110→    bold: true,
+   111→    color: BRAND_COLOR,
+   112→    margin: [0, 12, 0, 6],
+   113→  },
+   114→  bodyText: {
+   115→    fontSize: 10,
+   116→    color: TEXT_DARK,
+   117→    lineHeight: 1.5,
+   118→  },
+   119→  label: {
+   120→    fontSize: 9,
+   121→    color: TEXT_LIGHT,
+   122→    bold: true,
+   123→    margin: [0, 0, 0, 2],
+   124→  },
+   125→  value: {
+   126→    fontSize: 10,
+   127→    color: TEXT_DARK,
+   128→    margin: [0, 0, 0, 8],
+   129→  },
+   130→  smallText: {
+   131→    fontSize: 8,
+   132→    color: TEXT_LIGHT,
+   133→  },
+   134→  footer: {
+   135→    fontSize: 8,
+   136→    color: TEXT_LIGHT,
+   137→    alignment: 'center',
+   138→  },
+   139→};
+   140→
+   141→// ─────────────────────────────────────────────────────────────
+   142→// 1. BAA (Business Associate Agreement)
+   143→// ─────────────────────────────────────────────────────────────
+   144→
+   145→export async function generateBaaPdf(data: {
+   146→  organizationName: string;
+   147→  signerName: string;
+   148→  signerTitle: string;
+   149→  baaContent: string;
+   150→  signedAt: Date;
+   151→}): Promise<Buffer> {
+   152→  const docDefinition: any = {
+   153→    pageSize: 'LETTER',
+   154→    pageMargins: [60, 80, 60, 60],
+   155→    styles: baseStyles,
+   156→    header: (currentPage: number, pageCount: number) => {
+   157→      if (currentPage === 1) return {};
+   158→      return {
+   159→        columns: [
+   160→          { text: 'Business Associate Agreement', style: 'smallText', alignment: 'left', margin: [60, 20, 0, 0] },
+   161→          { text: `Page ${currentPage} of ${pageCount}`, style: 'smallText', alignment: 'right', margin: [0, 20, 60, 0] },
+   162→        ],
+   163→      };
+   164→    },
+   165→    footer: (currentPage: number, pageCount: number) => {
+   166→      return {
+   167→        columns: [
+   168→          { text: 'MyZipVault — Business Associate Agreement', style: 'footer', margin: [60, 0, 0, 0] },
+   169→          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 60, 0], alignment: 'right' },
+   170→        ],
+   171→        margin: [0, 20, 0, 0],
+   172→      };
+   173→    },
+   174→    content: [
+   175→      // Brand header
+   176→      {
+   177→        canvas: [
+   178→          { type: 'rect', x: 0, y: 0, w: 495, h: 50, color: BRAND_COLOR },
+   179→        ],
+   180→        margin: [0, 0, 0, 0],
+   181→      },
+   182→      {
+   183→        text: 'BUSINESS ASSOCIATE AGREEMENT',
+   184→        fontSize: 22,
+   185→        bold: true,
+   186→        color: '#ffffff',
+   187→        absolutePosition: { x: 60, y: 14 },
+   188→      },
+   189→      { text: '', margin: [0, 20] },
+   190→
+   191→      // Parties section
+   192→      {
+   193→        table: {
+   194→          widths: ['*', '*'],
+   195→          body: [
+   196→            [
+   197→              {
+   198→                stack: [
+   199→                  { text: 'THIS AGREEMENT ENTERED INTO BY:', style: 'label' },
+   200→                  { text: data.organizationName, style: 'value', bold: true, fontSize: 12 },
+   201→                ],
+   202→                border: [true, true, true, true],
+   203→                fillColor: BRAND_LIGHT,
+   204→                margin: [8, 8, 8, 8],
+   205→              },
+   206→              {
+   207→                stack: [
+   208→                  { text: 'DATE EXECUTED:', style: 'label' },
+   209→                  { text: formatDate(data.signedAt), style: 'value', bold: true, fontSize: 12 },
+   210→                ],
+   211→                border: [true, true, true, true],
+   212→                fillColor: BRAND_LIGHT,
+   213→                margin: [8, 8, 8, 8],
+   214→              },
+   215→            ],
+   216→          ],
+   217→        },
+   218→        layout: {
+   219→          hLineWidth: () => 0.5,
+   220→          vLineWidth: () => 0.5,
+   221→          hLineColor: () => BORDER_COLOR,
+   222→          vLineColor: () => BORDER_COLOR,
+   223→        },
+   224→        margin: [0, 0, 0, 20],
+   225→      },
+   226→
+   227→      // BAA Content
+   228→      { text: data.baaContent, style: 'bodyText', margin: [0, 0, 0, 30] },
+   229→
+   230→      // Signature block
+   231→      createBrandLine(),
+   232→      { text: 'SIGNATURE', style: 'sectionHeader', margin: [0, 0, 0, 20] },
+   233→      {
+   234→        table: {
+   235→          widths: ['*', '*'],
+   236→          body: [
+   237→            [
+   238→              {
+   239→                stack: [
+   240→                  { text: 'Signed By', style: 'label' },
+   241→                  { text: data.signerName, bold: true, fontSize: 11, color: TEXT_DARK },
+   242→                ],
+   243→                border: [false, false, false, false],
+   244→                margin: [0, 0, 0, 12],
+   245→              },
+   246→              {
+   247→                stack: [
+   248→                  { text: 'Title', style: 'label' },
+   249→                  { text: data.signerTitle, bold: true, fontSize: 11, color: TEXT_DARK },
+   250→                ],
+   251→                border: [false, false, false, false],
+   252→                margin: [0, 0, 0, 12],
+   253→              },
+   254→            ],
+   255→            [
+   256→              {
+   257→                stack: [
+   258→                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+   259→                  { text: 'Signature', style: 'smallText' },
+   260→                ],
+   261→                border: [false, false, false, false],
+   262→                margin: [0, 0, 0, 12],
+   263→              },
+   264→              {
+   265→                stack: [
+   266→                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+   267→                  { text: 'Date', style: 'smallText' },
+   268→                ],
+   269→                border: [false, false, false, false],
+   270→                margin: [0, 0, 0, 12],
+   271→              },
+   272→            ],
+   273→          ],
+   274→        },
+   275→        layout: 'noBorders',
+   276→      },
+   277→    ],
+   278→  };
+   279→
+   280→  return pdfDocToBuffer(docDefinition);
+   281→}
+   282→
+   283→// ─────────────────────────────────────────────────────────────
+   284→// 2. Invoice
+   285→// ─────────────────────────────────────────────────────────────
+   286→
+   287→export async function generateInvoicePdf(data: {
+   288→  invoiceNumber: string;
+   289→  agencyName: string;
+   290→  creditAmount: number;
+   291→  pricePerCredit: number;
+   292→  totalPrice: number;
+   293→  date: Date;
+   294→}): Promise<Buffer> {
+   295→  const docDefinition: any = {
+   296→    pageSize: 'LETTER',
+   297→    pageMargins: [60, 60, 60, 60],
+   298→    styles: baseStyles,
+   299→    footer: (currentPage: number, pageCount: number) => {
+   300→      return {
+   301→        columns: [
+   302→          { text: 'MyZipVault — Invoice', style: 'footer', margin: [60, 0, 0, 0] },
+   303→          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 60, 0], alignment: 'right' },
+   304→        ],
+   305→        margin: [0, 20, 0, 0],
+   306→      };
+   307→    },
+   308→    content: [
+   309→      // Header with branding
+   310→      {
+   311→        columns: [
+   312→          {
+   313→            stack: [
+   314→              { text: 'MyZipVault', fontSize: 28, bold: true, color: BRAND_COLOR },
+   315→              { text: 'Healthcare Credentialing Solutions', fontSize: 10, color: TEXT_LIGHT, margin: [0, 2, 0, 0] },
+   316→            ],
+   317→            width: '*',
+   318→          },
+   319→          {
+   320→            stack: [
+   321→              { text: 'INVOICE', fontSize: 24, bold: true, color: BRAND_COLOR, alignment: 'right' },
+   322→            ],
+   323→            width: 'auto',
+   324→          },
+   325→        ],
+   326→        margin: [0, 0, 0, 5],
+   327→      },
+   328→      createBrandLine(),
+   329→
+   330→      // Invoice details
+   331→      {
+   332→        table: {
+   333→          widths: ['*', '*'],
+   334→          body: [
+   335→            [
+   336→              {
+   337→                stack: [
+   338→                  { text: 'Bill To:', style: 'label' },
+   339→                  { text: data.agencyName, bold: true, fontSize: 13, color: TEXT_DARK, margin: [0, 2, 0, 0] },
+   340→                ],
+   341→                border: [false, false, false, false],
+   342→                margin: [0, 0, 0, 10],
+   343→              },
+   344→              {
+   345→                stack: [
+   346→                  {
+   347→                    table: {
+   348→                      widths: ['auto', 'auto'],
+   349→                      body: [
+   350→                        [{ text: 'Invoice #:', style: 'label', margin: [0, 0, 15, 0] }, { text: data.invoiceNumber, bold: true, fontSize: 10, color: TEXT_DARK }],
+   351→                        [{ text: 'Date:', style: 'label', margin: [0, 4, 15, 0] }, { text: formatDate(data.date), fontSize: 10, color: TEXT_DARK, margin: [0, 4, 0, 0] }],
+   352→                      ],
+   353→                    },
+   354→                    layout: 'noBorders',
+   355→                    alignment: 'right',
+   356→                  },
+   357→                ],
+   358→                border: [false, false, false, false],
+   359→                margin: [0, 0, 0, 10],
+   360→              },
+   361→            ],
+   362→          ],
+   363→        },
+   364→        layout: 'noBorders',
+   365→        margin: [0, 0, 0, 20],
+   366→      },
+   367→
+   368→      // Line items table
+   369→      {
+   370→        table: {
+   371→          headerRows: 1,
+   372→          widths: ['*', 'auto', 'auto', 'auto'],
+   373→          body: [
+   374→            // Header row
+   375→            [
+   376→              { text: 'Description', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, margin: [8, 8, 8, 8] },
+   377→              { text: 'Qty', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'center', margin: [8, 8, 8, 8] },
+   378→              { text: 'Unit Price', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [8, 8, 8, 8] },
+   379→              { text: 'Amount', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [8, 8, 8, 8] },
+   380→            ],
+   381→            // Data row
+   382→            [
+   383→              { text: 'Credential Verification Credits', fontSize: 10, color: TEXT_DARK, margin: [8, 8, 8, 8] },
+   384→              { text: data.creditAmount.toString(), fontSize: 10, color: TEXT_DARK, alignment: 'center', margin: [8, 8, 8, 8] },
+   385→              { text: `$${data.pricePerCredit.toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [8, 8, 8, 8] },
+   386→              { text: `$${(data.creditAmount * data.pricePerCredit).toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [8, 8, 8, 8] },
+   387→            ],
+   388→          ],
+   389→        },
+   390→        layout: {
+   391→          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
+   392→          vLineWidth: () => 0.5,
+   393→          hLineColor: (i: number, node: any) => (i === 0 || i === 1) ? BRAND_COLOR : BORDER_COLOR,
+   394→          vLineColor: () => BORDER_COLOR,
+   395→        },
+   396→        margin: [0, 0, 0, 0],
+   397→      },
+   398→
+   399→      // Totals
+   400→      {
+   401→        table: {
+   402→          widths: ['*', 'auto'],
+   403→          body: [
+   404→            [
+   405→              { text: '', border: [false, false, false, false] },
+   406→              { text: '', border: [false, false, false, false] },
+   407→            ],
+   408→            [
+   409→              { text: 'Subtotal:', fontSize: 10, color: TEXT_MEDIUM, alignment: 'right', margin: [0, 4, 10, 4], border: [false, false, false, false] },
+   410→              { text: `$${(data.creditAmount * data.pricePerCredit).toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [0, 4, 0, 4], border: [false, false, false, false] },
+   411→            ],
+   412→            [
+   413→              { text: 'Total Due:', fontSize: 12, bold: true, color: BRAND_COLOR, alignment: 'right', margin: [0, 4, 10, 4], border: [false, false, false, false] },
+   414→              { text: `$${data.totalPrice.toFixed(2)}`, fontSize: 12, bold: true, color: BRAND_COLOR, alignment: 'right', margin: [0, 4, 0, 4], border: [false, false, false, false] },
+   415→            ],
+   416→          ],
+   417→        },
+   418→        layout: 'noBorders',
+   419→        margin: [0, 0, 0, 30],
+   420→      },
+   421→
+   422→      createBrandLine(),
+   423→
+   424→      // Payment terms
+   425→      {
+   426→        stack: [
+   427→          { text: 'Payment Terms', style: 'sectionHeader' },
+   428→          { text: 'Payment is due upon receipt of this invoice. Please include the invoice number with your payment.', style: 'bodyText' },
+   429→          { text: '', margin: [0, 8] },
+   430→          { text: 'Thank you for your business!', style: 'bodyText', bold: true, color: BRAND_COLOR, italics: true },
+   431→        ],
+   432→        margin: [0, 0, 0, 0],
+   433→      },
+   434→    ],
+   435→  };
+   436→
+   437→  return pdfDocToBuffer(docDefinition);
+   438→}
+   439→
+   440→// ─────────────────────────────────────────────────────────────
+   441→// 3. Checklist PDF
+   442→// ─────────────────────────────────────────────────────────────
+   443→
+   444→export async function generateChecklistPdf(data: {
+   445→  candidateName: string;
+   446→  specialty: string;
+   447→  checklistName: string;
+   448→  completedDate: string;
+   449→  skills: Array<{ category: string; skillName: string; rating: string; isNa: boolean }>;
+   450→  attestationText: string;
+   451→  signatureName: string;
+   452→  signatureDate: string;
+   453→}): Promise<Buffer> {
+   454→  // Group skills by category
+   455→  const categoryMap = new Map<string, Array<{ skillName: string; rating: string; isNa: boolean }>>();
+   456→  for (const skill of data.skills) {
+   457→    const list = categoryMap.get(skill.category) || [];
+   458→    list.push({ skillName: skill.skillName, rating: skill.rating, isNa: skill.isNa });
+   459→    categoryMap.set(skill.category, list);
+   460→  }
+   461→  const categories = Array.from(categoryMap.entries());
+   462→
+   463→  // Build skill table body
+   464→  const skillTableBody: any[] = [
+   465→    [
+   466→      { text: 'Skill', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
+   467→      { text: 'Rating', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
+   468→      { text: 'N/A', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
+   469→    ],
+   470→  ];
+   471→
+   472→  for (const [category, skills] of categories) {
+   473→    // Category header row
+   474→    skillTableBody.push([
+   475→      { text: category, bold: true, fontSize: 9, color: BRAND_COLOR, fillColor: BRAND_LIGHT, colSpan: 3, margin: [6, 5, 6, 5] },
+   476→      {},
+   477→      {},
+   478→    ]);
+   479→    // Skill rows
+   480→    for (const skill of skills) {
+   481→      skillTableBody.push([
+   482→        { text: skill.skillName, fontSize: 9, color: TEXT_DARK, margin: [16, 4, 6, 4] },
+   483→        { text: skill.isNa ? '—' : skill.rating, fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
+   484→        { text: skill.isNa ? '✓' : '', fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
+   485→      ]);
+   486→    }
+   487→  }
+   488→
+   489→  const docDefinition: any = {
+   490→    pageSize: 'LETTER',
+   491→    pageMargins: [50, 70, 50, 60],
+   492→    styles: baseStyles,
+   493→    header: (currentPage: number) => {
+   494→      if (currentPage === 1) return {};
+   495→      return {
+   496→        columns: [
+   497→          { text: data.checklistName, style: 'smallText', alignment: 'left', margin: [50, 20, 0, 0] },
+   498→          { text: data.candidateName, style: 'smallText', alignment: 'right', margin: [0, 20, 50, 0] },
+   499→        ],
+   500→      };
+   501→    },
+   502→    footer: (currentPage: number, pageCount: number) => {
+   503→      return {
+   504→        columns: [
+   505→          { text: 'MyZipVault — Skills Checklist', style: 'footer', margin: [50, 0, 0, 0] },
+   506→          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 50, 0], alignment: 'right' },
+   507→        ],
+   508→        margin: [0, 20, 0, 0],
+   509→      };
+   510→    },
+   511→    content: [
+   512→      // Header
+   513→      {
+   514→        canvas: [
+   515→          { type: 'rect', x: 0, y: 0, w: 515, h: 45, color: BRAND_COLOR },
+   516→        ],
+   517→      },
+   518→      {
+   519→        text: data.checklistName.toUpperCase(),
+   520→        fontSize: 20,
+   521→        bold: true,
+   522→        color: '#ffffff',
+   523→        absolutePosition: { x: 50, y: 12 },
+   524→      },
+   525→      { text: '', margin: [0, 10] },
+   526→
+   527→      // Candidate info
+   528→      {
+   529→        table: {
+   530→          widths: ['*', '*', '*'],
+   531→          body: [
+   532→            [
+   533→              {
+   534→                stack: [
+   535→                  { text: 'Candidate', style: 'label' },
+   536→                  { text: data.candidateName, bold: true, fontSize: 11, color: TEXT_DARK },
+   537→                ],
+   538→                border: [true, true, true, true],
+   539→                fillColor: BRAND_LIGHT,
+   540→                margin: [8, 6, 8, 6],
+   541→              },
+   542→              {
+   543→                stack: [
+   544→                  { text: 'Specialty', style: 'label' },
+   545→                  { text: data.specialty, bold: true, fontSize: 11, color: TEXT_DARK },
+   546→                ],
+   547→                border: [true, true, true, true],
+   548→                fillColor: BRAND_LIGHT,
+   549→                margin: [8, 6, 8, 6],
+   550→              },
+   551→              {
+   552→                stack: [
+   553→                  { text: 'Date Completed', style: 'label' },
+   554→                  { text: data.completedDate, bold: true, fontSize: 11, color: TEXT_DARK },
+   555→                ],
+   556→                border: [true, true, true, true],
+   557→                fillColor: BRAND_LIGHT,
+   558→                margin: [8, 6, 8, 6],
+   559→              },
+   560→            ],
+   561→          ],
+   562→        },
+   563→        layout: {
+   564→          hLineWidth: () => 0.5,
+   565→          vLineWidth: () => 0.5,
+   566→          hLineColor: () => BORDER_COLOR,
+   567→          vLineColor: () => BORDER_COLOR,
+   568→        },
+   569→        margin: [0, 0, 0, 16],
+   570→      },
+   571→
+   572→      // Skills table
+   573→      {
+   574→        table: {
+   575→          headerRows: 1,
+   576→          widths: ['*', 'auto', 'auto'],
+   577→          body: skillTableBody,
+   578→        },
+   579→        layout: {
+   580→          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
+   581→          vLineWidth: () => 0.5,
+   582→          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : BORDER_COLOR,
+   583→          vLineColor: () => BORDER_COLOR,
+   584→        },
+   585→        margin: [0, 0, 0, 20],
+   586→      },
+   587→
+   588→      // Attestation
+   589→      createBrandLine(),
+   590→      { text: 'ATTESTATION', style: 'sectionHeader' },
+   591→      {
+   592→        table: {
+   593→          widths: ['*'],
+   594→          body: [
+   595→            [
+   596→              {
+   597→                text: data.attestationText,
+   598→                fontSize: 9,
+   599→                color: TEXT_MEDIUM,
+   600→                lineHeight: 1.5,
+   601→                italics: true,
+   602→                margin: [10, 10, 10, 10],
+   603→                border: [true, true, true, true],
+   604→              },
+   605→            ],
+   606→          ],
+   607→        },
+   608→        layout: {
+   609→          hLineWidth: () => 0.5,
+   610→          vLineWidth: () => 0.5,
+   611→          hLineColor: () => BORDER_COLOR,
+   612→          vLineColor: () => BORDER_COLOR,
+   613→        },
+   614→        margin: [0, 0, 0, 20],
+   615→      },
+   616→
+   617→      // Signature
+   618→      {
+   619→        columns: [
+   620→          {
+   621→            width: '*',
+   622→            stack: [
+   623→              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+   624→              { text: `Signed by: ${data.signatureName}`, fontSize: 9, color: TEXT_MEDIUM },
+   625→            ],
+   626→          },
+   627→          {
+   628→            width: 'auto',
+   629→            stack: [
+   630→              { text: `Date: ${data.signatureDate}`, fontSize: 9, color: TEXT_MEDIUM },
+   631→            ],
+   632→            alignment: 'right',
+   633→          },
+   634→        ],
+   635→      },
+   636→    ],
+   637→  };
+   638→
+   639→  return pdfDocToBuffer(docDefinition);
+   640→}
+   641→
+   642→// ─────────────────────────────────────────────────────────────
+   643→// 4. Reference PDF
+   644→// ─────────────────────────────────────────────────────────────
+   645→
+   646→export async function generateReferencePdf(data: {
+   647→  nurseName: string;
+   648→  managerName: string;
+   649→  facility: string;
+   650→  employmentStatus: string;
+   651→  questions: Array<{ question: string; answer: string }>;
+   652→  overallComment: string;
+   653→  signatureName: string;
+   654→  signatureDate: string;
+   655→  attestationText: string;
+   656→}): Promise<Buffer> {
+   657→  // Build Q&A table body
+   658→  const qaBody: any[] = [
+   659→    [
+   660→      { text: '#', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
+   661→      { text: 'Question', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
+   662→      { text: 'Response', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
+   663→    ],
+   664→  ];
+   665→
+   666→  data.questions.forEach((q, i) => {
+   667→    qaBody.push([
+   668→      { text: (i + 1).toString(), fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 5, 6, 5] },
+   669→      { text: q.question, fontSize: 9, color: TEXT_DARK, margin: [6, 5, 6, 5] },
+   670→      { text: q.answer, fontSize: 9, color: TEXT_DARK, margin: [6, 5, 6, 5] },
+   671→    ]);
+   672→  });
+   673→
+   674→  const docDefinition: any = {
+   675→    pageSize: 'LETTER',
+   676→    pageMargins: [50, 70, 50, 60],
+   677→    styles: baseStyles,
+   678→    header: (currentPage: number) => {
+   679→      if (currentPage === 1) return {};
+   680→      return {
+   681→        columns: [
+   682→          { text: 'Professional Reference', style: 'smallText', alignment: 'left', margin: [50, 20, 0, 0] },
+   683→          { text: data.nurseName, style: 'smallText', alignment: 'right', margin: [0, 20, 50, 0] },
+   684→        ],
+   685→      };
+   686→    },
+   687→    footer: (currentPage: number, pageCount: number) => {
+   688→      return {
+   689→        columns: [
+   690→          { text: 'MyZipVault — Professional Reference', style: 'footer', margin: [50, 0, 0, 0] },
+   691→          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 50, 0], alignment: 'right' },
+   692→        ],
+   693→        margin: [0, 20, 0, 0],
+   694→      };
+   695→    },
+   696→    content: [
+   697→      // Header
+   698→      {
+   699→        canvas: [
+   700→          { type: 'rect', x: 0, y: 0, w: 515, h: 45, color: BRAND_COLOR },
+   701→        ],
+   702→      },
+   703→      {
+   704→        text: 'PROFESSIONAL REFERENCE',
+   705→        fontSize: 20,
+   706→        bold: true,
+   707→        color: '#ffffff',
+   708→        absolutePosition: { x: 50, y: 12 },
+   709→      },
+   710→      { text: '', margin: [0, 10] },
+   711→
+   712→      // Info section
+   713→      {
+   714→        table: {
+   715→          widths: ['*', '*'],
+   716→          body: [
+   717→            [
+   718→              {
+   719→                stack: [
+   720→                  { text: 'Nurse / Candidate', style: 'label' },
+   721→                  { text: data.nurseName, bold: true, fontSize: 11, color: TEXT_DARK },
+   722→                ],
+   723→                border: [true, true, true, true],
+   724→                fillColor: BRAND_LIGHT,
+   725→                margin: [8, 6, 8, 6],
+   726→              },
+   727→              {
+   728→                stack: [
+   729→                  { text: 'Employment Status', style: 'label' },
+   730→                  { text: data.employmentStatus, bold: true, fontSize: 11, color: TEXT_DARK },
+   731→                ],
+   732→                border: [true, true, true, true],
+   733→                fillColor: BRAND_LIGHT,
+   734→                margin: [8, 6, 8, 6],
+   735→              },
+   736→            ],
+   737→            [
+   738→              {
+   739→                stack: [
+   740→                  { text: 'Reference Manager', style: 'label' },
+   741→                  { text: data.managerName, bold: true, fontSize: 11, color: TEXT_DARK },
+   742→                ],
+   743→                border: [true, true, true, true],
+   744→                fillColor: BRAND_LIGHT,
+   745→                margin: [8, 6, 8, 6],
+   746→              },
+   747→              {
+   748→                stack: [
+   749→                  { text: 'Facility', style: 'label' },
+   750→                  { text: data.facility, bold: true, fontSize: 11, color: TEXT_DARK },
+   751→                ],
+   752→                border: [true, true, true, true],
+   753→                fillColor: BRAND_LIGHT,
+   754→                margin: [8, 6, 8, 6],
+   755→              },
+   756→            ],
+   757→          ],
+   758→        },
+   759→        layout: {
+   760→          hLineWidth: () => 0.5,
+   761→          vLineWidth: () => 0.5,
+   762→          hLineColor: () => BORDER_COLOR,
+   763→          vLineColor: () => BORDER_COLOR,
+   764→        },
+   765→        margin: [0, 0, 0, 16],
+   766→      },
+   767→
+   768→      // Q&A table
+   769→      { text: 'EVALUATION QUESTIONS & RESPONSES', style: 'sectionHeader' },
+   770→      {
+   771→        table: {
+   772→          headerRows: 1,
+   773→          widths: ['auto', '*', '*'],
+   774→          body: qaBody,
+   775→        },
+   776→        layout: {
+   777→          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
+   778→          vLineWidth: () => 0.5,
+   779→          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : BORDER_COLOR,
+   780→          vLineColor: () => BORDER_COLOR,
+   781→        },
+   782→        margin: [0, 0, 0, 16],
+   783→      },
+   784→
+   785→      // Overall comment
+   786→      { text: 'OVERALL COMMENT', style: 'sectionHeader' },
+   787→      {
+   788→        table: {
+   789→          widths: ['*'],
+   790→          body: [
+   791→            [
+   792→              {
+   793→                text: data.overallComment || 'No comment provided.',
+   794→                fontSize: 10,
+   795→                color: TEXT_DARK,
+   796→                lineHeight: 1.5,
+   797→                margin: [10, 10, 10, 10],
+   798→                border: [true, true, true, true],
+   799→              },
+   800→            ],
+   801→          ],
+   802→        },
+   803→        layout: {
+   804→          hLineWidth: () => 0.5,
+   805→          vLineWidth: () => 0.5,
+   806→          hLineColor: () => BORDER_COLOR,
+   807→          vLineColor: () => BORDER_COLOR,
+   808→        },
+   809→        margin: [0, 0, 0, 16],
+   810→      },
+   811→
+   812→      // Attestation
+   813→      createBrandLine(),
+   814→      { text: 'ATTESTATION', style: 'sectionHeader' },
+   815→      {
+   816→        table: {
+   817→          widths: ['*'],
+   818→          body: [
+   819→            [
+   820→              {
+   821→                text: data.attestationText,
+   822→                fontSize: 9,
+   823→                color: TEXT_MEDIUM,
+   824→                lineHeight: 1.5,
+   825→                italics: true,
+   826→                margin: [10, 10, 10, 10],
+   827→                border: [true, true, true, true],
+   828→              },
+   829→            ],
+   830→          ],
+   831→        },
+   832→        layout: {
+   833→          hLineWidth: () => 0.5,
+   834→          vLineWidth: () => 0.5,
+   835→          hLineColor: () => BORDER_COLOR,
+   836→          vLineColor: () => BORDER_COLOR,
+   837→        },
+   838→        margin: [0, 0, 0, 20],
+   839→      },
+   840→
+   841→      // Signature
+   842→      {
+   843→        columns: [
+   844→          {
+   845→            width: '*',
+   846→            stack: [
+   847→              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+   848→              { text: `Signed by: ${data.signatureName}`, fontSize: 9, color: TEXT_MEDIUM },
+   849→            ],
+   850→          },
+   851→          {
+   852→            width: 'auto',
+   853→            stack: [
+   854→              { text: `Date: ${data.signatureDate}`, fontSize: 9, color: TEXT_MEDIUM },
+   855→            ],
+   856→            alignment: 'right',
+   857→          },
+   858→        ],
+   859→      },
+   860→    ],
+   861→  };
+   862→
+   863→  return pdfDocToBuffer(docDefinition);
+   864→}
+   865→
+   866→// ─────────────────────────────────────────────────────────────
+   867→// 5. Resume PDF
+   868→// ─────────────────────────────────────────────────────────────
+   869→
+   870→export async function generateResumePdf(data: {
+   871→  name: string;
+   872→  email: string;
+   873→  phone: string;
+   874→  summary: string;
+   875→  experience: Array<{ title: string; company: string; dates: string; description: string }>;
+   876→  education: Array<{ degree: string; school: string; year: string }>;
+   877→  skills: string[];
+   878→  certifications: string[];
+   879→}): Promise<Buffer> {
+   880→  const docDefinition: any = {
+   881→    pageSize: 'LETTER',
+   882→    pageMargins: [60, 50, 60, 50],
+   883→    styles: {
+   884→      ...baseStyles,
+   885→      nameTitle: {
+   886→        fontSize: 26,
+   887→        bold: true,
+   888→        color: BRAND_COLOR,
+   889→        margin: [0, 0, 0, 4],
+   890→      },
+   891→      contactInfo: {
+   892→        fontSize: 10,
+   893→        color: TEXT_MEDIUM,
+   894→        margin: [0, 0, 0, 2],
+   895→      },
+   896→      experienceTitle: {
+   897→        fontSize: 12,
+   898→        bold: true,
+   899→        color: TEXT_DARK,
+   900→        margin: [0, 0, 0, 2],
+   901→      },
+   902→      experienceCompany: {
+   903→        fontSize: 10,
+   904→        color: BRAND_COLOR,
+   905→        bold: true,
+   906→        margin: [0, 0, 0, 2],
+   907→      },
+   908→      experienceDates: {
+   909→        fontSize: 9,
+   910→        color: TEXT_LIGHT,
+   911→        margin: [0, 0, 0, 4],
+   912→      },
+   913→      experienceDesc: {
+   914→        fontSize: 10,
+   915→        color: TEXT_MEDIUM,
+   916→        lineHeight: 1.4,
+   917→        margin: [0, 0, 0, 0],
+   918→      },
+   919→      listItem: {
+   920→        fontSize: 10,
+   921→        color: TEXT_DARK,
+   922→        margin: [0, 2, 0, 2],
+   923→      },
+   924→    },
+   925→    content: [
+   926→      // Name
+   927→      { text: data.name, style: 'nameTitle' },
+   928→
+   929→      // Contact info
+   930→      {
+   931→        columns: [
+   932→          { text: data.email, style: 'contactInfo' },
+   933→          { text: '|', style: 'contactInfo', width: 'auto', margin: [8, 0, 8, 0] },
+   934→          { text: data.phone, style: 'contactInfo' },
+   935→        ],
+   936→        margin: [0, 0, 0, 12],
+   937→      },
+   938→
+   939→      createBrandLine(),
+   940→
+   941→      // Summary
+   942→      { text: 'PROFESSIONAL SUMMARY', style: 'sectionHeader' },
+   943→      { text: data.summary, style: 'bodyText', margin: [0, 0, 0, 10] },
+   944→
+   945→      // Skills
+   946→      { text: 'SKILLS', style: 'sectionHeader' },
+   947→      {
+   948→        table: {
+   949→          widths: ['*'],
+   950→          body: [
+   951→            [
+   952→              {
+   953→                text: data.skills.join('  •  '),
+   954→                fontSize: 10,
+   955→                color: TEXT_DARK,
+   956→                lineHeight: 1.5,
+   957→                margin: [10, 8, 10, 8],
+   958→              },
+   959→            ],
+   960→          ],
+   961→        },
+   962→        layout: {
+   963→          hLineWidth: () => 0.5,
+   964→          vLineWidth: () => 0.5,
+   965→          hLineColor: () => BORDER_COLOR,
+   966→          vLineColor: () => BORDER_COLOR,
+   967→        },
+   968→        margin: [0, 0, 0, 10],
+   969→        fillColor: BRAND_LIGHT,
+   970→      },
+   971→
+   972→      // Experience
+   973→      { text: 'WORK EXPERIENCE', style: 'sectionHeader' },
+   974→      ...data.experience.flatMap((exp) => [
+   975→        {
+   976→          columns: [
+   977→            {
+   978→              width: '*',
+   979→              stack: [
+   980→                { text: exp.title, style: 'experienceTitle' },
+   981→                { text: exp.company, style: 'experienceCompany' },
+   982→              ],
+   983→            },
+   984→            {
+   985→              width: 'auto',
+   986→              stack: [
+   987→                { text: exp.dates, style: 'experienceDates', alignment: 'right' },
+   988→              ],
+   989→            },
+   990→          ],
+   991→          margin: [0, 0, 0, 2],
+   992→        },
+   993→        { text: exp.description, style: 'experienceDesc', margin: [0, 0, 0, 12] },
+   994→      ]),
+   995→
+   996→      // Education
+   997→      { text: 'EDUCATION', style: 'sectionHeader' },
+   998→      ...data.education.map((edu) => ({
+   999→        columns: [
+  1000→          {
+  1001→            width: '*',
+  1002→            stack: [
+  1003→              { text: edu.degree, bold: true, fontSize: 11, color: TEXT_DARK },
+  1004→              { text: edu.school, fontSize: 10, color: TEXT_MEDIUM },
+  1005→            ],
+  1006→          },
+  1007→          {
+  1008→            width: 'auto',
+  1009→            stack: [
+  1010→              { text: edu.year, fontSize: 10, color: TEXT_LIGHT, alignment: 'right' },
+  1011→            ],
+  1012→          },
+  1013→        ],
+  1014→        margin: [0, 0, 0, 8],
+  1015→      })),
+  1016→
+  1017→      // Certifications
+  1018→      ...(data.certifications.length > 0
+  1019→        ? [
+  1020→            { text: 'CERTIFICATIONS', style: 'sectionHeader' },
+  1021→            {
+  1022→              ul: data.certifications.map((c) => ({
+  1023→                text: c,
+  1024→                style: 'listItem',
+  1025→              })),
+  1026→              margin: [0, 0, 0, 10],
+  1027→            },
+  1028→          ]
+  1029→        : []),
+  1030→    ],
+  1031→  };
+  1032→
+  1033→  return pdfDocToBuffer(docDefinition);
+  1034→}
+  1035→
