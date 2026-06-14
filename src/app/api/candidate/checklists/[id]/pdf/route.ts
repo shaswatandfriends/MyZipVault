@@ -14,15 +14,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = Number(session.user.id);
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (
-      ![
-        "client_recruiter",
-        "client_admin",
-        "platform_admin",
-        "super_admin",
-      ].includes(userRole)
-    ) {
+    if (userRole !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -64,14 +58,28 @@ export async function GET(
             },
           },
         },
+        client_user: {
+          select: {
+            first_name: true,
+            last_name: true,
+            organization: {
+              select: { name: true },
+            },
+          },
+        },
       },
     });
 
     if (!checklistRequest) {
       return NextResponse.json(
-        { error: "Checklist request not found" },
+        { error: "Checklist not found" },
         { status: 404 }
       );
+    }
+
+    // Verify ownership
+    if (checklistRequest.candidate_user_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (!checklistRequest.candidate_response) {
@@ -81,9 +89,17 @@ export async function GET(
       );
     }
 
+    if (checklistRequest.candidate_response.status !== "submitted") {
+      return NextResponse.json(
+        { error: "Checklist has not been submitted yet" },
+        { status: 400 }
+      );
+    }
+
     const candidate = checklistRequest.candidate_user;
     const template = checklistRequest.checklist_template;
     const response = checklistRequest.candidate_response;
+    const client = checklistRequest.client_user;
 
     // Build skills data for PDF
     const skills = response.skill_ratings
@@ -96,6 +112,8 @@ export async function GET(
       }));
 
     const candidateName = `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim();
+    const agencyName = client.organization?.name || "MyZipVault";
+    const recruiterName = `${client.first_name || ""} ${client.last_name || ""}`.trim();
 
     // Generate PDF
     const pdfBuffer = await generateChecklistPdf({
@@ -103,8 +121,8 @@ export async function GET(
       checklistName: template.name,
       profession: template.profession,
       specialty: template.specialty,
-      agencyName: "MyZipVault",
-      recruiterName: `${(session.user as Record<string, unknown>).name || "Recruiter"}`,
+      agencyName,
+      recruiterName,
       completedDate: response.submitted_at
         ? new Date(response.submitted_at).toLocaleDateString("en-US")
         : "N/A",
@@ -113,7 +131,7 @@ export async function GET(
         : "N/A",
       skills,
       attestationText:
-        "I attest that the information provided in this checklist is accurate and reflects my true skill level.",
+        "I hereby certify that the skills self-assessment provided above is true and accurate to the best of my knowledge. I understand that this information will be shared with requesting healthcare agencies for employment verification purposes and may be subject to verification. I authorize the release of this checklist information to authorized personnel.",
       signatureName: response.candidate_name_signed || candidateName,
       signatureDate: response.signature_date
         ? new Date(response.signature_date).toLocaleDateString("en-US")
@@ -135,7 +153,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Checklist PDF GET error:", error);
+    console.error("Candidate checklist PDF GET error:", error);
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 }

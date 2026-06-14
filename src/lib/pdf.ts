@@ -441,15 +441,27 @@ export async function generateInvoicePdf(data: {
 // 3. Checklist PDF
 // ─────────────────────────────────────────────────────────────
 
+const RATING_LABELS: Record<string, string> = {
+  '1': 'No Experience',
+  '2': 'Limited Experience',
+  '3': 'Experienced',
+  '4': 'Proficient',
+};
+
 export async function generateChecklistPdf(data: {
   candidateName: string;
   specialty: string;
   checklistName: string;
+  profession?: string;
+  agencyName?: string;
+  recruiterName?: string;
   completedDate: string;
+  validUntil?: string;
   skills: Array<{ category: string; skillName: string; rating: string; isNa: boolean }>;
   attestationText: string;
   signatureName: string;
   signatureDate: string;
+  signatureBase64?: string;
 }): Promise<Buffer> {
   // Group skills by category
   const categoryMap = new Map<string, Array<{ skillName: string; rating: string; isNa: boolean }>>();
@@ -480,7 +492,7 @@ export async function generateChecklistPdf(data: {
     for (const skill of skills) {
       skillTableBody.push([
         { text: skill.skillName, fontSize: 9, color: TEXT_DARK, margin: [16, 4, 6, 4] },
-        { text: skill.isNa ? '—' : skill.rating, fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
+        { text: skill.isNa ? '\u2014' : (RATING_LABELS[skill.rating] || skill.rating), fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
         { text: skill.isNa ? '✓' : '', fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 4, 6, 4] },
       ]);
     }
@@ -620,14 +632,26 @@ export async function generateChecklistPdf(data: {
           {
             width: '*',
             stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+              // Show signature image if available, otherwise show a line
+              ...(data.signatureBase64
+                ? [{
+                    image: data.signatureBase64.startsWith('data:')
+                      ? data.signatureBase64
+                      : `data:image/png;base64,${data.signatureBase64}`,
+                    width: 180,
+                    margin: [0, 0, 0, 4],
+                  }]
+                : [{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 30, 0, 4] }]
+              ),
               { text: `Signed by: ${data.signatureName}`, fontSize: 9, color: TEXT_MEDIUM },
+              { text: `Valid until: ${data.validUntil || 'N/A'}`, fontSize: 8, color: TEXT_LIGHT, margin: [0, 2, 0, 0] },
             ],
           },
           {
             width: 'auto',
             stack: [
               { text: `Date: ${data.signatureDate}`, fontSize: 9, color: TEXT_MEDIUM },
+              ...(data.agencyName ? [{ text: `Agency: ${data.agencyName}`, fontSize: 8, color: TEXT_LIGHT, margin: [0, 2, 0, 0] }] : []),
             ],
             alignment: 'right',
           },

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,9 @@ import {
   Type,
   PenLine,
   Trash2,
+  FileDown,
+  Eye,
+  Download,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -575,29 +578,90 @@ export default function ChecklistAssessmentPage({
 
   if (!data) return null;
 
-  // Already submitted
+  // Already submitted — show preview & download
   if (
     data.candidateResponse?.status === "submitted" ||
     data.checklistRequest.status === "completed"
   ) {
+    const pdfPreviewUrl = `/api/candidate/checklists/${id}/pdf?mode=preview`;
+    const pdfDownloadUrl = `/api/candidate/checklists/${id}/pdf?mode=download`;
+    const submittedDate = data.candidateResponse?.submittedAt
+      ? new Date(data.candidateResponse.submittedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      : null;
+
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="p-8 text-center">
-            <div className="size-14 rounded-full bg-[#DCFCE7] flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="size-7 text-[#166534]" />
+      <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
+        {/* Success header */}
+        <Card className="border-[#BBF7D0]">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="size-12 rounded-full bg-[#DCFCE7] flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="size-6 text-[#166534]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[#111827]">Checklist Submitted</h3>
+                  <p className="text-sm text-[#6B7280]">
+                    {data.template.name} — {data.template.profession}
+                    {data.template.specialty ? ` — ${data.template.specialty}` : ""}
+                  </p>
+                  {submittedDate && (
+                    <p className="text-xs text-[#9CA3AF] mt-0.5">
+                      Submitted on {submittedDate}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  className="gap-2 border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]"
+                  onClick={() => window.open(pdfPreviewUrl, '_blank')}
+                >
+                  <Eye className="size-4" /> Preview PDF
+                </Button>
+                <Button
+                  className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+                  onClick={() => window.open(pdfDownloadUrl, '_blank')}
+                >
+                  <Download className="size-4" /> Download PDF
+                </Button>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Checklist Already Submitted</h3>
-            <p className="text-sm text-[#6B7280]">
-              You have already completed this checklist. Thank you!
-            </p>
-            <Link href="/checklists">
-              <Button variant="outline" className="mt-4 gap-2">
-                <ArrowLeft className="size-4" /> Back to Checklists
-              </Button>
-            </Link>
           </CardContent>
         </Card>
+
+        {/* Inline PDF preview */}
+        <Card className="border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="px-5 py-3 border-b border-[#E5E7EB] bg-[#FAFAF8]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileDown className="size-4 text-[#166534]" />
+                <span className="text-sm font-semibold text-[#111827]">Checklist PDF</span>
+              </div>
+              <Badge variant="outline" className="text-xs text-[#166534] border-[#166534]/30">
+                Completed
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <iframe
+              src={pdfPreviewUrl}
+              className="w-full border-0"
+              style={{ height: '70vh' }}
+              title="Checklist PDF Preview"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Back button */}
+        <div className="flex justify-center">
+          <Link href="/checklists">
+            <Button variant="ghost" className="gap-2">
+              <ArrowLeft className="size-4" /> Back to Checklists
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }

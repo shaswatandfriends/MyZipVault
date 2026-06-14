@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
+  Download,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -425,18 +426,28 @@ export default function CandidateChecklistsPage() {
                       )}
                     </div>
 
-                    {/* Right: Action Button */}
-                    <div className="shrink-0">
+                    {/* Right: Action Buttons */}
+                    <div className="shrink-0 flex items-center gap-2">
                       {displayStatus === "completed" ? (
-                        <Link href={`/checklists/${checklist.id}`}>
+                        <>
+                          <Link href={`/checklists/${checklist.id}`}>
+                            <Button
+                              variant="outline"
+                              className="gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                            >
+                              <Eye className="size-4" />
+                              View
+                            </Button>
+                          </Link>
                           <Button
                             variant="outline"
-                            className="gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                            className="gap-2 border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]"
+                            onClick={() => window.open(`/api/candidate/checklists/${checklist.id}/pdf?mode=download`, '_blank')}
                           >
-                            <Eye className="size-4" />
-                            View Submission
+                            <Download className="size-4" />
+                            PDF
                           </Button>
-                        </Link>
+                        </>
                       ) : (
                         <Link href={`/checklists/${checklist.id}`}>
                           <Button
