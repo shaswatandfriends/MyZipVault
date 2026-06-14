@@ -167,3 +167,25 @@ Stage Summary:
 - next.config.ts: Added SAMEORIGIN header for PDF API routes, added frame-src to CSP, added serverExternalPackages and outputFileTracingIncludes for pdfmake
 - src/lib/pdf.ts: Added error handling for pdfmake initialization failures
 - All changes build cleanly
+
+---
+Task ID: 6
+Agent: Main
+Task: Fix 500 error and X-Frame-Options blocking checklist PDF (second attempt — root cause fix)
+
+Work Log:
+- Analyzed screenshot showing "refused to connect" error in iframe on /checklists/[id] page
+- Identified that the 500 error was the PRIMARY issue — pdfmake's dynamic import fails on Vercel's serverless runtime
+- Previous fix (serverExternalPackages + outputFileTracingIncludes) wasn't sufficient — pdfmake's VFS font system doesn't bundle correctly
+- Rewrote generateChecklistPdf() using pdf-lib (already in dependencies, works natively in serverless) instead of pdfmake
+- New implementation: full PDF generation with header banner, candidate info, skills table (grouped by category), attestation box, and signature embedding
+- Replaced <iframe> with <object> tag for PDF embedding — better cross-browser support and works with SAMEORIGIN
+- Added fallback UI when browser can't embed PDFs, with "Download PDF" and "Open in new tab" buttons
+- Kept pdfmake-based code for other PDF types (BAA, invoice, reference, resume) — not blocking the user
+- Verified build succeeds
+- Pushed to origin/main
+
+Stage Summary:
+- src/lib/pdf.ts: generateChecklistPdf() rewritten using pdf-lib (no more pdfmake dependency for checklists)
+- src/app/(candidate)/checklists/[id]/page.tsx: iframe → object tag with fallback
+- Both 500 error and X-Frame-Options issue should be resolved after Vercel redeploys
