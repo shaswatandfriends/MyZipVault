@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, X } from "@/lib/icons";
+import { ChevronLeft, ChevronRight, ExternalLink, X, Pin } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface BannerData {
@@ -139,7 +139,8 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm",
+        "relative overflow-hidden rounded-xl shadow-sm",
+        hasValidImage ? "border-0" : "border border-[#E5E7EB] bg-white",
         className
       )}
       onMouseEnter={() => setIsPaused(true)}
@@ -155,57 +156,59 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
         )}
       >
         {hasValidImage ? (
-          /* Layout WITH image: side-by-side on desktop, stacked on mobile */
-          <div className="flex flex-col sm:flex-row">
-            {/* Image Section */}
-            <div className="relative w-full sm:w-2/5 h-44 sm:h-auto sm:min-h-[180px] overflow-hidden bg-[#F3F4F6]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={currentBanner.imageUrl!}
-                alt={currentBanner.title}
-                className="h-full w-full object-cover"
-                onError={() => handleImageError(currentBanner.id)}
-              />
-            </div>
+          /* ── Layout WITH image: full-bleed image + gradient overlay ── */
+          <div className="relative w-full h-48 sm:h-52">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentBanner.imageUrl!}
+              alt={currentBanner.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={() => handleImageError(currentBanner.id)}
+            />
 
-            {/* Text Section */}
-            <div className="flex flex-1 flex-col justify-center p-5 sm:p-6 sm:w-3/5">
-              {/* Pinned badge */}
-              {currentBanner?.isPinned && (
-                <span className="mb-2 inline-flex w-fit items-center rounded-full bg-[#166534]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#166534]">
-                  Pinned
-                </span>
-              )}
+            {/* Gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-              <h3
-                className="text-base font-semibold text-[#111827] sm:text-lg line-clamp-2"
-                style={{ fontFamily: "'Clash Display', sans-serif" }}
-              >
-                {currentBanner?.title}
-              </h3>
+            {/* Text content overlaid on bottom-left */}
+            <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-6">
+              <div className="max-w-xl">
+                {/* Pinned badge */}
+                {currentBanner?.isPinned && (
+                  <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+                    <Pin className="size-3" /> Pinned
+                  </span>
+                )}
 
-              {currentBanner?.description && (
-                <p className="mt-1.5 text-sm text-[#6B7280] line-clamp-2">
-                  {currentBanner.description}
-                </p>
-              )}
-
-              {/* CTA Button */}
-              {currentBanner?.ctaText && currentBanner?.ctaLink && (
-                <a
-                  href={currentBanner.ctaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[#166534] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#14532D]"
+                <h3
+                  className="text-lg font-semibold text-white sm:text-xl line-clamp-2 drop-shadow-sm"
+                  style={{ fontFamily: "'Clash Display', sans-serif" }}
                 >
-                  {currentBanner.ctaText}
-                  <ExternalLink className="size-3.5" />
-                </a>
-              )}
+                  {currentBanner?.title}
+                </h3>
+
+                {currentBanner?.description && (
+                  <p className="mt-1 text-sm text-white/80 line-clamp-2 drop-shadow-sm">
+                    {currentBanner.description}
+                  </p>
+                )}
+
+                {/* CTA Button */}
+                {currentBanner?.ctaText && currentBanner?.ctaLink && (
+                  <a
+                    href={currentBanner.ctaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-[#166534] shadow-sm transition-colors hover:bg-gray-100"
+                  >
+                    {currentBanner.ctaText}
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         ) : (
-          /* Layout WITHOUT image: text-only banner with accent bar */
+          /* ── Layout WITHOUT image: clean card with accent bar ── */
           <div className="flex">
             {/* Accent bar */}
             <div className="w-1.5 shrink-0 bg-[#166534] rounded-l-xl" />
@@ -213,8 +216,8 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
             <div className="flex flex-1 flex-col justify-center p-5 sm:p-6">
               {/* Pinned badge */}
               {currentBanner?.isPinned && (
-                <span className="mb-2 inline-flex w-fit items-center rounded-full bg-[#166534]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#166534]">
-                  Pinned
+                <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-[#166534]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#166534]">
+                  <Pin className="size-3" /> Pinned
                 </span>
               )}
 
@@ -254,21 +257,31 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
           {/* Prev/Next Arrows */}
           <button
             onClick={goToPrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#6B7280] shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-[#111827] border border-[#E5E7EB]"
+            className={cn(
+              "absolute left-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors border",
+              hasValidImage
+                ? "bg-white/20 text-white/80 border-white/20 hover:bg-white/30 hover:text-white"
+                : "bg-white/90 text-[#6B7280] border-[#E5E7EB] hover:bg-white hover:text-[#111827]"
+            )}
             aria-label="Previous banner"
           >
             <ChevronLeft className="size-4" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#6B7280] shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-[#111827] border border-[#E5E7EB]"
+            className={cn(
+              "absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors border",
+              hasValidImage
+                ? "bg-white/20 text-white/80 border-white/20 hover:bg-white/30 hover:text-white"
+                : "bg-white/90 text-[#6B7280] border-[#E5E7EB] hover:bg-white hover:text-[#111827]"
+            )}
             aria-label="Next banner"
           >
             <ChevronRight className="size-4" />
           </button>
 
           {/* Dot Indicators */}
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
             {visibleBanners.map((_, idx) => (
               <button
                 key={idx}
@@ -282,8 +295,10 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-200",
                   idx === currentIndex
-                    ? "w-4 bg-[#166534]"
-                    : "w-1.5 bg-[#9CA3AF] hover:bg-[#6B7280]"
+                    ? "w-4 bg-white"
+                    : hasValidImage
+                      ? "w-1.5 bg-white/50 hover:bg-white/70"
+                      : "w-1.5 bg-[#9CA3AF] hover:bg-[#6B7280]"
                 )}
                 aria-label={`Go to banner ${idx + 1}`}
               />
@@ -296,7 +311,12 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
       {currentBanner && !currentBanner.isPinned && (
         <button
           onClick={() => dismissBanner(currentBanner.id)}
-          className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/90 text-[#9CA3AF] backdrop-blur-sm transition-colors hover:bg-white hover:text-[#6B7280] border border-[#E5E7EB]"
+          className={cn(
+            "absolute right-2 top-2 flex size-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors border",
+            hasValidImage
+              ? "bg-white/20 text-white/70 border-white/20 hover:bg-white/30 hover:text-white"
+              : "bg-white/90 text-[#9CA3AF] border-[#E5E7EB] hover:bg-white hover:text-[#6B7280]"
+          )}
           aria-label="Dismiss banner"
         >
           <X className="size-3.5" />
