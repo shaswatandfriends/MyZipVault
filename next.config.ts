@@ -1,6 +1,25 @@
 import type { NextConfig } from "next";
 
+// PDF preview routes need SAMEORIGIN so the browser allows <iframe> embedding
+// from the same origin. All other routes keep DENY.
 const securityHeaders = [
+  {
+    source: "/api/:path*/pdf",
+    headers: [
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-XSS-Protection", value: "1; mode=block" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=()",
+      },
+    ],
+  },
   {
     source: "/(.*)",
     headers: [
@@ -19,7 +38,7 @@ const securityHeaders = [
       {
         key: "Content-Security-Policy",
         value:
-          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://cdn.fontshare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.brevo.com https://api-affinda.p.rapidapi.com https://api.affinda.com https://*.affinda.com https://internal-api.z.ai",
+          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://cdn.fontshare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-src 'self'; connect-src 'self' https://*.supabase.co https://api.brevo.com https://api-affinda.p.rapidapi.com https://api.affinda.com https://*.affinda.com https://internal-api.z.ai",
       },
     ],
   },
@@ -52,11 +71,18 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ["lucide-react", "signature_pad"],
 
+  // pdfmake uses dynamic requires that Vercel's bundler can't trace.
+  // Marking it as external ensures the real module is available at runtime.
+  serverExternalPackages: ["pdfmake"],
+
   // Include pdfkit's font data files in the serverless function bundle.
   // PDFKit reads these files at runtime using __dirname + '/data/...',
   // but Vercel's bundler doesn't detect these dynamic file reads.
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/pdfkit/js/data/**/*"],
+    "/*": [
+      "./node_modules/pdfkit/js/data/**/*",
+      "./node_modules/pdfmake/build/vfs_fonts.js",
+    ],
   },
 };
 

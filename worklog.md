@@ -146,3 +146,24 @@ Stage Summary:
 - Rating scale corrected from 1-5 to 1-4
 - Candidate sidebar now includes "Checklists" link
 - All changes build successfully
+
+---
+Task ID: 5
+Agent: Main
+Task: Fix 500 error and X-Frame-Options blocking checklist PDF preview/download
+
+Work Log:
+- Investigated the two reported errors: 500 server error and X-Frame-Options: DENY blocking iframe
+- Found root cause #1: next.config.ts set X-Frame-Options: DENY globally, preventing the <iframe> on /checklists/[id] from embedding the PDF preview from the same origin
+- Found root cause #2: pdfmake's dynamic import and vfs_fonts may fail on Vercel's serverless environment, causing 500 errors
+- Fixed X-Frame-Options by adding a specific header rule for /api/:path*/pdf routes that sets SAMEORIGIN instead of DENY
+- Added frame-src 'self' to Content-Security-Policy to allow same-origin iframe embedding
+- Added serverExternalPackages: ["pdfmake"] to next.config.ts so Vercel bundles the real module
+- Added pdfmake/build/vfs_fonts.js to outputFileTracingIncludes for proper Vercel bundling
+- Improved error handling in src/lib/pdf.ts getPrinter() with try/catch and meaningful error messages
+- Build verified successfully
+
+Stage Summary:
+- next.config.ts: Added SAMEORIGIN header for PDF API routes, added frame-src to CSP, added serverExternalPackages and outputFileTracingIncludes for pdfmake
+- src/lib/pdf.ts: Added error handling for pdfmake initialization failures
+- All changes build cleanly

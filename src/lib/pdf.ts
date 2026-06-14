@@ -3,27 +3,43 @@ let printerInstance: any = null;
 
 async function getPrinter(): Promise<any> {
   if (printerInstance) return printerInstance;
-  
-  // Dynamic import to handle ESM/CJS compatibility
-  const pdfmake = await import('pdfmake');
-  const PdfPrinter = pdfmake.default || pdfmake;
-  
-  const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
-  const vfs = (vfsFontsModule as any).default?.pdfMake?.vfs || (vfsFontsModule as any).pdfMake?.vfs || (vfsFontsModule as any).default || vfsFontsModule;
-  
-  const fonts = {
-    Roboto: {
-      normal: 'Roboto-Regular.ttf',
-      bold: 'Roboto-Medium.ttf',
-      italics: 'Roboto-Italic.ttf',
-      bolditalics: 'Roboto-MediumItalic.ttf',
-    },
-  };
-  
-  const printer = new PdfPrinter(fonts);
-  printer.vfs = vfs;
-  printerInstance = printer;
-  return printerInstance;
+
+  try {
+    // Dynamic import to handle ESM/CJS compatibility
+    const pdfmake = await import('pdfmake');
+    const PdfPrinter = pdfmake.default || pdfmake;
+
+    let vfs: any;
+    try {
+      const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
+      vfs =
+        (vfsFontsModule as any).default?.pdfMake?.vfs ||
+        (vfsFontsModule as any).pdfMake?.vfs ||
+        (vfsFontsModule as any).default ||
+        vfsFontsModule;
+    } catch {
+      // vfs_fonts might not be available in some bundling environments
+      console.warn('pdfmake/build/vfs_fonts import failed, PDF generation may not work');
+      vfs = {};
+    }
+
+    const fonts = {
+      Roboto: {
+        normal: 'Roboto-Regular.ttf',
+        bold: 'Roboto-Medium.ttf',
+        italics: 'Roboto-Italic.ttf',
+        bolditalics: 'Roboto-MediumItalic.ttf',
+      },
+    };
+
+    const printer = new PdfPrinter(fonts);
+    printer.vfs = vfs;
+    printerInstance = printer;
+    return printerInstance;
+  } catch (error) {
+    console.error('Failed to initialize pdfmake printer:', error);
+    throw new Error('PDF generation is currently unavailable. Please try again later.');
+  }
 }
 
 const BRAND_COLOR = '#0f766e';
