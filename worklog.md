@@ -112,3 +112,37 @@ Stage Summary:
 - Credits Usage chart moved from dashboard to billing section
 - Billing API now returns creditsByMonth data for the chart
 - Clean build confirmed
+---
+Task ID: 1
+Agent: Main Agent
+Task: Create proper assessment page for skill checklist with category scroller navigation
+
+Work Log:
+- Analyzed existing checklist pages: /checklists (listing with dialog-based fill), /checklists/[id] (standalone fill page with old 1-5 rating)
+- Rewrote /checklists/[id]/page.tsx as a full-page assessment experience with:
+  - Left sidebar scroller showing all categories with completion status (checkmarks, rated counts)
+  - Rating legend in sidebar
+  - Scroll spy that highlights active category as user scrolls
+  - Click-to-scroll category navigation
+  - Mobile-responsive: horizontal chip navigation on small screens, sidebar on lg+
+  - Fixed top bar with progress indicator and auto-save status
+  - Bottom navigation bar with Prev/Next buttons
+  - Fixed rating scale from 1-5 to 1-4 (matching the system's actual scale)
+  - Signature section with pen pad only appears after all skills are rated
+  - "Sign & Submit" nav item in sidebar when all skills complete
+- Simplified /checklists/page.tsx from 1251 lines to ~470 lines:
+  - Removed dialog-based checklist fill (now links to [id] page)
+  - Added filter by status (click stat cards to filter)
+  - Cards show category count, skill count, and send date
+  - "Start Assessment" / "Continue Assessment" buttons link to [id] route
+- Added "Checklists" nav item with ClipboardCheck icon to candidate sidebar
+- Added no-scrollbar CSS utility for mobile chip navigation
+- Updated layout.tsx to remove min-h-screen (allows full-height assessment view)
+- Build passes cleanly with no errors
+
+Stage Summary:
+- Complete assessment page with sidebar scroller navigation built at /checklists/[id]
+- Listing page simplified and now navigates to dedicated assessment page
+- Rating scale corrected from 1-5 to 1-4
+- Candidate sidebar now includes "Checklists" link
+- All changes build successfully

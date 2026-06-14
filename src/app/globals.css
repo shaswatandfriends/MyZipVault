@@ -444,3 +444,12 @@
 .vaultsign-badge-transition {
   transition: all 0.2s ease;
 }
+
+/* Hide scrollbar for category chip navigation */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

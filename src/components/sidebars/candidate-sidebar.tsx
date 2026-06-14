@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronLeft,
   CalendarDays,
+  ClipboardCheck,
 } from "@/lib/icons";
 
 import {
@@ -37,6 +38,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
+  { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Credentials", href: "/vault/credentials", icon: ShieldCheck },
   { title: "Resume", href: "/vault/resume", icon: FileText },
   { title: "References", href: "/references", icon: Users },

@@ -1,3 +1,3 @@
 export default function ChecklistFormLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#F8F7F4]">{children}</div>;
+  return <div className="bg-[#F8F7F4]">{children}</div>;
 }
