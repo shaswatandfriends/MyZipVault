@@ -154,8 +154,10 @@ export async function GET(
     });
   } catch (error) {
     console.error("Candidate checklist PDF GET error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error details:", message);
     return NextResponse.json(
-      { error: "Failed to generate PDF" },
+      { error: "Failed to generate PDF", detail: message },
       { status: 500 }
     );
   }
