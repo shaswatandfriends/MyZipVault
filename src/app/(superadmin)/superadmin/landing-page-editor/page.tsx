@@ -17,6 +17,8 @@ import {
   Loader2,
   CheckCircle2,
   ExternalLink,
+  Stethoscope,
+  Briefcase,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
@@ -242,21 +244,33 @@ function ColorPickerField({
 }
 
 // ─── Live Preview Panel ─────────────────────────────────────────────
+type PreviewView = "candidate" | "recruiter";
+
 function LivePreview({
   data,
   previewMode,
+  previewView,
 }: {
   data: LandingPageData;
   previewMode: "desktop" | "mobile";
+  previewView: PreviewView;
 }) {
   const previewWidth = previewMode === "mobile" ? "375px" : "100%";
+  const isCandidate = previewView === "candidate";
+
+  // Pick hero content based on the active view
+  const heroHeadline = isCandidate ? data.hero.candidateHeadline : data.hero.recruiterHeadline;
+  const heroGradient = isCandidate ? data.hero.candidateGradientText : data.hero.recruiterGradientText;
+  const heroSubheadline = isCandidate ? data.hero.candidateSubheadline : data.hero.recruiterSubheadline;
+  const heroCta = isCandidate ? data.hero.candidateCtaText : data.hero.recruiterCtaText;
+  const heroBadge = isCandidate ? "Trusted by Healthcare Professionals" : "Built for Staffing Agencies";
 
   return (
     <div
       className="mx-auto bg-background overflow-y-auto overflow-x-hidden custom-scrollbar"
       style={{
         width: previewWidth,
-        maxHeight: "calc(100vh - 220px)",
+        maxHeight: "calc(100vh - 280px)",
         minHeight: 500,
       }}
     >
@@ -312,7 +326,7 @@ function LivePreview({
             color: data.colors.primary,
           }}
         >
-          ✦ Trusted by Healthcare Professionals
+          ✦ {heroBadge}
         </div>
         <h2
           className="mt-2 text-sm font-bold leading-tight"
@@ -321,7 +335,7 @@ function LivePreview({
             fontFamily: "'Satoshi', sans-serif",
           }}
         >
-          {data.hero.candidateHeadline}{" "}
+          {heroHeadline}{" "}
           <span
             style={{
               background: `linear-gradient(to right, ${data.colors.primary}, ${data.colors.accent})`,
@@ -329,21 +343,21 @@ function LivePreview({
               WebkitTextFillColor: "transparent",
             }}
           >
-            {data.hero.candidateGradientText}
-          </span>{" "}
-          with MyZipVault.
+            {heroGradient}
+          </span>
+          {isCandidate ? " with MyZipVault." : ""}
         </h2>
         <p
-          className="mt-1.5 text-[8px] leading-relaxed max-w-[200px] mx-auto"
+          className="mt-1.5 text-[8px] leading-relaxed max-w-[220px] mx-auto"
           style={{ color: data.colors.textSecondary }}
         >
-          {data.hero.candidateSubheadline.slice(0, 100)}...
+          {heroSubheadline.length > 120 ? heroSubheadline.slice(0, 120) + "..." : heroSubheadline}
         </p>
         <div
           className="mt-3 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[9px] font-semibold text-white"
           style={{ backgroundColor: data.colors.primary }}
         >
-          {data.hero.candidateCtaText}
+          {heroCta}
         </div>
         <div className="mt-2 flex flex-wrap justify-center gap-2">
           {[data.hero.trustLine1, data.hero.trustLine2, data.hero.trustLine3].map(
@@ -396,7 +410,7 @@ function LivePreview({
                 className="mt-0.5 text-[6px] leading-relaxed"
                 style={{ color: data.colors.textSecondary }}
               >
-                {card.body.slice(0, 60)}...
+                {card.body.length > 60 ? card.body.slice(0, 60) + "..." : card.body}
               </p>
             </div>
           ))}
@@ -419,7 +433,7 @@ function LivePreview({
               </div>
               <p className="mt-1 text-[7px] font-semibold">{item.heading}</p>
               <p className="text-[6px] text-white/70 mt-0.5">
-                {item.body.slice(0, 30)}...
+                {item.body.length > 30 ? item.body.slice(0, 30) + "..." : item.body}
               </p>
             </div>
           ))}
@@ -466,7 +480,7 @@ function LivePreview({
                 className="mt-0.5 text-[6px] leading-relaxed"
                 style={{ color: data.colors.textSecondary }}
               >
-                {step.description.slice(0, 40)}...
+                {step.description.length > 40 ? step.description.slice(0, 40) + "..." : step.description}
               </p>
             </div>
           ))}
@@ -562,6 +576,7 @@ export default function LandingPageEditorPage() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
     "desktop"
   );
+  const [previewView, setPreviewView] = useState<PreviewView>("candidate");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -1132,36 +1147,62 @@ export default function LandingPageEditorPage() {
         <div className="w-full lg:w-[40%]">
           <div className="sticky top-24">
             <div className="bg-white border border-border rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <h3
                   className="text-sm font-semibold text-foreground"
                   style={{ fontFamily: "'Satoshi', sans-serif" }}
                 >
                   Live Preview
                 </h3>
-                <div className="flex items-center rounded-lg border border-border p-0.5">
-                  <button
-                    onClick={() => setPreviewMode("desktop")}
-                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
-                      previewMode === "desktop"
-                        ? "bg-primary-light text-primary"
-                        : "text-text-secondary hover:text-foreground"
-                    }`}
-                  >
-                    <Monitor className="size-3.5" />
-                    Desktop
-                  </button>
-                  <button
-                    onClick={() => setPreviewMode("mobile")}
-                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
-                      previewMode === "mobile"
-                        ? "bg-primary-light text-primary"
-                        : "text-text-secondary hover:text-foreground"
-                    }`}
-                  >
-                    <Smartphone className="size-3.5" />
-                    Mobile
-                  </button>
+                <div className="flex items-center gap-2">
+                  {/* Candidate / Recruiter Toggle */}
+                  <div className="flex items-center rounded-lg border border-border p-0.5">
+                    <button
+                      onClick={() => setPreviewView("candidate")}
+                      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                        previewView === "candidate"
+                          ? "bg-primary-light text-primary"
+                          : "text-text-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Stethoscope className="size-3" />
+                      <span className="hidden xl:inline">Candidate</span>
+                    </button>
+                    <button
+                      onClick={() => setPreviewView("recruiter")}
+                      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                        previewView === "recruiter"
+                          ? "bg-primary-light text-primary"
+                          : "text-text-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Briefcase className="size-3" />
+                      <span className="hidden xl:inline">Recruiter</span>
+                    </button>
+                  </div>
+                  {/* Desktop / Mobile Toggle */}
+                  <div className="flex items-center rounded-lg border border-border p-0.5">
+                    <button
+                      onClick={() => setPreviewMode("desktop")}
+                      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                        previewMode === "desktop"
+                          ? "bg-primary-light text-primary"
+                          : "text-text-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Monitor className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setPreviewMode("mobile")}
+                      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                        previewMode === "mobile"
+                          ? "bg-primary-light text-primary"
+                          : "text-text-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Smartphone className="size-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1173,7 +1214,7 @@ export default function LandingPageEditorPage() {
                   transition: "all 0.3s ease",
                 }}
               >
-                <LivePreview data={data} previewMode={previewMode} />
+                <LivePreview data={data} previewMode={previewMode} previewView={previewView} />
               </div>
 
               <p className="mt-3 text-[10px] text-text-muted text-center">
