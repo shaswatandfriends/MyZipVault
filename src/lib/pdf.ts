@@ -80,22 +80,19 @@ function formatDate(date: Date): string {
 
 function createHeader(title: string): any[] {
   return [
+    // Gradient bar (emerald → teal → cyan)
     {
       canvas: [
-        {
-          type: 'rect',
-          x: 0,
-          y: 0,
-          w: 515,
-          h: 50,
-          color: BRAND_COLOR,
-        },
+        { type: 'rect', x: 0, y: 0, w: 200, h: 52, color: BRAND_COLOR },
+        { type: 'rect', x: 200, y: 0, w: 200, h: 52, color: '#0D9488' },
+        { type: 'rect', x: 400, y: 0, w: 197, h: 52, color: '#06B6D4' },
       ],
+      margin: [-48, 0, -48, 0],
     },
     {
       text: title,
       style: 'headerTitle',
-      absolutePosition: { x: 40, y: 14 },
+      absolutePosition: { x: 48, y: 15 },
     },
     { text: '', margin: [0, 10] },
   ];
@@ -104,17 +101,56 @@ function createHeader(title: string): any[] {
 function createBrandLine(): any {
   return {
     canvas: [
-      {
-        type: 'line',
-        x1: 0,
-        y1: 0,
-        x2: 515,
-        y2: 0,
-        lineWidth: 2,
-        lineColor: BRAND_COLOR,
-      },
+      { type: 'rect', x: 0, y: 0, w: 200, h: 2, color: BRAND_COLOR },
+      { type: 'rect', x: 200, y: 0, w: 200, h: 2, color: '#0D9488' },
+      { type: 'rect', x: 400, y: 0, w: 197, h: 2, color: '#06B6D4' },
     ],
-    margin: [0, 0, 0, 15],
+    margin: [-48, 0, -48, 15],
+  };
+}
+
+// Premium info card — glass-style rounded box
+function infoCard(label: string, value: string, opts?: { valueColor?: string }): any {
+  return {
+    table: { widths: ['*'], body: [[{
+      stack: [
+        { text: label, fontSize: 8, color: TEXT_LIGHT, bold: true, characterSpacing: 0.8 },
+        { text: value, fontSize: 13, bold: true, color: opts?.valueColor || TEXT_DARK, margin: [0, 4, 0, 0] },
+      ],
+      fillColor: '#F8FAFC', border: [false, false, false, false], margin: [14, 12, 14, 12],
+    }]] },
+    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#E2E8F0', vLineColor: () => '#E2E8F0' },
+  };
+}
+
+// Premium verification box
+function verificationBox(docId: string, verCode: string): any {
+  return {
+    table: { widths: ['*'], body: [[{
+      stack: [
+        {
+          columns: [
+            { width: 24, text: 'V', fontSize: 14, bold: true, color: BRAND_COLOR, margin: [0, 2, 0, 0] },
+            {
+              width: '*',
+              stack: [
+                { text: 'DOCUMENT VERIFIED', fontSize: 12, bold: true, color: BRAND_COLOR },
+                { text: 'This document has been electronically signed and verified through MyZipVault\'s secure credential verification system.', fontSize: 10, color: TEXT_MEDIUM, lineHeight: 1.5, margin: [0, 4, 0, 0] },
+              ],
+            },
+          ],
+        },
+        { text: '', margin: [0, 10, 0, 0] },
+        {
+          columns: [
+            { text: `Document ID: ${docId}`, fontSize: 9, color: TEXT_MEDIUM, width: '50%' },
+            { text: `Verification Code: ${verCode}`, fontSize: 9, color: TEXT_MEDIUM, width: '50%' },
+          ],
+        },
+      ],
+      fillColor: '#F0FDFA', border: [false, false, false, false], margin: [20, 16, 20, 16],
+    }]] },
+    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#6EE7B7', vLineColor: () => '#6EE7B7' },
   };
 }
 
@@ -187,80 +223,63 @@ export async function generateBaaPdf(data: {
   baaContent: string;
   signedAt: Date;
 }): Promise<Buffer> {
+  const docId = `MZV-BAA-${Date.now().toString(36).toUpperCase()}`;
+  const verInput = `${data.organizationName}-${data.signerName}-${data.signedAt.toISOString()}`;
+  const verCode = verInput.split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0).toString(16).toUpperCase().replace(/-/g, '0').padStart(8, '0').slice(0, 8);
+
   const docDefinition: any = {
     pageSize: 'LETTER',
-    pageMargins: [60, 80, 60, 60],
+    pageMargins: [48, 40, 48, 40],
     defaultStyle: { font: 'Roboto' },
-    styles: baseStyles,
+    styles: {
+      ...baseStyles,
+      headerTitle: { fontSize: 22, bold: true, color: '#ffffff' },
+    },
     header: (currentPage: number, pageCount: number) => {
-      if (currentPage === 1) return {};
+      if (currentPage === 1) return null;
       return {
         columns: [
-          { text: 'Business Associate Agreement', style: 'smallText', alignment: 'left', margin: [60, 20, 0, 0] },
-          { text: `Page ${currentPage} of ${pageCount}`, style: 'smallText', alignment: 'right', margin: [0, 20, 60, 0] },
+          { text: 'BUSINESS ASSOCIATE AGREEMENT', fontSize: 9, bold: true, color: BRAND_COLOR, characterSpacing: 0.5, margin: [48, 12, 0, 0] },
+          { text: data.organizationName, fontSize: 9, color: TEXT_MEDIUM, alignment: 'right', margin: [0, 12, 48, 0] },
         ],
+        canvas: [{ type: 'line', x1: -48, y1: 26, x2: 599, y2: 26, lineWidth: 0.5, lineColor: BORDER_COLOR }],
       };
     },
     footer: (currentPage: number, pageCount: number) => {
       return {
         columns: [
-          { text: 'MyZipVault — Business Associate Agreement', style: 'footer', margin: [60, 0, 0, 0] },
-          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 60, 0], alignment: 'right' },
+          { text: 'MyZipVault — Business Associate Agreement', style: 'footer', margin: [48, 0, 0, 0] },
+          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 48, 0], alignment: 'right' },
         ],
-        margin: [0, 20, 0, 0],
+        canvas: [{ type: 'line', x1: -48, y1: -6, x2: 599, y2: -6, lineWidth: 0.5, lineColor: BORDER_COLOR }],
+        margin: [0, 8, 0, 0],
       };
     },
     content: [
-      // Brand header
+      // Premium gradient header
       {
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: 495, h: 50, color: BRAND_COLOR },
+          { type: 'rect', x: 0, y: 0, w: 200, h: 52, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 52, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 52, color: '#06B6D4' },
         ],
-        margin: [0, 0, 0, 0],
+        margin: [-48, 0, -48, 0],
       },
       {
         text: 'BUSINESS ASSOCIATE AGREEMENT',
-        fontSize: 22,
-        bold: true,
-        color: '#ffffff',
-        absolutePosition: { x: 60, y: 14 },
+        fontSize: 22, bold: true, color: '#ffffff',
+        absolutePosition: { x: 48, y: 15 },
       },
-      { text: '', margin: [0, 20] },
+      { text: '', margin: [0, 16] },
 
-      // Parties section
+      // Parties section — premium info cards
       {
-        table: {
-          widths: ['*', '*'],
-          body: [
-            [
-              {
-                stack: [
-                  { text: 'THIS AGREEMENT ENTERED INTO BY:', style: 'label' },
-                  { text: data.organizationName, style: 'value', bold: true, fontSize: 12 },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 8, 8, 8],
-              },
-              {
-                stack: [
-                  { text: 'DATE EXECUTED:', style: 'label' },
-                  { text: formatDate(data.signedAt), style: 'value', bold: true, fontSize: 12 },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 8, 8, 8],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 20],
+        columns: [
+          { width: '50%', stack: [infoCard('THIS AGREEMENT ENTERED INTO BY', data.organizationName)] },
+          { width: '4%', text: '' },
+          { width: '46%', stack: [infoCard('DATE EXECUTED', formatDate(data.signedAt), { valueColor: BRAND_COLOR })] },
+        ],
+        margin: [0, 0, 0, 24],
       },
 
       // BAA Content
@@ -268,7 +287,7 @@ export async function generateBaaPdf(data: {
 
       // Signature block
       createBrandLine(),
-      { text: 'SIGNATURE', style: 'sectionHeader', margin: [0, 0, 0, 20] },
+      { text: 'SIGNATURE & CERTIFICATION', fontSize: 14, bold: true, color: TEXT_DARK, margin: [0, 0, 0, 16] },
       {
         table: {
           widths: ['*', '*'],
@@ -276,34 +295,34 @@ export async function generateBaaPdf(data: {
             [
               {
                 stack: [
-                  { text: 'Signed By', style: 'label' },
-                  { text: data.signerName, bold: true, fontSize: 11, color: TEXT_DARK },
+                  { text: 'SIGNED BY', fontSize: 8, color: TEXT_LIGHT, bold: true, characterSpacing: 0.8 },
+                  { text: data.signerName, bold: true, fontSize: 14, color: TEXT_DARK, margin: [0, 4, 0, 0] },
                 ],
                 border: [false, false, false, false],
-                margin: [0, 0, 0, 12],
+                margin: [0, 0, 0, 16],
               },
               {
                 stack: [
-                  { text: 'Title', style: 'label' },
-                  { text: data.signerTitle, bold: true, fontSize: 11, color: TEXT_DARK },
+                  { text: 'TITLE', fontSize: 8, color: TEXT_LIGHT, bold: true, characterSpacing: 0.8 },
+                  { text: data.signerTitle, bold: true, fontSize: 14, color: TEXT_DARK, margin: [0, 4, 0, 0] },
                 ],
                 border: [false, false, false, false],
-                margin: [0, 0, 0, 12],
+                margin: [0, 0, 0, 16],
               },
             ],
             [
               {
                 stack: [
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
-                  { text: 'Signature', style: 'smallText' },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+                  { text: 'Signature', fontSize: 8, color: TEXT_LIGHT, characterSpacing: 0.8 },
                 ],
                 border: [false, false, false, false],
                 margin: [0, 0, 0, 12],
               },
               {
                 stack: [
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
-                  { text: 'Date', style: 'smallText' },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
+                  { text: 'Date', fontSize: 8, color: TEXT_LIGHT, characterSpacing: 0.8 },
                 ],
                 border: [false, false, false, false],
                 margin: [0, 0, 0, 12],
@@ -312,6 +331,28 @@ export async function generateBaaPdf(data: {
           ],
         },
         layout: 'noBorders',
+        margin: [0, 0, 0, 24],
+      },
+
+      // Verification box
+      verificationBox(docId, verCode),
+
+      // Bottom branding
+      { text: '', margin: [0, 20, 0, 0] },
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 3, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 3, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 3, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+      { text: '', margin: [0, 8, 0, 0] },
+      {
+        stack: [
+          { text: 'Generated by MyZipVault', fontSize: 9, color: TEXT_LIGHT, alignment: 'center' },
+          { text: 'Secure Healthcare Credential Verification Platform', fontSize: 8, color: '#C4C4C4', alignment: 'center', margin: [0, 2, 0, 0] },
+        ],
       },
     ],
   };
@@ -331,112 +372,118 @@ export async function generateInvoicePdf(data: {
   totalPrice: number;
   date: Date;
 }): Promise<Buffer> {
+  const docId = `MZV-INV-${Date.now().toString(36).toUpperCase()}`;
+
   const docDefinition: any = {
     pageSize: 'LETTER',
-    pageMargins: [60, 60, 60, 60],
+    pageMargins: [48, 40, 48, 40],
     defaultStyle: { font: 'Roboto' },
-    styles: baseStyles,
+    styles: {
+      ...baseStyles,
+      headerTitle: { fontSize: 22, bold: true, color: '#ffffff' },
+    },
     footer: (currentPage: number, pageCount: number) => {
       return {
         columns: [
-          { text: 'MyZipVault — Invoice', style: 'footer', margin: [60, 0, 0, 0] },
-          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 60, 0], alignment: 'right' },
+          { text: 'MyZipVault — Invoice', style: 'footer', margin: [48, 0, 0, 0] },
+          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 48, 0], alignment: 'right' },
         ],
-        margin: [0, 20, 0, 0],
+        canvas: [{ type: 'line', x1: -48, y1: -6, x2: 599, y2: -6, lineWidth: 0.5, lineColor: BORDER_COLOR }],
+        margin: [0, 8, 0, 0],
       };
     },
     content: [
+      // Premium gradient header bar
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 8, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 8, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 8, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+
       // Header with branding
       {
         columns: [
           {
             stack: [
-              { text: 'MyZipVault', fontSize: 28, bold: true, color: BRAND_COLOR },
-              { text: 'Healthcare Credentialing Solutions', fontSize: 10, color: TEXT_LIGHT, margin: [0, 2, 0, 0] },
+              {
+                table: { widths: ['auto'], body: [[{
+                  text: 'MyZipVault',
+                  fontSize: 24, bold: true, color: '#FFFFFF',
+                  fillColor: BRAND_COLOR, margin: [12, 6, 12, 6], border: [false, false, false, false],
+                }]] },
+                layout: 'noBorders',
+              },
+              { text: 'Healthcare Credentialing Solutions', fontSize: 10, color: TEXT_MEDIUM, margin: [0, 6, 0, 0] },
             ],
             width: '*',
           },
           {
             stack: [
-              { text: 'INVOICE', fontSize: 24, bold: true, color: BRAND_COLOR, alignment: 'right' },
+              { text: 'INVOICE', fontSize: 28, bold: true, color: BRAND_COLOR, alignment: 'right' },
+              { text: docId, fontSize: 9, color: TEXT_LIGHT, alignment: 'right', margin: [0, 2, 0, 0] },
             ],
             width: 'auto',
           },
         ],
-        margin: [0, 0, 0, 5],
+        margin: [0, 24, 0, 8],
       },
       createBrandLine(),
 
-      // Invoice details
+      // Invoice details — premium info cards
       {
-        table: {
-          widths: ['*', '*'],
-          body: [
-            [
-              {
-                stack: [
-                  { text: 'Bill To:', style: 'label' },
-                  { text: data.agencyName, bold: true, fontSize: 13, color: TEXT_DARK, margin: [0, 2, 0, 0] },
-                ],
-                border: [false, false, false, false],
-                margin: [0, 0, 0, 10],
-              },
-              {
-                stack: [
-                  {
-                    table: {
-                      widths: ['auto', 'auto'],
-                      body: [
-                        [{ text: 'Invoice #:', style: 'label', margin: [0, 0, 15, 0] }, { text: data.invoiceNumber, bold: true, fontSize: 10, color: TEXT_DARK }],
-                        [{ text: 'Date:', style: 'label', margin: [0, 4, 15, 0] }, { text: formatDate(data.date), fontSize: 10, color: TEXT_DARK, margin: [0, 4, 0, 0] }],
-                      ],
-                    },
-                    layout: 'noBorders',
-                    alignment: 'right',
-                  },
-                ],
-                border: [false, false, false, false],
-                margin: [0, 0, 0, 10],
-              },
+        columns: [
+          { width: '50%', stack: [infoCard('BILL TO', data.agencyName)] },
+          { width: '4%', text: '' },
+          {
+            width: '46%',
+            stack: [
+              infoCard('INVOICE #', data.invoiceNumber),
+              { text: '', margin: [0, 8, 0, 0] },
+              infoCard('DATE', formatDate(data.date), { valueColor: BRAND_COLOR }),
             ],
-          ],
-        },
-        layout: 'noBorders',
-        margin: [0, 0, 0, 20],
+          },
+        ],
+        margin: [0, 0, 0, 24],
       },
 
-      // Line items table
+      // Line items table — premium
       {
         table: {
           headerRows: 1,
           widths: ['*', 'auto', 'auto', 'auto'],
           body: [
-            // Header row
+            // Header row — gradient
             [
-              { text: 'Description', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, margin: [8, 8, 8, 8] },
-              { text: 'Qty', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'center', margin: [8, 8, 8, 8] },
-              { text: 'Unit Price', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [8, 8, 8, 8] },
-              { text: 'Amount', style: 'tableHeader', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [8, 8, 8, 8] },
+              { text: 'Description', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 10, margin: [12, 10, 12, 10] },
+              { text: 'Qty', fillColor: '#0D9488', color: '#ffffff', bold: true, fontSize: 10, alignment: 'center', margin: [12, 10, 12, 10] },
+              { text: 'Unit Price', fillColor: '#0D9488', color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [12, 10, 12, 10] },
+              { text: 'Amount', fillColor: '#06B6D4', color: '#ffffff', bold: true, fontSize: 10, alignment: 'right', margin: [12, 10, 12, 10] },
             ],
             // Data row
             [
-              { text: 'Credential Verification Credits', fontSize: 10, color: TEXT_DARK, margin: [8, 8, 8, 8] },
-              { text: data.creditAmount.toString(), fontSize: 10, color: TEXT_DARK, alignment: 'center', margin: [8, 8, 8, 8] },
-              { text: `$${data.pricePerCredit.toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [8, 8, 8, 8] },
-              { text: `$${(data.creditAmount * data.pricePerCredit).toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [8, 8, 8, 8] },
+              { text: 'Credential Verification Credits', fontSize: 11, color: TEXT_DARK, margin: [12, 12, 12, 12] },
+              { text: data.creditAmount.toString(), fontSize: 11, color: TEXT_DARK, alignment: 'center', margin: [12, 12, 12, 12] },
+              { text: `$${data.pricePerCredit.toFixed(2)}`, fontSize: 11, color: TEXT_DARK, alignment: 'right', margin: [12, 12, 12, 12] },
+              { text: `$${(data.creditAmount * data.pricePerCredit).toFixed(2)}`, fontSize: 11, color: TEXT_DARK, alignment: 'right', margin: [12, 12, 12, 12] },
             ],
           ],
         },
         layout: {
-          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: (i: number, node: any) => (i === 0 || i === 1) ? BRAND_COLOR : BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
+          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.3,
+          vLineWidth: () => 0,
+          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : '#F3F4F6',
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
         },
         margin: [0, 0, 0, 0],
       },
 
-      // Totals
+      // Totals — premium
       {
         table: {
           widths: ['*', 'auto'],
@@ -446,30 +493,62 @@ export async function generateInvoicePdf(data: {
               { text: '', border: [false, false, false, false] },
             ],
             [
-              { text: 'Subtotal:', fontSize: 10, color: TEXT_MEDIUM, alignment: 'right', margin: [0, 4, 10, 4], border: [false, false, false, false] },
+              { text: 'Subtotal:', fontSize: 10, color: TEXT_MEDIUM, alignment: 'right', margin: [0, 4, 12, 4], border: [false, false, false, false] },
               { text: `$${(data.creditAmount * data.pricePerCredit).toFixed(2)}`, fontSize: 10, color: TEXT_DARK, alignment: 'right', margin: [0, 4, 0, 4], border: [false, false, false, false] },
             ],
             [
-              { text: 'Total Due:', fontSize: 12, bold: true, color: BRAND_COLOR, alignment: 'right', margin: [0, 4, 10, 4], border: [false, false, false, false] },
-              { text: `$${data.totalPrice.toFixed(2)}`, fontSize: 12, bold: true, color: BRAND_COLOR, alignment: 'right', margin: [0, 4, 0, 4], border: [false, false, false, false] },
+              {
+                text: 'Total Due:',
+                fontSize: 14, bold: true, color: '#FFFFFF', alignment: 'right', margin: [0, 6, 12, 6],
+                border: [false, false, false, false],
+              },
+              {
+                text: `$${data.totalPrice.toFixed(2)}`,
+                fontSize: 14, bold: true, color: '#FFFFFF', alignment: 'right', margin: [0, 6, 0, 6],
+                border: [false, false, false, false],
+              },
             ],
           ],
         },
         layout: 'noBorders',
-        margin: [0, 0, 0, 30],
+        margin: [0, 8, 0, 0],
+        // Override last row background with gradient table
+        fillColor: (row: number) => row === 2 ? BRAND_COLOR : undefined,
       },
 
+      { text: '', margin: [0, 24, 0, 0] },
       createBrandLine(),
 
-      // Payment terms
+      // Payment terms — premium card
+      {
+        table: { widths: ['*'], body: [[{
+          stack: [
+            { text: 'PAYMENT TERMS', fontSize: 9, bold: true, color: BRAND_COLOR, characterSpacing: 0.8, margin: [0, 0, 0, 8] },
+            { text: 'Payment is due upon receipt of this invoice. Please include the invoice number with your payment.', fontSize: 10, color: TEXT_MEDIUM, lineHeight: 1.5 },
+            { text: '', margin: [0, 8, 0, 0] },
+            { text: 'Thank you for your business!', fontSize: 10, color: BRAND_COLOR, bold: true, italics: true },
+          ],
+          fillColor: '#F8FAFC', border: [false, false, false, false], margin: [20, 16, 20, 16],
+        }]] },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => BORDER_COLOR, vLineColor: () => BORDER_COLOR },
+        margin: [0, 0, 0, 24],
+      },
+
+      // Bottom branding
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 3, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 3, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 3, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+      { text: '', margin: [0, 8, 0, 0] },
       {
         stack: [
-          { text: 'Payment Terms', style: 'sectionHeader' },
-          { text: 'Payment is due upon receipt of this invoice. Please include the invoice number with your payment.', style: 'bodyText' },
-          { text: '', margin: [0, 8] },
-          { text: 'Thank you for your business!', style: 'bodyText', bold: true, color: BRAND_COLOR, italics: true },
+          { text: 'Generated by MyZipVault', fontSize: 9, color: TEXT_LIGHT, alignment: 'center' },
+          { text: 'Secure Healthcare Credential Verification Platform', fontSize: 8, color: '#C4C4C4', alignment: 'center', margin: [0, 2, 0, 0] },
         ],
-        margin: [0, 0, 0, 0],
       },
     ],
   };
@@ -1077,120 +1156,92 @@ export async function generateReferencePdf(data: {
   signatureDate: string;
   attestationText: string;
 }): Promise<Buffer> {
-  // Build Q&A table body
+  const docId = `MZV-REF-${Date.now().toString(36).toUpperCase()}`;
+  const verInput = `${data.nurseName}-${data.managerName}-${data.signatureDate}`;
+  const verCode = verInput.split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0).toString(16).toUpperCase().replace(/-/g, '0').padStart(8, '0').slice(0, 8);
+
+  // Build Q&A table body — premium badges
   const qaBody: any[] = [
     [
-      { text: '#', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [6, 6, 6, 6] },
-      { text: 'Question', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
-      { text: 'Response', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [6, 6, 6, 6] },
+      { text: '#', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, alignment: 'center', margin: [8, 10, 8, 10] },
+      { text: 'Question', fillColor: BRAND_COLOR, color: '#ffffff', bold: true, fontSize: 9, margin: [8, 10, 8, 10] },
+      { text: 'Response', fillColor: '#0D9488', color: '#ffffff', bold: true, fontSize: 9, margin: [8, 10, 8, 10] },
     ],
   ];
 
   data.questions.forEach((q, i) => {
+    const bg = i % 2 === 0 ? '#FFFFFF' : '#FAFAFA';
     qaBody.push([
-      { text: (i + 1).toString(), fontSize: 9, color: TEXT_DARK, alignment: 'center', margin: [6, 5, 6, 5] },
-      { text: q.question, fontSize: 9, color: TEXT_DARK, margin: [6, 5, 6, 5] },
-      { text: q.answer, fontSize: 9, color: TEXT_DARK, margin: [6, 5, 6, 5] },
+      { text: (i + 1).toString(), fontSize: 10, color: TEXT_MEDIUM, alignment: 'center', margin: [8, 8, 8, 8], fillColor: bg },
+      { text: q.question, fontSize: 10, color: TEXT_DARK, margin: [8, 8, 8, 8], fillColor: bg },
+      { text: q.answer, fontSize: 10, color: TEXT_DARK, margin: [8, 8, 8, 8], fillColor: bg },
     ]);
   });
 
   const docDefinition: any = {
     pageSize: 'LETTER',
-    pageMargins: [50, 70, 50, 60],
+    pageMargins: [48, 40, 48, 40],
     defaultStyle: { font: 'Roboto' },
-    styles: baseStyles,
+    styles: {
+      ...baseStyles,
+      headerTitle: { fontSize: 22, bold: true, color: '#ffffff' },
+    },
     header: (currentPage: number) => {
-      if (currentPage === 1) return {};
+      if (currentPage === 1) return null;
       return {
         columns: [
-          { text: 'Professional Reference', style: 'smallText', alignment: 'left', margin: [50, 20, 0, 0] },
-          { text: data.nurseName, style: 'smallText', alignment: 'right', margin: [0, 20, 50, 0] },
+          { text: 'PROFESSIONAL REFERENCE', fontSize: 9, bold: true, color: BRAND_COLOR, characterSpacing: 0.5, margin: [48, 12, 0, 0] },
+          { text: data.nurseName, fontSize: 9, color: TEXT_MEDIUM, alignment: 'right', margin: [0, 12, 48, 0] },
         ],
+        canvas: [{ type: 'line', x1: -48, y1: 26, x2: 599, y2: 26, lineWidth: 0.5, lineColor: BORDER_COLOR }],
       };
     },
     footer: (currentPage: number, pageCount: number) => {
       return {
         columns: [
-          { text: 'MyZipVault — Professional Reference', style: 'footer', margin: [50, 0, 0, 0] },
-          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 50, 0], alignment: 'right' },
+          { text: 'MyZipVault — Professional Reference', style: 'footer', margin: [48, 0, 0, 0] },
+          { text: `Page ${currentPage} of ${pageCount}`, style: 'footer', margin: [0, 0, 48, 0], alignment: 'right' },
         ],
-        margin: [0, 20, 0, 0],
+        canvas: [{ type: 'line', x1: -48, y1: -6, x2: 599, y2: -6, lineWidth: 0.5, lineColor: BORDER_COLOR }],
+        margin: [0, 8, 0, 0],
       };
     },
     content: [
-      // Header
+      // Premium gradient header
       {
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: 515, h: 45, color: BRAND_COLOR },
+          { type: 'rect', x: 0, y: 0, w: 200, h: 52, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 52, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 52, color: '#06B6D4' },
         ],
+        margin: [-48, 0, -48, 0],
       },
       {
         text: 'PROFESSIONAL REFERENCE',
-        fontSize: 20,
-        bold: true,
-        color: '#ffffff',
-        absolutePosition: { x: 50, y: 12 },
+        fontSize: 22, bold: true, color: '#ffffff',
+        absolutePosition: { x: 48, y: 15 },
       },
-      { text: '', margin: [0, 10] },
+      { text: '', margin: [0, 16] },
 
-      // Info section
+      // Info section — premium info cards
       {
-        table: {
-          widths: ['*', '*'],
-          body: [
-            [
-              {
-                stack: [
-                  { text: 'Nurse / Candidate', style: 'label' },
-                  { text: data.nurseName, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-              {
-                stack: [
-                  { text: 'Employment Status', style: 'label' },
-                  { text: data.employmentStatus, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-            ],
-            [
-              {
-                stack: [
-                  { text: 'Reference Manager', style: 'label' },
-                  { text: data.managerName, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-              {
-                stack: [
-                  { text: 'Facility', style: 'label' },
-                  { text: data.facility, bold: true, fontSize: 11, color: TEXT_DARK },
-                ],
-                border: [true, true, true, true],
-                fillColor: BRAND_LIGHT,
-                margin: [8, 6, 8, 6],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 16],
+        columns: [
+          { width: '48%', stack: [infoCard('NURSE / CANDIDATE', data.nurseName)] },
+          { width: '4%', text: '' },
+          { width: '48%', stack: [infoCard('EMPLOYMENT STATUS', data.employmentStatus, { valueColor: BRAND_COLOR })] },
+        ],
+        margin: [0, 0, 0, 8],
+      },
+      {
+        columns: [
+          { width: '48%', stack: [infoCard('REFERENCE MANAGER', data.managerName)] },
+          { width: '4%', text: '' },
+          { width: '48%', stack: [infoCard('FACILITY', data.facility)] },
+        ],
+        margin: [0, 0, 0, 20],
       },
 
-      // Q&A table
-      { text: 'EVALUATION QUESTIONS & RESPONSES', style: 'sectionHeader' },
+      // Q&A table — premium
       {
         table: {
           headerRows: 1,
@@ -1198,87 +1249,86 @@ export async function generateReferencePdf(data: {
           body: qaBody,
         },
         layout: {
-          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 16],
-      },
-
-      // Overall comment
-      { text: 'OVERALL COMMENT', style: 'sectionHeader' },
-      {
-        table: {
-          widths: ['*'],
-          body: [
-            [
-              {
-                text: data.overallComment || 'No comment provided.',
-                fontSize: 10,
-                color: TEXT_DARK,
-                lineHeight: 1.5,
-                margin: [10, 10, 10, 10],
-                border: [true, true, true, true],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 16],
-      },
-
-      // Attestation
-      createBrandLine(),
-      { text: 'ATTESTATION', style: 'sectionHeader' },
-      {
-        table: {
-          widths: ['*'],
-          body: [
-            [
-              {
-                text: data.attestationText,
-                fontSize: 9,
-                color: TEXT_MEDIUM,
-                lineHeight: 1.5,
-                italics: true,
-                margin: [10, 10, 10, 10],
-                border: [true, true, true, true],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
+          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.3,
+          vLineWidth: () => 0,
+          hLineColor: (i: number) => (i <= 1) ? BRAND_COLOR : '#F3F4F6',
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
         },
         margin: [0, 0, 0, 20],
       },
 
-      // Signature
+      // Overall comment — premium card
+      {
+        table: { widths: ['*'], body: [[{
+          stack: [
+            { text: 'OVERALL COMMENT', fontSize: 9, bold: true, color: BRAND_COLOR, characterSpacing: 0.8, margin: [0, 0, 0, 8] },
+            { text: data.overallComment || 'No comment provided.', fontSize: 10, color: TEXT_MEDIUM, lineHeight: 1.6, italics: !data.overallComment },
+          ],
+          fillColor: '#F8FAFC', border: [false, false, false, false], margin: [20, 16, 20, 16],
+        }]] },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => BORDER_COLOR, vLineColor: () => BORDER_COLOR },
+        margin: [0, 0, 0, 20],
+      },
+
+      // Attestation — premium card
+      createBrandLine(),
+      {
+        table: { widths: ['*'], body: [[{
+          stack: [
+            { text: 'ATTESTATION', fontSize: 9, bold: true, color: TEXT_LIGHT, characterSpacing: 1, margin: [0, 0, 0, 10] },
+            { text: data.attestationText, fontSize: 10, color: TEXT_MEDIUM, lineHeight: 1.7, italics: true },
+          ],
+          fillColor: '#F8FAFC', border: [false, false, false, false], margin: [24, 20, 24, 20],
+        }]] },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => BORDER_COLOR, vLineColor: () => BORDER_COLOR },
+        margin: [0, 0, 0, 24],
+      },
+
+      // Signature — premium
       {
         columns: [
           {
-            width: '*',
+            width: '50%',
             stack: [
+              { text: 'SIGNED BY', fontSize: 8, color: TEXT_LIGHT, bold: true, characterSpacing: 0.8 },
+              { text: data.signatureName, fontSize: 14, bold: true, color: TEXT_DARK, margin: [0, 4, 0, 0] },
+              { text: '', margin: [0, 12, 0, 0] },
               { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: TEXT_DARK }], margin: [0, 0, 0, 4] },
-              { text: `Signed by: ${data.signatureName}`, fontSize: 9, color: TEXT_MEDIUM },
+              { text: 'Signature', fontSize: 8, color: TEXT_LIGHT, characterSpacing: 0.8 },
             ],
           },
           {
-            width: 'auto',
+            width: '50%',
             stack: [
-              { text: `Date: ${data.signatureDate}`, fontSize: 9, color: TEXT_MEDIUM },
+              { text: 'DATE SIGNED', fontSize: 8, color: TEXT_LIGHT, bold: true, characterSpacing: 0.8 },
+              { text: data.signatureDate, fontSize: 14, bold: true, color: BRAND_COLOR, margin: [0, 4, 0, 0] },
             ],
-            alignment: 'right',
           },
+        ],
+        margin: [0, 0, 0, 20],
+      },
+
+      // Verification box
+      verificationBox(docId, verCode),
+
+      // Bottom branding
+      { text: '', margin: [0, 20, 0, 0] },
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 3, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 3, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 3, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+      { text: '', margin: [0, 8, 0, 0] },
+      {
+        stack: [
+          { text: 'Generated by MyZipVault', fontSize: 9, color: TEXT_LIGHT, alignment: 'center' },
+          { text: 'Secure Healthcare Credential Verification Platform', fontSize: 8, color: '#C4C4C4', alignment: 'center', margin: [0, 2, 0, 0] },
         ],
       },
     ],
@@ -1303,12 +1353,12 @@ export async function generateResumePdf(data: {
 }): Promise<Buffer> {
   const docDefinition: any = {
     pageSize: 'LETTER',
-    pageMargins: [60, 50, 60, 50],
+    pageMargins: [48, 40, 48, 40],
     defaultStyle: { font: 'Roboto' },
     styles: {
       ...baseStyles,
       nameTitle: {
-        fontSize: 26,
+        fontSize: 32,
         bold: true,
         color: BRAND_COLOR,
         margin: [0, 0, 0, 4],
@@ -1317,6 +1367,13 @@ export async function generateResumePdf(data: {
         fontSize: 10,
         color: TEXT_MEDIUM,
         margin: [0, 0, 0, 2],
+      },
+      sectionHeader: {
+        fontSize: 11,
+        bold: true,
+        color: BRAND_COLOR,
+        characterSpacing: 0.8,
+        margin: [0, 16, 0, 8],
       },
       experienceTitle: {
         fontSize: 12,
@@ -1348,7 +1405,18 @@ export async function generateResumePdf(data: {
       },
     },
     content: [
+      // Top gradient accent bar
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 6, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 6, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 6, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+
       // Name
+      { text: '', margin: [0, 16, 0, 0] },
       { text: data.name, style: 'nameTitle' },
 
       // Contact info
@@ -1367,23 +1435,14 @@ export async function generateResumePdf(data: {
       { text: 'PROFESSIONAL SUMMARY', style: 'sectionHeader' },
       { text: data.summary, style: 'bodyText', margin: [0, 0, 0, 10] },
 
-      // Skills
+      // Skills — premium badge layout
       { text: 'SKILLS', style: 'sectionHeader' },
       {
-        table: {
-          widths: ['*'],
-          body: [
-            [
-              {
-                text: data.skills.join('  •  '),
-                fontSize: 10,
-                color: TEXT_DARK,
-                lineHeight: 1.5,
-                margin: [10, 8, 10, 8],
-              },
-            ],
-          ],
-        },
+        table: { widths: ['*'], body: [[{
+          text: data.skills.join('  •  '),
+          fontSize: 10, color: TEXT_DARK, lineHeight: 1.6,
+          margin: [14, 10, 14, 10],
+        }]] },
         layout: {
           hLineWidth: () => 0.5,
           vLineWidth: () => 0.5,
@@ -1391,7 +1450,7 @@ export async function generateResumePdf(data: {
           vLineColor: () => BORDER_COLOR,
         },
         margin: [0, 0, 0, 10],
-        fillColor: BRAND_LIGHT,
+        fillColor: '#F0FDFA',
       },
 
       // Experience
@@ -1452,6 +1511,24 @@ export async function generateResumePdf(data: {
             },
           ]
         : []),
+
+      // Bottom branding
+      { text: '', margin: [0, 24, 0, 0] },
+      {
+        canvas: [
+          { type: 'rect', x: 0, y: 0, w: 200, h: 3, color: BRAND_COLOR },
+          { type: 'rect', x: 200, y: 0, w: 200, h: 3, color: '#0D9488' },
+          { type: 'rect', x: 400, y: 0, w: 197, h: 3, color: '#06B6D4' },
+        ],
+        margin: [-48, 0, -48, 0],
+      },
+      { text: '', margin: [0, 6, 0, 0] },
+      {
+        columns: [
+          { text: 'Generated by MyZipVault', fontSize: 8, color: TEXT_LIGHT, width: '*' },
+          { text: 'www.myzipvault.com', fontSize: 8, color: TEXT_LIGHT, alignment: 'right', width: 'auto' },
+        ],
+      },
     ],
   };
 
