@@ -76,7 +76,7 @@ function getEmploymentBadge(status: string) {
   switch (status) {
     case "current":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Current
         </Badge>
       );
@@ -88,7 +88,7 @@ function getEmploymentBadge(status: string) {
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -114,13 +114,13 @@ function getResponseTypeBadge(type: string) {
   switch (type) {
     case "rating_5":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           1-5 Rating
         </Badge>
       );
     case "rating_3":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           1-3 Rating
         </Badge>
       );
@@ -132,7 +132,7 @@ function getResponseTypeBadge(type: string) {
       );
     case "text":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Text
         </Badge>
       );
@@ -287,9 +287,9 @@ export default function ReferenceQuestionsPage() {
           <Button
             onClick={() => openDialog()}
             className="text-white gap-1.5"
-            style={{ background: "#166534" }}
+            style={{ background: "var(--primary)" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#166534")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
           >
             <Plus className="size-4" />
             Add Question
@@ -474,9 +474,9 @@ export default function ReferenceQuestionsPage() {
               onClick={saveQuestion}
               disabled={actionLoading}
               className="text-white"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--primary)" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#166534")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
             >
               {actionLoading ? (
                 <>

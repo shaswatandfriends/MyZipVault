@@ -32,8 +32,8 @@ const SIGNER_ROLES = ["Candidate", "Recruiter", "Client Employer", "Witness", "O
 export default function NewDocumentPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     }>
       <NewDocumentContent />
@@ -210,14 +210,14 @@ function NewDocumentContent() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-[#6B7280]">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-text-secondary">
             <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <h1 className="text-xl font-bold text-foreground" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             New Document
           </h1>
         </div>
@@ -231,15 +231,15 @@ function NewDocumentContent() {
             { num: 4, label: "Create" },
           ].map((s, i) => (
             <React.Fragment key={s.num}>
-              <div className={`flex items-center gap-1 sm:gap-2 ${step >= s.num ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
+              <div className={`flex items-center gap-1 sm:gap-2 ${step >= s.num ? "text-primary" : "text-text-muted"}`}>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                  step > s.num ? "bg-[#166534] text-white" : step === s.num ? "bg-[#166534] text-white" : "bg-[#E5E7EB] text-[#9CA3AF]"
+                  step > s.num ? "bg-primary text-white" : step === s.num ? "bg-primary text-white" : "bg-surface-3 text-text-muted"
                 }`}>
                   {step > s.num ? <Check className="h-3 w-3" /> : s.num}
                 </div>
                 <span className="text-[10px] sm:text-xs font-medium hidden sm:inline">{s.label}</span>
               </div>
-              {i < 3 && <div className={`flex-1 h-0.5 min-w-[8px] ${step > s.num ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />}
+              {i < 3 && <div className={`flex-1 h-0.5 min-w-[8px] ${step > s.num ? "bg-primary" : "bg-surface-3"}`} />}
             </React.Fragment>
           ))}
         </div>
@@ -247,45 +247,45 @@ function NewDocumentContent() {
         {/* Step 1: Choose source */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Choose Document Source</h2>
+            <h2 className="text-lg font-semibold text-foreground">Choose Document Source</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "template" ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB] hover:border-[#166534]/30"
+                  source === "template" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("template")}
               >
                 <CardContent className="p-4 text-center">
-                  <LayoutTemplate className="h-8 w-8 mx-auto text-[#166534] mb-2" />
-                  <p className="font-medium text-[#111827]">From Template</p>
-                  <p className="text-xs text-[#6B7280]">Start with a pre-built template</p>
+                  <LayoutTemplate className="h-8 w-8 mx-auto text-primary mb-2" />
+                  <p className="font-medium text-foreground">From Template</p>
+                  <p className="text-xs text-text-secondary">Start with a pre-built template</p>
                 </CardContent>
               </Card>
 
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "upload_pdf" ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB] hover:border-[#166534]/30"
+                  source === "upload_pdf" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("upload_pdf")}
               >
                 <CardContent className="p-4 text-center">
-                  <FileSignature className="h-8 w-8 mx-auto text-[#166534] mb-2" />
-                  <p className="font-medium text-[#111827]">Upload PDF</p>
-                  <p className="text-xs text-[#6B7280]">Edit your Word file, save as PDF, then upload for signing</p>
+                  <FileSignature className="h-8 w-8 mx-auto text-primary mb-2" />
+                  <p className="font-medium text-foreground">Upload PDF</p>
+                  <p className="text-xs text-text-secondary">Edit your Word file, save as PDF, then upload for signing</p>
                 </CardContent>
               </Card>
 
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "blank" ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB] hover:border-[#166534]/30"
+                  source === "blank" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("blank")}
               >
                 <CardContent className="p-4 text-center">
-                  <Plus className="h-8 w-8 mx-auto text-[#166534] mb-2" />
-                  <p className="font-medium text-[#111827]">Blank Document</p>
-                  <p className="text-xs text-[#6B7280]">Create your own template (RTR, offer letter, etc.)</p>
+                  <Plus className="h-8 w-8 mx-auto text-primary mb-2" />
+                  <p className="font-medium text-foreground">Blank Document</p>
+                  <p className="text-xs text-text-secondary">Create your own template (RTR, offer letter, etc.)</p>
                 </CardContent>
               </Card>
             </div>
@@ -293,7 +293,7 @@ function NewDocumentContent() {
             {/* Template selector */}
             {source === "template" && (
               <div className="mt-4">
-                <Label className="text-sm font-medium text-[#111827]">Select Template</Label>
+                <Label className="text-sm font-medium text-foreground">Select Template</Label>
                 <Select
                   value={selectedTemplateId?.toString() || ""}
                   onValueChange={(val) => setSelectedTemplateId(parseInt(val))}
@@ -315,7 +315,7 @@ function NewDocumentContent() {
             {/* File upload */}
             {source === "upload_pdf" && (
               <div className="mt-4">
-                <Label className="text-sm font-medium text-[#111827]">
+                <Label className="text-sm font-medium text-foreground">
                   Upload PDF File
                 </Label>
                 <div className="mt-1">
@@ -326,15 +326,15 @@ function NewDocumentContent() {
                     disabled={uploading}
                     className="max-w-md"
                   />
-                  {uploading && <p className="text-xs text-[#6B7280] mt-1 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</p>}
-                  {uploadedFileUrl && <Badge className="mt-2 bg-[#DCFCE7] text-[#166534] border-0"><Check className="h-3 w-3 mr-1" /> File uploaded</Badge>}
+                  {uploading && <p className="text-xs text-text-secondary mt-1 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</p>}
+                  {uploadedFileUrl && <Badge className="mt-2 bg-primary-light text-primary border-0"><Check className="h-3 w-3 mr-1" /> File uploaded</Badge>}
                 </div>
               </div>
             )}
 
             <div className="flex justify-end mt-6">
               <Button
-                className="bg-[#166534] hover:bg-[#14532D] text-white"
+                className="bg-primary hover:bg-primary-hover text-white"
                 onClick={() => setStep(2)}
                 disabled={!source || (source === "upload_pdf" && !uploadedFileUrl) || (source === "template" && !selectedTemplateId)}
               >
@@ -347,7 +347,7 @@ function NewDocumentContent() {
         {/* Step 2: Document details */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Document Details</h2>
+            <h2 className="text-lg font-semibold text-foreground">Document Details</h2>
 
             <div className="space-y-3">
               <div>
@@ -416,7 +416,7 @@ function NewDocumentContent() {
               <Button variant="outline" onClick={() => setStep(1)}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back
               </Button>
-              <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={() => setStep(3)} disabled={!docName}>
+              <Button className="bg-primary hover:bg-primary-hover text-white" onClick={() => setStep(3)} disabled={!docName}>
                 Next <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -426,8 +426,8 @@ function NewDocumentContent() {
         {/* Step 3: Signers */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Add Signers</h2>
-            <p className="text-sm text-[#6B7280]">
+            <h2 className="text-lg font-semibold text-foreground">Add Signers</h2>
+            <p className="text-sm text-text-secondary">
               {signingOrder === "sequential"
                 ? "Signers will sign in order. Each signer must sign before the next."
                 : "All signers can sign at the same time."}
@@ -435,8 +435,8 @@ function NewDocumentContent() {
 
             <div className="space-y-3">
               {signers.map((signer, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-xl border border-[#E5E7EB] bg-white">
-                  <div className="w-8 h-8 rounded-full bg-[#166534] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
+                <div key={index} className="flex items-start gap-3 p-3 rounded-xl border border-border bg-white">
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
                     {index + 1}
                   </div>
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -463,7 +463,7 @@ function NewDocumentContent() {
                     </Select>
                   </div>
                   {signers.length > 1 && (
-                    <Button variant="ghost" size="sm" className="text-[#9CA3AF] hover:text-[#DC2626]" onClick={() => removeSigner(index)}>
+                    <Button variant="ghost" size="sm" className="text-text-muted hover:text-[#DC2626]" onClick={() => removeSigner(index)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -479,7 +479,7 @@ function NewDocumentContent() {
               <Button variant="outline" onClick={() => setStep(2)}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back
               </Button>
-              <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={() => setStep(4)}>
+              <Button className="bg-primary hover:bg-primary-hover text-white" onClick={() => setStep(4)}>
                 Next <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -489,40 +489,40 @@ function NewDocumentContent() {
         {/* Step 4: Review & Create */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Review & Create</h2>
+            <h2 className="text-lg font-semibold text-foreground">Review & Create</h2>
 
-            <Card className="rounded-2xl border-[#E5E7EB]">
+            <Card className="rounded-2xl border-border">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#6B7280]">Document Name</span>
-                  <span className="text-sm font-medium text-[#111827]">{docName}</span>
+                  <span className="text-sm text-text-secondary">Document Name</span>
+                  <span className="text-sm font-medium text-foreground">{docName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#6B7280]">Source</span>
+                  <span className="text-sm text-text-secondary">Source</span>
                   <Badge variant="outline">{source === "template" ? "Template" : source === "upload_pdf" ? "PDF Upload" : "Blank"}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#6B7280]">Type</span>
-                  <span className="text-sm text-[#111827]">{DOCUMENT_TYPES.find((t) => t.value === docType)?.label}</span>
+                  <span className="text-sm text-text-secondary">Type</span>
+                  <span className="text-sm text-foreground">{DOCUMENT_TYPES.find((t) => t.value === docType)?.label}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#6B7280]">Signing Order</span>
+                  <span className="text-sm text-text-secondary">Signing Order</span>
                   <Badge variant="outline">{signingOrder}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#6B7280]">Expires</span>
-                  <span className="text-sm text-[#111827]">{expiryDays} days</span>
+                  <span className="text-sm text-text-secondary">Expires</span>
+                  <span className="text-sm text-foreground">{expiryDays} days</span>
                 </div>
                 <div>
-                  <span className="text-sm text-[#6B7280]">Signers ({signers.filter((s) => s.name && s.email).length})</span>
+                  <span className="text-sm text-text-secondary">Signers ({signers.filter((s) => s.name && s.email).length})</span>
                   <div className="mt-1 space-y-1">
                     {signers.filter((s) => s.name && s.email).map((s, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
-                        <div className="w-5 h-5 rounded-full bg-[#166534] text-white flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold">
                           {i + 1}
                         </div>
-                        <span className="text-[#111827]">{s.name}</span>
-                        <span className="text-[#6B7280]">({s.email})</span>
+                        <span className="text-foreground">{s.name}</span>
+                        <span className="text-text-secondary">({s.email})</span>
                         <Badge variant="outline" className="text-[10px]">{s.role}</Badge>
                       </div>
                     ))}
@@ -536,7 +536,7 @@ function NewDocumentContent() {
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back
               </Button>
               <Button
-                className="bg-[#166534] hover:bg-[#14532D] text-white"
+                className="bg-primary hover:bg-primary-hover text-white"
                 onClick={handleCreate}
                 disabled={creating}
               >

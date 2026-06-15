@@ -140,8 +140,8 @@ const statCards: StatCardConfig[] = [
     label: "Companies",
     key: "companies",
     icon: Building2,
-    iconBg: "bg-[#DCFCE7]",
-    iconColor: "text-[#166534]",
+    iconBg: "bg-primary-light",
+    iconColor: "text-primary",
     format: (v) => v.toLocaleString(),
     sub: () => "Active organizations",
   },
@@ -185,7 +185,7 @@ const statCards: StatCardConfig[] = [
     label: "Completion Rate",
     key: "completionRate",
     icon: LayoutDashboard,
-    iconBg: "bg-[#DCFCE7]",
+    iconBg: "bg-primary-light",
     iconColor: "text-[#14532D]",
     format: (v) => `${v}%`,
     sub: (s) => `${s.completed} of ${s.linksGenerated} links`,
@@ -360,7 +360,7 @@ export default function SkillChecklistOverviewPage() {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="text-[#166534] hover:text-[#14532D]"
+                  className="text-primary hover:text-[#14532D]"
                 >
                   Clear filters
                 </Button>
@@ -418,7 +418,7 @@ export default function SkillChecklistOverviewPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="size-5 text-[#166534]" />
+            <Building2 className="size-5 text-primary" />
             Company Breakdown
           </CardTitle>
         </CardHeader>
@@ -501,7 +501,7 @@ export default function SkillChecklistOverviewPage() {
                     <TableRow key={row.name}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <div className="flex size-7 items-center justify-center rounded-lg bg-[#DCFCE7] text-[#166534] text-xs font-semibold shrink-0">
+                          <div className="flex size-7 items-center justify-center rounded-lg bg-primary-light text-primary text-xs font-semibold shrink-0">
                             {row.name[0]?.toUpperCase()}
                           </div>
                           <span>{row.name}</span>
@@ -537,9 +537,9 @@ export default function SkillChecklistOverviewPage() {
                                 width: `${Math.min(row.completionRate, 100)}%`,
                                 backgroundColor:
                                   row.completionRate >= 75
-                                    ? "#166534"
+                                    ? "var(--primary)"
                                     : row.completionRate >= 50
-                                    ? "#0D9488"
+                                    ? "var(--accent-teal)"
                                     : row.completionRate >= 25
                                     ? "#CA8A04"
                                     : "#DC2626",
@@ -567,7 +567,7 @@ export default function SkillChecklistOverviewPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ClipboardCheck className="size-5 text-[#166534]" />
+            <ClipboardCheck className="size-5 text-primary" />
             Recent Activity
           </CardTitle>
         </CardHeader>

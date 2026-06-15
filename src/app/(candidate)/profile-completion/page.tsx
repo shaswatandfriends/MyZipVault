@@ -36,7 +36,7 @@ function CircularProgress({
 
   const color =
     percentage >= 100
-      ? "#166534"
+      ? "var(--primary)"
       : percentage >= 50
         ? "#16A34A"
         : percentage >= 25
@@ -50,7 +50,7 @@ function CircularProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E5E7EB"
+          stroke="var(--border)"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -71,7 +71,7 @@ function CircularProgress({
         <span className="text-3xl font-bold" style={{ color }}>
           {percentage}%
         </span>
-        <span className="text-xs text-[#6B7280] mt-0.5">Complete</span>
+        <span className="text-xs text-text-secondary mt-0.5">Complete</span>
       </div>
     </div>
   );
@@ -113,33 +113,33 @@ function CompletionItem({
           <div
             className={cn(
               "size-10 rounded-lg flex items-center justify-center shrink-0",
-              isComplete ? "bg-[#166534]/10" : "bg-[#F3F4F6]"
+              isComplete ? "bg-primary/10" : "bg-[#F3F4F6]"
             )}
           >
             <Icon
               className={cn(
                 "size-5",
-                isComplete ? "text-[#166534]" : "text-[#9CA3AF]"
+                isComplete ? "text-primary" : "text-text-muted"
               )}
             />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-[#111827]">{title}</p>
+              <p className="text-sm font-medium text-foreground">{title}</p>
               <Badge
                 variant={isComplete ? "default" : "secondary"}
                 className={cn(
                   "text-[10px] px-1.5 py-0",
-                  isComplete && "bg-[#166534] text-white"
+                  isComplete && "bg-primary text-white"
                 )}
               >
                 {weight}%
               </Badge>
             </div>
-            <p className="text-xs text-[#6B7280] mt-0.5">{description}</p>
+            <p className="text-xs text-text-secondary mt-0.5">{description}</p>
           </div>
           {isComplete ? (
-            <CheckCircle2 className="size-5 text-[#166534] shrink-0" />
+            <CheckCircle2 className="size-5 text-primary shrink-0" />
           ) : (
             <Link href={href}>
               <Button
@@ -273,12 +273,12 @@ export default function ProfileCompletionPage() {
       {/* Header */}
       <div>
         <h1
-          className="text-xl font-semibold text-[#111827] sm:text-2xl"
-          style={{ fontFamily: "'Clash Display', sans-serif" }}
+          className="text-xl font-semibold text-foreground sm:text-2xl"
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
         >
           Profile Completion
         </h1>
-        <p className="text-sm text-[#6B7280] mt-0.5">
+        <p className="text-sm text-text-secondary mt-0.5">
           Complete your profile to unlock full access for recruiters and agencies.
         </p>
       </div>
@@ -287,23 +287,23 @@ export default function ProfileCompletionPage() {
       <div className="flex flex-col items-center py-6">
         <CircularProgress percentage={data.profileCompletionPct} />
         <div className="mt-4 text-center">
-          <p className="text-sm font-medium text-[#111827]">
+          <p className="text-sm font-medium text-foreground">
             {displayName}
           </p>
-          <p className="text-xs text-[#6B7280] mt-0.5">
+          <p className="text-xs text-text-secondary mt-0.5">
             {completedCount} of {totalCount} steps completed
           </p>
         </div>
         {data.profileCompletionPct === 100 && (
-          <div className="mt-4 flex items-center gap-2 rounded-full bg-[#DCFCE7] px-4 py-2">
-            <CheckCircle2 className="size-4 text-[#166534]" />
-            <span className="text-sm font-medium text-[#166534]">
+          <div className="mt-4 flex items-center gap-2 rounded-full bg-primary-light px-4 py-2">
+            <CheckCircle2 className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
               Your profile is complete!
             </span>
           </div>
         )}
         {data.profileCompletionPct < 100 && (
-          <p className="mt-4 text-center text-xs text-[#6B7280] max-w-md">
+          <p className="mt-4 text-center text-xs text-text-secondary max-w-md">
             Recruiters are more likely to reach out to candidates with complete profiles.
             Each step brings you closer to unlocking full visibility.
           </p>

@@ -142,7 +142,7 @@ function getRatingBadge(rating: number) {
     case 3:
       return <span className="inline-flex items-center justify-center size-6 rounded bg-[#DBEAFE] text-[#2563EB] font-bold text-[10px]">3</span>;
     case 4:
-      return <span className="inline-flex items-center justify-center size-6 rounded bg-[#166534] text-white font-bold text-[10px]">4</span>;
+      return <span className="inline-flex items-center justify-center size-6 rounded bg-primary text-white font-bold text-[10px]">4</span>;
     default:
       return <span className="text-xs">{rating}</span>;
   }
@@ -235,8 +235,8 @@ export default function RefCandidatesPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-                  <Users className="size-5 text-[#166534]" />
+                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="size-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{data.stats.totalCandidates}</p>

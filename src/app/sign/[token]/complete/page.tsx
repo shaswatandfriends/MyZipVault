@@ -45,8 +45,8 @@ export default function SigningCompletePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-lg w-full text-center">
           {/* Skeleton Success Icon */}
           <Skeleton className="w-16 h-16 rounded-full mx-auto mb-6" />
 
@@ -72,32 +72,32 @@ export default function SigningCompletePage() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E5E7EB] p-8 max-w-lg w-full text-center animate-vaultsign-fade-in">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-lg w-full text-center animate-vaultsign-fade-in">
         {/* Success icon */}
-        <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-6 animate-vaultsign-success-bounce">
-          <CheckCircle2 className="h-8 w-8 text-[#166534]" />
+        <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-6 animate-vaultsign-success-bounce">
+          <CheckCircle2 className="h-8 w-8 text-primary" />
         </div>
 
-        <h1 className="text-2xl font-bold text-[#111827] mb-2">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
           Document Signed Successfully!
         </h1>
 
-        <p className="text-[#6B7280] mb-6">
+        <p className="text-text-secondary mb-6">
           Your signature has been applied to the document. {signingData?.document?.status === "completed"
             ? "All parties have signed — the document is now complete."
             : "Other signers may still need to sign."}
         </p>
 
         {/* Document info */}
-        <div className="bg-[#F8F7F4] rounded-xl p-4 mb-6 text-left">
+        <div className="bg-background rounded-xl p-4 mb-6 text-left">
           <div className="flex items-center gap-3 mb-3">
-            <FileText className="h-5 w-5 text-[#166534]" />
+            <FileText className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium text-[#111827]">
+              <p className="font-medium text-foreground">
                 {signingData?.document?.document_name || "Document"}
               </p>
-              <p className="text-xs text-[#6B7280]">
+              <p className="text-xs text-text-secondary">
                 Signed on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
               </p>
             </div>
@@ -108,11 +108,11 @@ export default function SigningCompletePage() {
               {signingData.all_signers.map((signer: any, index: number) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
                   {signer.status === "signed" ? (
-                    <CheckCircle2 className="h-4 w-4 text-[#166534]" />
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
                   ) : (
                     <Clock className="h-4 w-4 text-[#D97706]" />
                   )}
-                  <span className={signer.status === "signed" ? "text-[#166534]" : "text-[#6B7280]"}>
+                  <span className={signer.status === "signed" ? "text-primary" : "text-text-secondary"}>
                     {signer.name}
                   </span>
                   <Badge variant="outline" className="text-[10px] h-4">
@@ -126,8 +126,8 @@ export default function SigningCompletePage() {
 
         {/* Legal notice */}
         <div className="flex items-start gap-2 text-left mb-6 p-3 bg-[#F0FDF4] rounded-lg">
-          <Shield className="h-4 w-4 text-[#166534] mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-[#374151]">
+          <Shield className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-foreground">
             This document was signed using VaultSign by MyZipVault. Your electronic signature is legally binding
             under the ESIGN Act and UETA. A copy of the signed document will be emailed to all parties.
           </p>
@@ -138,9 +138,9 @@ export default function SigningCompletePage() {
           <div className="mb-4 p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20 text-left">
             <div className="flex items-center gap-2 mb-2">
               <UserPlus className="h-5 w-5 text-[#2563EB]" />
-              <h3 className="font-medium text-[#111827] text-sm">Create Your Account</h3>
+              <h3 className="font-medium text-foreground text-sm">Create Your Account</h3>
             </div>
-            <p className="text-xs text-[#6B7280] mb-3">
+            <p className="text-xs text-text-secondary mb-3">
               You signed as a guest. Create a free account to track all your documents, get notifications, and sign faster next time.
             </p>
             <Button
@@ -155,7 +155,7 @@ export default function SigningCompletePage() {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <Button
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
             disabled={downloading}
             onClick={async () => {
               try {
@@ -200,7 +200,7 @@ export default function SigningCompletePage() {
           </Button>
           <Button
             variant="outline"
-            className="border-[#E5E7EB]"
+            className="border-border"
             onClick={() => window.location.href = "/"}
           >
             Return to Home

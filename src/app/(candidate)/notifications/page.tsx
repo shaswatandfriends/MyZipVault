@@ -143,7 +143,7 @@ function NotificationCard({
   return (
     <Card
       className={`mb-3 transition-all duration-200 hover:shadow-md ${
-        notification.is_read ? "opacity-70" : "border-l-4 border-l-[#166534]"
+        notification.is_read ? "opacity-70" : "border-l-4 border-l-[var(--primary)]"
       }`}
     >
       <CardContent className="p-4">
@@ -162,19 +162,19 @@ function NotificationCard({
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="text-sm font-semibold text-[#111827] truncate">
+                  <h3 className="text-sm font-semibold text-foreground truncate">
                     {notification.title || notification.message}
                   </h3>
                   {!notification.is_read && (
-                    <span className="size-2 rounded-full bg-[#166534] shrink-0" />
+                    <span className="size-2 rounded-full bg-primary shrink-0" />
                   )}
                 </div>
                 {notification.title && (
-                  <p className="text-sm text-[#6B7280] line-clamp-2 mb-1">
+                  <p className="text-sm text-text-secondary line-clamp-2 mb-1">
                     {notification.message}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">
+                <div className="flex items-center gap-2 text-xs text-text-muted">
                   <Clock className="size-3" />
                   <span>{formatRelativeTime(notification.created_at)}</span>
                   <span>·</span>
@@ -194,7 +194,7 @@ function NotificationCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs gap-1 text-[#166534] border-[#166534]/30 hover:bg-[#DCFCE7]"
+                  className="h-7 text-xs gap-1 text-primary border-primary/30 hover:bg-primary-light"
                   onClick={() => onMarkRead(notification.id)}
                 >
                   <CheckCircle2 className="size-3" />
@@ -283,18 +283,18 @@ export default function CandidateNotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="text-xl font-semibold text-[#111827]"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
+            className="text-xl font-semibold text-foreground"
+            style={{ fontFamily: "'Satoshi', sans-serif" }}
           >
             Notifications
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">
+          <p className="text-sm text-text-secondary mt-0.5">
             Stay updated on your credentials, checklists, and references.
           </p>
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <Badge className="bg-[#166534] text-white border-[#14532D] hover:bg-[#14532D] text-sm px-2.5">
+            <Badge className="bg-primary text-white border-[#14532D] hover:bg-primary-hover text-sm px-2.5">
               {unreadCount} unread
             </Badge>
           )}
@@ -303,7 +303,7 @@ export default function CandidateNotificationsPage() {
             size="sm"
             onClick={handleMarkAllRead}
             disabled={unreadCount === 0 || isLoading}
-            className="gap-1.5 text-[#166534] border-[#166534]/30 hover:bg-[#DCFCE7]"
+            className="gap-1.5 text-primary border-primary/30 hover:bg-primary-light"
           >
             <CheckCircle2 className="size-3.5" />
             Mark All as Read
@@ -320,11 +320,11 @@ export default function CandidateNotificationsPage() {
         </div>
       ) : notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="size-16 rounded-full bg-[#DCFCE7] flex items-center justify-center mb-4">
-            <Inbox className="size-8 text-[#166534]" />
+          <div className="size-16 rounded-full bg-primary-light flex items-center justify-center mb-4">
+            <Inbox className="size-8 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold mb-1 text-[#111827]">No notifications</h3>
-          <p className="text-sm text-[#6B7280] max-w-sm">
+          <h3 className="text-lg font-semibold mb-1 text-foreground">No notifications</h3>
+          <p className="text-sm text-text-secondary max-w-sm">
             You&apos;re all caught up! New notifications about your credentials, checklists, and references will appear here.
           </p>
         </div>

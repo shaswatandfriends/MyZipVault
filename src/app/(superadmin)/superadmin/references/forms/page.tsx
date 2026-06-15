@@ -74,7 +74,7 @@ const empTabIcon: Record<string, string> = {
 function getResponseTypeBadge(type: string) {
   switch (type) {
     case "rating_1_4":
-      return <Badge className="bg-[#166534]/10 text-[#166534] border-0">1-4 Rating</Badge>;
+      return <Badge className="bg-primary/10 text-primary border-0">1-4 Rating</Badge>;
     case "yes_no":
       return <Badge className="bg-blue-100 text-blue-700 border-0">Yes / No</Badge>;
     case "text":
@@ -199,7 +199,7 @@ export default function RefFormsPage() {
             <Button variant="outline" size="sm" onClick={() => openPreview(activeTab)}>
               <Eye className="size-4" /> Preview Form
             </Button>
-            <Button size="sm" className="bg-[#166534] hover:bg-[#14532d] text-white" asChild>
+            <Button size="sm" className="bg-primary hover:bg-[#14532d] text-white" asChild>
               <Link href="/superadmin/references">
                 <Plus className="size-4" /> Add Question
               </Link>
@@ -216,7 +216,7 @@ export default function RefFormsPage() {
             return (
               <Card
                 key={status}
-                className={`cursor-pointer transition-all ${activeTab === status ? "ring-2 ring-[#166534]" : "hover:shadow-md"}`}
+                className={`cursor-pointer transition-all ${activeTab === status ? "ring-2 ring-[var(--primary)]" : "hover:shadow-md"}`}
                 onClick={() => setActiveTab(status)}
               >
                 <CardContent className="p-4 flex items-center justify-between">
@@ -265,7 +265,7 @@ export default function RefFormsPage() {
                     <p className="text-sm text-muted-foreground">
                       No questions configured for {empStatusLabel[status]}
                     </p>
-                    <Button size="sm" className="mt-3 bg-[#166534] hover:bg-[#14532d] text-white" asChild>
+                    <Button size="sm" className="mt-3 bg-primary hover:bg-[#14532d] text-white" asChild>
                       <Link href="/superadmin/references">Add Questions</Link>
                     </Button>
                   </div>
@@ -382,10 +382,10 @@ export default function RefFormsPage() {
                               className="size-10 rounded-lg font-bold text-sm border-2 border-gray-200 transition-all"
                               style={{
                                 backgroundColor:
-                                  r === 1 ? "#FEE2E2" : r === 2 ? "#FEF9C3" : r === 3 ? "#DBEAFE" : "#166534",
+                                  r === 1 ? "#FEE2E2" : r === 2 ? "#FEF9C3" : r === 3 ? "#DBEAFE" : "var(--primary)",
                                 color: r === 1 ? "#DC2626" : r === 2 ? "#CA8A04" : r === 3 ? "#2563EB" : "white",
                                 borderColor:
-                                  r === 1 ? "#DC2626" : r === 2 ? "#CA8A04" : r === 3 ? "#2563EB" : "#166534",
+                                  r === 1 ? "#DC2626" : r === 2 ? "#CA8A04" : r === 3 ? "#2563EB" : "var(--primary)",
                               }}
                             >
                               {r}

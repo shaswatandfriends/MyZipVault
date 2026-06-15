@@ -115,7 +115,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
     <div
       className={cn(
         "relative overflow-hidden rounded-xl shadow-sm",
-        hasValidImage ? "border-0" : "border border-[#E5E7EB] bg-white",
+        hasValidImage ? "border-0" : "border border-[var(--border)] bg-white",
         className
       )}
       onMouseEnter={() => setIsPaused(true)}
@@ -156,7 +156,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
 
                 <h3
                   className="text-lg font-semibold text-white sm:text-xl line-clamp-2 drop-shadow-sm"
-                  style={{ fontFamily: "'Clash Display', sans-serif" }}
+                  style={{ fontFamily: "'Satoshi', sans-serif" }}
                 >
                   {currentBanner?.title}
                 </h3>
@@ -173,7 +173,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                     href={currentBanner.ctaLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-[#166534] shadow-sm transition-colors hover:bg-gray-100"
+                    className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-[var(--primary)] shadow-sm transition-colors hover:bg-gray-100"
                   >
                     {currentBanner.ctaText}
                     <ExternalLink className="size-3.5" />
@@ -186,25 +186,25 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
           /* ── Layout WITHOUT image: clean card with accent bar ── */
           <div className="flex">
             {/* Accent bar */}
-            <div className="w-1.5 shrink-0 bg-[#166534] rounded-l-xl" />
+            <div className="w-1.5 shrink-0 bg-[var(--primary)] rounded-l-xl" />
 
             <div className="flex flex-1 flex-col justify-center p-5 sm:p-7">
               {/* Pinned badge */}
               {currentBanner?.isPinned && (
-                <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-[#166534]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#166534]">
+                <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-[var(--primary)]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--primary)]">
                   <Pin className="size-3" /> Pinned
                 </span>
               )}
 
               <h3
-                className="text-base font-semibold text-[#111827] sm:text-lg"
-                style={{ fontFamily: "'Clash Display', sans-serif" }}
+                className="text-base font-semibold text-[var(--foreground)] sm:text-lg"
+                style={{ fontFamily: "'Satoshi', sans-serif" }}
               >
                 {currentBanner?.title}
               </h3>
 
               {currentBanner?.description && (
-                <p className="mt-1.5 text-sm text-[#6B7280] line-clamp-2">
+                <p className="mt-1.5 text-sm text-[var(--text-secondary)] line-clamp-2">
                   {currentBanner.description}
                 </p>
               )}
@@ -215,7 +215,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                   href={currentBanner.ctaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[#166534] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#14532D]"
+                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#14532D]"
                 >
                   {currentBanner.ctaText}
                   <ExternalLink className="size-3.5" />
@@ -236,7 +236,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
               "absolute left-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors border",
               hasValidImage
                 ? "bg-white/20 text-white/80 border-white/20 hover:bg-white/30 hover:text-white"
-                : "bg-white/90 text-[#6B7280] border-[#E5E7EB] hover:bg-white hover:text-[#111827]"
+                : "bg-white/90 text-[var(--text-secondary)] border-[var(--border)] hover:bg-white hover:text-[var(--foreground)]"
             )}
             aria-label="Previous banner"
           >
@@ -248,7 +248,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
               "absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors border",
               hasValidImage
                 ? "bg-white/20 text-white/80 border-white/20 hover:bg-white/30 hover:text-white"
-                : "bg-white/90 text-[#6B7280] border-[#E5E7EB] hover:bg-white hover:text-[#111827]"
+                : "bg-white/90 text-[var(--text-secondary)] border-[var(--border)] hover:bg-white hover:text-[var(--foreground)]"
             )}
             aria-label="Next banner"
           >
@@ -273,7 +273,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                     ? "w-4 bg-white"
                     : hasValidImage
                       ? "w-1.5 bg-white/50 hover:bg-white/70"
-                      : "w-1.5 bg-[#9CA3AF] hover:bg-[#6B7280]"
+                      : "w-1.5 bg-[var(--text-muted)] hover:bg-[var(--text-secondary)]"
                 )}
                 aria-label={`Go to banner ${idx + 1}`}
               />

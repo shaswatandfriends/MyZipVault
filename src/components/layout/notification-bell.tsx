@@ -164,11 +164,11 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[#111827]">
+          <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[var(--foreground)]">
             <BellIcon className="size-5 shrink-0" />
             <span>Notifications</span>
             {unreadCount > 0 && (
-              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[#166534] text-[10px] font-bold text-white">
+              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-bold text-white">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
@@ -177,20 +177,20 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <PopoverContent
           side="right"
           align="start"
-          className="w-80 p-0 rounded-xl shadow-lg border-[#E5E7EB]"
+          className="w-80 p-0 rounded-xl shadow-lg border-[var(--border)]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-[#E5E7EB]">
+          <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
             <h4
-              className="text-sm font-semibold text-[#111827]"
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
+              className="text-sm font-semibold text-[var(--foreground)]"
+              style={{ fontFamily: "'Satoshi', sans-serif" }}
             >
               Notifications
             </h4>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-[#166534] hover:underline font-medium"
+                className="text-xs text-[var(--primary)] hover:underline font-medium"
               >
                 Mark all read
               </button>
@@ -201,39 +201,39 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           <ScrollArea className="max-h-80">
             {recentNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="size-10 rounded-full bg-[#DCFCE7] flex items-center justify-center mb-2">
-                  <Bell className="size-5 text-[#166534]" />
+                <div className="size-10 rounded-full bg-[var(--primary-light)] flex items-center justify-center mb-2">
+                  <Bell className="size-5 text-[var(--primary)]" />
                 </div>
-                <p className="text-sm text-[#6B7280]">No new notifications</p>
+                <p className="text-sm text-[var(--text-secondary)]">No new notifications</p>
               </div>
             ) : (
               <div>
                 {recentNotifications.map((notification, idx) => (
                   <div key={notification.id}>
                     <div
-                      className={`flex items-start gap-2.5 p-3 hover:bg-[#F8F7F4] transition-colors cursor-pointer ${
-                        !notification.is_read ? "bg-[#DCFCE7]/30" : ""
+                      className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors cursor-pointer ${
+                        !notification.is_read ? "bg-[var(--primary-light)]/30" : ""
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#111827] truncate">
+                        <p className="text-sm font-medium text-[var(--foreground)] truncate">
                           {notification.title || notification.message}
                         </p>
                         {notification.title && (
-                          <p className="text-xs text-[#6B7280] truncate mt-0.5">
+                          <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                             {notification.message}
                           </p>
                         )}
-                        <p className="text-[10px] text-[#9CA3AF] mt-1">
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
                           {formatRelativeTime(notification.created_at)}
                         </p>
                       </div>
                       {!notification.is_read && (
-                        <span className="size-2 rounded-full bg-[#166534] shrink-0 mt-1.5" />
+                        <span className="size-2 rounded-full bg-[var(--primary)] shrink-0 mt-1.5" />
                       )}
                     </div>
                     {idx < recentNotifications.length - 1 && (
-                      <Separator className="bg-[#E5E7EB]" />
+                      <Separator className="bg-[var(--border)]" />
                     )}
                   </div>
                 ))}
@@ -242,11 +242,11 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           </ScrollArea>
 
           {/* Footer */}
-          <div className="border-t border-[#E5E7EB] p-2">
+          <div className="border-t border-[var(--border)] p-2">
             <Button
               variant="ghost"
               size="sm"
-              className="w-full text-[#166534] hover:bg-[#DCFCE7] text-xs font-medium"
+              className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium"
               asChild
               onClick={() => setIsOpen(false)}
             >
@@ -267,11 +267,11 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <Button
           variant="ghost"
           size="icon"
-          className="relative text-[#6B7280] hover:text-[#166534] hover:bg-[#DCFCE7] h-9 w-9"
+          className="relative text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)] h-9 w-9"
         >
           <BellIcon className="size-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 size-5 p-0 flex items-center justify-center bg-[#166534] text-white text-[10px] font-bold border-2 border-white rounded-full">
+            <Badge className="absolute -top-1 -right-1 size-5 p-0 flex items-center justify-center bg-[var(--primary)] text-white text-[10px] font-bold border-2 border-white rounded-full">
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
@@ -279,20 +279,20 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-80 p-0 rounded-xl shadow-lg border-[#E5E7EB]"
+        className="w-80 p-0 rounded-xl shadow-lg border-[var(--border)]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-[#E5E7EB]">
+        <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
           <h4
-            className="text-sm font-semibold text-[#111827]"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
+            className="text-sm font-semibold text-[var(--foreground)]"
+            style={{ fontFamily: "'Satoshi', sans-serif" }}
           >
             Notifications
           </h4>
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-xs text-[#166534] hover:underline font-medium"
+              className="text-xs text-[var(--primary)] hover:underline font-medium"
             >
               Mark all read
             </button>
@@ -303,39 +303,39 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <ScrollArea className="max-h-80">
           {recentNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="size-10 rounded-full bg-[#DCFCE7] flex items-center justify-center mb-2">
-                <Bell className="size-5 text-[#166534]" />
+              <div className="size-10 rounded-full bg-[var(--primary-light)] flex items-center justify-center mb-2">
+                <Bell className="size-5 text-[var(--primary)]" />
               </div>
-              <p className="text-sm text-[#6B7280]">No new notifications</p>
+              <p className="text-sm text-[var(--text-secondary)]">No new notifications</p>
             </div>
           ) : (
             <div>
               {recentNotifications.map((notification, idx) => (
                 <div key={notification.id}>
                   <div
-                    className={`flex items-start gap-2.5 p-3 hover:bg-[#F8F7F4] transition-colors cursor-pointer ${
-                      !notification.is_read ? "bg-[#DCFCE7]/30" : ""
+                    className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors cursor-pointer ${
+                      !notification.is_read ? "bg-[var(--primary-light)]/30" : ""
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[#111827] truncate">
+                      <p className="text-sm font-medium text-[var(--foreground)] truncate">
                         {notification.title || notification.message}
                       </p>
                       {notification.title && (
-                        <p className="text-xs text-[#6B7280] truncate mt-0.5">
+                        <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                           {notification.message}
                         </p>
                       )}
-                      <p className="text-[10px] text-[#9CA3AF] mt-1">
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">
                         {formatRelativeTime(notification.created_at)}
                       </p>
                     </div>
                     {!notification.is_read && (
-                      <span className="size-2 rounded-full bg-[#166534] shrink-0 mt-1.5" />
+                      <span className="size-2 rounded-full bg-[var(--primary)] shrink-0 mt-1.5" />
                     )}
                   </div>
                   {idx < recentNotifications.length - 1 && (
-                    <Separator className="bg-[#E5E7EB]" />
+                    <Separator className="bg-[var(--border)]" />
                   )}
                 </div>
               ))}
@@ -344,11 +344,11 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         </ScrollArea>
 
         {/* Footer */}
-        <div className="border-t border-[#E5E7EB] p-2">
+        <div className="border-t border-[var(--border)] p-2">
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-[#166534] hover:bg-[#DCFCE7] text-xs font-medium"
+            className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium"
             asChild
             onClick={() => setIsOpen(false)}
           >

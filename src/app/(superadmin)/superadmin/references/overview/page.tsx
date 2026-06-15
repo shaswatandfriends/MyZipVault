@@ -159,7 +159,7 @@ export default function ReferenceOverviewPage() {
             <Button variant="outline" size="sm" onClick={fetchData}>
               <RefreshCw className="size-4" /> Refresh
             </Button>
-            <Button size="sm" className="bg-[#166534] hover:bg-[#14532d] text-white" onClick={handleExportAll}>
+            <Button size="sm" className="bg-primary hover:bg-[#14532d] text-white" onClick={handleExportAll}>
               <Download className="size-4" /> Export All
             </Button>
           </div>
@@ -171,8 +171,8 @@ export default function ReferenceOverviewPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-                <Users className="size-5 text-[#166534]" />
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="size-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalRequested}</p>
@@ -223,8 +223,8 @@ export default function ReferenceOverviewPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-                <BarChart3 className="size-5 text-[#166534]" />
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BarChart3 className="size-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.completionRate}%</p>

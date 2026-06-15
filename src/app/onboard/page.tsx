@@ -35,11 +35,11 @@ function PasswordCheck({ label, met }: { label: string; met: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <Check className="size-3.5 text-[#166534] shrink-0" />
+        <Check className="size-3.5 text-primary shrink-0" />
       ) : (
-        <X className="size-3.5 text-[#9CA3AF] shrink-0" />
+        <X className="size-3.5 text-text-muted shrink-0" />
       )}
-      <span className={met ? "text-[#166534]" : "text-[#9CA3AF]"}>
+      <span className={met ? "text-primary" : "text-text-muted"}>
         {label}
       </span>
     </div>
@@ -176,15 +176,15 @@ function OnboardPageInner() {
   if (isValidating) {
     return (
       <div className="min-h-screen flex">
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--primary)] to-[var(--accent-teal)] min-h-screen items-center justify-center p-12">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+              <span style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+            <h2 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background">
           <div className="max-w-[400px] w-full space-y-4">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
@@ -200,21 +200,21 @@ function OnboardPageInner() {
   if (tokenError) {
     return (
       <div className="min-h-screen flex">
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--primary)] to-[var(--accent-teal)] min-h-screen items-center justify-center p-12">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+              <span style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+            <h2 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background">
           <div className="max-w-[400px] w-full text-center">
             <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-xl mb-6">
               {tokenError}
             </div>
             <Link href="/login">
-              <Button variant="outline" className="gap-2 rounded-xl border-[#E5E7EB]">
+              <Button variant="outline" className="gap-2 rounded-xl border-border">
                 <ArrowLeft className="size-4" />
                 Go to Sign In
               </Button>
@@ -228,12 +228,12 @@ function OnboardPageInner() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--primary)] to-[var(--accent-teal)] min-h-screen items-center justify-center p-12">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+            <span style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
           </div>
-          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+          <h2 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
           <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>Healthcare credential verification, simplified</p>
           <div className="mt-12 space-y-4">
             {trustPoints.map((point) => (
@@ -247,40 +247,40 @@ function OnboardPageInner() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background">
         <div className="max-w-[400px] w-full">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-primary rounded-2xl mb-3">
+              <span style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+            <h2 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-2xl font-bold text-foreground">MyZipVault</h2>
           </div>
 
           {/* Invited badge */}
-          <div className="inline-flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-3.5 py-1.5 rounded-full text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 bg-primary-light text-accent-teal px-3.5 py-1.5 rounded-full text-sm font-medium mb-4">
             <Mail className="size-3.5" />
             You have been invited
           </div>
 
-          <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
+          <h1 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-[36px] font-bold text-foreground leading-tight">
             Welcome aboard
           </h1>
-          <p className="text-[#6B7280] text-base mt-2 mb-8">
+          <p className="text-text-secondary text-base mt-2 mb-8">
             Set up your account to get started
           </p>
 
           {/* Invite message */}
-          <div className="mb-6 p-4 bg-[#DCFCE7] border border-[#166534]/10 rounded-xl">
+          <div className="mb-6 p-4 bg-primary-light border border-primary/10 rounded-xl">
             <div className="flex items-start gap-3">
-              <Mail className="size-5 text-[#166534] shrink-0 mt-0.5" />
-              <p className="text-sm text-[#166534]">{inviteMessage}</p>
+              <Mail className="size-5 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm text-primary">{inviteMessage}</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-text-secondary">
                 Email
               </Label>
               <Input
@@ -288,13 +288,13 @@ function OnboardPageInner() {
                 type="email"
                 value={tokenInfo?.email || ""}
                 disabled
-                className="bg-[#F8F7F4] border-[#E5E7EB] rounded-xl p-3.5 text-[#9CA3AF]"
+                className="bg-background border-border rounded-xl p-3.5 text-text-muted"
               />
-              <p className="text-xs text-[#9CA3AF]">This email is from your invitation</p>
+              <p className="text-xs text-text-muted">This email is from your invitation</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+              <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-text-secondary">
                 Password
               </Label>
               <Input
@@ -307,7 +307,7 @@ function OnboardPageInner() {
                   if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
                 }}
                 disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.password ? "border-destructive" : ""}`}
+                className={`bg-white border-border rounded-xl p-3.5 focus:border-accent-teal focus:ring-2 focus:ring-primary/20 ${errors.password ? "border-destructive" : ""}`}
                 autoComplete="new-password"
               />
               <div className="space-y-1.5 pt-1">
@@ -319,7 +319,7 @@ function OnboardPageInner() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+              <Label htmlFor="confirmPassword" className="text-xs font-medium tracking-wide uppercase text-text-secondary">
                 Confirm Password
               </Label>
               <Input
@@ -332,7 +332,7 @@ function OnboardPageInner() {
                   if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
                 }}
                 disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.confirmPassword ? "border-destructive" : ""}`}
+                className={`bg-white border-border rounded-xl p-3.5 focus:border-accent-teal focus:ring-2 focus:ring-primary/20 ${errors.confirmPassword ? "border-destructive" : ""}`}
                 autoComplete="new-password"
               />
               {errors.confirmPassword && (
@@ -352,13 +352,13 @@ function OnboardPageInner() {
                   disabled={isLoading}
                   className="mt-0.5"
                 />
-                <Label htmlFor="tos" className="text-sm font-normal leading-snug text-[#6B7280]">
+                <Label htmlFor="tos" className="text-sm font-normal leading-snug text-text-secondary">
                   I agree to the{" "}
-                  <Link href="/terms" className="text-[#166534] hover:underline cursor-pointer">
+                  <Link href="/terms" className="text-primary hover:underline cursor-pointer">
                     Terms & Conditions
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="text-[#166534] hover:underline cursor-pointer">
+                  <Link href="/privacy" className="text-primary hover:underline cursor-pointer">
                     Privacy Policy
                   </Link>
                 </Label>
@@ -370,7 +370,7 @@ function OnboardPageInner() {
 
             <Button
               type="submit"
-              className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+              className="w-full bg-primary text-white py-3.5 rounded-xl font-medium hover:bg-primary-hover hover:-translate-y-px hover:shadow-md transition-all"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -394,15 +394,15 @@ export default function OnboardPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex">
-          <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
+          <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--primary)] to-[var(--accent-teal)] min-h-screen items-center justify-center p-12">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-                <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
+                <span style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
               </div>
-              <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
+              <h2 style={{ fontFamily: "'Satoshi', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
             </div>
           </div>
-          <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
+          <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background">
             <div className="max-w-[400px] w-full space-y-4">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-1/2" />

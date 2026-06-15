@@ -107,15 +107,15 @@ function questionTypeLabel(type: string): string {
 function questionTypeBadgeColor(type: string): { bg: string; fg: string } {
   switch (type) {
     case "rating_5":
-      return { bg: "#DCFCE7", fg: "#166534" };
+      return { bg: "var(--primary-light)", fg: "var(--primary)" };
     case "rating_3":
-      return { bg: "#DCFCE7", fg: "#166534" };
+      return { bg: "var(--primary-light)", fg: "var(--primary)" };
     case "yes_no":
       return { bg: "#DBEAFE", fg: "#2563EB" };
     case "text":
       return { bg: "var(--surface-2)", fg: "var(--text-muted)" };
     default:
-      return { bg: "#F3F4F6", fg: "#6B7280" };
+      return { bg: "#F3F4F6", fg: "var(--text-secondary)" };
   }
 }
 
@@ -125,7 +125,7 @@ function getCategoryTypeBadge(
 ): { label: string; bg: string; fg: string } {
   const catSkills = skills.filter((s) => s.categoryId === categoryId);
   if (catSkills.length === 0) {
-    return { label: "Default", bg: "#F3F4F6", fg: "#6B7280" };
+    return { label: "Default", bg: "#F3F4F6", fg: "var(--text-secondary)" };
   }
   const types = new Set(catSkills.map((s) => s.questionType));
   if (types.size === 1) {
@@ -593,7 +593,7 @@ export default function SkillsDatabasePage() {
                   onClick={handleAddProfession}
                   disabled={actionLoading}
                 >
-                  <Check className="size-4" style={{ color: "#166534" }} />
+                  <Check className="size-4" style={{ color: "var(--primary)" }} />
                 </button>
                 <button
                   type="button"
@@ -688,7 +688,7 @@ export default function SkillsDatabasePage() {
                                 handleRenameProfession();
                               }}
                             >
-                              <Check className="size-3.5" style={{ color: "#166534" }} />
+                              <Check className="size-3.5" style={{ color: "var(--primary)" }} />
                             </button>
                             <button
                               type="button"
@@ -798,7 +798,7 @@ export default function SkillsDatabasePage() {
                 <div className="flex items-center gap-3">
                   <h3
                     style={{
-                      fontFamily: "'Clash Display', sans-serif",
+                      fontFamily: "'Satoshi', sans-serif",
                       fontSize: 18,
                       fontWeight: 600,
                       color: "var(--text-primary)",
@@ -890,9 +890,9 @@ export default function SkillsDatabasePage() {
                         disabled={actionLoading}
                       >
                         {actionLoading ? (
-                          <Loader2 className="size-4 animate-spin" style={{ color: "#166534" }} />
+                          <Loader2 className="size-4 animate-spin" style={{ color: "var(--primary)" }} />
                         ) : (
-                          <Check className="size-4" style={{ color: "#166534" }} />
+                          <Check className="size-4" style={{ color: "var(--primary)" }} />
                         )}
                       </button>
                       <button
@@ -949,7 +949,7 @@ export default function SkillsDatabasePage() {
                               >
                                 <Check
                                   className="size-3"
-                                  style={{ color: "#166534" }}
+                                  style={{ color: "var(--primary)" }}
                                 />
                               </button>
                               <button
@@ -1085,10 +1085,10 @@ export default function SkillsDatabasePage() {
                           {actionLoading ? (
                             <Loader2
                               className="size-4 animate-spin"
-                              style={{ color: "#166534" }}
+                              style={{ color: "var(--primary)" }}
                             />
                           ) : (
-                            <Check className="size-4" style={{ color: "#166534" }} />
+                            <Check className="size-4" style={{ color: "var(--primary)" }} />
                           )}
                         </button>
                         <button
@@ -1184,7 +1184,7 @@ export default function SkillsDatabasePage() {
                                       >
                                         <Check
                                           className="size-3.5"
-                                          style={{ color: "#166534" }}
+                                          style={{ color: "var(--primary)" }}
                                         />
                                       </button>
                                       <button
@@ -1338,7 +1338,7 @@ export default function SkillsDatabasePage() {
                                               >
                                                 <Check
                                                   className="size-3.5"
-                                                  style={{ color: "#166534" }}
+                                                  style={{ color: "var(--primary)" }}
                                                 />
                                               </button>
                                               <button
@@ -1484,12 +1484,12 @@ export default function SkillsDatabasePage() {
                                           {actionLoading ? (
                                             <Loader2
                                               className="size-3.5 animate-spin"
-                                              style={{ color: "#166534" }}
+                                              style={{ color: "var(--primary)" }}
                                             />
                                           ) : (
                                             <Check
                                               className="size-3.5"
-                                              style={{ color: "#166534" }}
+                                              style={{ color: "var(--primary)" }}
                                             />
                                           )}
                                         </button>

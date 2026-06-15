@@ -14,21 +14,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "Pending", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  pending: { label: "Pending", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
   sent: { label: "Awaiting Signature", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
   viewed: { label: "Viewed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  signed: { label: "Signed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  signed: { label: "Signed", color: "text-primary", bg: "bg-primary-light" },
   declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
 };
 
 const DOC_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
   sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
   partially_signed: { label: "In Progress", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
   declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
 };
 
 export default function CandidateVaultSignPage() {
@@ -56,7 +56,7 @@ export default function CandidateVaultSignPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Skeleton Header */}
           <div className="mb-6">
@@ -67,7 +67,7 @@ export default function CandidateVaultSignPage() {
           {/* Skeleton Document Cards */}
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -96,21 +96,21 @@ export default function CandidateVaultSignPage() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Documents to Sign
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">View and sign documents that require your signature</p>
+          <p className="text-sm text-text-secondary mt-0.5">View and sign documents that require your signature</p>
         </div>
 
         {documents.length === 0 ? (
           <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <CardContent className="p-8 text-center">
-              <FileSignature className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-              <h3 className="font-medium text-[#111827] mb-1">No Documents Yet</h3>
-              <p className="text-sm text-[#6B7280]">Documents that require your signature will appear here</p>
+              <FileSignature className="h-12 w-12 text-text-muted mx-auto mb-3" />
+              <h3 className="font-medium text-foreground mb-1">No Documents Yet</h3>
+              <p className="text-sm text-text-secondary">Documents that require your signature will appear here</p>
             </CardContent>
           </Card>
         ) : (
@@ -119,17 +119,17 @@ export default function CandidateVaultSignPage() {
               const docStatus = DOC_STATUS_CONFIG[item.document?.status] || DOC_STATUS_CONFIG.draft;
               const signerStatus = STATUS_CONFIG[item.signer_status] || STATUS_CONFIG.pending;
               return (
-                <Card key={index} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB]">
+                <Card key={index} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-[#F0FDF4] flex items-center justify-center">
-                          <FileSignature className="h-5 w-5 text-[#166534]" />
+                          <FileSignature className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-[#111827]">{item.document?.document_name}</p>
+                          <p className="font-medium text-foreground">{item.document?.document_name}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-[#6B7280]">{item.document?.organization?.name}</span>
+                            <span className="text-xs text-text-secondary">{item.document?.organization?.name}</span>
                             <Badge className={`${docStatus.bg} ${docStatus.color} border-0 text-[10px]`}>
                               {docStatus.label}
                             </Badge>
@@ -143,14 +143,14 @@ export default function CandidateVaultSignPage() {
                         {item.signer_status !== "signed" && item.signer_status !== "declined" && item.sign_token && (
                           <Button
                             size="sm"
-                            className="bg-[#166534] hover:bg-[#14532D] text-white"
+                            className="bg-primary hover:bg-primary-hover text-white"
                             onClick={() => router.push(`/sign/${item.sign_token}`)}
                           >
                             <ExternalLink className="h-3 w-3 mr-1" /> Sign
                           </Button>
                         )}
                         {item.signer_status === "signed" && (
-                          <div className="flex items-center gap-1 text-[#166534] text-xs">
+                          <div className="flex items-center gap-1 text-primary text-xs">
                             <CheckCircle2 className="h-4 w-4" />
                             Signed {item.signed_at ? new Date(item.signed_at).toLocaleDateString() : ""}
                           </div>

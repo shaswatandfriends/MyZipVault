@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { Loader2, Check } from "@/lib/icons";
+import { motion } from "framer-motion";
+import { Loader2, ArrowRight, ShieldCheck, Zap } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 const trustPoints = [
   "Real-Time Tracking",
@@ -104,146 +106,171 @@ export default function AgencyLoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
-          </div>
-          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
-          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>For staffing agencies & healthcare recruiters</p>
-          <div className="mt-12 space-y-4">
-            {trustPoints.map((point) => (
-              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-                <Check className="size-4 shrink-0" />
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Left Panel - Slideshow */}
+      <AuthSlideshowPanel
+        tagline="For staffing agencies & healthcare recruiters"
+        trustPoints={trustPoints}
+        quoteCard={{
+          text: "We cut our credential verification time by 80%. Real-time tracking means we never lose sight of a candidate's status.",
+          attribution: "Jessica R., Director of Nursing Services",
+        }}
+        statsCard={[
+          { value: "500+", label: "Agencies" },
+          { value: "50K+", label: "Verifications" },
+          { value: "98%", label: "Satisfaction" },
+        ]}
+      />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
-        <div className="max-w-[400px] w-full">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
+        {/* Subtle mesh gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
+        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+
+        <motion.div
+          className="max-w-[420px] w-full relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
+              <span className="text-white text-2xl font-bold font-heading">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
           </div>
 
-          <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
-            Agency Portal
-          </h1>
-          <p className="text-[#6B7280] text-base mt-2 mb-8">
-            Sign in to your staffing agency or recruiter account
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                Work Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@agency.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email)
-                    setErrors((prev) => ({ ...prev, email: undefined }));
-                }}
-                disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.email ? "border-destructive" : ""}`}
-                autoComplete="email"
-              />
-              {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
-              )}
+          {/* Glass card wrapping form */}
+          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+            <div className="mb-8">
+              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                Agency Portal
+              </h1>
+              <p className="text-text-secondary text-base mt-2">
+                Sign in to your staffing agency or recruiter account
+              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                  Password
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  Work Email
                 </Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-[#0D9488] hover:underline"
-                >
-                  Forgot password?
-                </Link>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@agency.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
+                  disabled={isLoading}
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.email ? "border-destructive" : ""}`}
+                  autoComplete="email"
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email}</p>
+                )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password)
-                    setErrors((prev) => ({ ...prev, password: undefined }));
-                }}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Password
+                  </Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-primary hover:text-primary-hover font-semibold transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password)
+                      setErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
+                  disabled={isLoading}
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.password ? "border-destructive" : ""}`}
+                  autoComplete="current-password"
+                />
+                {errors.password && (
+                  <p className="text-xs text-destructive">{errors.password}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
                 disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.password ? "border-destructive" : ""}`}
-                autoComplete="current-password"
-              />
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password}</p>
-              )}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-surface px-3 text-text-muted">or</span>
+              </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="size-4 animate-spin mr-2" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-          </form>
+            <p className="text-sm text-text-secondary text-center">
+              Don&apos;t have an account?{" "}
+              <Link href="/agency-signup" className="text-primary hover:text-primary-hover font-semibold transition-colors">
+                Register your agency
+              </Link>
+            </p>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-[#E5E7EB]" />
+            <p className="text-sm text-text-secondary text-center mt-3">
+              Healthcare professional?{" "}
+              <Link href="/login" className="text-primary hover:text-primary-hover font-semibold transition-colors">
+                Candidate Login
+              </Link>
+            </p>
+          </div>
+
+          {/* Security badges */}
+          <div className="mt-6 flex items-center justify-center gap-5">
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <ShieldCheck className="size-3" /> HIPAA
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#F8F7F4] px-3 text-[#9CA3AF]">or</span>
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <Zap className="size-3" /> 256-bit
             </div>
           </div>
 
-          <p className="text-sm text-[#6B7280] text-center">
-            Don&apos;t have an account?{" "}
-            <Link href="/agency-signup" className="text-[#0D9488] hover:underline font-medium">
-              Register your agency
-            </Link>
-          </p>
-
-          <p className="text-sm text-[#6B7280] text-center mt-3">
-            Healthcare professional?{" "}
-            <Link href="/login" className="text-[#0D9488] hover:underline font-medium">
-              Candidate Login
-            </Link>
-          </p>
-
-          <div className="mt-8 text-center">
+          {/* Back link */}
+          <div className="mt-4 text-center">
             <Link
               href="/"
-              className="text-sm text-[#9CA3AF] hover:text-[#111827] transition-colors"
+              className="text-sm text-text-muted hover:text-foreground transition-colors"
             >
               &larr; Back to main site
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

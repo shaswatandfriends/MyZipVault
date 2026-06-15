@@ -27,13 +27,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
   sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
   partially_signed: { label: "Partially Signed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
   declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
 };
 
 export default function VaultSignDashboardPage() {
@@ -259,7 +259,7 @@ export default function VaultSignDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Skeleton Header */}
           <div className="flex items-center justify-between mb-6">
@@ -300,7 +300,7 @@ export default function VaultSignDashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="hidden md:block">
-                <div className="border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-4">
+                <div className="border-b border-border px-4 py-3 flex items-center gap-4">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-16" />
                   <Skeleton className="h-4 w-16" />
@@ -308,7 +308,7 @@ export default function VaultSignDashboardPage() {
                   <Skeleton className="h-4 w-16" />
                 </div>
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-4">
+                  <div key={i} className="border-b border-border px-4 py-3 flex items-center gap-4">
                     <Skeleton className="h-5 w-40" />
                     <Skeleton className="h-5 w-20 rounded-full" />
                     <Skeleton className="h-6 w-16" />
@@ -320,7 +320,7 @@ export default function VaultSignDashboardPage() {
               {/* Mobile skeleton cards */}
               <div className="md:hidden p-4 space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="p-3 rounded-xl border border-[#E5E7EB] space-y-2">
+                  <div key={i} className="p-3 rounded-xl border border-border space-y-2">
                     <div className="flex items-center justify-between">
                       <Skeleton className="h-5 w-32" />
                       <Skeleton className="h-5 w-16 rounded-full" />
@@ -342,29 +342,29 @@ export default function VaultSignDashboardPage() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Header — stacks on mobile */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Satoshi', sans-serif" }}>
               VaultSign
             </h1>
-            <p className="text-sm text-[#6B7280] mt-0.5">Send, sign, and manage documents</p>
+            <p className="text-sm text-text-secondary mt-0.5">Send, sign, and manage documents</p>
           </div>
           <div className="flex items-center gap-2">
             {isClientAdmin && (
               <Button
                 variant="outline"
                 size="sm"
-                className="border-[#E5E7EB] text-[#6B7280] hover:text-[#111827]"
+                className="border-border text-text-secondary hover:text-foreground"
                 onClick={() => { setShowOrgSettings(true); fetchOrgSettings(); }}
               >
                 <Settings className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Org Settings</span>
               </Button>
             )}
             <Button
-              className="bg-[#166534] hover:bg-[#14532D] text-white w-full sm:w-auto"
+              className="bg-primary hover:bg-primary-hover text-white w-full sm:w-auto"
               onClick={() => router.push("/recruiter/vaultsign/new")}
             >
               <Plus className="h-4 w-4 mr-1" /> New Document
@@ -376,7 +376,7 @@ export default function VaultSignDashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-vaultsign-fade-in">
           <Card
             className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
-              statusFilter === "sent" || statusFilter === "partially_signed" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+              statusFilter === "sent" || statusFilter === "partially_signed" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "sent" || statusFilter === "partially_signed" ? "all" : "sent")}
             title="Click to filter by pending documents"
@@ -387,34 +387,34 @@ export default function VaultSignDashboardPage() {
                   <Clock className="h-5 w-5 text-[#2563EB]" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#111827]">{stats.pending}</p>
-                  <p className="text-xs text-[#6B7280]">Pending <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">— click to filter</span></p>
+                  <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
+                  <p className="text-xs text-text-secondary">Pending <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">— click to filter</span></p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card
             className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
-              statusFilter === "completed" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+              statusFilter === "completed" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "completed" ? "all" : "completed")}
             title="Click to filter by completed documents"
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-[#166534]" />
+                <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#111827]">{stats.completed}</p>
-                  <p className="text-xs text-[#6B7280]">Completed</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
+                  <p className="text-xs text-text-secondary">Completed</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card
             className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
-              statusFilter === "declined" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+              statusFilter === "declined" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "declined" ? "all" : "declined")}
             title="Click to filter by declined documents"
@@ -425,15 +425,15 @@ export default function VaultSignDashboardPage() {
                   <XCircle className="h-5 w-5 text-[#DC2626]" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#111827]">{stats.declined}</p>
-                  <p className="text-xs text-[#6B7280]">Declined</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.declined}</p>
+                  <p className="text-xs text-text-secondary">Declined</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card
             className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
-              statusFilter === "sent" ? "ring-2 ring-[#166534]/30 border-[#166534]" : ""
+              statusFilter === "sent" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "sent" ? "all" : "sent")}
             title="Click to filter by expiring documents"
@@ -444,8 +444,8 @@ export default function VaultSignDashboardPage() {
                   <AlertTriangle className="h-5 w-5 text-[#D97706]" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#111827]">{stats.expiring_soon}</p>
-                  <p className="text-xs text-[#6B7280]">Expiring Soon</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.expiring_soon}</p>
+                  <p className="text-xs text-text-secondary">Expiring Soon</p>
                 </div>
               </div>
             </CardContent>
@@ -458,28 +458,28 @@ export default function VaultSignDashboardPage() {
             {/* Shared Templates */}
             {templates.filter((t: any) => t.source === "shared").length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-[#166534]" /> Shared Templates
+                <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" /> Shared Templates
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {templates.filter((t: any) => t.source === "shared").slice(0, 4).map((template: any) => (
                     <Card
                       key={template.id}
-                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
                       onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <FileSignature className="h-4 w-4 text-[#166534]" />
-                          <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
+                          <FileSignature className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm text-foreground truncate">{template.name}</span>
                         </div>
-                        <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
+                        <p className="text-xs text-text-secondary truncate">{template.description || template.document_type}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="outline" className="text-[10px]">
                             {template.source_type === "word" ? "Word" : "PDF"}
                           </Badge>
                           {template.creator && (
-                            <span className="text-[10px] text-[#9CA3AF]">
+                            <span className="text-[10px] text-text-muted">
                               By {template.creator.first_name || ""} {template.creator.last_name || ""}
                             </span>
                           )}
@@ -494,22 +494,22 @@ export default function VaultSignDashboardPage() {
             {/* Platform Templates */}
             {templates.filter((t: any) => t.source === "platform").length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-[#111827] mb-3 flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-[#166534]" /> Platform Templates
+                <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" /> Platform Templates
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {templates.filter((t: any) => t.source === "platform").slice(0, 4).map((template: any) => (
                     <Card
                       key={template.id}
-                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-[#E5E7EB] hover:scale-[1.02] transition-transform"
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
                       onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <LayoutTemplate className="h-4 w-4 text-[#166534]" />
-                          <span className="font-medium text-sm text-[#111827] truncate">{template.name}</span>
+                          <LayoutTemplate className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm text-foreground truncate">{template.name}</span>
                         </div>
-                        <p className="text-xs text-[#6B7280] truncate">{template.description || template.document_type}</p>
+                        <p className="text-xs text-text-secondary truncate">{template.description || template.document_type}</p>
                         <Badge variant="outline" className="text-[10px] mt-2">
                           {template.source_type === "word" ? "Word" : "PDF"}
                         </Badge>
@@ -529,7 +529,7 @@ export default function VaultSignDashboardPage() {
               <CardTitle className="text-lg">Documents</CardTitle>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#9CA3AF]" />
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-text-muted" />
                   <Input
                     placeholder="Search documents..."
                     value={search}
@@ -573,13 +573,13 @@ export default function VaultSignDashboardPage() {
                   {filteredDocs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
-                        <div className="text-[#9CA3AF]">
+                        <div className="text-text-muted">
                           <FileText className="h-8 w-8 mx-auto mb-2" />
                           <p>No documents found</p>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="mt-2 border-[#166534] text-[#166534]"
+                            className="mt-2 border-primary text-primary"
                             onClick={() => router.push("/recruiter/vaultsign/new")}
                           >
                             Create your first document
@@ -591,11 +591,11 @@ export default function VaultSignDashboardPage() {
                     filteredDocs.map((doc) => {
                       const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
                       return (
-                        <TableRow key={doc.id} className="cursor-pointer hover:bg-[#F8F7F4]" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
+                        <TableRow key={doc.id} className="cursor-pointer hover:bg-background" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
                           <TableCell>
                             <div>
-                              <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
-                              <p className="text-xs text-[#6B7280]">
+                              <p className="font-medium text-sm text-foreground">{doc.document_name}</p>
+                              <p className="text-xs text-text-secondary">
                                 {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
                               </p>
                             </div>
@@ -612,8 +612,8 @@ export default function VaultSignDashboardPage() {
                                 key={i}
                                 className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
                                 style={{
-                                  backgroundColor: s.status === "signed" ? "#DCFCE7" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
-                                  color: s.status === "signed" ? "#166534" : s.status === "declined" ? "#DC2626" : "#6B7280",
+                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
+                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)",
                                 }}
                                 title={`${s.name} - ${s.status}`}
                               >
@@ -621,14 +621,14 @@ export default function VaultSignDashboardPage() {
                               </div>
                             ))}
                             {doc.signers?.length > 3 && (
-                              <span className="text-xs text-[#6B7280]">+{doc.signers.length - 3}</span>
+                              <span className="text-xs text-text-secondary">+{doc.signers.length - 3}</span>
                             )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-[#6B7280]">
+                          <TableCell className="text-xs text-text-secondary">
                             {new Date(doc.expiry_date).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="text-xs text-[#6B7280]">
+                          <TableCell className="text-xs text-text-secondary">
                             {new Date(doc.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
@@ -694,31 +694,31 @@ export default function VaultSignDashboardPage() {
             <div className="md:hidden">
               {filteredDocs.length === 0 ? (
                 <div className="text-center py-8 px-4">
-                  <FileText className="h-8 w-8 mx-auto mb-2 text-[#9CA3AF]" />
-                  <p className="text-[#9CA3AF]">No documents found</p>
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-text-muted" />
+                  <p className="text-text-muted">No documents found</p>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-2 border-[#166534] text-[#166534]"
+                    className="mt-2 border-primary text-primary"
                     onClick={() => router.push("/recruiter/vaultsign/new")}
                   >
                     Create your first document
                   </Button>
                 </div>
               ) : (
-                <div className="divide-y divide-[#E5E7EB] vaultsign-stagger animate-vaultsign-fade-in">
+                <div className="divide-y divide-[var(--border)] vaultsign-stagger animate-vaultsign-fade-in">
                   {filteredDocs.map((doc) => {
                     const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
                     return (
                       <div
                         key={doc.id}
-                        className="p-4 cursor-pointer hover:bg-[#F8F7F4] active:bg-[#F3F4F6] transition-colors"
+                        className="p-4 cursor-pointer hover:bg-background active:bg-[#F3F4F6] transition-colors"
                         onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm text-[#111827] truncate">{doc.document_name}</p>
-                            <p className="text-xs text-[#6B7280] mt-0.5">
+                            <p className="font-medium text-sm text-foreground truncate">{doc.document_name}</p>
+                            <p className="text-xs text-text-secondary mt-0.5">
                               {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
                             </p>
                           </div>
@@ -734,8 +734,8 @@ export default function VaultSignDashboardPage() {
                                 key={i}
                                 className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-bold"
                                 style={{
-                                  backgroundColor: s.status === "signed" ? "#DCFCE7" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
-                                  color: s.status === "signed" ? "#166534" : s.status === "declined" ? "#DC2626" : "#6B7280",
+                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
+                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)",
                                 }}
                                 title={`${s.name} - ${s.status}`}
                               >
@@ -743,10 +743,10 @@ export default function VaultSignDashboardPage() {
                               </div>
                             ))}
                             {doc.signers?.length > 3 && (
-                              <span className="text-[10px] text-[#6B7280]">+{doc.signers.length - 3}</span>
+                              <span className="text-[10px] text-text-secondary">+{doc.signers.length - 3}</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] text-[#9CA3AF]">
+                          <div className="flex items-center gap-3 text-[10px] text-text-muted">
                             <span>Exp: {new Date(doc.expiry_date).toLocaleDateString()}</span>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -809,12 +809,12 @@ export default function VaultSignDashboardPage() {
         <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#166534]" /> Organization Settings
+              <Building2 className="h-5 w-5 text-primary" /> Organization Settings
             </DialogTitle>
           </DialogHeader>
           {orgSettingsLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-[#166534]" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : orgSettings ? (
             <div className="space-y-4">
@@ -823,12 +823,12 @@ export default function VaultSignDashboardPage() {
                 <Label className="text-sm font-medium flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Company Logo</Label>
                 <div className="mt-2 flex items-center gap-4">
                   {orgSettings.company_logo_url ? (
-                    <div className="w-16 h-16 rounded-xl border border-[#E5E7EB] overflow-hidden bg-white flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center">
                       <img src={orgSettings.company_logo_url} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
                     </div>
                   ) : (
-                    <div className="w-16 h-16 rounded-xl border-2 border-dashed border-[#E5E7EB] flex items-center justify-center bg-[#F8F7F4]">
-                      <Building2 className="h-6 w-6 text-[#9CA3AF]" />
+                    <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-background">
+                      <Building2 className="h-6 w-6 text-text-muted" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -873,14 +873,14 @@ export default function VaultSignDashboardPage() {
                   onChange={(e) => setOrgSettings({ ...orgSettings, company_website: e.target.value })}
                   placeholder="https://example.com" className="mt-1" />
               </div>
-              <p className="text-[10px] text-[#9CA3AF]">These details appear in document headers and footers</p>
+              <p className="text-[10px] text-text-muted">These details appear in document headers and footers</p>
             </div>
           ) : (
-            <p className="text-sm text-[#9CA3AF] text-center py-4">Could not load organization settings</p>
+            <p className="text-sm text-text-muted text-center py-4">Could not load organization settings</p>
           )}
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowOrgSettings(false)}>Cancel</Button>
-            <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={() => { saveOrgSettings(); }}
+            <Button className="bg-primary hover:bg-primary-hover text-white" onClick={() => { saveOrgSettings(); }}
               disabled={orgSettingsSaving || !orgSettings}>
               {orgSettingsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
               Save Settings

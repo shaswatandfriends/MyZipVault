@@ -408,9 +408,9 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         {/* Skeleton Top Bar */}
-        <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center gap-3">
+        <div className="bg-white border-b border-border px-4 py-3 flex items-center gap-3">
           <Skeleton className="h-8 w-16" />
           <Skeleton className="h-6 w-px" />
           <Skeleton className="h-5 w-40" />
@@ -424,7 +424,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         <div className="flex-1 flex overflow-hidden">
           {/* Skeleton PDF Canvas */}
           <div className="flex-1 flex flex-col">
-            <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-center gap-3">
+            <div className="bg-white border-b border-border px-4 py-2 flex items-center justify-center gap-3">
               <Skeleton className="h-8 w-8" />
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-8 w-8" />
@@ -438,8 +438,8 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
           {/* Skeleton Right Panel */}
-          <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
-            <div className="p-3 border-b border-[#E5E7EB]">
+          <div className="hidden lg:flex w-72 border-l border-border bg-white flex-col">
+            <div className="p-3 border-b border-border">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-3 w-48 mt-1" />
             </div>
@@ -461,14 +461,14 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         <div className="p-3 space-y-4">
           {/* Header & Footer */}
           <div>
-            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-[#F8F7F4] border border-[#E5E7EB]">
+            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-background border border-border">
               <div>
-                <span className="text-xs font-medium text-[#374151]">Header & Footer</span>
-                <p className="text-[9px] text-[#9CA3AF]">Company header and footer on document</p>
+                <span className="text-xs font-medium text-foreground">Header & Footer</span>
+                <p className="text-[9px] text-text-muted">Company header and footer on document</p>
               </div>
               <button 
                 onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
-                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-[#166534]' : 'bg-[#D1D5DB]'}`}
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-[#D1D5DB]'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
@@ -478,11 +478,11 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
           {/* Signers */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold text-[#6B7280] uppercase">Signers</h4>
+              <h4 className="text-xs font-semibold text-text-secondary uppercase">Signers</h4>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-xs text-[#166534]"
+                className="h-6 text-xs text-primary"
                 onClick={() => setShowAddSigner(true)}
               >
                 <Plus className="h-3 w-3 mr-1" /> Add
@@ -492,21 +492,21 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             {signers.map((signer, index) => (
               <div
                 key={signer.id || index}
-                className="flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] mb-1.5"
+                className="flex items-center gap-2 p-2 rounded-lg border border-border mb-1.5"
               >
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#111827] truncate">{signer.name}</p>
-                  <p className="text-[10px] text-[#6B7280] truncate">{signer.email}</p>
+                  <p className="text-xs font-medium text-foreground truncate">{signer.name}</p>
+                  <p className="text-[10px] text-text-secondary truncate">{signer.email}</p>
                 </div>
                 <Badge variant="outline" className="text-[10px] h-5">{signer.role}</Badge>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+                  className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
                   onClick={() => removeSigner(index)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -515,7 +515,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             ))}
 
             {showAddSigner && (
-              <div className="p-2 rounded-lg border border-[#166534]/20 bg-[#F0FDF4] space-y-1.5">
+              <div className="p-2 rounded-lg border border-primary/20 bg-[#F0FDF4] space-y-1.5">
                 <Input
                   placeholder="Name"
                   value={newSignerName}
@@ -542,7 +542,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   </SelectContent>
                 </Select>
                 <div className="flex gap-1.5">
-                  <Button size="sm" className="flex-1 h-7 text-xs bg-[#166534] hover:bg-[#14532D]" onClick={addSigner}>Add</Button>
+                  <Button size="sm" className="flex-1 h-7 text-xs bg-primary hover:bg-primary-hover" onClick={addSigner}>Add</Button>
                   <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSigner(false)}>Cancel</Button>
                 </div>
               </div>
@@ -551,9 +551,9 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
           {/* Field Palette */}
           <div>
-            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Add Fields</h4>
+            <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2">Add Fields</h4>
             {signers.length === 0 ? (
-              <p className="text-xs text-[#9CA3AF] p-2">Add signers first</p>
+              <p className="text-xs text-text-muted p-2">Add signers first</p>
             ) : (
               signers.map((signer, index) => (
                 <div key={index} className="mb-3">
@@ -562,7 +562,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                       className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
                     />
-                    <span className="text-xs font-medium text-[#111827]">{signer.name}</span>
+                    <span className="text-xs font-medium text-foreground">{signer.name}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
@@ -570,7 +570,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                         key={type}
                         variant="outline"
                         size="sm"
-                        className="h-7 text-[10px] px-1.5 border-[#E5E7EB]"
+                        className="h-7 text-[10px] px-1.5 border-border"
                         onClick={() => addFieldToPdf(type, index)}
                       >
                         {FIELD_TYPE_ICONS[type]} {FIELD_TYPE_LABELS[type]}
@@ -584,9 +584,9 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
           {/* Field list */}
           <div>
-            <h4 className="text-xs font-semibold text-[#6B7280] uppercase mb-2">Placed Fields</h4>
+            <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2">Placed Fields</h4>
             {signFields.length === 0 ? (
-              <p className="text-xs text-[#9CA3AF] p-2">No fields placed yet</p>
+              <p className="text-xs text-text-muted p-2">No fields placed yet</p>
             ) : (
               signFields.map((field) => {
                 const color = SIGNER_COLORS[field.assigned_to_signer_index % SIGNER_COLORS.length];
@@ -594,7 +594,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   <div
                     key={field.id}
                     className={`flex items-center justify-between p-1.5 rounded border mb-1 cursor-pointer transition-colors ${
-                      selectedField === field.id ? "border-[#166534] bg-[#F0FDF4]" : "border-[#E5E7EB]"
+                      selectedField === field.id ? "border-primary bg-[#F0FDF4]" : "border-border"
                     }`}
                     onClick={() => {
                       setSelectedField(field.id);
@@ -603,14 +603,14 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   >
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="text-[10px] text-[#374151]">
+                      <span className="text-[10px] text-foreground">
                         {FIELD_TYPE_ICONS[field.type]} {field.label} — p{field.page}
                       </span>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 text-[#9CA3AF] hover:text-[#DC2626]"
+                      className="h-4 w-4 p-0 text-text-muted hover:text-[#DC2626]"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeField(field.id);
@@ -630,15 +630,15 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
-      <div className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+      <div className="bg-white border-b border-border px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Mobile panel toggle */}
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 text-[#6B7280] lg:hidden"
+            className="h-8 w-8 p-0 text-text-secondary lg:hidden"
             onClick={() => setShowRightPanel(true)}
           >
             <PanelRightIcon className="h-4 w-4" />
@@ -647,13 +647,13 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             variant="ghost"
             size="sm"
             onClick={() => router.push("/recruiter/vaultsign")}
-            className="text-[#6B7280] hover:text-[#111827]"
+            className="text-text-secondary hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back</span>
           </Button>
           <Separator orientation="vertical" className="h-6" />
-          <h1 className="font-semibold text-[#111827] truncate">{docName}</h1>
-          <Badge variant="outline" className="text-xs bg-[#F8F7F4] hidden sm:inline-flex">
+          <h1 className="font-semibold text-foreground truncate">{docName}</h1>
+          <Badge variant="outline" className="text-xs bg-background hidden sm:inline-flex">
             PDF Document — Read Only
           </Badge>
         </div>
@@ -663,14 +663,14 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="border-[#E5E7EB] text-[#166534]"
+            className="border-border text-primary"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
             <span className="hidden sm:inline">Save Fields</span>
           </Button>
           <Button
             size="sm"
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
             onClick={handleSend}
           >
             <Send className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Send for Signature</span>
@@ -683,7 +683,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         {/* PDF Canvas — full width on mobile */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Page navigation */}
-          <div className="bg-white border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-center gap-3">
+          <div className="bg-white border-b border-border px-4 py-2 flex items-center justify-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -692,7 +692,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-[#6B7280]">
+            <span className="text-sm text-text-secondary">
               Page {currentPage} of {numPages}
             </span>
             <Button
@@ -707,7 +707,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             <Button variant="ghost" size="sm" onClick={() => setScale(Math.max(0.5, scale - 0.1))}>
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <span className="text-xs text-[#6B7280]">{Math.round(scale * 100)}%</span>
+            <span className="text-xs text-text-secondary">{Math.round(scale * 100)}%</span>
             <Button variant="ghost" size="sm" onClick={() => setScale(Math.min(2, scale + 0.1))}>
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -718,13 +718,13 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             <div ref={canvasContainerRef} className="relative mx-auto" style={{ maxWidth: "800px" }}>
               {/* PDF Error State */}
               {pdfError && !pdfDoc && (
-                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-border shadow-lg flex flex-col items-center justify-center gap-4 p-8">
                   <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                     <X className="h-8 w-8 text-[#DC2626]" />
                   </div>
                   <div className="text-center">
-                    <h3 className="font-semibold text-[#111827] mb-1">Failed to render PDF</h3>
-                    <p className="text-sm text-[#6B7280] max-w-md">{pdfError}</p>
+                    <h3 className="font-semibold text-foreground mb-1">Failed to render PDF</h3>
+                    <p className="text-sm text-text-secondary max-w-md">{pdfError}</p>
                   </div>
                   <Button
                     variant="outline"
@@ -733,7 +733,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                       setPdfError(null);
                       fetchDocument();
                     }}
-                    className="border-[#166534] text-[#166534]"
+                    className="border-primary text-primary"
                   >
                     Try Again
                   </Button>
@@ -742,21 +742,21 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
 
               {/* PDF Loading State */}
               {!pdfDoc && !pdfError && pdfUrl && (
-                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
-                  <p className="text-sm text-[#6B7280]">Loading PDF...</p>
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-border shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-text-secondary">Loading PDF...</p>
                 </div>
               )}
 
               {/* No PDF URL State */}
               {!pdfUrl && !pdfError && (
-                <div className="w-full min-h-[500px] bg-white rounded-lg border border-[#E5E7EB] shadow-lg flex flex-col items-center justify-center gap-4 p-8">
+                <div className="w-full min-h-[500px] bg-white rounded-lg border border-border shadow-lg flex flex-col items-center justify-center gap-4 p-8">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center">
-                    <MousePointer2 className="h-8 w-8 text-[#9CA3AF]" />
+                    <MousePointer2 className="h-8 w-8 text-text-muted" />
                   </div>
                   <div className="text-center">
-                    <h3 className="font-semibold text-[#111827] mb-1">No PDF Available</h3>
-                    <p className="text-sm text-[#6B7280]">This document does not have a PDF file associated with it.</p>
+                    <h3 className="font-semibold text-foreground mb-1">No PDF Available</h3>
+                    <p className="text-sm text-text-secondary">This document does not have a PDF file associated with it.</p>
                   </div>
                 </div>
               )}
@@ -765,7 +765,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
               {pdfDoc && (
                 <canvas
                   ref={(el) => { canvasRef.current = el; }}
-                  className="shadow-lg rounded-lg border border-[#E5E7EB]"
+                  className="shadow-lg rounded-lg border border-border"
                   style={{ maxWidth: "100%", height: "auto" }}
                 />
               )}
@@ -773,8 +773,8 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
               {/* Rendering indicator */}
               {rendering && pdfDoc && (
                 <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1.5">
-                  <Loader2 className="h-3 w-3 animate-spin text-[#166534]" />
-                  <span className="text-[10px] text-[#6B7280]">Rendering...</span>
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <span className="text-[10px] text-text-secondary">Rendering...</span>
                 </div>
               )}
 
@@ -827,10 +827,10 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         </div>
 
         {/* Right Panel — Signers & Fields (desktop only) */}
-        <div className="hidden lg:flex w-72 border-l border-[#E5E7EB] bg-white flex-col">
-          <div className="p-3 border-b border-[#E5E7EB]">
-            <h3 className="font-semibold text-sm text-[#111827]">Signers & Fields</h3>
-            <p className="text-xs text-[#6B7280] mt-0.5">Add signers, then drag fields onto the PDF</p>
+        <div className="hidden lg:flex w-72 border-l border-border bg-white flex-col">
+          <div className="p-3 border-b border-border">
+            <h3 className="font-semibold text-sm text-foreground">Signers & Fields</h3>
+            <p className="text-xs text-text-secondary mt-0.5">Add signers, then drag fields onto the PDF</p>
           </div>
           {rightPanelContent}
         </div>
@@ -839,7 +839,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
       {/* Mobile: Right panel as bottom Sheet */}
       <Sheet open={showRightPanel} onOpenChange={setShowRightPanel}>
         <SheetContent side="bottom" className="h-[70vh] p-0 flex flex-col rounded-t-lg">
-          <SheetHeader className="p-3 border-b border-[#E5E7EB]">
+          <SheetHeader className="p-3 border-b border-border">
             <SheetTitle className="text-sm">Signers & Fields</SheetTitle>
             <SheetDescription className="text-xs">Add signers, then drag fields onto the PDF</SheetDescription>
           </SheetHeader>

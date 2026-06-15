@@ -531,7 +531,7 @@ function AddNewLeadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#166534]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-primary" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Add New Lead
           </DialogTitle>
         </DialogHeader>
@@ -675,7 +675,7 @@ function AddNewLeadDialog({
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
           >
             {saving && <Loader2 className="size-4 animate-spin mr-1" />}
             Save Lead
@@ -756,7 +756,7 @@ function ScheduleCallDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#166534]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-primary" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Schedule Call
           </DialogTitle>
         </DialogHeader>
@@ -829,7 +829,7 @@ function ScheduleCallDialog({
           <Button
             onClick={handleSchedule}
             disabled={saving}
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
           >
             {saving && <Loader2 className="size-4 animate-spin mr-1" />}
             Schedule
@@ -902,7 +902,7 @@ function CallOutcomeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#166534]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-primary" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Call Outcome
             {lead && (
               <span className="text-sm font-normal text-gray-500 ml-2">
@@ -960,7 +960,7 @@ function CallOutcomeDialog({
             </RadioGroup>
           </div>
           {nextAction === "schedule" && (
-            <div className="space-y-3 pl-2 border-l-2 border-[#166534]/20 ml-1">
+            <div className="space-y-3 pl-2 border-l-2 border-primary/20 ml-1">
               <div className="space-y-1.5">
                 <Label>Schedule Type</Label>
                 <Select value={rescheduleType} onValueChange={(v) => setRescheduleType(v as "specific" | "month")}>
@@ -1008,7 +1008,7 @@ function CallOutcomeDialog({
           <Button
             onClick={handleSubmit}
             disabled={saving}
-            className="bg-[#166534] hover:bg-[#14532D] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
           >
             {saving && <Loader2 className="size-4 animate-spin mr-1" />}
             Save Outcome
@@ -1114,7 +1114,7 @@ function LeadDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#166534] flex items-center gap-3" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-primary flex items-center gap-3" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             {editing ? "Edit Lead" : `${lead.first_name} ${lead.last_name}`}
             {!editing && <StarRatingDisplay value={lead.star_rating} />}
           </DialogTitle>
@@ -1192,11 +1192,11 @@ function LeadDetailDialog({
         ) : (
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-full bg-[#DCFCE7] text-lg font-semibold text-[#166534]">
+              <div className="flex size-12 items-center justify-center rounded-full bg-primary-light text-lg font-semibold text-primary">
                 {lead.first_name[0]}{lead.last_name[0]}
               </div>
               <div>
-                <h3 className="font-semibold text-[#111827]">{lead.first_name} {lead.last_name}</h3>
+                <h3 className="font-semibold text-foreground">{lead.first_name} {lead.last_name}</h3>
                 <div className="flex items-center gap-2">
                   {getStageBadge(lead.pipeline_stage)}
                   <StarRatingDisplay value={lead.star_rating} />
@@ -1238,7 +1238,7 @@ function LeadDetailDialog({
 
             <Separator />
             <div>
-              <h4 className="text-sm font-semibold text-[#111827] mb-2">Call History</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Call History</h4>
               {lead.call_logs.length === 0 ? (
                 <p className="text-sm text-gray-400">No call history yet</p>
               ) : (
@@ -1279,7 +1279,7 @@ function LeadDetailDialog({
           {editing ? (
             <>
               <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving} className="bg-[#166534] hover:bg-[#14532D] text-white">
+              <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-primary-hover text-white">
                 {saving && <Loader2 className="size-4 animate-spin mr-1" />}
                 Save
               </Button>
@@ -1362,7 +1362,7 @@ function ShiftRequestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#166534]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-primary" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Send Shift Request
             <span className="text-sm font-normal text-gray-500 ml-2">
               — {candidate.firstName} {candidate.lastName}
@@ -1399,7 +1399,7 @@ function ShiftRequestDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving} className="bg-[#166534] hover:bg-[#14532D] text-white">
+          <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary-hover text-white">
             {saving && <Loader2 className="size-4 animate-spin mr-1" />}
             <Send className="size-4 mr-1" />
             Send Request
@@ -1638,7 +1638,7 @@ function MyCalendarTab({
             >
               <div className={`text-xs font-medium mb-1 ${
                 isToday
-                  ? "flex size-6 items-center justify-center rounded-full bg-[#166534] text-white"
+                  ? "flex size-6 items-center justify-center rounded-full bg-primary text-white"
                   : isCurrentMonth
                   ? "text-gray-900"
                   : "text-gray-400"
@@ -1666,7 +1666,7 @@ function MyCalendarTab({
                           <div className="flex gap-1 mt-1">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleOutcomeClick(s); }}
-                              className="px-1.5 py-0.5 bg-[#166534] text-white rounded text-[10px]"
+                              className="px-1.5 py-0.5 bg-primary text-white rounded text-[10px]"
                             >
                               Log Outcome
                             </button>
@@ -1698,10 +1698,10 @@ function MyCalendarTab({
           return (
             <div key={i} className="bg-white">
               <div className={`px-2 py-2 text-center border-b border-gray-100 ${
-                isToday ? "bg-[#DCFCE7]" : "bg-gray-50"
+                isToday ? "bg-primary-light" : "bg-gray-50"
               }`}>
                 <div className="text-xs text-gray-500">{DAYS_OF_WEEK[day.getDay()]}</div>
-                <div className={`text-lg font-semibold ${isToday ? "text-[#166534]" : "text-gray-900"}`}>
+                <div className={`text-lg font-semibold ${isToday ? "text-primary" : "text-gray-900"}`}>
                   {day.getDate()}
                 </div>
               </div>
@@ -1736,7 +1736,7 @@ function MyCalendarTab({
       <div className="rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-center">
           <div className="text-xs text-gray-500">{DAYS_OF_WEEK[currentDate.getDay()]}</div>
-          <div className="text-xl font-semibold text-[#166534]">{currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}</div>
+          <div className="text-xl font-semibold text-primary">{currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}</div>
         </div>
         <div className="max-h-[28rem] overflow-y-auto">
           {hours.map((hour, hi) => {
@@ -1784,7 +1784,7 @@ function MyCalendarTab({
           <Button variant="ghost" size="icon" className="size-8" onClick={goToNext}>
             <ChevronRight className="size-4" />
           </Button>
-          <h3 className="text-lg font-semibold text-[#111827]">
+          <h3 className="text-lg font-semibold text-foreground">
             {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h3>
         </div>
@@ -1796,7 +1796,7 @@ function MyCalendarTab({
                 onClick={() => setView(v)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   view === v
-                    ? "bg-[#166534] text-white"
+                    ? "bg-primary text-white"
                     : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
               >
@@ -1804,7 +1804,7 @@ function MyCalendarTab({
               </button>
             ))}
           </div>
-          <Button onClick={onAddLead} className="bg-[#166534] hover:bg-[#14532D] text-white">
+          <Button onClick={onAddLead} className="bg-primary hover:bg-primary-hover text-white">
             <Plus className="size-4 mr-1" />
             Add New Lead
           </Button>
@@ -2034,20 +2034,20 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
       {/* Auto-Match indicator */}
       {dateFrom && dateTo && specialtyFilter && (
         <div className="flex items-center gap-2 px-1">
-          <Sparkles className="size-4 text-[#0D9488]" />
-          <span className="text-sm text-[#0D9488] font-medium">
+          <Sparkles className="size-4 text-accent-teal" />
+          <span className="text-sm text-accent-teal font-medium">
             Auto-Match: Showing candidates matching &ldquo;{specialtyFilter}&rdquo; for {formatDate(dateFrom)} — {formatDate(dateTo)}
           </span>
         </div>
       )}
 
       {/* Auto-Match Section */}
-      <Card className="border-[#0D9488]/20 bg-gradient-to-r from-teal-50/50 to-white">
+      <Card className="border-accent-teal/20 bg-gradient-to-r from-teal-50/50 to-white">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-[#0D9488]" />
-              <h3 className="font-semibold text-[#111827]">Auto-Match</h3>
+              <Sparkles className="size-5 text-accent-teal" />
+              <h3 className="font-semibold text-foreground">Auto-Match</h3>
               <span className="text-xs text-gray-500">Match candidates to your open positions</span>
             </div>
             <div className="flex items-center gap-2">
@@ -2061,7 +2061,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                 size="sm"
                 onClick={handleFindMatches}
                 disabled={autoMatchLoading}
-                className="bg-[#0D9488] hover:bg-[#0F766E] text-white"
+                className="bg-accent-teal hover:bg-[#0F766E] text-white"
               >
                 {autoMatchLoading ? (
                   <Loader2 className="size-3.5 mr-1 animate-spin" />
@@ -2090,7 +2090,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                   <div key={`${match.candidateId}-${match.leadId}-${i}`} className="rounded-lg border border-teal-200 bg-white p-3 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium text-sm text-[#111827]">{match.candidateName}</p>
+                        <p className="font-medium text-sm text-foreground">{match.candidateName}</p>
                         {match.specialty && (
                           <p className="text-xs text-gray-500">{match.specialty}</p>
                         )}
@@ -2107,7 +2107,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                     </div>
                     <div className="mb-2">
                       <p className="text-[10px] text-gray-400">Matched to lead:</p>
-                      <p className="text-xs text-[#166534] font-medium">{match.leadName} {match.leadSpecialty ? `(${match.leadSpecialty})` : ""}</p>
+                      <p className="text-xs text-primary font-medium">{match.leadName} {match.leadSpecialty ? `(${match.leadSpecialty})` : ""}</p>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {match.matchReasons.map((reason, ri) => (
@@ -2143,7 +2143,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                       </Button>
                       <Button
                         size="sm"
-                        className="flex-1 h-7 text-xs bg-[#0D9488] hover:bg-[#0F766E] text-white"
+                        className="flex-1 h-7 text-xs bg-accent-teal hover:bg-[#0F766E] text-white"
                         onClick={() => handleSendShiftRequest(match)}
                       >
                         <Send className="size-3 mr-1" />
@@ -2199,7 +2199,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                           {c.firstName?.[0]}{c.lastName?.[0]}
                         </div>
                         <div>
-                          <p className="font-medium text-sm text-[#111827]">
+                          <p className="font-medium text-sm text-foreground">
                             {c.firstName} {c.lastName}
                           </p>
                           {c.specialty && (
@@ -2261,7 +2261,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
 
                   <Button
                     size="sm"
-                    className="w-full bg-[#0D9488] hover:bg-[#0F766E] text-white"
+                    className="w-full bg-accent-teal hover:bg-[#0F766E] text-white"
                     onClick={() => setShiftDialogCandidate(c)}
                   >
                     <Send className="size-3.5 mr-1" />
@@ -2397,7 +2397,7 @@ function PipelineTab({
               key={stage.value}
               className={`w-64 shrink-0 transition-colors rounded-lg ${
                 dragOverStage === stage.value
-                  ? "ring-2 ring-[#166534]/40 bg-emerald-50/30"
+                  ? "ring-2 ring-[var(--primary)]/40 bg-emerald-50/30"
                   : ""
               }`}
               onDragOver={(e) => handleDragOver(e, stage.value)}
@@ -2427,7 +2427,7 @@ function PipelineTab({
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onDragEnd={handleDragEnd}
                     className={`cursor-grab hover:shadow-md transition-shadow py-0 active:cursor-grabbing ${
-                      draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[#166534]/30" : ""
+                      draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[var(--primary)]/30" : ""
                     }`}
                     onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
                   >
@@ -2435,7 +2435,7 @@ function PipelineTab({
                       <div className="flex items-start justify-between mb-1.5">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <GripVertical className="size-3.5 text-gray-300 shrink-0" />
-                          <p className="font-medium text-sm text-[#111827] truncate">
+                          <p className="font-medium text-sm text-foreground truncate">
                             {lead.first_name} {lead.last_name}
                           </p>
                         </div>
@@ -2670,7 +2670,7 @@ function LeadsListTab({
             <Download className="size-3.5 mr-1" />
             Export CSV
           </Button>
-          <Button size="sm" onClick={onAddLead} className="bg-[#166534] hover:bg-[#14532D] text-white">
+          <Button size="sm" onClick={onAddLead} className="bg-primary hover:bg-primary-hover text-white">
             <Plus className="size-3.5 mr-1" />
             Add New Lead
           </Button>
@@ -2708,7 +2708,7 @@ function LeadsListTab({
                     <TableRow key={l.id} className="group">
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="flex size-7 items-center justify-center rounded-full bg-[#DCFCE7] text-xs font-semibold text-[#166534]">
+                          <div className="flex size-7 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary">
                             {l.first_name[0]}{l.last_name[0]}
                           </div>
                           <span className="font-medium text-sm">{l.first_name} {l.last_name}</span>
@@ -2878,7 +2878,7 @@ function MyAvailabilitySection() {
           <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="size-5 text-[#0D9488]" />
+                <Clock className="size-5 text-accent-teal" />
                 My Availability
               </CardTitle>
               <ChevronRight className={`size-4 text-gray-400 transition-transform ${isOpen ? "rotate-90" : ""}`} />
@@ -2932,7 +2932,7 @@ function MyAvailabilitySection() {
                   onChange={(e) => setNewSlot((p) => ({ ...p, label: e.target.value }))}
                 />
               </div>
-              <Button size="sm" onClick={handleAddSlot} className="bg-[#0D9488] hover:bg-[#0F766E] text-white h-9">
+              <Button size="sm" onClick={handleAddSlot} className="bg-accent-teal hover:bg-[#0F766E] text-white h-9">
                 <Plus className="size-3.5 mr-1" />
                 Add Slot
               </Button>
@@ -3043,19 +3043,19 @@ export default function RecruiterCalendarPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-white border border-gray-200 rounded-lg p-1 h-auto">
-          <TabsTrigger value="my-calendar" className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-sm">
+          <TabsTrigger value="my-calendar" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
             <Calendar className="size-4 mr-1.5" />
             My Calendar
           </TabsTrigger>
-          <TabsTrigger value="candidates" className="data-[state=active]:bg-[#0D9488] data-[state=active]:text-white text-sm">
+          <TabsTrigger value="candidates" className="data-[state=active]:bg-accent-teal data-[state=active]:text-white text-sm">
             <UserCheck className="size-4 mr-1.5" />
             Candidates
           </TabsTrigger>
-          <TabsTrigger value="pipeline" className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-sm">
+          <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
             <Briefcase className="size-4 mr-1.5" />
             Pipeline
           </TabsTrigger>
-          <TabsTrigger value="leads" className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-sm">
+          <TabsTrigger value="leads" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
             <List className="size-4 mr-1.5" />
             Leads List
           </TabsTrigger>

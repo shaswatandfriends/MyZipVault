@@ -25,7 +25,7 @@ function CircularProgress({
 
   const color =
     percentage >= 100
-      ? "#059669"
+      ? "var(--primary)"
       : percentage >= 50
         ? "#10B981"
         : percentage >= 25

@@ -82,8 +82,8 @@ const MONTH_NAMES = [
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string; dotColor: string }> = {
   actively_looking: {
     label: "Actively Looking",
-    color: "#166534",
-    bgColor: "#DCFCE7",
+    color: "var(--primary)",
+    bgColor: "var(--primary-light)",
     borderColor: "#86EFAC",
     dotColor: "#22C55E",
   },
@@ -399,8 +399,8 @@ export default function SharedCalendarPage({
       <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* ── Header ───────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 pt-2">
-          <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-            <Stethoscope className="size-5 text-[#166534]" />
+          <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Stethoscope className="size-5 text-primary" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">MyZipVault</h1>
@@ -413,8 +413,8 @@ export default function SharedCalendarPage({
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="size-12 rounded-full bg-[#166534]/10 flex items-center justify-center shrink-0">
-                  <CalendarDays className="size-6 text-[#166534]" />
+                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <CalendarDays className="size-6 text-primary" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
@@ -446,7 +446,7 @@ export default function SharedCalendarPage({
             {/* Preferences row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
               <div className="flex items-center gap-2.5 p-3 rounded-lg bg-gray-50">
-                <Timer className="size-4 text-[#166534] shrink-0" />
+                <Timer className="size-4 text-primary shrink-0" />
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Min Notice</p>
                   <p className="text-sm font-semibold text-gray-900">
@@ -455,7 +455,7 @@ export default function SharedCalendarPage({
                 </div>
               </div>
               <div className="flex items-center gap-2.5 p-3 rounded-lg bg-gray-50">
-                <Clock className="size-4 text-[#166534] shrink-0" />
+                <Clock className="size-4 text-primary shrink-0" />
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Shift Duration</p>
                   <p className="text-sm font-semibold text-gray-900">
@@ -466,7 +466,7 @@ export default function SharedCalendarPage({
                 </div>
               </div>
               <div className="flex items-center gap-2.5 p-3 rounded-lg bg-gray-50">
-                <Shield className="size-4 text-[#166534] shrink-0" />
+                <Shield className="size-4 text-primary shrink-0" />
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Link Expires</p>
                   <p className="text-sm font-semibold text-gray-900">
@@ -488,7 +488,7 @@ export default function SharedCalendarPage({
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <CalendarDays className="size-5 text-[#166534]" />
+                    <CalendarDays className="size-5 text-primary" />
                     Monthly Calendar
                   </CardTitle>
                   <div className="flex items-center gap-1">
@@ -550,7 +550,7 @@ export default function SharedCalendarPage({
                     }
 
                     if (today) {
-                      borderClass = "border-[#166534]";
+                      borderClass = "border-primary";
                     }
 
                     return (
@@ -560,13 +560,13 @@ export default function SharedCalendarPage({
                         className={`
                           h-12 sm:h-16 rounded-lg border text-sm font-medium relative
                           transition-all hover:shadow-md hover:scale-[1.03] cursor-pointer
-                          focus:outline-none focus:ring-2 focus:ring-[#166534]/40
+                          focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40
                           ${bgClass} ${borderClass}
-                          ${isSelected ? "ring-2 ring-[#166534] shadow-md" : ""}
-                          ${today ? "ring-1 ring-[#166534]" : ""}
+                          ${isSelected ? "ring-2 ring-[var(--primary)] shadow-md" : ""}
+                          ${today ? "ring-1 ring-[var(--primary)]" : ""}
                         `}
                       >
-                        <span className={`${today ? "text-[#166534] font-bold" : "text-gray-700"}`}>
+                        <span className={`${today ? "text-primary font-bold" : "text-gray-700"}`}>
                           {day}
                         </span>
                         {/* Status dot */}
@@ -582,7 +582,7 @@ export default function SharedCalendarPage({
                         )}
                         {/* Recurring indicator */}
                         {slots.some((s) => s.isRecurring) && !hasSpecificOverride && status !== "none" && (
-                          <span className="absolute top-1 right-1 size-1.5 rounded-full bg-[#166534]/40" />
+                          <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary/40" />
                         )}
                       </button>
                     );
@@ -608,7 +608,7 @@ export default function SharedCalendarPage({
                     Override
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-[#166534]/40" />
+                    <span className="size-1.5 rounded-full bg-primary/40" />
                     Recurring
                   </div>
                 </div>
@@ -685,7 +685,7 @@ export default function SharedCalendarPage({
                                 {slot.isAvailable ? "Available" : "Unavailable"}
                               </span>
                               {slot.isRecurring && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-[#166534]/30 text-[#166534]">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">
                                   Recurring
                                 </Badge>
                               )}
@@ -716,7 +716,7 @@ export default function SharedCalendarPage({
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <RefreshCw className="size-4 text-[#166534]" />
+                  <RefreshCw className="size-4 text-primary" />
                   Recurring Weekly Schedule
                 </CardTitle>
               </CardHeader>
@@ -844,13 +844,13 @@ export default function SharedCalendarPage({
             </Card>
 
             {/* Privacy Notice */}
-            <Card className="border-[#166534]/10 bg-[#166534]/5">
+            <Card className="border-primary/10 bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
-                  <Lock className="size-4 text-[#166534] shrink-0 mt-0.5" />
+                  <Lock className="size-4 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-[#166534]">Privacy Notice</p>
-                    <p className="text-[11px] text-[#166534]/70 mt-1 leading-relaxed">
+                    <p className="text-xs font-semibold text-primary">Privacy Notice</p>
+                    <p className="text-[11px] text-primary/70 mt-1 leading-relaxed">
                       This link provides view-only access to the candidate&apos;s availability calendar.
                       The link expires {data?.share ? formatExpiryLabel(data.share.expiryType, data.share.expiresAt).toLowerCase() : "per schedule"}.
                       Do not share this link with unauthorized parties.

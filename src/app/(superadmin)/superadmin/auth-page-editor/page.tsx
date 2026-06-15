@@ -44,20 +44,20 @@ function EditorSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6">
+    <div className="bg-white border border-border rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-1">
-        <div className="size-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
-          <Icon className="size-4 text-[#166534]" />
+        <div className="size-8 rounded-lg bg-primary-light flex items-center justify-center">
+          <Icon className="size-4 text-primary" />
         </div>
         <h2
-          className="text-lg font-semibold text-[#111827]"
-          style={{ fontFamily: "'Clash Display', sans-serif" }}
+          className="text-lg font-semibold text-foreground"
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
         >
           {title}
         </h2>
       </div>
       {description && (
-        <p className="text-sm text-[#6B7280] mb-5 ml-10">{description}</p>
+        <p className="text-sm text-text-secondary mb-5 ml-10">{description}</p>
       )}
       {!description && <div className="mb-4" />}
       {children}
@@ -75,7 +75,7 @@ function FormField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         {label}
       </Label>
       {children}
@@ -105,7 +105,7 @@ function TrustPointsEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         Trust Points
       </Label>
       {points.map((p, i) => (
@@ -115,12 +115,12 @@ function TrustPointsEditor({
             value={p}
             onChange={(e) => update(i, e.target.value)}
             placeholder={`Trust point ${i + 1}`}
-            className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+            className="border-border rounded-xl focus:border-accent-teal"
           />
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -131,7 +131,7 @@ function TrustPointsEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#166534] hover:border-[#166534]"
+        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <Plus className="size-3.5 mr-1" />
         Add Trust Point
@@ -150,7 +150,7 @@ function QuoteCardEditor({
 }) {
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         Testimonial Quote Card
       </Label>
       <FormField label="Quote Text">
@@ -158,7 +158,7 @@ function QuoteCardEditor({
           value={card.text}
           onChange={(e) => onChange({ ...card, text: e.target.value })}
           rows={3}
-          className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+          className="border-border rounded-xl focus:border-accent-teal resize-none"
         />
       </FormField>
       <FormField label="Attribution">
@@ -166,7 +166,7 @@ function QuoteCardEditor({
           value={card.attribution}
           onChange={(e) => onChange({ ...card, attribution: e.target.value })}
           placeholder="Name, Role"
-          className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+          className="border-border rounded-xl focus:border-accent-teal"
         />
       </FormField>
     </div>
@@ -195,7 +195,7 @@ function StatsCardEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         Stats Card
       </Label>
       {stats.map((s, i) => (
@@ -206,19 +206,19 @@ function StatsCardEditor({
               value={s.value}
               onChange={(e) => update(i, "value", e.target.value)}
               placeholder="Value (e.g. 500+)"
-              className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+              className="border-border rounded-xl focus:border-accent-teal"
             />
             <Input
               value={s.label}
               onChange={(e) => update(i, "label", e.target.value)}
               placeholder="Label (e.g. Professionals)"
-              className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+              className="border-border rounded-xl focus:border-accent-teal"
             />
           </div>
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 mt-1.5 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 mt-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -229,7 +229,7 @@ function StatsCardEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#166534] hover:border-[#166534]"
+        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <Plus className="size-3.5 mr-1" />
         Add Stat
@@ -260,15 +260,15 @@ function SlideshowImagesEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         Slideshow Images
       </Label>
-      <p className="text-xs text-[#9CA3AF]">
+      <p className="text-xs text-text-muted">
         Add image URLs (Unsplash, Supabase, or any CDN). Images auto-rotate every 5 seconds with crossfade.
       </p>
       {images.map((url, i) => (
         <div key={i} className="flex items-center gap-2">
-          <span className="text-xs text-[#9CA3AF] font-mono w-5 text-center shrink-0">
+          <span className="text-xs text-text-muted font-mono w-5 text-center shrink-0">
             {i + 1}
           </span>
           {url && (
@@ -276,7 +276,7 @@ function SlideshowImagesEditor({
             <img
               src={url}
               alt={`Slide ${i + 1}`}
-              className="size-10 rounded-lg object-cover shrink-0 border border-[#E5E7EB]"
+              className="size-10 rounded-lg object-cover shrink-0 border border-border"
             />
           )}
           {!url && (
@@ -288,12 +288,12 @@ function SlideshowImagesEditor({
             value={url}
             onChange={(e) => update(i, e.target.value)}
             placeholder="https://images.unsplash.com/photo-..."
-            className="flex-1 border-[#E5E7EB] rounded-xl focus:border-[#0D9488] text-sm"
+            className="flex-1 border-border rounded-xl focus:border-accent-teal text-sm"
           />
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -304,7 +304,7 @@ function SlideshowImagesEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#166534] hover:border-[#166534]"
+        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <ImagePlus className="size-3.5 mr-1" />
         Add Image
@@ -332,7 +332,7 @@ function PageContentEditor({
           <Input
             value={page.tagline}
             onChange={(e) => onChange({ ...page, tagline: e.target.value })}
-            className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+            className="border-border rounded-xl focus:border-accent-teal"
           />
         </FormField>
         <TrustPointsEditor
@@ -438,12 +438,12 @@ export default function AuthPageEditorPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1
-            className="text-2xl font-bold tracking-tight text-[#111827]"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
+            className="text-2xl font-bold tracking-tight text-foreground"
+            style={{ fontFamily: "'Satoshi', sans-serif" }}
           >
             Auth Page Editor
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">
+          <p className="text-sm text-text-secondary mt-0.5">
             Edit branding, slideshow images, and content for all authentication pages.
           </p>
         </div>
@@ -451,7 +451,7 @@ export default function AuthPageEditorPage() {
           <Button
             variant="outline"
             onClick={handleDiscard}
-            className="border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#111827]"
+            className="border-[#D1D5DB] text-text-secondary rounded-xl hover:text-foreground"
           >
             <RotateCcw className="size-4 mr-1.5" />
             Restore Defaults
@@ -459,7 +459,7 @@ export default function AuthPageEditorPage() {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-[#166534] text-white rounded-xl hover:bg-[#14532D]"
+            className="bg-primary text-white rounded-xl hover:bg-primary-hover"
           >
             <Save className="size-4 mr-1.5" />
             {saving ? "Saving..." : "Save Changes"}
@@ -480,7 +480,7 @@ export default function AuthPageEditorPage() {
                 value={config.branding.platformName}
                 onChange={(e) => updateBranding("platformName", e.target.value)}
                 placeholder="MyZipVault"
-                className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                className="border-border rounded-xl focus:border-accent-teal"
               />
             </FormField>
             <FormField label="Logo Text (shown when no logo image)">
@@ -488,7 +488,7 @@ export default function AuthPageEditorPage() {
                 value={config.branding.logoText}
                 onChange={(e) => updateBranding("logoText", e.target.value)}
                 placeholder="ZV"
-                className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                className="border-border rounded-xl focus:border-accent-teal"
               />
             </FormField>
           </div>
@@ -499,10 +499,10 @@ export default function AuthPageEditorPage() {
                 <img
                   src={config.branding.logoUrl}
                   alt="Logo preview"
-                  className="size-12 rounded-xl object-contain border border-[#E5E7EB] p-1"
+                  className="size-12 rounded-xl object-contain border border-border p-1"
                 />
               ) : (
-                <div className="size-12 rounded-xl bg-[#166534] flex items-center justify-center text-white text-lg font-bold shrink-0">
+                <div className="size-12 rounded-xl bg-primary flex items-center justify-center text-white text-lg font-bold shrink-0">
                   {config.branding.logoText || "ZV"}
                 </div>
               )}
@@ -510,13 +510,13 @@ export default function AuthPageEditorPage() {
                 value={config.branding.logoUrl}
                 onChange={(e) => updateBranding("logoUrl", e.target.value)}
                 placeholder="https://your-cdn.com/logo.svg (leave empty to use text)"
-                className="flex-1 border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                className="flex-1 border-border rounded-xl focus:border-accent-teal"
               />
               {config.branding.logoUrl && (
                 <button
                   type="button"
                   onClick={() => updateBranding("logoUrl", "")}
-                  className="shrink-0 p-1.5 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
+                  className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
                 >
                   <Trash2 className="size-4" />
                 </button>

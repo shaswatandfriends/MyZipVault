@@ -100,7 +100,7 @@ function getStatusBadge(status: string) {
       );
     case "completed":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Completed
         </Badge>
       );
@@ -119,7 +119,7 @@ function getEmploymentBadge(status: string) {
   switch (status) {
     case "current":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Current
         </Badge>
       );
@@ -131,7 +131,7 @@ function getEmploymentBadge(status: string) {
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );

@@ -3,12 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Check, Mail, ArrowLeft, AlertCircle } from "@/lib/icons";
+import { motion } from "framer-motion";
+import { Loader2, Check, Mail, ArrowLeft, ArrowRight, AlertCircle, ShieldCheck, Zap } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 const trustPoints = [
   "HIPAA-Aligned Security",
@@ -103,16 +105,13 @@ function VerifyEmailContent() {
       case "verifying":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-2xl mb-6">
-              <Loader2 className="size-8 text-[#166534] animate-spin" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Loader2 className="size-8 text-primary animate-spin" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Verifying your email
             </h1>
-            <p className="text-[#6B7280] text-base mt-2">
+            <p className="text-text-secondary text-base mt-2">
               Please wait while we verify your email address...
             </p>
           </>
@@ -121,22 +120,20 @@ function VerifyEmailContent() {
       case "success":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-2xl mb-6">
-              <Check className="size-8 text-[#166534]" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Check className="size-8 text-primary" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Email verified!
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8">
+            <p className="text-text-secondary text-base mt-2 mb-8">
               Your email address has been successfully verified. You can now
               sign in to your account.
             </p>
             <Link href="/login">
-              <Button className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all">
+              <Button className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base">
                 Sign In
+                <ArrowRight className="size-4" />
               </Button>
             </Link>
           </>
@@ -145,29 +142,26 @@ function VerifyEmailContent() {
       case "error":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+            <div className="flex items-center justify-center size-16 bg-red-50 rounded-2xl mb-6">
               <AlertCircle className="size-8 text-red-600" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Verification failed
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8">
+            <p className="text-text-secondary text-base mt-2 mb-8">
               {errorMessage || "The verification link is invalid or has expired."}
             </p>
             <div className="space-y-3">
               <Button
                 onClick={() => setState("resend")}
-                className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
               >
                 Resend Verification Email
               </Button>
               <Link href="/login" className="block">
                 <Button
                   variant="outline"
-                  className="w-full py-3.5 rounded-xl font-medium border-[#E5E7EB] hover:bg-[#F3F4F6] transition-all"
+                  className="w-full py-3.5 rounded-xl font-medium border-border transition-all"
                 >
                   Back to Sign In
                 </Button>
@@ -179,24 +173,21 @@ function VerifyEmailContent() {
       case "resend":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-2xl mb-6">
-              <Mail className="size-8 text-[#166534]" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Mail className="size-8 text-primary" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Resend verification
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8">
+            <p className="text-text-secondary text-base mt-2 mb-8">
               Enter your email address and we&apos;ll send you a new verification link.
             </p>
 
             <form onSubmit={handleResendSubmit} className="space-y-5">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label
                   htmlFor="email"
-                  className="text-xs font-medium tracking-wide uppercase text-[#6B7280]"
+                  className="text-xs font-semibold text-text-secondary uppercase tracking-wider"
                 >
                   Email
                 </Label>
@@ -210,7 +201,7 @@ function VerifyEmailContent() {
                     if (emailError) setEmailError("");
                   }}
                   disabled={isResending}
-                  className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${
                     emailError ? "border-destructive" : ""
                   }`}
                   autoComplete="email"
@@ -222,16 +213,19 @@ function VerifyEmailContent() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
                 disabled={isResending}
               >
                 {isResending ? (
                   <>
-                    <Loader2 className="size-4 animate-spin mr-2" />
+                    <Loader2 className="size-4 animate-spin" />
                     Sending verification...
                   </>
                 ) : (
-                  "Send Verification Link"
+                  <>
+                    Send Verification Link
+                    <ArrowRight className="size-4" />
+                  </>
                 )}
               </Button>
             </form>
@@ -239,7 +233,7 @@ function VerifyEmailContent() {
             <div className="mt-6 text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-[#0D9488] hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
               >
                 <ArrowLeft className="size-4" />
                 Back to Sign In
@@ -251,23 +245,21 @@ function VerifyEmailContent() {
       case "resend_success":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-2xl mb-6">
-              <Mail className="size-8 text-[#166534]" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Mail className="size-8 text-primary" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Check your email
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8">
+            <p className="text-text-secondary text-base mt-2 mb-8">
               If an account with that email exists and is not yet verified,
               we&apos;ve sent a new verification link. Please check your inbox
               and spam folder.
             </p>
             <Link href="/login">
-              <Button className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all">
+              <Button className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base">
                 Back to Sign In
+                <ArrowRight className="size-4" />
               </Button>
             </Link>
           </>
@@ -276,20 +268,17 @@ function VerifyEmailContent() {
       case "signup_success":
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-[#CCFBF1] rounded-2xl mb-6">
-              <Mail className="size-8 text-[#0D9488]" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Mail className="size-8 text-primary" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Check your email
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-4">
-              We&apos;ve sent a verification link to{emailParam ? <strong className="text-[#111827]"> {emailParam}</strong> : " your email address"}. Please check your inbox and spam folder.
+            <p className="text-text-secondary text-base mt-2 mb-4">
+              We&apos;ve sent a verification link to{emailParam ? <strong className="text-foreground"> {emailParam}</strong> : " your email address"}. Please check your inbox and spam folder.
             </p>
-            <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-4 mb-8">
-              <p className="text-sm text-[#6B7280] leading-relaxed">
+            <div className="rounded-xl bg-surface border border-border p-4 mb-8">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Click the link in the email to verify your account, then sign in. The link expires in 24 hours.
               </p>
             </div>
@@ -297,13 +286,14 @@ function VerifyEmailContent() {
               <Button
                 onClick={() => setState("resend")}
                 variant="outline"
-                className="w-full py-3.5 rounded-xl font-medium border-[#E5E7EB] hover:bg-[#F3F4F6] transition-all"
+                className="w-full py-3.5 rounded-xl font-medium border-border transition-all"
               >
                 Resend Verification Email
               </Button>
               <Link href="/login" className="block">
-                <Button className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all">
+                <Button className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base">
                   Back to Sign In
+                  <ArrowRight className="size-4" />
                 </Button>
               </Link>
             </div>
@@ -314,24 +304,21 @@ function VerifyEmailContent() {
         // idle - no token, show resend form
         return (
           <>
-            <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-2xl mb-6">
-              <Mail className="size-8 text-[#166534]" />
+            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
+              <Mail className="size-8 text-primary" />
             </div>
-            <h1
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-[36px] font-bold text-[#111827] leading-tight"
-            >
+            <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
               Verify your email
             </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8">
+            <p className="text-text-secondary text-base mt-2 mb-8">
               Enter your email address to receive a verification link.
             </p>
 
             <form onSubmit={handleResendSubmit} className="space-y-5">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label
                   htmlFor="email"
-                  className="text-xs font-medium tracking-wide uppercase text-[#6B7280]"
+                  className="text-xs font-semibold text-text-secondary uppercase tracking-wider"
                 >
                   Email
                 </Label>
@@ -345,7 +332,7 @@ function VerifyEmailContent() {
                     if (emailError) setEmailError("");
                   }}
                   disabled={isResending}
-                  className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${
                     emailError ? "border-destructive" : ""
                   }`}
                   autoComplete="email"
@@ -357,16 +344,19 @@ function VerifyEmailContent() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
+                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
                 disabled={isResending}
               >
                 {isResending ? (
                   <>
-                    <Loader2 className="size-4 animate-spin mr-2" />
+                    <Loader2 className="size-4 animate-spin" />
                     Sending verification...
                   </>
                 ) : (
-                  "Send Verification Link"
+                  <>
+                    Send Verification Link
+                    <ArrowRight className="size-4" />
+                  </>
                 )}
               </Button>
             </form>
@@ -374,7 +364,7 @@ function VerifyEmailContent() {
             <div className="mt-6 text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-[#0D9488] hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
               >
                 <ArrowLeft className="size-4" />
                 Back to Sign In
@@ -387,67 +377,48 @@ function VerifyEmailContent() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-            <span
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-white text-4xl font-bold"
-            >
-              ZV
-            </span>
-          </div>
-          <h2
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
-            className="text-[28px] font-bold text-white mt-4"
-          >
-            MyZipVault
-          </h2>
-          <p
-            className="text-white/75 text-base mt-2"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
-            Healthcare credential verification, simplified
-          </p>
-          <div className="mt-12 space-y-4">
-            {trustPoints.map((point) => (
-              <div
-                key={point}
-                className="flex items-center justify-center gap-3 text-white/70 text-sm"
-                style={{ fontFamily: "Inter, sans-serif" }}
-              >
-                <Check className="size-4 shrink-0" />
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Left Panel - Slideshow */}
+      <AuthSlideshowPanel
+        tagline="Healthcare credential verification, simplified"
+        trustPoints={trustPoints}
+      />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
-        <div className="max-w-[400px] w-full">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
+        {/* Subtle mesh background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
+        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+
+        <motion.div
+          className="max-w-[420px] w-full relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-              <span
-                style={{ fontFamily: "'Clash Display', sans-serif" }}
-                className="text-white text-2xl font-bold"
-              >
-                ZV
-              </span>
+            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
+              <span className="text-white text-2xl font-bold font-heading">ZV</span>
             </div>
-            <h2
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
-              className="text-2xl font-bold text-[#111827]"
-            >
-              MyZipVault
-            </h2>
+            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
           </div>
 
-          {renderRightContent()}
-        </div>
+          {/* Glass card wrapping content */}
+          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+            {renderRightContent()}
+          </div>
+
+          {/* Security badges */}
+          <div className="mt-6 flex items-center justify-center gap-5">
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <ShieldCheck className="size-3" /> HIPAA
+            </div>
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <Zap className="size-3" /> 256-bit
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -457,8 +428,8 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#F8F7F4]">
-          <Loader2 className="size-8 animate-spin text-[#166534]" />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       }
     >

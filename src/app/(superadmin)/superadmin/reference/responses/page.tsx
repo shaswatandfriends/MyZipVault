@@ -75,7 +75,7 @@ function getEmploymentBadge(status: string) {
   switch (status) {
     case "current":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Current
         </Badge>
       );
@@ -87,7 +87,7 @@ function getEmploymentBadge(status: string) {
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -115,13 +115,13 @@ function getResponseTypeBadge(type: string) {
   switch (type) {
     case "rating_5":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           1-5
         </Badge>
       );
     case "rating_3":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           1-3
         </Badge>
       );
@@ -133,7 +133,7 @@ function getResponseTypeBadge(type: string) {
       );
     case "text":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Text
         </Badge>
       );
@@ -363,7 +363,7 @@ export default function ReferenceResponsesPage() {
                           className="h-8 gap-1.5"
                           onClick={() => openDetail(resp)}
                         >
-                          <Eye className="size-4" style={{ color: "#166534" }} />
+                          <Eye className="size-4" style={{ color: "var(--primary)" }} />
                           View
                         </Button>
                       </TableCell>
@@ -411,7 +411,7 @@ export default function ReferenceResponsesPage() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileCheck className="size-5" style={{ color: "#166534" }} />
+              <FileCheck className="size-5" style={{ color: "var(--primary)" }} />
               Reference Response Details
             </DialogTitle>
             <DialogDescription>
@@ -488,14 +488,14 @@ export default function ReferenceResponsesPage() {
                         <p className="text-sm" style={{ color: "var(--text-primary)" }}>
                           {answer.responseType === "yes_no" ? (
                             answer.answerText === "yes" ? (
-                              <span style={{ color: "#166534" }}>✓ Yes</span>
+                              <span style={{ color: "var(--primary)" }}>✓ Yes</span>
                             ) : answer.answerText === "no" ? (
                               <span style={{ color: "#991B1B" }}>✗ No</span>
                             ) : (
                               answer.answerText
                             )
                           ) : answer.responseType === "rating_5" || answer.responseType === "rating_3" ? (
-                            <span className="font-bold" style={{ color: "#166534" }}>
+                            <span className="font-bold" style={{ color: "var(--primary)" }}>
                               {answer.answerText} / {answer.responseType === "rating_5" ? "5" : "3"}
                             </span>
                           ) : (

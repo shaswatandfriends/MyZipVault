@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
@@ -10,9 +11,10 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Loader2, Mail, RefreshCw, Check } from "@/lib/icons";
+import { Loader2, Mail, RefreshCw, ArrowRight, ShieldCheck, Zap } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
+import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 type LoginStep = "request" | "verify";
 
@@ -167,160 +169,182 @@ export default function SuperAdminLoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
-          </div>
-          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
-          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>Platform Administration</p>
-          <div className="mt-12 space-y-4">
-            {trustPoints.map((point) => (
-              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-                <Check className="size-4 shrink-0" />
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Left Panel - Slideshow */}
+      <AuthSlideshowPanel
+        tagline="Platform Administration"
+        trustPoints={trustPoints}
+      />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
-        <div className="max-w-[400px] w-full">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
+        {/* Subtle mesh background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
+        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+
+        <motion.div
+          className="max-w-[420px] w-full relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
+              <span className="text-white text-2xl font-bold font-heading">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
           </div>
 
-          {step === "request" ? (
-            <>
-              <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
-                Super Admin Portal
-              </h1>
-              <p className="text-[#6B7280] text-base mt-2 mb-8">
-                Verify your identity with a one-time code
-              </p>
-
-              <div className="space-y-5">
-                {/* Fixed email indicator */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">Email</span>
-                  <div className="flex items-center gap-2 bg-[#DCFCE7] border border-[#166534]/20 rounded-xl px-4 py-3">
-                    <Mail className="size-4 text-[#166534] shrink-0" />
-                    <span className="text-sm text-[#166534] font-medium">Super Administrator</span>
-                  </div>
-                  <p className="text-xs text-[#9CA3AF]">
-                    Email is configured server-side for security
+          {/* Glass card wrapping form */}
+          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+            {step === "request" ? (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                    Super Admin Portal
+                  </h1>
+                  <p className="text-text-secondary text-base mt-2">
+                    Verify your identity with a one-time code
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
-                  disabled={isLoading}
-                  onClick={handleSendOtp}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Sending Code...
-                    </>
-                  ) : (
-                    "Send Verification Code"
-                  )}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
-                Email Verification
-              </h1>
-              <p className="text-[#6B7280] text-base mt-2 mb-8">
-                Enter the 6-digit code sent to your email
-              </p>
 
-              <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div className="space-y-4">
-                  <span className="text-sm font-medium text-[#6B7280] text-center block">
-                    Enter the 6-digit code from your email
-                  </span>
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={setOtp}
+                <div className="space-y-5">
+                  {/* Fixed email indicator */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                      Email
+                    </span>
+                    <div className="flex items-center gap-2 bg-primary-light border border-primary/20 rounded-xl px-4 py-3">
+                      <Mail className="size-4 text-primary shrink-0" />
+                      <span className="text-sm text-primary font-medium">Super Administrator</span>
+                    </div>
+                    <p className="text-xs text-text-muted">
+                      Email is configured server-side for security
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
+                    disabled={isLoading}
+                    onClick={handleSendOtp}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Sending Code...
+                      </>
+                    ) : (
+                      <>
+                        Send Verification Code
+                        <ArrowRight className="size-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                    Email Verification
+                  </h1>
+                  <p className="text-text-secondary text-base mt-2">
+                    Enter the 6-digit code sent to your email
+                  </p>
+                </div>
+
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <div className="space-y-4">
+                    <span className="text-sm font-medium text-text-secondary text-center block">
+                      Enter the 6-digit code from your email
+                    </span>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={otp}
+                        onChange={setOtp}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    <p className="text-xs text-text-muted text-center">
+                      Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
+                    </p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
+                    disabled={isLoading || otp.length !== 6}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Verify &amp; Sign In
+                        <ArrowRight className="size-4" />
+                      </>
+                    )}
+                  </Button>
+                  <div className="flex items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-text-secondary"
+                      onClick={handleBackToRequest}
                     >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                      </InputOTPGroup>
-                      <InputOTPSeparator />
-                      <InputOTPGroup>
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:text-primary-hover font-semibold transition-colors"
+                      onClick={handleResendOtp}
+                      disabled={resendCooldown > 0 || isLoading}
+                    >
+                      <RefreshCw className={`size-3.5 mr-1 ${isLoading ? "animate-spin" : ""}`} />
+                      {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
+                    </Button>
                   </div>
-                  <p className="text-xs text-[#9CA3AF] text-center">
-                    Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
-                  </p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all"
-                  disabled={isLoading || otp.length !== 6}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify & Sign In"
-                  )}
-                </Button>
-                <div className="flex items-center justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-[#6B7280]"
-                    onClick={handleBackToRequest}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-[#0D9488] hover:text-[#0D9488]"
-                    onClick={handleResendOtp}
-                    disabled={resendCooldown > 0 || isLoading}
-                  >
-                    <RefreshCw className={`size-3.5 mr-1 ${isLoading ? "animate-spin" : ""}`} />
-                    {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
-                  </Button>
-                </div>
-              </form>
-            </>
-          )}
+                </form>
+              </>
+            )}
+          </div>
 
-          <div className="mt-8 text-center">
+          {/* Security badges */}
+          <div className="mt-6 flex items-center justify-center gap-5">
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <ShieldCheck className="size-3" /> HIPAA
+            </div>
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <Zap className="size-3" /> 256-bit
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
             <Link
               href="/"
-              className="text-sm text-[#9CA3AF] hover:text-[#111827] transition-colors"
+              className="text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
             >
               &larr; Back to main site
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

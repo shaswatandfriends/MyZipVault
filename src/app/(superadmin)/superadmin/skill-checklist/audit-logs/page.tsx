@@ -113,7 +113,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#DCFCE7", color: "#166534", border: "none" }}
+        style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}
       >
         {action}
       </Badge>
@@ -190,7 +190,7 @@ function getRoleBadge(role: string | null) {
     platform_admin: { bg: "#FEF3C7", color: "#92400E" },
     client_admin: { bg: "#DBEAFE", color: "#1E40AF" },
     client_recruiter: { bg: "#E0E7FF", color: "#3730A3" },
-    candidate: { bg: "#DCFCE7", color: "#166534" },
+    candidate: { bg: "var(--primary-light)", color: "var(--primary)" },
   };
   const c = colors[role] || { bg: "var(--surface-2)", color: "var(--text-muted)" };
   return (
@@ -385,9 +385,9 @@ export default function SkillChecklistAuditLogsPage() {
         actions={
           <Button
             className="text-white gap-2"
-            style={{ background: "#166534" }}
+            style={{ background: "var(--primary)" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#166534")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
             onClick={exportCSV}
             disabled={isLoading}
           >
@@ -417,7 +417,7 @@ export default function SkillChecklistAuditLogsPage() {
             {hasActiveFilters && (
               <Badge
                 className="text-[10px] px-1.5 py-0"
-                style={{ background: "#DCFCE7", color: "#166534", border: "none" }}
+                style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}
               >
                 Active
               </Badge>
@@ -579,7 +579,7 @@ export default function SkillChecklistAuditLogsPage() {
                           variant="ghost"
                           size="sm"
                           className="text-xs"
-                          style={{ color: "#166534" }}
+                          style={{ color: "var(--primary)" }}
                           onClick={clearFilters}
                         >
                           Clear all filters
@@ -672,7 +672,7 @@ export default function SkillChecklistAuditLogsPage() {
                 onClick={() => setPage(p)}
                 {...(p === page
                   ? {
-                      style: { background: "#166534", color: "#fff" },
+                      style: { background: "var(--primary)", color: "#fff" },
                     }
                   : {
                       style: { borderColor: "var(--border)" },

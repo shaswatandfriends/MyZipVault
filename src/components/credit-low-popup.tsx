@@ -93,33 +93,33 @@ export function CreditLowPopup() {
         setOpen(isOpen);
       }
     }}>
-      <DialogContent className="sm:max-w-md border-[#E5E7EB] bg-white" showCloseButton={false}>
+      <DialogContent className="sm:max-w-md border-[var(--border)] bg-white" showCloseButton={false}>
         <DialogHeader className="text-center sm:text-center">
           {/* Icon */}
           <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#F0FDF4]">
             <Coins className="h-7 w-7 text-[#16A34A]" />
           </div>
 
-          <DialogTitle className="text-xl font-semibold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle className="text-xl font-semibold text-[var(--foreground)]" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             Your credits are running low!
           </DialogTitle>
 
-          <DialogDescription className="text-sm text-[#6B7280] mt-1">
+          <DialogDescription className="text-sm text-[var(--text-secondary)] mt-1">
             Contact sales to top up your credits and continue using premium features.
           </DialogDescription>
         </DialogHeader>
 
         {/* Credit Balance Display */}
         <div className="flex flex-col items-center gap-1 py-4">
-          <span className="text-sm font-medium text-[#6B7280]">Current Balance</span>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">Current Balance</span>
           <div className="flex items-baseline gap-1.5">
             <span
               className="text-4xl font-bold text-[#16A34A]"
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
+              style={{ fontFamily: "'Satoshi', sans-serif" }}
             >
               {balance}
             </span>
-            <span className="text-sm font-medium text-[#6B7280]">credits</span>
+            <span className="text-sm font-medium text-[var(--text-secondary)]">credits</span>
           </div>
           {balance === 0 && (
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
@@ -154,7 +154,7 @@ export function CreditLowPopup() {
           {/* Tertiary: Dismiss */}
           <button
             onClick={handleDismiss}
-            className="mt-1 text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+            className="mt-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
           >
             Dismiss for 24 hours
           </button>

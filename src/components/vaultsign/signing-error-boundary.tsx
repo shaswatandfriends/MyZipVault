@@ -36,11 +36,11 @@ export class SigningErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div
-          style={{ backgroundColor: "#F8F7F4" }}
+          style={{ backgroundColor: "var(--background)" }}
           className="min-h-screen flex items-center justify-center p-4"
         >
           <div
-            className="bg-white rounded-2xl border border-[#E5E7EB] p-8 max-w-md w-full text-center"
+            className="bg-white rounded-2xl border border-[var(--border)] p-8 max-w-md w-full text-center"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
           >
             {/* VaultSign Logo */}
@@ -53,13 +53,13 @@ export class SigningErrorBoundary extends React.Component<
               </div>
               <h1
                 className="text-2xl font-extrabold mb-1"
-                style={{ color: "#166534", letterSpacing: "-0.5px" }}
+                style={{ color: "var(--primary)", letterSpacing: "-0.5px" }}
               >
                 &#x1F510; VaultSign
               </h1>
               <p
                 className="text-xs uppercase tracking-widest"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 by MyZipVault
               </p>
@@ -68,11 +68,11 @@ export class SigningErrorBoundary extends React.Component<
             {/* Friendlier heading for signers */}
             <h2
               className="text-xl font-bold mb-2"
-              style={{ color: "#111827" }}
+              style={{ color: "var(--foreground)" }}
             >
               We had trouble loading your document
             </h2>
-            <p className="text-sm mb-6" style={{ color: "#6B7280" }}>
+            <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
               Something went wrong while preparing your document for signing.
               This is usually temporary. Please try again or contact the person
               who sent you this document.
@@ -102,7 +102,7 @@ export class SigningErrorBoundary extends React.Component<
                 onClick={this.handleReset}
                 className="w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm"
                 style={{
-                  backgroundColor: "#166534",
+                  backgroundColor: "var(--primary)",
                   border: "2px solid #166534",
                   cursor: "pointer",
                 }}
@@ -112,7 +112,7 @@ export class SigningErrorBoundary extends React.Component<
                 }}
                 onMouseOut={(e) => {
                   (e.target as HTMLButtonElement).style.backgroundColor =
-                    "#166534";
+                    "var(--primary)";
                 }}
               >
                 Try Again
@@ -133,7 +133,7 @@ export class SigningErrorBoundary extends React.Component<
                 }}
                 onMouseOver={(e) => {
                   (e.target as HTMLButtonElement).style.backgroundColor =
-                    "#F8F7F4";
+                    "var(--background)";
                 }}
                 onMouseOut={(e) => {
                   (e.target as HTMLButtonElement).style.backgroundColor =
@@ -147,7 +147,7 @@ export class SigningErrorBoundary extends React.Component<
                 href="mailto:support@myzipvault.com"
                 className="block text-xs"
                 style={{
-                  color: "#0D9488",
+                  color: "var(--accent-teal)",
                   textDecoration: "underline",
                 }}
               >
@@ -160,7 +160,7 @@ export class SigningErrorBoundary extends React.Component<
               className="mt-8 pt-4"
               style={{ borderTop: "1px solid #E5E7EB" }}
             >
-              <p className="text-xs" style={{ color: "#9CA3AF" }}>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 VaultSign by MyZipVault — Secure Electronic Signatures
               </p>
             </div>

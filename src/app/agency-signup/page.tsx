@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock } from "@/lib/icons";
+import { motion } from "framer-motion";
+import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Zap } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 type AccountType = "agency" | "recruiter";
 
@@ -26,11 +28,11 @@ function PasswordCheck({ label, met }: { label: string; met: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <Check className="size-3.5 text-[#166534] shrink-0" />
+        <Check className="size-3.5 text-primary shrink-0" />
       ) : (
-        <X className="size-3.5 text-[#9CA3AF] shrink-0" />
+        <X className="size-3.5 text-text-muted shrink-0" />
       )}
-      <span className={met ? "text-[#166534]" : "text-[#9CA3AF]"}>
+      <span className={met ? "text-primary font-medium" : "text-text-muted"}>
         {label}
       </span>
     </div>
@@ -138,84 +140,101 @@ export default function AgencySignupPage() {
   if (isSuccess) {
     return (
       <div className="min-h-screen flex">
-        {/* Left Panel - Decorative */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
-            </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
-            <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>For staffing agencies & healthcare recruiters</p>
-            <div className="mt-12 space-y-4">
-              {trustPoints.map((point) => (
-                <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-                  <Check className="size-4 shrink-0" />
-                  <span>{point}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Left Panel - Slideshow */}
+        <AuthSlideshowPanel
+          tagline="For staffing agencies & healthcare recruiters"
+          trustPoints={trustPoints}
+          quoteCard={{
+            text: "MyZipVault cut our credential verification time by 70%. Onboarding nurses is finally seamless.",
+            attribution: "David R., VP of Operations at MedStaff Pro",
+          }}
+          statsCard={[
+            { value: "500+", label: "Agencies" },
+            { value: "50K+", label: "Placements" },
+            { value: "4.8", label: "Rating" },
+          ]}
+        />
 
         {/* Right Panel - Success */}
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4]">
-          <div className="max-w-[400px] w-full">
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
+          {/* Subtle mesh background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
+          <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+
+          <motion.div
+            className="max-w-[420px] w-full relative z-10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
             {/* Mobile branding */}
             <div className="lg:hidden text-center mb-8">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-                <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+              <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
+                <span className="text-white text-2xl font-bold font-heading">ZV</span>
               </div>
-              <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+              <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
             </div>
 
-            <div className="flex justify-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-2xl">
-                <Clock className="size-8 text-amber-600" />
+            <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center justify-center size-16 bg-amber-100 rounded-2xl">
+                  <Clock className="size-8 text-amber-600" />
+                </div>
               </div>
-            </div>
 
-            <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight text-center">
-              Registration Submitted!
-            </h1>
-            <p className="text-[#6B7280] text-base mt-2 mb-8 text-center">
-              Your account is pending admin approval
-            </p>
+              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight text-center">
+                Registration Submitted!
+              </h1>
+              <p className="text-text-secondary text-base mt-2 mb-8 text-center">
+                Your account is pending admin approval
+              </p>
 
-            <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-6 space-y-5">
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-6">
                 <p className="text-sm text-amber-800 leading-relaxed">
                   Thank you for registering{accountType === "agency" ? ` ${agencyName}` : ""}! Our team will review your application and approve your account shortly. You&apos;ll receive an email once your account is activated.
                 </p>
               </div>
-              <div className="space-y-2.5 text-sm text-[#6B7280]">
+
+              <div className="space-y-2.5 text-sm text-text-secondary mb-8">
                 <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-[#166534] shrink-0" />
+                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
                   Approval typically takes 1-2 business days
                 </p>
                 <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-[#166534] shrink-0" />
+                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
                   You&apos;ll be notified via email once approved
                 </p>
                 <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-[#166534] shrink-0" />
+                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
                   Contact support if you have any questions
                 </p>
               </div>
+
+              <div className="space-y-3">
+                <Link href="/agency-login" className="block">
+                  <Button variant="outline" className="w-full rounded-xl py-3 border-border">
+                    Go to Agency Login
+                  </Button>
+                </Link>
+                <Link href="/" className="block">
+                  <Button variant="ghost" className="w-full rounded-xl py-3 text-text-secondary">
+                    Back to Homepage
+                  </Button>
+                </Link>
+              </div>
             </div>
 
-            <div className="mt-6 space-y-3">
-              <Link href="/agency-login" className="block">
-                <Button variant="outline" className="w-full rounded-xl py-3 border-[#E5E7EB]">
-                  Go to Agency Login
-                </Button>
-              </Link>
-              <Link href="/" className="block">
-                <Button variant="ghost" className="w-full rounded-xl py-3 text-[#6B7280]">
-                  Back to Homepage
-                </Button>
-              </Link>
+            {/* Security badges */}
+            <div className="mt-6 flex items-center justify-center gap-5">
+              <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+                <ShieldCheck className="size-3" /> HIPAA
+              </div>
+              <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+                <Zap className="size-3" /> 256-bit
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     );
@@ -223,287 +242,308 @@ export default function AgencySignupPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#166534] to-[#0D9488] min-h-screen items-center justify-center p-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-0">
-            <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-4xl font-bold">ZV</span>
-          </div>
-          <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[28px] font-bold text-white mt-4">MyZipVault</h2>
-          <p className="text-white/75 text-base mt-2" style={{ fontFamily: "Inter, sans-serif" }}>For staffing agencies & healthcare recruiters</p>
-          <div className="mt-12 space-y-4">
-            {trustPoints.map((point) => (
-              <div key={point} className="flex items-center justify-center gap-3 text-white/70 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-                <Check className="size-4 shrink-0" />
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Left Panel - Slideshow */}
+      <AuthSlideshowPanel
+        tagline="For staffing agencies & healthcare recruiters"
+        trustPoints={trustPoints}
+        quoteCard={{
+          text: "MyZipVault cut our credential verification time by 70%. Onboarding nurses is finally seamless.",
+          attribution: "David R., VP of Operations at MedStaff Pro",
+        }}
+        statsCard={[
+          { value: "500+", label: "Agencies" },
+          { value: "50K+", label: "Placements" },
+          { value: "4.8", label: "Rating" },
+        ]}
+      />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F8F7F4] overflow-y-auto">
-        <div className="max-w-[400px] w-full my-8">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative overflow-y-auto">
+        {/* Subtle mesh background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
+        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+
+        <motion.div
+          className="max-w-[420px] w-full relative z-10 my-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#166534] rounded-2xl mb-3">
-              <span style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-white text-2xl font-bold">ZV</span>
+            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
+              <span className="text-white text-2xl font-bold font-heading">ZV</span>
             </div>
-            <h2 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-2xl font-bold text-[#111827]">MyZipVault</h2>
+            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
           </div>
 
-          <h1 style={{ fontFamily: "'Clash Display', sans-serif" }} className="text-[36px] font-bold text-[#111827] leading-tight">
-            Join MyZipVault
-          </h1>
-          <p className="text-[#6B7280] text-base mt-2 mb-8">
-            For staffing agencies & healthcare recruiters
-          </p>
+          {/* Glass card wrapping form */}
+          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+            <div className="mb-8">
+              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                Join MyZipVault
+              </h1>
+              <p className="text-text-secondary text-base mt-2">
+                For staffing agencies & healthcare recruiters
+              </p>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Account Type Toggle */}
-            <div className="flex rounded-xl bg-white border border-[#E5E7EB] p-1 gap-1">
-              <button
-                type="button"
-                onClick={() => setAccountType("agency")}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  accountType === "agency"
-                    ? "bg-[#DCFCE7] text-[#166534] shadow-sm"
-                    : "text-[#6B7280] hover:text-[#111827]"
-                }`}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Account Type Toggle */}
+              <div className="flex rounded-xl bg-surface border border-border p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAccountType("agency")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                    accountType === "agency"
+                      ? "bg-primary-light text-primary shadow-sm"
+                      : "text-text-muted hover:text-foreground"
+                  }`}
+                >
+                  <Briefcase className="size-3.5" />
+                  Staffing Agency
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccountType("recruiter")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                    accountType === "recruiter"
+                      ? "bg-primary-light text-primary shadow-sm"
+                      : "text-text-muted hover:text-foreground"
+                  }`}
+                >
+                  <User className="size-3.5" />
+                  Individual Recruiter
+                </button>
+              </div>
+
+              {/* Name Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Jane"
+                    value={firstName}
+                    onChange={(e) => {
+                      setFirstName(e.target.value);
+                      if (errors.firstName)
+                        setErrors((prev) => ({ ...prev, firstName: "" }));
+                    }}
+                    disabled={isLoading}
+                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.firstName ? "border-destructive" : ""}`}
+                    autoComplete="given-name"
+                  />
+                  {errors.firstName && (
+                    <p className="text-xs text-destructive">
+                      {errors.firstName}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Smith"
+                    value={lastName}
+                    onChange={(e) => {
+                      setLastName(e.target.value);
+                      if (errors.lastName)
+                        setErrors((prev) => ({ ...prev, lastName: "" }));
+                    }}
+                    disabled={isLoading}
+                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.lastName ? "border-destructive" : ""}`}
+                    autoComplete="family-name"
+                  />
+                  {errors.lastName && (
+                    <p className="text-xs text-destructive">
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Agency Name (only for agency) */}
+              {accountType === "agency" && (
+                <div className="space-y-2">
+                  <Label htmlFor="agencyName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Agency / Organization Name
+                  </Label>
+                  <Input
+                    id="agencyName"
+                    type="text"
+                    placeholder="Acme Healthcare Staffing"
+                    value={agencyName}
+                    onChange={(e) => {
+                      setAgencyName(e.target.value);
+                      if (errors.agencyName)
+                        setErrors((prev) => ({ ...prev, agencyName: "" }));
+                    }}
+                    disabled={isLoading}
+                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.agencyName ? "border-destructive" : ""}`}
+                    autoComplete="organization"
+                  />
+                  {errors.agencyName && (
+                    <p className="text-xs text-destructive">
+                      {errors.agencyName}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  Work Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@agency.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: "" }));
+                  }}
+                  disabled={isLoading}
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.email ? "border-destructive" : ""}`}
+                  autoComplete="email"
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Create a strong password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password)
+                      setErrors((prev) => ({ ...prev, password: "" }));
+                  }}
+                  disabled={isLoading}
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.password ? "border-destructive" : ""}`}
+                  autoComplete="new-password"
+                />
+                {errors.password && !allPasswordChecks && (
+                  <p className="text-xs text-destructive">{errors.password}</p>
+                )}
+                <div className="space-y-1.5 pt-1">
+                  <PasswordCheck label="At least 8 characters" met={checks.minLength} />
+                  <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
+                  <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
+                  <PasswordCheck label="One number" met={checks.number} />
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword)
+                      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                  }}
+                  disabled={isLoading}
+                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.confirmPassword ? "border-destructive" : ""}`}
+                  autoComplete="new-password"
+                />
+                {errors.confirmPassword && (
+                  <p className="text-xs text-destructive">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* TOS */}
+              <div className="space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <Checkbox
+                    id="tos"
+                    checked={tosAccepted}
+                    onCheckedChange={(checked) => {
+                      setTosAccepted(checked === true);
+                      if (errors.tos)
+                        setErrors((prev) => ({ ...prev, tos: "" }));
+                    }}
+                    disabled={isLoading}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="tos" className="text-sm font-normal leading-snug text-text-secondary">
+                    I agree to the{" "}
+                    <Link href="/terms" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                      Terms & Conditions
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                      Privacy Policy
+                    </Link>
+                  </Label>
+                </div>
+                {errors.tos && (
+                  <p className="text-xs text-destructive">{errors.tos}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
+                disabled={isLoading}
               >
-                <Briefcase className="size-3.5" />
-                Staffing Agency
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType("recruiter")}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  accountType === "recruiter"
-                    ? "bg-[#DCFCE7] text-[#166534] shadow-sm"
-                    : "text-[#6B7280] hover:text-[#111827]"
-                }`}
-              >
-                <User className="size-3.5" />
-                Individual Recruiter
-              </button>
-            </div>
-
-            {/* Name Row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                  First Name
-                </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="Jane"
-                  value={firstName}
-                  onChange={(e) => {
-                    setFirstName(e.target.value);
-                    if (errors.firstName)
-                      setErrors((prev) => ({ ...prev, firstName: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.firstName ? "border-destructive" : ""}`}
-                  autoComplete="given-name"
-                />
-                {errors.firstName && (
-                  <p className="text-xs text-destructive">
-                    {errors.firstName}
-                  </p>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Submit Application <ArrowRight className="size-4" />
+                  </>
                 )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="Smith"
-                  value={lastName}
-                  onChange={(e) => {
-                    setLastName(e.target.value);
-                    if (errors.lastName)
-                      setErrors((prev) => ({ ...prev, lastName: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.lastName ? "border-destructive" : ""}`}
-                  autoComplete="family-name"
-                />
-                {errors.lastName && (
-                  <p className="text-xs text-destructive">
-                    {errors.lastName}
-                  </p>
-                )}
-              </div>
+              </Button>
+            </form>
+
+            <p className="text-sm text-text-secondary text-center mt-6">
+              Already have an account?{" "}
+              <Link href="/agency-login" className="text-primary hover:text-primary-hover font-semibold transition-colors">
+                Sign in
+              </Link>
+            </p>
+          </div>
+
+          {/* Security badges */}
+          <div className="mt-6 flex items-center justify-center gap-5">
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <ShieldCheck className="size-3" /> HIPAA
             </div>
-
-            {/* Agency Name (only for agency) */}
-            {accountType === "agency" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="agencyName" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                  Agency / Organization Name
-                </Label>
-                <Input
-                  id="agencyName"
-                  type="text"
-                  placeholder="Acme Healthcare Staffing"
-                  value={agencyName}
-                  onChange={(e) => {
-                    setAgencyName(e.target.value);
-                    if (errors.agencyName)
-                      setErrors((prev) => ({ ...prev, agencyName: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.agencyName ? "border-destructive" : ""}`}
-                  autoComplete="organization"
-                />
-                {errors.agencyName && (
-                  <p className="text-xs text-destructive">
-                    {errors.agencyName}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Email */}
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                Work Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@agency.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email)
-                    setErrors((prev) => ({ ...prev, email: "" }));
-                }}
-                disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.email ? "border-destructive" : ""}`}
-                autoComplete="email"
-              />
-              {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
-              )}
+            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
+              <Zap className="size-3" /> 256-bit
             </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Create a strong password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password)
-                    setErrors((prev) => ({ ...prev, password: "" }));
-                }}
-                disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.password ? "border-destructive" : ""}`}
-                autoComplete="new-password"
-              />
-              {errors.password && !allPasswordChecks && (
-                <p className="text-xs text-destructive">{errors.password}</p>
-              )}
-              <div className="space-y-1.5 pt-1">
-                <PasswordCheck label="At least 8 characters" met={checks.minLength} />
-                <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
-                <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
-                <PasswordCheck label="One number" met={checks.number} />
-              </div>
-            </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
-                Confirm Password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (errors.confirmPassword)
-                    setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                }}
-                disabled={isLoading}
-                className={`bg-white border-[#E5E7EB] rounded-xl p-3.5 focus:border-[#0D9488] focus:ring-2 focus:ring-[#CCFBF1] ${errors.confirmPassword ? "border-destructive" : ""}`}
-                autoComplete="new-password"
-              />
-              {errors.confirmPassword && (
-                <p className="text-xs text-destructive">
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-
-            {/* TOS */}
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="tos"
-                  checked={tosAccepted}
-                  onCheckedChange={(checked) => {
-                    setTosAccepted(checked === true);
-                    if (errors.tos)
-                      setErrors((prev) => ({ ...prev, tos: "" }));
-                  }}
-                  disabled={isLoading}
-                  className="mt-0.5"
-                />
-                <Label htmlFor="tos" className="text-sm font-normal leading-snug text-[#6B7280]">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-[#166534] hover:underline cursor-pointer">
-                    Terms & Conditions
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-[#166534] hover:underline cursor-pointer">
-                    Privacy Policy
-                  </Link>
-                </Label>
-              </div>
-              {errors.tos && (
-                <p className="text-xs text-destructive">{errors.tos}</p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-[#166534] text-white py-3.5 rounded-xl font-medium hover:bg-[#14532D] hover:-translate-y-px hover:shadow-md transition-all gap-2"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                <>
-                  Submit Application <ArrowRight className="size-4" />
-                </>
-              )}
-            </Button>
-          </form>
-
-          <p className="text-sm text-[#6B7280] text-center mt-6">
-            Already have an account?{" "}
-            <Link href="/agency-login" className="text-[#0D9488] hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

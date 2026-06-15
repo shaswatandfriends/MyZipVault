@@ -73,7 +73,7 @@ function getStatusBadge(status: string) {
       );
     case "completed":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Completed
         </Badge>
       );
@@ -92,7 +92,7 @@ function getEmploymentBadge(status: string) {
   switch (status) {
     case "current":
       return (
-        <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
           Current
         </Badge>
       );
@@ -104,7 +104,7 @@ function getEmploymentBadge(status: string) {
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -222,8 +222,8 @@ export default function ReferenceOverviewPage() {
               <CardTitle className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                 Total Requests
               </CardTitle>
-              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "#DCFCE7" }}>
-                <FileText className="size-4" style={{ color: "#166534" }} />
+              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "var(--primary-light)" }}>
+                <FileText className="size-4" style={{ color: "var(--primary)" }} />
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -260,8 +260,8 @@ export default function ReferenceOverviewPage() {
               <CardTitle className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                 Completed
               </CardTitle>
-              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "#DCFCE7" }}>
-                <CheckCircle2 className="size-4" style={{ color: "#166534" }} />
+              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "var(--primary-light)" }}>
+                <CheckCircle2 className="size-4" style={{ color: "var(--primary)" }} />
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -279,8 +279,8 @@ export default function ReferenceOverviewPage() {
               <CardTitle className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                 Response Rate
               </CardTitle>
-              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "#DCFCE7" }}>
-                <TrendingUp className="size-4" style={{ color: "#166534" }} />
+              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "var(--primary-light)" }}>
+                <TrendingUp className="size-4" style={{ color: "var(--primary)" }} />
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">

@@ -29,24 +29,24 @@ import {
 } from "@/components/ui/table";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
   sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
   partially_signed: { label: "In Progress", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
   declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
-  document_created: { label: "Created", color: "text-[#6B7280]" },
+  document_created: { label: "Created", color: "text-text-secondary" },
   document_sent: { label: "Sent", color: "text-[#2563EB]" },
   document_viewed: { label: "Viewed", color: "text-[#7C3AED]" },
-  signer_signed: { label: "Signed", color: "text-[#166534]" },
+  signer_signed: { label: "Signed", color: "text-primary" },
   signer_declined: { label: "Declined", color: "text-[#DC2626]" },
-  document_completed: { label: "Completed", color: "text-[#166534]" },
-  document_voided: { label: "Voided", color: "text-[#6B7280]" },
-  document_expired: { label: "Expired", color: "text-[#6B7280]" },
+  document_completed: { label: "Completed", color: "text-primary" },
+  document_voided: { label: "Voided", color: "text-text-secondary" },
+  document_expired: { label: "Expired", color: "text-text-secondary" },
   reminder_sent: { label: "Reminder", color: "text-[#D97706]" },
   document_revised: { label: "Revised", color: "text-[#2563EB]" },
 };
@@ -355,7 +355,7 @@ export default function SuperAdminVaultSignPage() {
   // === Loading Skeleton ===
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="mb-6"><Skeleton className="h-8 w-48 mb-1" /><Skeleton className="h-4 w-72" /></div>
           <Skeleton className="h-10 w-[500px] rounded-xl mb-6" />
@@ -374,31 +374,31 @@ export default function SuperAdminVaultSignPage() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Satoshi', sans-serif" }}>
             VaultSign Management
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">Manage templates, monitor activity, analytics, audit logs, and configure organizations</p>
+          <p className="text-sm text-text-secondary mt-0.5">Manage templates, monitor activity, analytics, audit logs, and configure organizations</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4">
-            <TabsList className="bg-white border border-[#E5E7EB] rounded-xl p-1 inline-flex">
-              <TabsTrigger value="templates" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm">
+            <TabsList className="bg-white border border-border rounded-xl p-1 inline-flex">
+              <TabsTrigger value="templates" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <LayoutTemplate className="h-4 w-4 mr-1" /> Templates
               </TabsTrigger>
-              <TabsTrigger value="activity" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm">
+              <TabsTrigger value="activity" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <Activity className="h-4 w-4 mr-1" /> Activity
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm">
+              <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4 mr-1" /> Analytics
               </TabsTrigger>
-              <TabsTrigger value="audit" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm">
+              <TabsTrigger value="audit" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <ShieldCheck className="h-4 w-4 mr-1" /> Audit Logs
               </TabsTrigger>
-              <TabsTrigger value="org-settings" className="rounded-lg data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm">
+              <TabsTrigger value="org-settings" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <Building2 className="h-4 w-4 mr-1" /> Org Settings
               </TabsTrigger>
             </TabsList>
@@ -408,12 +408,12 @@ export default function SuperAdminVaultSignPage() {
           <TabsContent value="templates" className="mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-[#111827]">Templates</h2>
+                <h2 className="text-lg font-semibold text-foreground">Templates</h2>
                 <Badge variant="outline" className="text-[10px]">{templates.length}</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#9CA3AF]" />
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
                   <Input placeholder="Search templates..." value={templateSearch} onChange={(e) => setTemplateSearch(e.target.value)}
                     className="pl-8 h-8 w-[160px] text-xs" />
                 </div>
@@ -425,7 +425,7 @@ export default function SuperAdminVaultSignPage() {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button className="bg-[#166534] hover:bg-[#14532D] text-white h-8" onClick={openNewTemplate}>
+                <Button className="bg-primary hover:bg-primary-hover text-white h-8" onClick={openNewTemplate}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> New
                 </Button>
               </div>
@@ -433,51 +433,51 @@ export default function SuperAdminVaultSignPage() {
 
             {filteredTemplates.length === 0 ? (
               <Card className="rounded-2xl"><CardContent className="p-12 text-center">
-                <LayoutTemplate className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-                <h3 className="font-medium text-[#111827] mb-1">No Templates Found</h3>
-                <p className="text-sm text-[#6B7280] mb-4">Create your first template to get started</p>
-                <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={openNewTemplate}>
+                <LayoutTemplate className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                <h3 className="font-medium text-foreground mb-1">No Templates Found</h3>
+                <p className="text-sm text-text-secondary mb-4">Create your first template to get started</p>
+                <Button className="bg-primary hover:bg-primary-hover text-white" onClick={openNewTemplate}>
                   <Plus className="h-4 w-4 mr-1" /> Create Template
                 </Button>
               </CardContent></Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 vaultsign-stagger animate-vaultsign-fade-in">
                 {filteredTemplates.map((template: any) => (
-                  <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-[#E5E7EB] hover:shadow-md transition-shadow">
+                  <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-[#111827] truncate">{template.name}</h3>
-                          <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-2">{template.description || "No description"}</p>
+                          <h3 className="font-medium text-foreground truncate">{template.name}</h3>
+                          <p className="text-xs text-text-secondary mt-0.5 line-clamp-2">{template.description || "No description"}</p>
                         </div>
                         <Badge variant="outline" className="text-[10px] ml-2 flex-shrink-0">
                           {template.source_type === "word" ? "Word" : "PDF"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
-                        <Badge className={`${template.is_active ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#F3F4F6] text-[#6B7280]"} border-0 text-[10px]`}>
+                        <Badge className={`${template.is_active ? "bg-primary-light text-primary" : "bg-[#F3F4F6] text-text-secondary"} border-0 text-[10px]`}>
                           {template.is_active ? "Active" : "Inactive"}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">{template.document_type}</Badge>
                         {template._count?.documents !== undefined && (
-                          <span className="text-[10px] text-[#9CA3AF]">{template._count.documents} docs</span>
+                          <span className="text-[10px] text-text-muted">{template._count.documents} docs</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1 mt-3">
                         <Link href={`/superadmin/vaultsign/templates/${template.id}`} className="flex-1">
-                          <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] w-full h-7">
+                          <Button variant="outline" size="sm" className="text-xs border-border w-full h-7">
                             <Edit3 className="h-3 w-3 mr-1" /> Open Editor
                           </Button>
                         </Link>
-                        <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] h-7 w-7 p-0"
+                        <Button variant="outline" size="sm" className="text-xs border-border h-7 w-7 p-0"
                           onClick={() => openEditTemplate(template)} title="Quick Edit Name">
                           <FileSignature className="h-3 w-3" />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-xs border-[#E5E7EB] h-7"
+                        <Button variant="outline" size="sm" className="text-xs border-border h-7"
                           onClick={() => duplicateTemplate(template)} title="Duplicate">
                           <Copy className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-xs text-[#9CA3AF] hover:text-[#DC2626] h-7"
+                        <Button variant="ghost" size="sm" className="text-xs text-text-muted hover:text-[#DC2626] h-7"
                           onClick={() => deleteTemplate(template.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -493,18 +493,18 @@ export default function SuperAdminVaultSignPage() {
           <TabsContent value="activity" className="mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-[#111827]">All Documents</h2>
+                <h2 className="text-lg font-semibold text-foreground">All Documents</h2>
                 <Badge variant="outline" className="text-[10px]">{activityTotal}</Badge>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Button variant="outline" size="sm" className="h-8 text-xs border-[#E5E7EB]"
+                <Button variant="outline" size="sm" className="h-8 text-xs border-border"
                   onClick={() => setShowFilters(!showFilters)}>
                   <Filter className="h-3.5 w-3.5 mr-1" /> Filters
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs border-[#E5E7EB]" onClick={handleExport}>
+                <Button variant="outline" size="sm" className="h-8 text-xs border-border" onClick={handleExport}>
                   <Download className="h-3.5 w-3.5 mr-1" /> Export CSV
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs border-[#E5E7EB]"
+                <Button variant="outline" size="sm" className="h-8 text-xs border-border"
                   onClick={() => fetchActivity()}>
                   <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
                 </Button>
@@ -517,7 +517,7 @@ export default function SuperAdminVaultSignPage() {
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div>
-                      <Label className="text-xs text-[#6B7280]">Status</Label>
+                      <Label className="text-xs text-text-secondary">Status</Label>
                       <Select value={actStatusFilter} onValueChange={setActStatusFilter}>
                         <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -529,7 +529,7 @@ export default function SuperAdminVaultSignPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs text-[#6B7280]">Organization</Label>
+                      <Label className="text-xs text-text-secondary">Organization</Label>
                       <Select value={actOrgFilter} onValueChange={setActOrgFilter}>
                         <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -541,7 +541,7 @@ export default function SuperAdminVaultSignPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs text-[#6B7280]">Type</Label>
+                      <Label className="text-xs text-text-secondary">Type</Label>
                       <Select value={actTypeFilter} onValueChange={setActTypeFilter}>
                         <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -551,18 +551,18 @@ export default function SuperAdminVaultSignPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs text-[#6B7280]">From</Label>
+                      <Label className="text-xs text-text-secondary">From</Label>
                       <Input type="date" value={actDateFrom} onChange={(e) => setActDateFrom(e.target.value)}
                         className="h-8 text-xs mt-1" />
                     </div>
                     <div>
-                      <Label className="text-xs text-[#6B7280]">To</Label>
+                      <Label className="text-xs text-text-secondary">To</Label>
                       <Input type="date" value={actDateTo} onChange={(e) => setActDateTo(e.target.value)}
                         className="h-8 text-xs mt-1" />
                     </div>
                   </div>
                   <div className="flex justify-end mt-3">
-                    <Button variant="ghost" size="sm" className="text-xs text-[#6B7280]"
+                    <Button variant="ghost" size="sm" className="text-xs text-text-secondary"
                       onClick={() => { setActStatusFilter("all"); setActOrgFilter("all"); setActTypeFilter("all"); setActDateFrom(""); setActDateTo(""); }}>
                       Clear Filters
                     </Button>
@@ -573,9 +573,9 @@ export default function SuperAdminVaultSignPage() {
 
             {documents.length === 0 ? (
               <Card className="rounded-2xl"><CardContent className="p-12 text-center">
-                <Activity className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-                <h3 className="font-medium text-[#111827] mb-1">No Activity Yet</h3>
-                <p className="text-sm text-[#6B7280]">Document activity will appear here</p>
+                <Activity className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                <h3 className="font-medium text-foreground mb-1">No Activity Yet</h3>
+                <p className="text-sm text-text-secondary">Document activity will appear here</p>
               </CardContent></Card>
             ) : (
               <>
@@ -599,11 +599,11 @@ export default function SuperAdminVaultSignPage() {
                             <TableRow key={doc.id}>
                               <TableCell>
                                 <div>
-                                  <p className="font-medium text-sm text-[#111827]">{doc.document_name}</p>
-                                  <p className="text-xs text-[#6B7280]">{doc.document_type}</p>
+                                  <p className="font-medium text-sm text-foreground">{doc.document_name}</p>
+                                  <p className="text-xs text-text-secondary">{doc.document_type}</p>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-sm text-[#6B7280]">{doc.organization?.name || "—"}</TableCell>
+                              <TableCell className="text-sm text-text-secondary">{doc.organization?.name || "—"}</TableCell>
                               <TableCell>
                                 <Badge className={`${sc.bg} ${sc.color} border-0`}>{sc.label}</Badge>
                               </TableCell>
@@ -611,15 +611,15 @@ export default function SuperAdminVaultSignPage() {
                                 <div className="flex items-center gap-1">
                                   {doc.signers?.slice(0, 3).map((s: any, i: number) => (
                                     <div key={i} className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[7px] font-bold"
-                                      style={{ backgroundColor: s.status === "signed" ? "#DCFCE7" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6", color: s.status === "signed" ? "#166534" : s.status === "declined" ? "#DC2626" : "#6B7280" }}
+                                      style={{ backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6", color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)" }}
                                       title={`${s.name} - ${s.status}`}>
                                       {s.name?.charAt(0)?.toUpperCase()}
                                     </div>
                                   ))}
-                                  {doc.signers?.length > 3 && <span className="text-xs text-[#6B7280]">+{doc.signers.length - 3}</span>}
+                                  {doc.signers?.length > 3 && <span className="text-xs text-text-secondary">+{doc.signers.length - 3}</span>}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs text-[#6B7280]">{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-xs text-text-secondary">{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   {["sent", "partially_signed"].includes(doc.status) && (
@@ -637,7 +637,7 @@ export default function SuperAdminVaultSignPage() {
                                     </>
                                   )}
                                   {doc.status === "completed" && doc.final_document_url && (
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#166534]"
+                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary"
                                       onClick={() => window.open(doc.final_document_url, "_blank")} title="Download Final">
                                       <Download className="h-3 w-3" />
                                     </Button>
@@ -654,7 +654,7 @@ export default function SuperAdminVaultSignPage() {
                 {/* Pagination */}
                 {activityTotal > 20 && (
                   <div className="flex items-center justify-between mt-4">
-                    <p className="text-xs text-[#6B7280]">
+                    <p className="text-xs text-text-secondary">
                       Page {activityPage} of {Math.ceil(activityTotal / 20)} ({activityTotal} documents)
                     </p>
                     <div className="flex items-center gap-2">
@@ -676,7 +676,7 @@ export default function SuperAdminVaultSignPage() {
           {/* ==================== ANALYTICS TAB ==================== */}
           <TabsContent value="analytics" className="mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-lg font-semibold text-[#111827]">Analytics & Insights</h2>
+              <h2 className="text-lg font-semibold text-foreground">Analytics & Insights</h2>
               <Select value={analyticsOrgFilter} onValueChange={setAnalyticsOrgFilter}>
                 <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="All Organizations" /></SelectTrigger>
                 <SelectContent>
@@ -694,10 +694,10 @@ export default function SuperAdminVaultSignPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6 animate-vaultsign-fade-in">
                   {[
                     { label: "Total Docs", value: analytics.overview.totalDocuments, icon: FileText, color: "bg-[#EFF6FF]", iconColor: "text-[#2563EB]" },
-                    { label: "Completed", value: analytics.overview.completedDocuments, icon: CheckCircle2, color: "bg-[#DCFCE7]", iconColor: "text-[#166534]" },
+                    { label: "Completed", value: analytics.overview.completedDocuments, icon: CheckCircle2, color: "bg-primary-light", iconColor: "text-primary" },
                     { label: "Declined", value: analytics.overview.declinedDocuments, icon: XCircle, color: "bg-[#FEF2F2]", iconColor: "text-[#DC2626]" },
                     { label: "Expired", value: analytics.overview.expiredDocuments, icon: AlertTriangle, color: "bg-[#FFFBEB]", iconColor: "text-[#D97706]" },
-                    { label: "Completion Rate", value: `${analytics.overview.completionRate}%`, icon: TrendingUp, color: "bg-[#F0FDF4]", iconColor: "text-[#166534]" },
+                    { label: "Completion Rate", value: `${analytics.overview.completionRate}%`, icon: TrendingUp, color: "bg-[#F0FDF4]", iconColor: "text-primary" },
                     { label: "Avg Sign Time", value: `${analytics.overview.avgSigningHours}h`, icon: Clock, color: "bg-[#EFF6FF]", iconColor: "text-[#2563EB]" },
                   ].map((stat, i) => (
                     <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
@@ -707,8 +707,8 @@ export default function SuperAdminVaultSignPage() {
                             <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
                           </div>
                           <div>
-                            <p className="text-lg font-bold text-[#111827]">{stat.value}</p>
-                            <p className="text-[10px] text-[#6B7280]">{stat.label}</p>
+                            <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                            <p className="text-[10px] text-text-secondary">{stat.label}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -730,9 +730,9 @@ export default function SuperAdminVaultSignPage() {
                               <Badge className={`${sc.bg} ${sc.color} border-0 text-[10px] w-24 justify-center`}>{sc.label}</Badge>
                               <div className="flex-1 bg-[#F3F4F6] rounded-full h-4 overflow-hidden">
                                 <div className={`h-full rounded-full ${sc.bg.replace("bg-", "bg-")} transition-all`}
-                                  style={{ width: `${pct}%`, backgroundColor: status === "completed" ? "#166534" : status === "declined" ? "#DC2626" : status === "sent" ? "#2563EB" : status === "partially_signed" ? "#D97706" : "#9CA3AF" }} />
+                                  style={{ width: `${pct}%`, backgroundColor: status === "completed" ? "var(--primary)" : status === "declined" ? "#DC2626" : status === "sent" ? "#2563EB" : status === "partially_signed" ? "#D97706" : "var(--text-muted)" }} />
                               </div>
-                              <span className="text-xs text-[#6B7280] w-16 text-right">{count} ({pct}%)</span>
+                              <span className="text-xs text-text-secondary w-16 text-right">{count} ({pct}%)</span>
                             </div>
                           );
                         })}
@@ -750,11 +750,11 @@ export default function SuperAdminVaultSignPage() {
                           const pct = analytics.overview.totalDocuments > 0 ? Math.round((count / analytics.overview.totalDocuments) * 100) : 0;
                           return (
                             <div key={type} className="flex items-center gap-3">
-                              <span className="text-xs text-[#111827] w-32 truncate">{label}</span>
+                              <span className="text-xs text-foreground w-32 truncate">{label}</span>
                               <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
-                                <div className="h-full rounded-full bg-[#166534] transition-all" style={{ width: `${pct}%` }} />
+                                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                               </div>
-                              <span className="text-xs text-[#6B7280] w-12 text-right">{count}</span>
+                              <span className="text-xs text-text-secondary w-12 text-right">{count}</span>
                             </div>
                           );
                         })}
@@ -772,26 +772,26 @@ export default function SuperAdminVaultSignPage() {
                             const maxCreated = Math.max(...analytics.byMonth.map((x: any) => x.created), 1);
                             return (
                               <div key={m.month} className="flex items-center gap-3">
-                                <span className="text-xs text-[#6B7280] w-16">{m.month.slice(5)}</span>
+                                <span className="text-xs text-text-secondary w-16">{m.month.slice(5)}</span>
                                 <div className="flex-1 flex items-center gap-1">
                                   <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
-                                    <div className="h-full rounded-full bg-[#166534]" style={{ width: `${(m.created / maxCreated) * 100}%` }} />
+                                    <div className="h-full rounded-full bg-primary" style={{ width: `${(m.created / maxCreated) * 100}%` }} />
                                   </div>
                                 </div>
-                                <span className="text-xs text-[#111827] w-6 text-right">{m.created}</span>
-                                <span className="text-[10px] text-[#166534] w-6">{m.completed}</span>
+                                <span className="text-xs text-foreground w-6 text-right">{m.created}</span>
+                                <span className="text-[10px] text-primary w-6">{m.completed}</span>
                                 <span className="text-[10px] text-[#DC2626] w-6">{m.declined}</span>
                               </div>
                             );
                           })}
-                          <div className="flex items-center gap-4 text-[10px] text-[#6B7280] mt-2">
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#166534]" /> Created</span>
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#166534] opacity-60" /> Completed</span>
+                          <div className="flex items-center gap-4 text-[10px] text-text-secondary mt-2">
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> Created</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary opacity-60" /> Completed</span>
                             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> Declined</span>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-[#9CA3AF] text-center py-4">No data yet</p>
+                        <p className="text-sm text-text-muted text-center py-4">No data yet</p>
                       )}
                     </CardContent>
                   </Card>
@@ -806,17 +806,17 @@ export default function SuperAdminVaultSignPage() {
                             const maxDocs = analytics.byOrganization[0]?.documentCount || 1;
                             return (
                               <div key={i} className="flex items-center gap-3">
-                                <span className="text-xs text-[#111827] w-32 truncate">{org.name}</span>
+                                <span className="text-xs text-foreground w-32 truncate">{org.name}</span>
                                 <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
                                   <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${(org.documentCount / maxDocs) * 100}%` }} />
                                 </div>
-                                <span className="text-xs text-[#6B7280] w-8 text-right">{org.documentCount}</span>
+                                <span className="text-xs text-text-secondary w-8 text-right">{org.documentCount}</span>
                               </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <p className="text-sm text-[#9CA3AF] text-center py-4">No data yet</p>
+                        <p className="text-sm text-text-muted text-center py-4">No data yet</p>
                       )}
                     </CardContent>
                   </Card>
@@ -827,17 +827,17 @@ export default function SuperAdminVaultSignPage() {
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Signer Statistics</CardTitle></CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 rounded-lg bg-[#F8F7F4]">
-                        <p className="text-2xl font-bold text-[#111827]">{analytics.signers.total}</p>
-                        <p className="text-xs text-[#6B7280]">Total Signers</p>
+                      <div className="text-center p-3 rounded-lg bg-background">
+                        <p className="text-2xl font-bold text-foreground">{analytics.signers.total}</p>
+                        <p className="text-xs text-text-secondary">Total Signers</p>
                       </div>
                       <div className="text-center p-3 rounded-lg bg-[#F0FDF4]">
-                        <p className="text-2xl font-bold text-[#166534]">{analytics.signers.signed}</p>
-                        <p className="text-xs text-[#6B7280]">Signed</p>
+                        <p className="text-2xl font-bold text-primary">{analytics.signers.signed}</p>
+                        <p className="text-xs text-text-secondary">Signed</p>
                       </div>
                       <div className="text-center p-3 rounded-lg bg-[#EFF6FF]">
                         <p className="text-2xl font-bold text-[#2563EB]">{analytics.signers.signRate}%</p>
-                        <p className="text-xs text-[#6B7280]">Sign Rate</p>
+                        <p className="text-xs text-text-secondary">Sign Rate</p>
                       </div>
                     </div>
                   </CardContent>
@@ -845,8 +845,8 @@ export default function SuperAdminVaultSignPage() {
               </>
             ) : (
               <Card className="rounded-2xl"><CardContent className="p-12 text-center">
-                <BarChart3 className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-                <p className="text-sm text-[#6B7280]">Loading analytics...</p>
+                <BarChart3 className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                <p className="text-sm text-text-secondary">Loading analytics...</p>
               </CardContent></Card>
             )}
           </TabsContent>
@@ -854,10 +854,10 @@ export default function SuperAdminVaultSignPage() {
           {/* ==================== AUDIT LOGS TAB ==================== */}
           <TabsContent value="audit" className="mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-lg font-semibold text-[#111827]">Audit Logs</h2>
+              <h2 className="text-lg font-semibold text-foreground">Audit Logs</h2>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#9CA3AF]" />
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
                   <Input placeholder="Search logs..." value={auditSearch}
                     onChange={(e) => setAuditSearch(e.target.value)}
                     className="pl-8 h-8 w-[180px] text-xs" />
@@ -876,9 +876,9 @@ export default function SuperAdminVaultSignPage() {
 
             {auditLogs.length === 0 ? (
               <Card className="rounded-2xl"><CardContent className="p-12 text-center">
-                <ShieldCheck className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-                <h3 className="font-medium text-[#111827] mb-1">No Audit Logs</h3>
-                <p className="text-sm text-[#6B7280]">Activity will be logged here</p>
+                <ShieldCheck className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                <h3 className="font-medium text-foreground mb-1">No Audit Logs</h3>
+                <p className="text-sm text-text-secondary">Activity will be logged here</p>
               </CardContent></Card>
             ) : (
               <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
@@ -897,20 +897,20 @@ export default function SuperAdminVaultSignPage() {
                     </TableHeader>
                     <TableBody>
                       {auditLogs.slice(0, 50).map((log: any, i: number) => {
-                        const ev = EVENT_LABELS[log.event] || { label: log.event, color: "text-[#6B7280]" };
+                        const ev = EVENT_LABELS[log.event] || { label: log.event, color: "text-text-secondary" };
                         return (
                           <TableRow key={i}>
-                            <TableCell className="text-xs text-[#6B7280] whitespace-nowrap">
+                            <TableCell className="text-xs text-text-secondary whitespace-nowrap">
                               {log.timestamp ? new Date(log.timestamp).toLocaleString() : "—"}
                             </TableCell>
                             <TableCell>
                               <span className={`text-xs font-medium ${ev.color}`}>{ev.label}</span>
                             </TableCell>
-                            <TableCell className="text-xs text-[#111827]">{log.user_name || "—"}</TableCell>
-                            <TableCell className="text-xs text-[#111827] max-w-[200px] truncate">{log.document_name || "—"}</TableCell>
-                            <TableCell className="text-xs text-[#6B7280]">{log.organization || "—"}</TableCell>
-                            <TableCell className="text-xs text-[#6B7280] font-mono">{log.ip_address || "—"}</TableCell>
-                            <TableCell className="text-xs text-[#6B7280] max-w-[200px] truncate">
+                            <TableCell className="text-xs text-foreground">{log.user_name || "—"}</TableCell>
+                            <TableCell className="text-xs text-foreground max-w-[200px] truncate">{log.document_name || "—"}</TableCell>
+                            <TableCell className="text-xs text-text-secondary">{log.organization || "—"}</TableCell>
+                            <TableCell className="text-xs text-text-secondary font-mono">{log.ip_address || "—"}</TableCell>
+                            <TableCell className="text-xs text-text-secondary max-w-[200px] truncate">
                               {log.details ? JSON.stringify(log.details).slice(0, 50) : "—"}
                             </TableCell>
                           </TableRow>
@@ -924,7 +924,7 @@ export default function SuperAdminVaultSignPage() {
 
             {auditTotal > 50 && (
               <div className="flex items-center justify-between mt-4">
-                <p className="text-xs text-[#6B7280]">Page {auditPage} of {Math.ceil(auditTotal / 50)}</p>
+                <p className="text-xs text-text-secondary">Page {auditPage} of {Math.ceil(auditTotal / 50)}</p>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="h-7 text-xs" disabled={auditPage <= 1}
                     onClick={() => setAuditPage(auditPage - 1)}><ChevronLeft className="h-3 w-3" /> Prev</Button>
@@ -940,7 +940,7 @@ export default function SuperAdminVaultSignPage() {
             <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <CardHeader>
                 <CardTitle className="text-lg">Organization Document Settings</CardTitle>
-                <p className="text-sm text-[#6B7280]">Configure company details, branding, and defaults that appear in document headers and footers</p>
+                <p className="text-sm text-text-secondary">Configure company details, branding, and defaults that appear in document headers and footers</p>
               </CardHeader>
               <CardContent className="p-4">
                 <div className="mb-6">
@@ -962,12 +962,12 @@ export default function SuperAdminVaultSignPage() {
                       <Label className="text-sm font-medium flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Company Logo</Label>
                       <div className="mt-2 flex items-center gap-4">
                         {orgSettings.company_logo_url ? (
-                          <div className="w-20 h-20 rounded-xl border border-[#E5E7EB] overflow-hidden bg-white flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center">
                             <img src={orgSettings.company_logo_url} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
                           </div>
                         ) : (
-                          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-[#E5E7EB] flex items-center justify-center bg-[#F8F7F4]">
-                            <Building2 className="h-8 w-8 text-[#9CA3AF]" />
+                          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-background">
+                            <Building2 className="h-8 w-8 text-text-muted" />
                           </div>
                         )}
                         <div className="flex-1">
@@ -984,7 +984,7 @@ export default function SuperAdminVaultSignPage() {
                                 <span>{logoUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />} Upload</span>
                               </Button>
                             </label>
-                            <span className="text-[10px] text-[#9CA3AF]">PNG, JPG, SVG recommended</span>
+                            <span className="text-[10px] text-text-muted">PNG, JPG, SVG recommended</span>
                           </div>
                         </div>
                       </div>
@@ -1026,7 +1026,7 @@ export default function SuperAdminVaultSignPage() {
                       </div>
                     </div>
 
-                    <Button className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={saveOrgSettings} disabled={saving}>
+                    <Button className="bg-primary hover:bg-primary-hover text-white" onClick={saveOrgSettings} disabled={saving}>
                       {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
                       Save Settings
                     </Button>
@@ -1035,8 +1035,8 @@ export default function SuperAdminVaultSignPage() {
 
                 {!selectedOrgId && (
                   <div className="text-center py-12">
-                    <Building2 className="h-12 w-12 text-[#9CA3AF] mx-auto mb-3" />
-                    <p className="text-sm text-[#6B7280]">Select an organization to configure settings</p>
+                    <Building2 className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                    <p className="text-sm text-text-secondary">Select an organization to configure settings</p>
                   </div>
                 )}
               </CardContent>
@@ -1090,7 +1090,7 @@ export default function SuperAdminVaultSignPage() {
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
-              <Button className="bg-[#166534] hover:bg-[#14532D]" onClick={saveTemplate} disabled={saving || !templateForm.name}>
+              <Button className="bg-primary hover:bg-primary-hover" onClick={saveTemplate} disabled={saving || !templateForm.name}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
                 {editingTemplate ? "Update" : "Create"}
               </Button>

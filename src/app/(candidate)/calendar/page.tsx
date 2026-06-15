@@ -166,8 +166,8 @@ const STATUS_CONFIG = {
   actively_looking: {
     label: "Actively Looking",
     emoji: "🟢",
-    color: "#166534",
-    bgColor: "#DCFCE7",
+    color: "var(--primary)",
+    bgColor: "var(--primary-light)",
     borderColor: "#86EFAC",
   },
   open: {
@@ -811,7 +811,7 @@ export default function CalendarPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Clock className="size-5 text-[#166534]" />
+                      <Clock className="size-5 text-primary" />
                       Weekly Availability
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -849,7 +849,7 @@ export default function CalendarPage() {
                             <Button
                               onClick={handleBlockDates}
                               disabled={isSubmitting || blockDates.length === 0}
-                              className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+                              className="gap-1.5 bg-primary hover:bg-primary-hover"
                             >
                               {isSubmitting ? (
                                 <Loader2 className="size-4 animate-spin" />
@@ -864,7 +864,7 @@ export default function CalendarPage() {
 
                       <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetAddForm(); }}>
                         <DialogTrigger asChild>
-                          <Button size="sm" className="gap-1.5 bg-[#166534] hover:bg-[#14532D]">
+                          <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary-hover">
                             <Plus className="size-3.5" />
                             Add Availability
                           </Button>
@@ -986,7 +986,7 @@ export default function CalendarPage() {
                             <Button
                               onClick={handleAddSlot}
                               disabled={isSubmitting}
-                              className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+                              className="gap-1.5 bg-primary hover:bg-primary-hover"
                             >
                               {isSubmitting ? (
                                 <Loader2 className="size-4 animate-spin" />
@@ -1013,8 +1013,8 @@ export default function CalendarPage() {
                         {DAYS_OF_WEEK.map((day, idx) => (
                           <div
                             key={day}
-                            className="text-xs font-medium text-center py-1 rounded-md bg-[#F8F7F4]"
-                            style={{ color: idx >= 5 ? "#0D9488" : "#166534" }}
+                            className="text-xs font-medium text-center py-1 rounded-md bg-background"
+                            style={{ color: idx >= 5 ? "var(--accent-teal)" : "var(--primary)" }}
                           >
                             {day}
                           </div>
@@ -1064,7 +1064,7 @@ export default function CalendarPage() {
                   </div>
 
                   {/* Legend */}
-                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-[#E5E7EB]">
+                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-border">
                     <div className="flex items-center gap-1.5">
                       <div className="size-3 rounded bg-emerald-100 border border-emerald-300" />
                       <span className="text-xs text-muted-foreground">Available</span>
@@ -1086,7 +1086,7 @@ export default function CalendarPage() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <ListChecks className="size-5 text-[#0D9488]" />
+                      <ListChecks className="size-5 text-accent-teal" />
                       Current Availability Slots
                     </CardTitle>
                   </CardHeader>
@@ -1102,7 +1102,7 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={slot.id}
-                              className="flex items-center gap-3 p-2.5 rounded-lg border border-[#E5E7EB] hover:bg-[#F8F7F4] transition-colors"
+                              className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-background transition-colors"
                             >
                               <div
                                 className={`size-2.5 rounded-full shrink-0 ${
@@ -1123,7 +1123,7 @@ export default function CalendarPage() {
                                     </Badge>
                                   )}
                                   {slot.is_recurring && (
-                                    <Badge className="text-[10px] bg-[#0D9488]/10 text-[#0D9488] border-[#0D9488]/20">
+                                    <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
                                       Recurring
                                     </Badge>
                                   )}
@@ -1155,7 +1155,7 @@ export default function CalendarPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="size-5 text-[#166534]" />
+                    <Zap className="size-5 text-primary" />
                     Quick Templates
                   </CardTitle>
                 </CardHeader>
@@ -1167,14 +1167,14 @@ export default function CalendarPage() {
                         <Button
                           key={template.name}
                           variant="outline"
-                          className="h-auto py-3 px-3 flex flex-col items-center gap-2 hover:bg-[#F8F7F4] hover:border-[#166534]/30"
+                          className="h-auto py-3 px-3 flex flex-col items-center gap-2 hover:bg-background hover:border-primary/30"
                           onClick={() => handleApplyTemplate(template)}
                           disabled={isApplyingTemplate !== null}
                         >
                           {isApplyingTemplate === template.name ? (
-                            <Loader2 className="size-5 animate-spin text-[#166534]" />
+                            <Loader2 className="size-5 animate-spin text-primary" />
                           ) : (
-                            <IconComp className="size-5 text-[#166534]" />
+                            <IconComp className="size-5 text-primary" />
                           )}
                           <span className="text-xs font-medium">{template.name}</span>
                           <span className="text-[10px] text-muted-foreground">{template.description}</span>
@@ -1219,7 +1219,7 @@ export default function CalendarPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Settings2 className="size-5 text-[#166534]" />
+                    <Settings2 className="size-5 text-primary" />
                     Preferences
                   </CardTitle>
                 </CardHeader>
@@ -1261,7 +1261,7 @@ export default function CalendarPage() {
                   <Button
                     onClick={handleSavePrefs}
                     disabled={isSavingPrefs}
-                    className="w-full gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+                    className="w-full gap-1.5 bg-primary hover:bg-primary-hover"
                     size="sm"
                   >
                     {isSavingPrefs ? (
@@ -1278,7 +1278,7 @@ export default function CalendarPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Share2 className="size-5 text-[#0D9488]" />
+                    <Share2 className="size-5 text-accent-teal" />
                     Share Calendar
                   </CardTitle>
                 </CardHeader>
@@ -1336,7 +1336,7 @@ export default function CalendarPage() {
                         <Button
                           onClick={handleShareWithRecruiter}
                           disabled={isSharing || !shareRecruiterId}
-                          className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+                          className="gap-1.5 bg-primary hover:bg-primary-hover"
                         >
                           {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
                           Share
@@ -1404,7 +1404,7 @@ export default function CalendarPage() {
                           <Button
                             onClick={handleGenerateLink}
                             disabled={isSharing}
-                            className="gap-1.5 bg-[#166534] hover:bg-[#14532D]"
+                            className="gap-1.5 bg-primary hover:bg-primary-hover"
                           >
                             {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Link2 className="size-4" />}
                             Generate
@@ -1416,7 +1416,7 @@ export default function CalendarPage() {
 
                   {/* Active Shares List */}
                   {shares.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+                    <div className="mt-3 pt-3 border-t border-border">
                       <p className="text-xs font-medium text-muted-foreground mb-2">
                         Active Shares ({shares.length})
                       </p>
@@ -1432,7 +1432,7 @@ export default function CalendarPage() {
                             return (
                               <div
                                 key={share.id}
-                                className={`flex items-center gap-2 p-2 rounded-lg border border-[#E5E7EB] ${
+                                className={`flex items-center gap-2 p-2 rounded-lg border border-border ${
                                   isExpired || share.is_revoked ? "opacity-50" : ""
                                 }`}
                               >
@@ -1494,10 +1494,10 @@ export default function CalendarPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <ClipboardList className="size-5 text-[#166534]" />
+                  <ClipboardList className="size-5 text-primary" />
                   Shift Requests
                   {pendingShiftRequests.length > 0 && (
-                    <Badge className="bg-[#166534] text-[10px]">{pendingShiftRequests.length} pending</Badge>
+                    <Badge className="bg-primary text-[10px]">{pendingShiftRequests.length} pending</Badge>
                   )}
                 </CardTitle>
               </div>
@@ -1505,7 +1505,7 @@ export default function CalendarPage() {
             <CardContent>
               {shiftRequests.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="size-12 rounded-full bg-[#F8F7F4] flex items-center justify-center mx-auto mb-3">
+                  <div className="size-12 rounded-full bg-background flex items-center justify-center mx-auto mb-3">
                     <ClipboardList className="size-6 text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">No shift requests yet</p>
@@ -1525,10 +1525,10 @@ export default function CalendarPage() {
                         return (
                           <div
                             key={req.id}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#E5E7EB] bg-[#FAFAFA]"
+                            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-border bg-[#FAFAFA]"
                           >
-                            <div className="size-10 rounded-lg bg-[#0D9488]/10 flex items-center justify-center shrink-0">
-                              <Building2 className="size-5 text-[#0D9488]" />
+                            <div className="size-10 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
+                              <Building2 className="size-5 text-accent-teal" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium">
@@ -1556,7 +1556,7 @@ export default function CalendarPage() {
                             <div className="flex items-center gap-2 shrink-0">
                               <Button
                                 size="sm"
-                                className="gap-1 bg-[#166534] hover:bg-[#14532D]"
+                                className="gap-1 bg-primary hover:bg-primary-hover"
                                 disabled={isRespondingToShift === req.id}
                                 onClick={() => handleShiftResponse(req.id, "accepted")}
                               >
@@ -1595,7 +1595,7 @@ export default function CalendarPage() {
                             return (
                               <div
                                 key={req.id}
-                                className="flex items-center gap-3 p-2.5 rounded-lg border border-[#E5E7EB] opacity-70"
+                                className="flex items-center gap-3 p-2.5 rounded-lg border border-border opacity-70"
                               >
                                 <div className={`size-6 rounded flex items-center justify-center shrink-0 ${
                                   isAccepted ? "bg-emerald-100" : "bg-red-100"
@@ -1647,7 +1647,7 @@ export default function CalendarPage() {
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Filter className="size-4 text-[#0D9488]" />
+                  <Filter className="size-4 text-accent-teal" />
                   <Label className="text-sm font-medium">Filter by Recruiter</Label>
                 </div>
                 <Select value={recruiterFilter} onValueChange={setRecruiterFilter}>
@@ -1671,8 +1671,8 @@ export default function CalendarPage() {
           {filteredRecruiterIds.length === 0 || sharedAvailability.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <div className="size-14 rounded-full bg-[#0D9488]/10 flex items-center justify-center mx-auto mb-4">
-                  <Users className="size-7 text-[#0D9488]" />
+                <div className="size-14 rounded-full bg-accent-teal/10 flex items-center justify-center mx-auto mb-4">
+                  <Users className="size-7 text-accent-teal" />
                 </div>
                 <h3 className="text-lg font-medium">No shared calendars yet</h3>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
@@ -1695,8 +1695,8 @@ export default function CalendarPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="size-10 rounded-lg bg-[#0D9488]/10 flex items-center justify-center">
-                            <User className="size-5 text-[#0D9488]" />
+                          <div className="size-10 rounded-lg bg-accent-teal/10 flex items-center justify-center">
+                            <User className="size-5 text-accent-teal" />
                           </div>
                           <div>
                             <CardTitle className="text-base">{recruiterName}</CardTitle>
@@ -1727,8 +1727,8 @@ export default function CalendarPage() {
                             {DAYS_OF_WEEK.map((day, idx) => (
                               <div
                                 key={day}
-                                className="text-xs font-medium text-center py-1 rounded-md bg-[#F8F7F4]"
-                                style={{ color: idx >= 5 ? "#0D9488" : "#166534" }}
+                                className="text-xs font-medium text-center py-1 rounded-md bg-background"
+                                style={{ color: idx >= 5 ? "var(--accent-teal)" : "var(--primary)" }}
                               >
                                 {day}
                               </div>
@@ -1774,7 +1774,7 @@ export default function CalendarPage() {
 
                       {/* Slots detail */}
                       {recruiterSlots.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+                        <div className="mt-3 pt-3 border-t border-border">
                           <div className="flex flex-wrap gap-2">
                             {recruiterSlots.map((slot) => {
                               const dayLabel = slot.day_of_week !== null
@@ -1811,7 +1811,7 @@ export default function CalendarPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Phone className="size-5 text-[#0D9488]" />
+                    <Phone className="size-5 text-accent-teal" />
                     Upcoming Calls & Meetings
                   </CardTitle>
                 </CardHeader>
@@ -1824,7 +1824,7 @@ export default function CalendarPage() {
                     if (upcoming.length === 0) {
                       return (
                         <div className="text-center py-6">
-                          <div className="size-10 rounded-full bg-[#F8F7F4] flex items-center justify-center mx-auto mb-2">
+                          <div className="size-10 rounded-full bg-background flex items-center justify-center mx-auto mb-2">
                             <Phone className="size-5 text-muted-foreground" />
                           </div>
                           <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
@@ -1842,10 +1842,10 @@ export default function CalendarPage() {
                             return (
                               <div
                                 key={req.id}
-                                className="flex items-center gap-3 p-3 rounded-lg border border-[#E5E7EB] hover:bg-[#F8F7F4] transition-colors"
+                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors"
                               >
-                                <div className="size-8 rounded-lg bg-[#0D9488]/10 flex items-center justify-center shrink-0">
-                                  <Phone className="size-4 text-[#0D9488]" />
+                                <div className="size-8 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
+                                  <Phone className="size-4 text-accent-teal" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium">
@@ -1858,7 +1858,7 @@ export default function CalendarPage() {
                                     {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
                                   </p>
                                 </div>
-                                <Badge className="text-[10px] bg-[#0D9488]/10 text-[#0D9488] border-[#0D9488]/20">
+                                <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
                                   {isToday ? "Today" : "Upcoming"}
                                 </Badge>
                               </div>

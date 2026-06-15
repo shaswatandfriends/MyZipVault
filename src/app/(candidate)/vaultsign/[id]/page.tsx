@@ -40,7 +40,7 @@ export default function CandidateVaultSignDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Skeleton Back Button */}
           <Skeleton className="h-8 w-32 mb-4" />
@@ -81,9 +81,9 @@ export default function CandidateVaultSignDetailPage() {
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/vaultsign")} className="text-[#6B7280] mb-4">
+        <Button variant="ghost" size="sm" onClick={() => router.push("/vaultsign")} className="text-text-secondary mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Documents
         </Button>
 
@@ -92,10 +92,10 @@ export default function CandidateVaultSignDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">{document?.document_name}</CardTitle>
-                <p className="text-sm text-[#6B7280] mt-0.5">{document?.organization?.name}</p>
+                <p className="text-sm text-text-secondary mt-0.5">{document?.organization?.name}</p>
               </div>
               <Badge className={
-                signer?.status === "signed" ? "bg-[#DCFCE7] text-[#166534] border-0" :
+                signer?.status === "signed" ? "bg-primary-light text-primary border-0" :
                 signer?.status === "declined" ? "bg-[#FEF2F2] text-[#DC2626] border-0" :
                 "bg-[#EFF6FF] text-[#2563EB] border-0"
               }>
@@ -106,7 +106,7 @@ export default function CandidateVaultSignDetailPage() {
           <CardContent className="p-4 pt-0 space-y-4">
             {signer?.status !== "signed" && signer?.status !== "declined" && signer?.sign_token && (
               <Button
-                className="w-full bg-[#166534] hover:bg-[#14532D] text-white"
+                className="w-full bg-primary hover:bg-primary-hover text-white"
                 onClick={() => router.push(`/sign/${signer.sign_token}`)}
               >
                 <ExternalLink className="h-4 w-4 mr-2" /> Sign This Document
@@ -115,19 +115,19 @@ export default function CandidateVaultSignDetailPage() {
 
             {document?.signers && (
               <div>
-                <h3 className="text-sm font-medium text-[#111827] mb-2">All Signers</h3>
+                <h3 className="text-sm font-medium text-foreground mb-2">All Signers</h3>
                 <div className="space-y-2">
                   {document.signers.map((s: any, i: number) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       {s.status === "signed" ? (
-                        <CheckCircle2 className="h-4 w-4 text-[#166534]" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                       ) : (
-                        <Clock className="h-4 w-4 text-[#6B7280]" />
+                        <Clock className="h-4 w-4 text-text-secondary" />
                       )}
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-[8px] bg-[#F3F4F6]">{s.name?.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <span className="text-[#111827]">{s.name}</span>
+                      <span className="text-foreground">{s.name}</span>
                       <Badge variant="outline" className="text-[10px]">{s.role}</Badge>
                     </div>
                   ))}

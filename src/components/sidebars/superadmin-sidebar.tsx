@@ -114,30 +114,30 @@ export function SuperadminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/superadmin/dashboard">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[#166534] font-bold text-sm text-white">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--primary)] font-bold text-sm text-white">
                   ZV
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span
-                    className="font-semibold text-[#111827]"
-                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+                    className="font-semibold text-[var(--foreground)]"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     MyZipVault
                   </span>
-                  <span className="text-xs text-[#9CA3AF]">Super Admin</span>
+                  <span className="text-xs text-[var(--text-muted)]">Super Admin</span>
                 </div>
-                <ChevronLeft className="ml-auto text-[#9CA3AF] group-data-[state=expanded]:rotate-0 group-data-[state=collapsed]:rotate-180 transition-transform" />
+                <ChevronLeft className="ml-auto text-[var(--text-muted)] group-data-[state=expanded]:rotate-0 group-data-[state=collapsed]:rotate-180 transition-transform" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarSeparator className="bg-[#E5E7EB]" />
+      <SidebarSeparator className="bg-[var(--border)]" />
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">Core</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">Core</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {coreNavItems.map((item) => {
@@ -151,8 +151,8 @@ export function SuperadminSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -168,7 +168,7 @@ export function SuperadminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">Skills Checklist</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">Skills Checklist</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {skillsNavItems.map((item) => {
@@ -182,8 +182,8 @@ export function SuperadminSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -199,7 +199,7 @@ export function SuperadminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">References</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">References</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {referencesNavItems.map((item) => {
@@ -213,8 +213,8 @@ export function SuperadminSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -230,7 +230,7 @@ export function SuperadminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">System</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {systemNavItems.map((item) => {
@@ -244,8 +244,8 @@ export function SuperadminSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -261,7 +261,7 @@ export function SuperadminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">Monitor</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">Monitor</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {monitorNavItems.map((item) => {
@@ -275,8 +275,8 @@ export function SuperadminSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -293,25 +293,25 @@ export function SuperadminSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarSeparator className="bg-[#E5E7EB]" />
+        <SidebarSeparator className="bg-[var(--border)]" />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
               <Avatar className="size-8">
-                <AvatarFallback className="bg-[#DCFCE7] text-xs font-semibold text-[#166534]">
+                <AvatarFallback className="bg-[var(--primary-light)] text-xs font-semibold text-[var(--primary)]">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="truncate text-sm font-medium text-[#111827]">{displayName}</span>
-                <span className="text-xs text-[#9CA3AF]">Super Admin</span>
+                <span className="truncate text-sm font-medium text-[var(--foreground)]">{displayName}</span>
+                <span className="text-xs text-[var(--text-muted)]">Super Admin</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign Out"
-              className="text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+              className="text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
               onClick={() => signOut({ callbackUrl: "/superadmin-login" })}
             >
               <LogOut className="size-5" />

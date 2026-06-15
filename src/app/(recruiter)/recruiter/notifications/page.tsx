@@ -172,7 +172,7 @@ function NotificationCard({
   return (
     <Card
       className={`mb-3 transition-all duration-200 hover:shadow-md ${
-        notification.is_read ? "opacity-70" : "border-l-4 border-l-[#166534]"
+        notification.is_read ? "opacity-70" : "border-l-4 border-l-[var(--primary)]"
       }`}
     >
       <CardContent className="p-4">
@@ -191,19 +191,19 @@ function NotificationCard({
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="text-sm font-semibold text-[#111827] truncate">
+                  <h3 className="text-sm font-semibold text-foreground truncate">
                     {notification.title || notification.message}
                   </h3>
                   {!notification.is_read && (
-                    <span className="size-2 rounded-full bg-[#166534] shrink-0" />
+                    <span className="size-2 rounded-full bg-primary shrink-0" />
                   )}
                 </div>
                 {notification.title && (
-                  <p className="text-sm text-[#6B7280] line-clamp-2 mb-1">
+                  <p className="text-sm text-text-secondary line-clamp-2 mb-1">
                     {notification.message}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">
+                <div className="flex items-center gap-2 text-xs text-text-muted">
                   <Clock className="size-3" />
                   <span>{formatRelativeTime(notification.created_at)}</span>
                   <span>·</span>
@@ -297,7 +297,7 @@ function NotificationCard({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 text-xs gap-1 text-[#6B7280] hover:text-[#166534] hover:bg-emerald-50"
+                  className="h-7 text-xs gap-1 text-text-secondary hover:text-primary hover:bg-emerald-50"
                   onClick={() => onAction(notification.id, "mark_read")}
                   disabled={isLoading}
                 >
@@ -343,11 +343,11 @@ function EmptyState({ filter }: { filter: FilterTab }) {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="size-16 rounded-full bg-[#DCFCE7] flex items-center justify-center mb-4">
-        <Inbox className="size-8 text-[#166534]" />
+      <div className="size-16 rounded-full bg-primary-light flex items-center justify-center mb-4">
+        <Inbox className="size-8 text-primary" />
       </div>
-      <h3 className="text-lg font-semibold mb-1 text-[#111827]">{title}</h3>
-      <p className="text-sm text-[#6B7280] max-w-sm">{description}</p>
+      <h3 className="text-lg font-semibold mb-1 text-foreground">{title}</h3>
+      <p className="text-sm text-text-secondary max-w-sm">{description}</p>
     </div>
   );
 }
@@ -473,7 +473,7 @@ export default function RecruiterNotificationsPage() {
         actions={
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <Badge className="bg-[#166534] text-white border-[#14532D] hover:bg-[#14532D] text-sm px-2.5">
+              <Badge className="bg-primary text-white border-[#14532D] hover:bg-primary-hover text-sm px-2.5">
                 {unreadCount} unread
               </Badge>
             )}
@@ -482,7 +482,7 @@ export default function RecruiterNotificationsPage() {
               size="sm"
               onClick={handleMarkAllRead}
               disabled={unreadCount === 0 || isLoading}
-              className="gap-1.5 text-[#166534] border-[#166534]/30 hover:bg-[#DCFCE7]"
+              className="gap-1.5 text-primary border-primary/30 hover:bg-primary-light"
             >
               <CheckCircle2 className="size-3.5" />
               Mark All as Read
@@ -496,37 +496,37 @@ export default function RecruiterNotificationsPage() {
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as FilterTab)}
       >
-        <TabsList className="bg-white border border-[#E5E7EB] p-1 h-auto">
+        <TabsList className="bg-white border border-border p-1 h-auto">
           <TabsTrigger
             value="all"
-            className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm"
           >
             All
           </TabsTrigger>
           <TabsTrigger
             value="calls"
-            className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm"
           >
             <Phone className="size-3.5 mr-1 hidden sm:inline" />
             Calls
           </TabsTrigger>
           <TabsTrigger
             value="leads"
-            className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm"
           >
             <User className="size-3.5 mr-1 hidden sm:inline" />
             Leads
           </TabsTrigger>
           <TabsTrigger
             value="shift_requests"
-            className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm"
           >
             <Calendar className="size-3.5 mr-1 hidden sm:inline" />
             Shifts
           </TabsTrigger>
           <TabsTrigger
             value="reminders"
-            className="data-[state=active]:bg-[#166534] data-[state=active]:text-white text-xs sm:text-sm"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm"
           >
             <AlarmClock className="size-3.5 mr-1 hidden sm:inline" />
             Reminders

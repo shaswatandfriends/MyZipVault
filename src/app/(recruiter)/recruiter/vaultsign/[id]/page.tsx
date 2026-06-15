@@ -19,20 +19,20 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
   sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
   partially_signed: { label: "Partially Signed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-[#166534]", bg: "bg-[#DCFCE7]" },
+  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
   declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-[#6B7280]", bg: "bg-[#F3F4F6]" },
+  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
+  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
 };
 
 const SIGNER_STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
-  pending: { icon: Clock, color: "text-[#6B7280]" },
+  pending: { icon: Clock, color: "text-text-secondary" },
   sent: { icon: Mail, color: "text-[#2563EB]" },
   viewed: { icon: Eye, color: "text-[#D97706]" },
-  signed: { icon: CheckCircle2, color: "text-[#166534]" },
+  signed: { icon: CheckCircle2, color: "text-primary" },
   declined: { icon: XCircle, color: "text-[#DC2626]" },
 };
 
@@ -167,7 +167,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F7F4]">
+      <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Skeleton Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -215,7 +215,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <CardContent className="p-4 pt-0">
                   <div className="space-y-3">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#E5E7EB]">
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border">
                         <Skeleton className="h-10 w-10 rounded-full" />
                         <div className="flex-1 space-y-1.5">
                           <Skeleton className="h-4 w-28" />
@@ -277,21 +277,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <VaultSignErrorBoundary>
-    <div className="min-h-screen bg-[#F8F7F4] animate-vaultsign-fade-in">
+    <div className="min-h-screen bg-background animate-vaultsign-fade-in">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Header — stacks on mobile with buttons below */}
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-[#6B7280]">
+            <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-text-secondary">
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-[#111827] truncate" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              <h1 className="text-xl font-bold text-foreground truncate" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                 {document.document_name}
               </h1>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>{statusConf.label}</Badge>
-                <span className="text-xs text-[#6B7280]">
+                <span className="text-xs text-text-secondary">
                   {document.source_type === "word" ? "Word Document" : "PDF Document"} • {document.document_type}
                 </span>
               </div>
@@ -303,7 +303,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-[#E5E7EB]"
+                  className="border-border"
                   onClick={() => {
                     const route = document.source_type === "pdf"
                       ? `/recruiter/vaultsign/signer/${docId}`
@@ -315,7 +315,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-[#166534] hover:bg-[#14532D] text-white"
+                  className="bg-primary hover:bg-primary-hover text-white"
                   onClick={handleSend}
                   disabled={actionLoading === "send"}
                 >
@@ -330,12 +330,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </Button>
             )}
             {document.status === "declined" && (
-              <Button size="sm" className="bg-[#166534] hover:bg-[#14532D] text-white" onClick={handleRevise} disabled={actionLoading === "revise"}>
+              <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" onClick={handleRevise} disabled={actionLoading === "revise"}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Revise
               </Button>
             )}
             {document.status === "completed" && (
-              <Button variant="outline" size="sm" className="border-[#E5E7EB]" onClick={handleDownload}>
+              <Button variant="outline" size="sm" className="border-border" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-1" /> Download PDF
               </Button>
             )}
@@ -353,14 +353,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       <button
                         type="button"
                         onClick={() => router.push(`/recruiter/vaultsign?status=${step.key}`)}
-                        className="flex items-center gap-2 flex-shrink-0 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#F0FDF4] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-1"
+                        className="flex items-center gap-2 flex-shrink-0 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#F0FDF4] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1"
                       >
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-transform hover:scale-110 ${
-                          i <= timelineProgress ? "bg-[#166534] text-white" : "bg-[#E5E7EB] text-[#9CA3AF]"
+                          i <= timelineProgress ? "bg-primary text-white" : "bg-surface-3 text-text-muted"
                         }`}>
                           {i <= timelineProgress ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                         </div>
-                        <span className={`text-sm font-semibold whitespace-nowrap ${i <= timelineProgress ? "text-[#166534]" : "text-[#9CA3AF]"}`}>
+                        <span className={`text-sm font-semibold whitespace-nowrap ${i <= timelineProgress ? "text-primary" : "text-text-muted"}`}>
                           {step.label}
                         </span>
                       </button>
@@ -370,7 +370,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     </TooltipContent>
                   </Tooltip>
                   {i < TIMELINE_STEPS.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-2 min-w-[20px] ${i < timelineProgress ? "bg-[#166534]" : "bg-[#E5E7EB]"}`} />
+                    <div className={`flex-1 h-0.5 mx-2 min-w-[20px] ${i < timelineProgress ? "bg-primary" : "bg-surface-3"}`} />
                   )}
                 </React.Fragment>
               ))}
@@ -391,15 +391,15 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     const sConfig = SIGNER_STATUS_CONFIG[signer.status] || SIGNER_STATUS_CONFIG.pending;
                     const StatusIcon = sConfig.icon;
                     return (
-                      <div key={signer.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#E5E7EB]">
+                      <div key={signer.id} className="flex items-center gap-3 p-3 rounded-xl border border-border">
                         <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-[#166534] text-white text-sm">
+                          <AvatarFallback className="bg-primary text-white text-sm">
                             {signer.name?.charAt(0)?.toUpperCase() || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-[#111827]">{signer.name}</p>
-                          <p className="text-xs text-[#6B7280]">{signer.email}</p>
+                          <p className="font-medium text-sm text-foreground">{signer.name}</p>
+                          <p className="text-xs text-text-secondary">{signer.email}</p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <Badge variant="outline" className="text-[10px]">{signer.role}</Badge>
                             <div className="flex items-center gap-1">
@@ -416,7 +416,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-[#166534] hover:bg-[#F0FDF4]"
+                            className="text-primary hover:bg-[#F0FDF4]"
                             onClick={() => handleRemind(signer.id)}
                           >
                             <Bell className="h-4 w-4" />
@@ -438,33 +438,33 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </CardHeader>
               <CardContent className="p-4 pt-0 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Source</span>
-                  <span className="text-[#111827]">{document.source_type === "word" ? "Word" : "PDF"}</span>
+                  <span className="text-text-secondary">Source</span>
+                  <span className="text-foreground">{document.source_type === "word" ? "Word" : "PDF"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Signing Order</span>
-                  <span className="text-[#111827]">{document.signing_order}</span>
+                  <span className="text-text-secondary">Signing Order</span>
+                  <span className="text-foreground">{document.signing_order}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Expires</span>
-                  <span className="text-[#111827]">{new Date(document.expiry_date).toLocaleDateString()}</span>
+                  <span className="text-text-secondary">Expires</span>
+                  <span className="text-foreground">{new Date(document.expiry_date).toLocaleDateString()}</span>
                 </div>
                 {document.personal_message && (
                   <div>
-                    <span className="text-[#6B7280]">Message</span>
-                    <p className="text-[#111827] mt-1 text-xs">{document.personal_message}</p>
+                    <span className="text-text-secondary">Message</span>
+                    <p className="text-foreground mt-1 text-xs">{document.personal_message}</p>
                   </div>
                 )}
                 {document.creator && (
                   <div className="flex justify-between">
-                    <span className="text-[#6B7280]">Created By</span>
-                    <span className="text-[#111827]">{document.creator.first_name || document.creator.email}</span>
+                    <span className="text-text-secondary">Created By</span>
+                    <span className="text-foreground">{document.creator.first_name || document.creator.email}</span>
                   </div>
                 )}
                 {document.document_hash && (
                   <div>
-                    <span className="text-[#6B7280]">Document Hash</span>
-                    <p className="text-[10px] text-[#9CA3AF] font-mono break-all mt-0.5">{document.document_hash}</p>
+                    <span className="text-text-secondary">Document Hash</span>
+                    <p className="text-[10px] text-text-muted font-mono break-all mt-0.5">{document.document_hash}</p>
                   </div>
                 )}
               </CardContent>
@@ -478,10 +478,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {document.audit_trail?.map((entry: any, i: number) => (
                     <div key={i} className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[#166534] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs font-medium text-[#111827]">{entry.event?.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}</p>
-                        <p className="text-[10px] text-[#6B7280]">
+                        <p className="text-xs font-medium text-foreground">{entry.event?.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}</p>
+                        <p className="text-[10px] text-text-secondary">
                           {entry.user_name} • {new Date(entry.timestamp).toLocaleString()}
                         </p>
                       </div>

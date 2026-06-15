@@ -136,11 +136,11 @@ const defaultData: LandingPageData = {
     trustLine3: "100% Free for Nurses",
   },
   colors: {
-    primary: "#166534",
-    accent: "#0D9488",
-    background: "#F8F7F4",
-    textPrimary: "#111827",
-    textSecondary: "#6B7280",
+    primary: "var(--primary)",
+    accent: "var(--accent-teal)",
+    background: "var(--background)",
+    textPrimary: "var(--foreground)",
+    textSecondary: "var(--text-secondary)",
   },
   featureCards: [
     {
@@ -221,19 +221,19 @@ function ColorPickerField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-10 cursor-pointer rounded-lg border border-[#E5E7EB] p-0.5"
+          className="size-10 cursor-pointer rounded-lg border border-border p-0.5"
         />
       </div>
       <div className="flex-1">
-        <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+        <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
           {label}
         </Label>
         <div className="flex items-center gap-2 mt-1">
           <div
-            className="size-5 rounded border border-[#E5E7EB]"
+            className="size-5 rounded border border-border"
             style={{ backgroundColor: value }}
           />
-          <span className="text-sm text-[#9CA3AF] font-mono">{value}</span>
+          <span className="text-sm text-text-muted font-mono">{value}</span>
         </div>
       </div>
     </div>
@@ -252,7 +252,7 @@ function LivePreview({
 
   return (
     <div
-      className="mx-auto bg-[#F8F7F4] overflow-y-auto overflow-x-hidden custom-scrollbar"
+      className="mx-auto bg-background overflow-y-auto overflow-x-hidden custom-scrollbar"
       style={{
         width: previewWidth,
         maxHeight: "calc(100vh - 220px)",
@@ -261,7 +261,7 @@ function LivePreview({
     >
       {/* Mini Header */}
       <div
-        className="border-b border-[#E5E7EB] px-4 py-2 flex items-center justify-between"
+        className="border-b border-border px-4 py-2 flex items-center justify-between"
         style={{ backgroundColor: data.colors.background + "CC" }}
       >
         <div className="flex items-center gap-1.5">
@@ -275,7 +275,7 @@ function LivePreview({
             className="text-[10px] font-semibold"
             style={{
               color: data.colors.textPrimary,
-              fontFamily: "'Clash Display', sans-serif",
+              fontFamily: "'Satoshi', sans-serif",
             }}
           >
             MyZipVault
@@ -317,7 +317,7 @@ function LivePreview({
           className="mt-2 text-sm font-bold leading-tight"
           style={{
             color: data.colors.textPrimary,
-            fontFamily: "'Clash Display', sans-serif",
+            fontFamily: "'Satoshi', sans-serif",
           }}
         >
           {data.hero.candidateHeadline}{" "}
@@ -350,7 +350,7 @@ function LivePreview({
               <span
                 key={i}
                 className="text-[7px]"
-                style={{ color: "#9CA3AF" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 {line}
               </span>
@@ -371,7 +371,7 @@ function LivePreview({
           className="text-center text-[10px] font-bold mt-0.5"
           style={{
             color: data.colors.textPrimary,
-            fontFamily: "'Clash Display', sans-serif",
+            fontFamily: "'Satoshi', sans-serif",
           }}
         >
           Everything You Need
@@ -380,13 +380,13 @@ function LivePreview({
           {data.featureCards.map((card, i) => (
             <div
               key={i}
-              className="bg-white border border-[#E5E7EB] rounded-lg p-2"
+              className="bg-white border border-border rounded-lg p-2"
             >
               <p
                 className="text-[8px] font-semibold"
                 style={{
                   color: data.colors.textPrimary,
-                  fontFamily: "'Clash Display', sans-serif",
+                  fontFamily: "'Satoshi', sans-serif",
                 }}
               >
                 {card.heading}
@@ -406,7 +406,7 @@ function LivePreview({
       <div className="px-4 py-5 text-white" style={{ backgroundColor: data.colors.primary }}>
         <p
           className="text-center text-[10px] font-bold"
-          style={{ fontFamily: "'Clash Display', sans-serif" }}
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
         >
           Your Vault. Your Rules.
         </p>
@@ -437,7 +437,7 @@ function LivePreview({
           className="text-center text-[10px] font-bold mt-0.5"
           style={{
             color: data.colors.textPrimary,
-            fontFamily: "'Clash Display', sans-serif",
+            fontFamily: "'Satoshi', sans-serif",
           }}
         >
           From Request to Hired in Minutes
@@ -450,7 +450,7 @@ function LivePreview({
                 style={{
                   backgroundColor: data.colors.primary + "20",
                   color: data.colors.primary,
-                  fontFamily: "'Clash Display', sans-serif",
+                  fontFamily: "'Satoshi', sans-serif",
                 }}
               >
                 {i + 1}
@@ -473,7 +473,7 @@ function LivePreview({
       </div>
 
       {/* Footer Preview */}
-      <div className="bg-[#111827] px-4 py-3 text-center">
+      <div className="bg-[var(--foreground)] px-4 py-3 text-center">
         <p className="text-[7px] text-white/40">{data.footer.copyrightText}</p>
         <span className="inline-flex items-center gap-0.5 mt-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[7px] text-white/80">
           {data.footer.hipaaBadgeText}
@@ -494,14 +494,14 @@ function EditorSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6">
+    <div className="bg-white border border-border rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-5">
-        <div className="size-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
-          <Icon className="size-4 text-[#166534]" />
+        <div className="size-8 rounded-lg bg-primary-light flex items-center justify-center">
+          <Icon className="size-4 text-primary" />
         </div>
         <h2
-          className="text-lg font-semibold text-[#111827]"
-          style={{ fontFamily: "'Clash Display', sans-serif" }}
+          className="text-lg font-semibold text-foreground"
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
         >
           {title}
         </h2>
@@ -521,7 +521,7 @@ function FormField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+      <Label className="text-xs font-medium tracking-wide uppercase text-text-secondary">
         {label}
       </Label>
       {children}
@@ -695,12 +695,12 @@ export default function LandingPageEditorPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1
-            className="text-2xl font-bold tracking-tight text-[#111827]"
-            style={{ fontFamily: "'Clash Display', sans-serif" }}
+            className="text-2xl font-bold tracking-tight text-foreground"
+            style={{ fontFamily: "'Satoshi', sans-serif" }}
           >
             Landing Page Editor
           </h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">
+          <p className="text-sm text-text-secondary mt-0.5">
             Edit and preview your landing page content in real-time.
           </p>
         </div>
@@ -709,8 +709,8 @@ export default function LandingPageEditorPage() {
           <div className="flex items-center gap-1.5 text-xs">
             {saving ? (
               <>
-                <Loader2 className="size-3.5 animate-spin text-[#0D9488]" />
-                <span className="text-[#6B7280]">Saving…</span>
+                <Loader2 className="size-3.5 animate-spin text-accent-teal" />
+                <span className="text-text-secondary">Saving…</span>
               </>
             ) : hasUnsavedChanges ? (
               <>
@@ -734,7 +734,7 @@ export default function LandingPageEditorPage() {
           <Button
             variant="outline"
             onClick={handleDiscard}
-            className="border-[#D1D5DB] text-[#6B7280] rounded-xl hover:text-[#111827]"
+            className="border-[#D1D5DB] text-text-secondary rounded-xl hover:text-foreground"
           >
             <RotateCcw className="size-4 mr-1.5" />
             Discard Changes
@@ -742,7 +742,7 @@ export default function LandingPageEditorPage() {
           <Button
             onClick={handleSavePublish}
             disabled={saving}
-            className="bg-[#166534] text-white rounded-xl hover:bg-[#14532D]"
+            className="bg-primary text-white rounded-xl hover:bg-primary-hover"
           >
             <Save className="size-4 mr-1.5" />
             {saving ? "Publishing..." : "Save & Publish"}
@@ -764,7 +764,7 @@ export default function LandingPageEditorPage() {
                     onChange={(e) =>
                       updateHero("candidateHeadline", e.target.value)
                     }
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
                 <FormField label="Candidate Gradient Text">
@@ -773,7 +773,7 @@ export default function LandingPageEditorPage() {
                     onChange={(e) =>
                       updateHero("candidateGradientText", e.target.value)
                     }
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
               </div>
@@ -784,7 +784,7 @@ export default function LandingPageEditorPage() {
                     updateHero("candidateSubheadline", e.target.value)
                   }
                   rows={3}
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+                  className="border-border rounded-xl focus:border-accent-teal resize-none"
                 />
               </FormField>
               <FormField label="Candidate CTA Button Text">
@@ -793,11 +793,11 @@ export default function LandingPageEditorPage() {
                   onChange={(e) =>
                     updateHero("candidateCtaText", e.target.value)
                   }
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                  className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
 
-              <div className="border-t border-[#E5E7EB] pt-4 mt-4" />
+              <div className="border-t border-border pt-4 mt-4" />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Recruiter Headline">
@@ -806,7 +806,7 @@ export default function LandingPageEditorPage() {
                     onChange={(e) =>
                       updateHero("recruiterHeadline", e.target.value)
                     }
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
                 <FormField label="Recruiter Gradient Text">
@@ -815,7 +815,7 @@ export default function LandingPageEditorPage() {
                     onChange={(e) =>
                       updateHero("recruiterGradientText", e.target.value)
                     }
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
               </div>
@@ -826,7 +826,7 @@ export default function LandingPageEditorPage() {
                     updateHero("recruiterSubheadline", e.target.value)
                   }
                   rows={3}
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+                  className="border-border rounded-xl focus:border-accent-teal resize-none"
                 />
               </FormField>
               <FormField label="Recruiter CTA Button Text">
@@ -835,13 +835,13 @@ export default function LandingPageEditorPage() {
                   onChange={(e) =>
                     updateHero("recruiterCtaText", e.target.value)
                   }
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                  className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
 
-              <div className="border-t border-[#E5E7EB] pt-4 mt-4" />
+              <div className="border-t border-border pt-4 mt-4" />
 
-              <p className="text-xs font-medium tracking-wide uppercase text-[#6B7280]">
+              <p className="text-xs font-medium tracking-wide uppercase text-text-secondary">
                 Trust Line Items
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -849,21 +849,21 @@ export default function LandingPageEditorPage() {
                   <Input
                     value={data.hero.trustLine1}
                     onChange={(e) => updateHero("trustLine1", e.target.value)}
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
                 <FormField label="Line 2">
                   <Input
                     value={data.hero.trustLine2}
                     onChange={(e) => updateHero("trustLine2", e.target.value)}
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
                 <FormField label="Line 3">
                   <Input
                     value={data.hero.trustLine3}
                     onChange={(e) => updateHero("trustLine3", e.target.value)}
-                    className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                    className="border-border rounded-xl focus:border-accent-teal"
                   />
                 </FormField>
               </div>
@@ -907,8 +907,8 @@ export default function LandingPageEditorPage() {
               {data.featureCards.map((card, i) => (
                 <div key={i}>
                   <p
-                    className="text-xs font-semibold text-[#111827] mb-3"
-                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+                    className="text-xs font-semibold text-foreground mb-3"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     Card {i + 1}
                   </p>
@@ -920,10 +920,10 @@ export default function LandingPageEditorPage() {
                           updateFeatureCard(i, "icon", val)
                         }
                       >
-                        <SelectTrigger className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]">
+                        <SelectTrigger className="border-border rounded-xl focus:border-accent-teal">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-[#E5E7EB] max-h-48 overflow-y-auto">
+                        <SelectContent className="rounded-xl border-border max-h-48 overflow-y-auto">
                           {iconOptions.map((icon) => (
                             <SelectItem key={icon} value={icon}>
                               {icon}
@@ -938,7 +938,7 @@ export default function LandingPageEditorPage() {
                         onChange={(e) =>
                           updateFeatureCard(i, "heading", e.target.value)
                         }
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                        className="border-border rounded-xl focus:border-accent-teal"
                       />
                     </FormField>
                     <FormField label="Body Text">
@@ -948,12 +948,12 @@ export default function LandingPageEditorPage() {
                           updateFeatureCard(i, "body", e.target.value)
                         }
                         rows={3}
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+                        className="border-border rounded-xl focus:border-accent-teal resize-none"
                       />
                     </FormField>
                   </div>
                   {i < data.featureCards.length - 1 && (
-                    <div className="border-t border-[#E5E7EB] mt-6" />
+                    <div className="border-t border-border mt-6" />
                   )}
                 </div>
               ))}
@@ -966,8 +966,8 @@ export default function LandingPageEditorPage() {
               {data.privacySection.map((item, i) => (
                 <div key={i}>
                   <p
-                    className="text-xs font-semibold text-[#111827] mb-3"
-                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+                    className="text-xs font-semibold text-foreground mb-3"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     Item {i + 1}
                   </p>
@@ -979,10 +979,10 @@ export default function LandingPageEditorPage() {
                           updatePrivacyItem(i, "icon", val)
                         }
                       >
-                        <SelectTrigger className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]">
+                        <SelectTrigger className="border-border rounded-xl focus:border-accent-teal">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-[#E5E7EB] max-h-48 overflow-y-auto">
+                        <SelectContent className="rounded-xl border-border max-h-48 overflow-y-auto">
                           {iconOptions.map((icon) => (
                             <SelectItem key={icon} value={icon}>
                               {icon}
@@ -997,7 +997,7 @@ export default function LandingPageEditorPage() {
                         onChange={(e) =>
                           updatePrivacyItem(i, "heading", e.target.value)
                         }
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                        className="border-border rounded-xl focus:border-accent-teal"
                       />
                     </FormField>
                     <FormField label="Body Text">
@@ -1007,12 +1007,12 @@ export default function LandingPageEditorPage() {
                           updatePrivacyItem(i, "body", e.target.value)
                         }
                         rows={2}
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+                        className="border-border rounded-xl focus:border-accent-teal resize-none"
                       />
                     </FormField>
                   </div>
                   {i < data.privacySection.length - 1 && (
-                    <div className="border-t border-[#E5E7EB] mt-6" />
+                    <div className="border-t border-border mt-6" />
                   )}
                 </div>
               ))}
@@ -1025,8 +1025,8 @@ export default function LandingPageEditorPage() {
               {data.howItWorks.map((step, i) => (
                 <div key={i}>
                   <p
-                    className="text-xs font-semibold text-[#111827] mb-3"
-                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+                    className="text-xs font-semibold text-foreground mb-3"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     Step {i + 1}
                   </p>
@@ -1037,7 +1037,7 @@ export default function LandingPageEditorPage() {
                         onChange={(e) =>
                           updateHowItWorksStep(i, "title", e.target.value)
                         }
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                        className="border-border rounded-xl focus:border-accent-teal"
                       />
                     </FormField>
                     <FormField label="Description">
@@ -1047,12 +1047,12 @@ export default function LandingPageEditorPage() {
                           updateHowItWorksStep(i, "description", e.target.value)
                         }
                         rows={3}
-                        className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488] resize-none"
+                        className="border-border rounded-xl focus:border-accent-teal resize-none"
                       />
                     </FormField>
                   </div>
                   {i < data.howItWorks.length - 1 && (
-                    <div className="border-t border-[#E5E7EB] mt-6" />
+                    <div className="border-t border-border mt-6" />
                   )}
                 </div>
               ))}
@@ -1066,14 +1066,14 @@ export default function LandingPageEditorPage() {
                 <Input
                   value={data.footer.copyrightText}
                   onChange={(e) => updateFooter("copyrightText", e.target.value)}
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                  className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
               <FormField label="HIPAA Badge Text">
                 <Input
                   value={data.footer.hipaaBadgeText}
                   onChange={(e) => updateFooter("hipaaBadgeText", e.target.value)}
-                  className="border-[#E5E7EB] rounded-xl focus:border-[#0D9488]"
+                  className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
             </div>
@@ -1083,21 +1083,21 @@ export default function LandingPageEditorPage() {
         {/* Right: Live Preview (40%) */}
         <div className="w-full lg:w-[40%]">
           <div className="sticky top-24">
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
+            <div className="bg-white border border-border rounded-2xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3
-                  className="text-sm font-semibold text-[#111827]"
-                  style={{ fontFamily: "'Clash Display', sans-serif" }}
+                  className="text-sm font-semibold text-foreground"
+                  style={{ fontFamily: "'Satoshi', sans-serif" }}
                 >
                   Live Preview
                 </h3>
-                <div className="flex items-center rounded-lg border border-[#E5E7EB] p-0.5">
+                <div className="flex items-center rounded-lg border border-border p-0.5">
                   <button
                     onClick={() => setPreviewMode("desktop")}
                     className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
                       previewMode === "desktop"
-                        ? "bg-[#DCFCE7] text-[#166534]"
-                        : "text-[#6B7280] hover:text-[#111827]"
+                        ? "bg-primary-light text-primary"
+                        : "text-text-secondary hover:text-foreground"
                     }`}
                   >
                     <Monitor className="size-3.5" />
@@ -1107,8 +1107,8 @@ export default function LandingPageEditorPage() {
                     onClick={() => setPreviewMode("mobile")}
                     className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
                       previewMode === "mobile"
-                        ? "bg-[#DCFCE7] text-[#166534]"
-                        : "text-[#6B7280] hover:text-[#111827]"
+                        ? "bg-primary-light text-primary"
+                        : "text-text-secondary hover:text-foreground"
                     }`}
                   >
                     <Smartphone className="size-3.5" />
@@ -1119,7 +1119,7 @@ export default function LandingPageEditorPage() {
 
               {/* Preview Container */}
               <div
-                className="rounded-xl border border-[#E5E7EB] overflow-hidden flex justify-center"
+                className="rounded-xl border border-border overflow-hidden flex justify-center"
                 style={{
                   backgroundColor: "#F3F4F6",
                   transition: "all 0.3s ease",
@@ -1128,7 +1128,7 @@ export default function LandingPageEditorPage() {
                 <LivePreview data={data} previewMode={previewMode} />
               </div>
 
-              <p className="mt-3 text-[10px] text-[#9CA3AF] text-center">
+              <p className="mt-3 text-[10px] text-text-muted text-center">
                 Preview updates in real-time as you edit
               </p>
             </div>

@@ -32,11 +32,11 @@ export async function GET() {
           trustLine3: "100% Free for Nurses",
         },
         colors: {
-          primary: "#166534",
-          accent: "#0D9488",
-          background: "#F8F7F4",
-          textPrimary: "#111827",
-          textSecondary: "#6B7280",
+          primary: "var(--primary)",
+          accent: "var(--accent-teal)",
+          background: "var(--background)",
+          textPrimary: "var(--foreground)",
+          textSecondary: "var(--text-secondary)",
         },
         featureCards: [
           {

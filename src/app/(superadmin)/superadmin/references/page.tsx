@@ -493,8 +493,8 @@ export default function SuperadminReferencesPage() {
         return (
           base +
           (isSelected
-            ? "bg-[#166534] border-[#166534] text-white"
-            : "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]")
+            ? "bg-primary border-primary text-white"
+            : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary")
         );
       default:
         return base;
@@ -957,7 +957,7 @@ export default function SuperadminReferencesPage() {
                   )}
                   {importValidationResult.validRows > 0 && (
                     <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#166534]">
+                      <p className="text-sm font-semibold text-primary">
                         {importValidationResult.validRows} valid row(s) found
                         out of {importValidationResult.totalRows} total
                       </p>
@@ -1031,7 +1031,7 @@ export default function SuperadminReferencesPage() {
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
               <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                <Check className="size-8 text-[#166534]" />
+                <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">
                 {importResult.imported} questions imported successfully
@@ -1262,7 +1262,7 @@ export default function SuperadminReferencesPage() {
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">
+                        <div className="size-6 rounded bg-primary border-2 border-primary flex items-center justify-center font-bold text-white">
                           4
                         </div>
                         <span>Proficient</span>

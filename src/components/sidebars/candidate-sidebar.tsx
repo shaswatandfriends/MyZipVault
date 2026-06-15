@@ -67,30 +67,30 @@ export function CandidateSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[#166534] font-bold text-sm text-white">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--primary)] font-bold text-sm text-white">
                   ZV
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span
-                    className="font-semibold text-[#111827]"
-                    style={{ fontFamily: "'Clash Display', sans-serif" }}
+                    className="font-semibold text-[var(--foreground)]"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     MyZipVault
                   </span>
-                  <span className="text-xs text-[#9CA3AF]">Candidate Portal</span>
+                  <span className="text-xs text-[var(--text-muted)]">Candidate Portal</span>
                 </div>
-                <ChevronLeft className="ml-auto text-[#9CA3AF] group-data-[state=expanded]:rotate-0 group-data-[state=collapsed]:rotate-180 transition-transform" />
+                <ChevronLeft className="ml-auto text-[var(--text-muted)] group-data-[state=expanded]:rotate-0 group-data-[state=collapsed]:rotate-180 transition-transform" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarSeparator className="bg-[#E5E7EB]" />
+      <SidebarSeparator className="bg-[var(--border)]" />
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#9CA3AF]">Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--text-muted)]">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
@@ -105,8 +105,8 @@ export function CandidateSidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
-                          ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                          : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                          ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
+                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
                       )}
                     >
                       <Link href={item.href}>
@@ -123,25 +123,25 @@ export function CandidateSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarSeparator className="bg-[#E5E7EB]" />
+        <SidebarSeparator className="bg-[var(--border)]" />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
               <Avatar className="size-8">
-                <AvatarFallback className="bg-[#DCFCE7] text-xs font-semibold text-[#166534]">
+                <AvatarFallback className="bg-[var(--primary-light)] text-xs font-semibold text-[var(--primary)]">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="truncate text-sm font-medium text-[#111827]">{displayName}</span>
-                <span className="text-xs text-[#9CA3AF]">Candidate</span>
+                <span className="truncate text-sm font-medium text-[var(--foreground)]">{displayName}</span>
+                <span className="text-xs text-[var(--text-muted)]">Candidate</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign Out"
-              className="text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+              className="text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="size-5" />
@@ -159,7 +159,7 @@ export function CandidateSidebar() {
 export function CandidateSidebarTrigger() {
   return (
     <div className="flex items-center gap-2 px-4 py-2">
-      <Button variant="ghost" size="sm" className="md:hidden text-[#6B7280] hover:text-[#111827]" asChild>
+      <Button variant="ghost" size="sm" className="md:hidden text-[var(--text-secondary)] hover:text-[var(--foreground)]" asChild>
         <Link href="/dashboard">
           <ChevronLeft className="mr-1 size-4" />
           Back

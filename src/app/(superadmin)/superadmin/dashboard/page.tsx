@@ -538,7 +538,7 @@ export default function SuperadminDashboardPage() {
                     />
                     <Legend />
                     <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="recruiters" name="Recruiters" fill="#059669" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="recruiters" name="Recruiters" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

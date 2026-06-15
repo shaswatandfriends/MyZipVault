@@ -55,7 +55,7 @@ interface AuditLogItem {
 function getActionBadge(action: string) {
   if (action.startsWith("CREATE")) {
     return (
-      <Badge className="text-xs" style={{ background: "#DCFCE7", color: "#166534", border: "none" }}>
+      <Badge className="text-xs" style={{ background: "var(--primary-light)", color: "var(--primary)", border: "none" }}>
         {action}
       </Badge>
     );
@@ -368,7 +368,7 @@ export default function ReferenceAuditLogsPage() {
                             {log.userEmail || "—"}
                           </p>
                           {log.role && (
-                            <Badge className="text-[10px] mt-0.5" style={{ background: "#F3F4F6", color: "#6B7280", border: "none" }}>
+                            <Badge className="text-[10px] mt-0.5" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
                               {log.role}
                             </Badge>
                           )}

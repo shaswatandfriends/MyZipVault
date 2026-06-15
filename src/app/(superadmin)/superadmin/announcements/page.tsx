@@ -246,12 +246,12 @@ function BannersTab() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-              <Megaphone className="size-5 text-[#166534]" />
+            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Megaphone className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{filteredBanners.length}</p>
-              <p className="text-xs text-[#6B7280]">Total Banners</p>
+              <p className="text-2xl font-semibold text-foreground">{filteredBanners.length}</p>
+              <p className="text-xs text-text-secondary">Total Banners</p>
             </div>
           </CardContent>
         </Card>
@@ -261,8 +261,8 @@ function BannersTab() {
               <CheckCircle2 className="size-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{activeCount}</p>
-              <p className="text-xs text-[#6B7280]">Active</p>
+              <p className="text-2xl font-semibold text-foreground">{activeCount}</p>
+              <p className="text-xs text-text-secondary">Active</p>
             </div>
           </CardContent>
         </Card>
@@ -272,8 +272,8 @@ function BannersTab() {
               <ToggleLeft className="size-5 text-gray-500" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{inactiveCount}</p>
-              <p className="text-xs text-[#6B7280]">Inactive</p>
+              <p className="text-2xl font-semibold text-foreground">{inactiveCount}</p>
+              <p className="text-xs text-text-secondary">Inactive</p>
             </div>
           </CardContent>
         </Card>
@@ -302,8 +302,8 @@ function BannersTab() {
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-all",
                 activeChannel === ch.value
-                  ? "bg-white shadow-sm text-[#166534]"
-                  : "text-[#6B7280] hover:text-[#111827]"
+                  ? "bg-white shadow-sm text-primary"
+                  : "text-text-secondary hover:text-foreground"
               )}
             >
               {ch.label}
@@ -315,7 +315,7 @@ function BannersTab() {
             setEditingBanner(null);
             setShowCreateDialog(true);
           }}
-          className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+          className="gap-2 bg-primary hover:bg-primary-hover"
         >
           <Plus className="size-4" />
           Create Banner
@@ -332,9 +332,9 @@ function BannersTab() {
       ) : filteredBanners.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Megaphone className="size-10 text-[#9CA3AF] mx-auto mb-3" />
-            <p className="text-sm font-medium text-[#111827]">No banners for {bannerRoleLabels[activeChannel]}</p>
-            <p className="text-xs text-[#6B7280] mt-1">Create your first banner to display in-app for this audience.</p>
+            <Megaphone className="size-10 text-text-muted mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">No banners for {bannerRoleLabels[activeChannel]}</p>
+            <p className="text-xs text-text-secondary mt-1">Create your first banner to display in-app for this audience.</p>
           </CardContent>
         </Card>
       ) : (
@@ -349,7 +349,7 @@ function BannersTab() {
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Thumbnail */}
-                  <div className="size-16 rounded-lg bg-[#F3F4F6] border border-[#E5E7EB] overflow-hidden shrink-0">
+                  <div className="size-16 rounded-lg bg-[#F3F4F6] border border-border overflow-hidden shrink-0">
                     {banner.imageUrl ? (
                       <img
                         src={banner.imageUrl}
@@ -358,7 +358,7 @@ function BannersTab() {
                       />
                     ) : (
                       <div className="flex size-full items-center justify-center">
-                        <ImagePlus className="size-5 text-[#9CA3AF]" />
+                        <ImagePlus className="size-5 text-text-muted" />
                       </div>
                     )}
                   </div>
@@ -366,9 +366,9 @@ function BannersTab() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-[#111827] truncate">{banner.title}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{banner.title}</p>
                       {banner.isPinned && (
-                        <Badge className="bg-[#166534]/10 text-[#166534] text-[10px] px-1.5 py-0">
+                        <Badge className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
                           <Pin className="size-3 mr-0.5" /> Pinned
                         </Badge>
                       )}
@@ -384,9 +384,9 @@ function BannersTab() {
                       )}
                     </div>
                     {banner.description && (
-                      <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-1">{banner.description}</p>
+                      <p className="text-xs text-text-secondary mt-0.5 line-clamp-1">{banner.description}</p>
                     )}
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#9CA3AF]">
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-text-muted">
                       <span className="flex items-center gap-1">
                         <Clock className="size-3" />
                         {banner.carouselDuration}s per slide
@@ -421,7 +421,7 @@ function BannersTab() {
                         setShowCreateDialog(true);
                       }}
                     >
-                      <Pencil className="size-4 text-[#6B7280]" />
+                      <Pencil className="size-4 text-text-secondary" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -620,7 +620,7 @@ function BannerFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+          <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
             {editingBanner ? "Edit Banner" : "Create Banner"}
           </DialogTitle>
           <DialogDescription>
@@ -672,7 +672,7 @@ function BannerFormDialog({
             <Label>Banner Image</Label>
             <div className="flex items-center gap-3">
               {imageUrl ? (
-                <div className="relative size-20 rounded-lg overflow-hidden border border-[#E5E7EB]">
+                <div className="relative size-20 rounded-lg overflow-hidden border border-border">
                   <img src={imageUrl} alt="Preview" className="size-full object-cover" />
                   <button
                     onClick={() => setImageUrl("")}
@@ -685,12 +685,12 @@ function BannerFormDialog({
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="flex size-20 items-center justify-center rounded-lg border-2 border-dashed border-[#E5E7EB] hover:border-[#166534] transition-colors"
+                  className="flex size-20 items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary transition-colors"
                 >
                   {isUploading ? (
-                    <Loader2 className="size-5 text-[#9CA3AF] animate-spin" />
+                    <Loader2 className="size-5 text-text-muted animate-spin" />
                   ) : (
-                    <Upload className="size-5 text-[#9CA3AF]" />
+                    <Upload className="size-5 text-text-muted" />
                   )}
                 </button>
               )}
@@ -701,7 +701,7 @@ function BannerFormDialog({
                 onChange={handleImageUpload}
                 className="hidden"
               />
-              <div className="text-xs text-[#6B7280]">
+              <div className="text-xs text-text-secondary">
                 <p>Recommended: 800x400px</p>
                 <p>Max 5MB. PNG, JPG, WebP</p>
               </div>
@@ -736,7 +736,7 @@ function BannerFormDialog({
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
             />
-            <p className="text-[11px] text-[#9CA3AF]">Banner will auto-hide after this date. Leave empty for no expiry.</p>
+            <p className="text-[11px] text-text-muted">Banner will auto-hide after this date. Leave empty for no expiry.</p>
           </div>
 
           {/* Carousel Duration */}
@@ -749,21 +749,21 @@ function BannerFormDialog({
               value={carouselDuration}
               onChange={(e) => setCarouselDuration(parseInt(e.target.value) || 5)}
             />
-            <p className="text-[11px] text-[#9CA3AF]">How long this banner displays before auto-advancing. Default: 5 seconds.</p>
+            <p className="text-[11px] text-text-muted">How long this banner displays before auto-advancing. Default: 5 seconds.</p>
           </div>
 
           {/* Toggles */}
           <div className="flex items-center justify-between">
             <div>
               <Label>Active</Label>
-              <p className="text-[11px] text-[#9CA3AF]">Banner is visible to the target audience</p>
+              <p className="text-[11px] text-text-muted">Banner is visible to the target audience</p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <Label>Pinned / Sticky</Label>
-              <p className="text-[11px] text-[#9CA3AF]">Always shows first in the carousel</p>
+              <p className="text-[11px] text-text-muted">Always shows first in the carousel</p>
             </div>
             <Switch checked={isPinned} onCheckedChange={setIsPinned} />
           </div>
@@ -776,7 +776,7 @@ function BannerFormDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !title.trim()}
-            className="bg-[#166534] hover:bg-[#14532D]"
+            className="bg-primary hover:bg-primary-hover"
           >
             {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
             {editingBanner ? "Update Banner" : "Create Banner"}
@@ -951,12 +951,12 @@ function CampaignsTab() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-[#166534]/10 flex items-center justify-center">
-              <Mail className="size-5 text-[#166534]" />
+            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Mail className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{announcements.length}</p>
-              <p className="text-xs text-[#6B7280]">Total Announcements</p>
+              <p className="text-2xl font-semibold text-foreground">{announcements.length}</p>
+              <p className="text-xs text-text-secondary">Total Announcements</p>
             </div>
           </CardContent>
         </Card>
@@ -966,8 +966,8 @@ function CampaignsTab() {
               <CheckCircle2 className="size-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{activeCount}</p>
-              <p className="text-xs text-[#6B7280]">Active</p>
+              <p className="text-2xl font-semibold text-foreground">{activeCount}</p>
+              <p className="text-xs text-text-secondary">Active</p>
             </div>
           </CardContent>
         </Card>
@@ -977,8 +977,8 @@ function CampaignsTab() {
               <ToggleLeft className="size-5 text-gray-500" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#111827]">{inactiveCount}</p>
-              <p className="text-xs text-[#6B7280]">Inactive</p>
+              <p className="text-2xl font-semibold text-foreground">{inactiveCount}</p>
+              <p className="text-xs text-text-secondary">Inactive</p>
             </div>
           </CardContent>
         </Card>
@@ -994,7 +994,7 @@ function CampaignsTab() {
             setFormIsActive(false);
             setShowCreateDialog(true);
           }}
-          className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+          className="gap-2 bg-primary hover:bg-primary-hover"
         >
           <Plus className="size-4" />
           Create Announcement
@@ -1022,9 +1022,9 @@ function CampaignsTab() {
       ) : announcements.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Mail className="size-10 text-[#9CA3AF] mx-auto mb-3" />
-            <p className="text-sm font-medium text-[#111827]">No announcements yet</p>
-            <p className="text-xs text-[#6B7280] mt-1">Create an announcement to send targeted emails and notifications.</p>
+            <Mail className="size-10 text-text-muted mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">No announcements yet</p>
+            <p className="text-xs text-text-secondary mt-1">Create an announcement to send targeted emails and notifications.</p>
           </CardContent>
         </Card>
       ) : (
@@ -1034,12 +1034,12 @@ function CampaignsTab() {
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#111827]">{ann.message}</p>
+                    <p className="text-sm text-foreground">{ann.message}</p>
                     <div className="flex items-center gap-2 mt-1.5">
                       <Badge variant="outline" className="text-xs">
                         {roleLabels[ann.targetRole] || ann.targetRole}
                       </Badge>
-                      <span className="text-[11px] text-[#9CA3AF]">{formatDate(ann.createdAt)}</span>
+                      <span className="text-[11px] text-text-muted">{formatDate(ann.createdAt)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -1058,7 +1058,7 @@ function CampaignsTab() {
                         setShowCreateDialog(true);
                       }}
                     >
-                      <Pencil className="size-4 text-[#6B7280]" />
+                      <Pencil className="size-4 text-text-secondary" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(ann)}>
                       <Trash2 className="size-4 text-red-500" />
@@ -1075,7 +1075,7 @@ function CampaignsTab() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
               {editingAnnouncement ? "Edit Announcement" : "Create Announcement"}
             </DialogTitle>
             <DialogDescription>
@@ -1119,7 +1119,7 @@ function CampaignsTab() {
             <Button
               onClick={handleCreateOrUpdateAnnouncement}
               disabled={isSubmittingForm || !formMessage.trim()}
-              className="bg-[#166534] hover:bg-[#14532D]"
+              className="bg-primary hover:bg-primary-hover"
             >
               {isSubmittingForm && <Loader2 className="size-4 mr-1 animate-spin" />}
               {editingAnnouncement ? "Update" : "Create"}
@@ -1132,7 +1132,7 @@ function CampaignsTab() {
       <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
               Send Email Campaign
             </DialogTitle>
             <DialogDescription>
@@ -1184,7 +1184,7 @@ function CampaignsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Send Email</Label>
-                <p className="text-[11px] text-[#9CA3AF]">Also send via email (Brevo)</p>
+                <p className="text-[11px] text-text-muted">Also send via email (Brevo)</p>
               </div>
               <Switch checked={campaignSendEmail} onCheckedChange={setCampaignSendEmail} />
             </div>
@@ -1239,7 +1239,7 @@ function CampaignsTab() {
             <Button
               onClick={handleSendCampaign}
               disabled={isSendingCampaign}
-              className="bg-[#166534] hover:bg-[#14532D]"
+              className="bg-primary hover:bg-primary-hover"
             >
               {isSendingCampaign ? (
                 <Loader2 className="size-4 mr-1 animate-spin" />

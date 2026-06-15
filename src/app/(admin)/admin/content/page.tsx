@@ -669,7 +669,7 @@ export default function AdminContentPage() {
       case 1: return base + (isSelected ? "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626]" : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]");
       case 2: return base + (isSelected ? "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04]" : "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]");
       case 3: return base + (isSelected ? "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB]" : "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]");
-      case 4: return base + (isSelected ? "bg-[#166534] border-[#166534] text-white" : "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]");
+      case 4: return base + (isSelected ? "bg-primary border-primary text-white" : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary");
       default: return base;
     }
   };
@@ -1448,7 +1448,7 @@ export default function AdminContentPage() {
                   )}
                   {importValidationResult.validRows > 0 && (
                     <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#166534]">
+                      <p className="text-sm font-semibold text-primary">
                         {importValidationResult.validRows} valid row(s) found out of {importValidationResult.totalRows} total
                       </p>
                       {importValidationResult.preview.length > 0 && (
@@ -1499,7 +1499,7 @@ export default function AdminContentPage() {
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
               <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                <Check className="size-8 text-[#166534]" />
+                <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">{importResult.imported} skills imported successfully</h3>
               {importResult.skipped > 0 && (
@@ -1662,7 +1662,7 @@ export default function AdminContentPage() {
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
+                        <div className="size-6 rounded bg-primary border-2 border-primary flex items-center justify-center font-bold text-white">4</div>
                         <span>Proficient</span>
                       </div>
                     </div>
@@ -1671,7 +1671,7 @@ export default function AdminContentPage() {
                   {/* Skills grouped by category */}
                   {previewData.categories.map((cat) => (
                     <div key={cat.category}>
-                      <h4 className="font-semibold text-sm text-[#166534] mb-2 border-b pb-1">{cat.category}</h4>
+                      <h4 className="font-semibold text-sm text-primary mb-2 border-b pb-1">{cat.category}</h4>
                       <div className="space-y-2">
                         {cat.skills.map((skill) => (
                           <div key={skill.id} className="flex items-center justify-between py-2 border-b border-gray-50">
@@ -1752,7 +1752,7 @@ export default function AdminContentPage() {
                     key={status}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       refPreviewStatus === status
-                        ? "bg-[#166534] text-white"
+                        ? "bg-primary text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                     onClick={() => setRefPreviewStatus(status)}
@@ -1788,7 +1788,7 @@ export default function AdminContentPage() {
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#166534] border-2 border-[#166534] flex items-center justify-center font-bold text-white">4</div>
+                        <div className="size-6 rounded bg-primary border-2 border-primary flex items-center justify-center font-bold text-white">4</div>
                         <span>Proficient</span>
                       </div>
                     </div>
@@ -1919,7 +1919,7 @@ export default function AdminContentPage() {
                   )}
                   {refImportValidationResult.validRows > 0 && (
                     <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#166534]">
+                      <p className="text-sm font-semibold text-primary">
                         {refImportValidationResult.validRows} valid row(s) found out of {refImportValidationResult.totalRows} total
                       </p>
                       {refImportValidationResult.preview.length > 0 && (
@@ -1966,7 +1966,7 @@ export default function AdminContentPage() {
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
               <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                <Check className="size-8 text-[#166534]" />
+                <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">{refImportResult.imported} questions imported successfully</h3>
               {refImportResult.skipped > 0 && (
