@@ -136,11 +136,11 @@ const defaultData: LandingPageData = {
     trustLine3: "100% Free for Nurses",
   },
   colors: {
-    primary: "var(--primary)",
-    accent: "var(--accent-teal)",
-    background: "var(--background)",
-    textPrimary: "var(--foreground)",
-    textSecondary: "var(--text-secondary)",
+    primary: "#059669",
+    accent: "#0D9488",
+    background: "#F0FDFA",
+    textPrimary: "#0F172A",
+    textSecondary: "#475569",
   },
   featureCards: [
     {
@@ -529,6 +529,32 @@ function FormField({
   );
 }
 
+// ─── Resolve CSS var strings to hex for color picker compatibility ──
+const CSS_VAR_TO_HEX: Record<string, string> = {
+  "var(--primary)": "#059669",
+  "var(--accent-teal)": "#0D9488",
+  "var(--background)": "#F0FDFA",
+  "var(--foreground)": "#0F172A",
+  "var(--text-primary)": "#0F172A",
+  "var(--text-secondary)": "#475569",
+};
+
+function resolveColor(value: string | undefined): string {
+  if (!value) return "#059669";
+  if (value.startsWith("var(")) return CSS_VAR_TO_HEX[value] || "#059669";
+  return value;
+}
+
+function resolveColors(colors: ColorSettings): ColorSettings {
+  return {
+    primary: resolveColor(colors.primary),
+    accent: resolveColor(colors.accent),
+    background: resolveColor(colors.background),
+    textPrimary: resolveColor(colors.textPrimary),
+    textSecondary: resolveColor(colors.textSecondary),
+  };
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function LandingPageEditorPage() {
   const [data, setData] = useState<LandingPageData>(defaultData);
@@ -547,8 +573,12 @@ export default function LandingPageEditorPage() {
       setLoading(true);
       const res = await fetch("/api/superadmin/landing-page");
       if (res.ok) {
-        const json = await res.json();
-        setData(json as LandingPageData);
+        const json = await res.json() as LandingPageData;
+        // Resolve any CSS var strings to hex values (for backward compat)
+        if (json.colors) {
+          json.colors = resolveColors(json.colors);
+        }
+        setData(json);
         setLoadedFromServer(true);
         setHasUnsavedChanges(false);
       }

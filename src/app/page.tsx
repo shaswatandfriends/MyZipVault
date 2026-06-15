@@ -1001,6 +1001,32 @@ export default function LandingPage() {
       .then((data: LandingPageContent) => {
         if (data && Object.keys(data).length > 0) {
           setContent(data);
+          // Inject custom colors as CSS variables so design tokens pick them up
+          if (data.colors) {
+            const root = document.documentElement;
+            if (data.colors.primary && !data.colors.primary.startsWith("var(")) {
+              root.style.setProperty("--primary", data.colors.primary);
+              root.style.setProperty("--primary-foreground", "#FFFFFF");
+              // Derive lighter/opacity shades
+              root.style.setProperty("--primary-light", data.colors.primary + "1A"); // ~10% opacity
+              root.style.setProperty("--primary-hover", data.colors.primary);
+              root.style.setProperty("--primary-vivid", data.colors.primary);
+            }
+            if (data.colors.accent && !data.colors.accent.startsWith("var(")) {
+              root.style.setProperty("--accent-teal", data.colors.accent);
+              root.style.setProperty("--accent-light", data.colors.accent + "1A");
+            }
+            if (data.colors.background && !data.colors.background.startsWith("var(")) {
+              root.style.setProperty("--background", data.colors.background);
+            }
+            if (data.colors.textPrimary && !data.colors.textPrimary.startsWith("var(")) {
+              root.style.setProperty("--foreground", data.colors.textPrimary);
+              root.style.setProperty("--text-primary", data.colors.textPrimary);
+            }
+            if (data.colors.textSecondary && !data.colors.textSecondary.startsWith("var(")) {
+              root.style.setProperty("--text-secondary", data.colors.textSecondary);
+            }
+          }
         }
       })
       .catch(() => {
