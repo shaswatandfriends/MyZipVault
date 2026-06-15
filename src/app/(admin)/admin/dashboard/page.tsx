@@ -358,7 +358,7 @@ export default function AdminDashboardPage() {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="candidates" name="Candidates" fill="#0d9488" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="candidates" name="Candidates" fill="var(--accent-teal)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="recruiters" name="Recruiters" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

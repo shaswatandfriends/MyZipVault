@@ -1459,6 +1459,20 @@ function MyCalendarTab({
         return;
       }
 
+      // Dynamically resolve CSS variable values from the current theme
+      // so the print template never holds hardcoded hex colors
+      const cs = getComputedStyle(document.documentElement);
+      const pv = (v: string) => cs.getPropertyValue(v).trim();
+      const printVars = {
+        border: pv("--border"),
+        foreground: pv("--foreground"),
+        textMuted: pv("--text-muted"),
+        surface2: pv("--surface-2"),
+        textSecondary: pv("--text-secondary"),
+        statusGreenDark: pv("--status-green-dark"),
+        statusGreenDarker: pv("--status-green-darker"),
+      };
+
       const rows = data.calls.map((call: {
         leadName: string;
         phone: string;
@@ -1470,15 +1484,15 @@ function MyCalendarTab({
         starRating: number | null;
       }, i: number) => `
         <tr>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${i + 1}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">${call.leadName}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.phone || "—"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.email || "—"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.specialty || "—"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-weight:500;">${call.scheduledTime || "TBD"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.pipelineStage ? call.pipelineStage.replace(/_/g, " ") : "—"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.starRating ? "★".repeat(call.starRating) : "—"}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;">${call.remark || "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${i + 1}</td>
+          <td style="padding:8px;border:1px solid var(--border);font-weight:600;">${call.leadName}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.phone || "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.email || "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.specialty || "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);font-weight:500;">${call.scheduledTime || "TBD"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.pipelineStage ? call.pipelineStage.replace(/_/g, " ") : "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.starRating ? "★".repeat(call.starRating) : "—"}</td>
+          <td style="padding:8px;border:1px solid var(--border);">${call.remark || "—"}</td>
         </tr>
       `).join("");
 
@@ -1487,19 +1501,28 @@ function MyCalendarTab({
 <head>
   <title>Call Sheet — ${data.date}</title>
   <style>
+    :root {
+      --border: ${printVars.border};
+      --foreground: ${printVars.foreground};
+      --text-muted: ${printVars.textMuted};
+      --surface-2: ${printVars.surface2};
+      --text-secondary: ${printVars.textSecondary};
+      --status-green-dark: ${printVars.statusGreenDark};
+      --status-green-darker: ${printVars.statusGreenDarker};
+    }
     @media print {
       body { margin: 0; }
       .no-print { display: none; }
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #111827; padding: 24px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--foreground); padding: 24px; }
     h1 { font-size: 20px; margin-bottom: 4px; }
-    h2 { font-size: 14px; color: #6b7280; font-weight: normal; margin-top: 0; }
+    h2 { font-size: 14px; color: var(--text-muted); font-weight: normal; margin-top: 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
-    th { background: #f3f4f6; padding: 8px; border: 1px solid #e5e7eb; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .meta { display: flex; gap: 24px; margin-top: 8px; font-size: 13px; color: #374151; }
+    th { background: var(--surface-2); padding: 8px; border: 1px solid var(--border); text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta { display: flex; gap: 24px; margin-top: 8px; font-size: 13px; color: var(--text-secondary); }
     .meta span { font-weight: 500; }
-    .print-btn { margin-top: 16px; padding: 8px 16px; background: #166534; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    .print-btn:hover { background: #14532D; }
+    .print-btn { margin-top: 16px; padding: 8px 16px; background: var(--status-green-dark); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .print-btn:hover { background: var(--status-green-darker); }
   </style>
 </head>
 <body>
@@ -1511,7 +1534,7 @@ function MyCalendarTab({
     <div>Recruiter: <span>${data.recruiterName}</span></div>
     <div>Organization: <span>${data.organizationName}</span></div>
   </div>
-  ${data.calls.length === 0 ? '<p style="margin-top:24px;color:#9ca3af;">No scheduled calls for today.</p>' : `
+  ${data.calls.length === 0 ? '<p style="margin-top:24px;color:var(--text-muted);">No scheduled calls for today.</p>' : `
   <table>
     <thead>
       <tr>
@@ -2061,7 +2084,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                 size="sm"
                 onClick={handleFindMatches}
                 disabled={autoMatchLoading}
-                className="bg-accent-teal hover:bg-[#0F766E] text-white"
+                className="bg-accent-teal hover:bg-accent-teal-hover text-white"
               >
                 {autoMatchLoading ? (
                   <Loader2 className="size-3.5 mr-1 animate-spin" />
@@ -2143,7 +2166,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
                       </Button>
                       <Button
                         size="sm"
-                        className="flex-1 h-7 text-xs bg-accent-teal hover:bg-[#0F766E] text-white"
+                        className="flex-1 h-7 text-xs bg-accent-teal hover:bg-accent-teal-hover text-white"
                         onClick={() => handleSendShiftRequest(match)}
                       >
                         <Send className="size-3 mr-1" />
@@ -2261,7 +2284,7 @@ function CandidatesCalendarTab({ refreshKey }: { refreshKey: number }) {
 
                   <Button
                     size="sm"
-                    className="w-full bg-accent-teal hover:bg-[#0F766E] text-white"
+                    className="w-full bg-accent-teal hover:bg-accent-teal-hover text-white"
                     onClick={() => setShiftDialogCandidate(c)}
                   >
                     <Send className="size-3.5 mr-1" />
@@ -2932,7 +2955,7 @@ function MyAvailabilitySection() {
                   onChange={(e) => setNewSlot((p) => ({ ...p, label: e.target.value }))}
                 />
               </div>
-              <Button size="sm" onClick={handleAddSlot} className="bg-accent-teal hover:bg-[#0F766E] text-white h-9">
+              <Button size="sm" onClick={handleAddSlot} className="bg-accent-teal hover:bg-accent-teal-hover text-white h-9">
                 <Plus className="size-3.5 mr-1" />
                 Add Slot
               </Button>

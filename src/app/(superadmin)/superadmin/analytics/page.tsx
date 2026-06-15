@@ -230,7 +230,7 @@ export default function SuperadminAnalyticsPage() {
                 <Tooltip
                   contentStyle={{
                     borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--border)",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                   }}
                 />
@@ -238,13 +238,13 @@ export default function SuperadminAnalyticsPage() {
                 <Bar
                   dataKey="purchased"
                   name="Purchased"
-                  fill="#10b981"
+                  fill="var(--primary-vivid)"
                   radius={[4, 4, 0, 0]}
                 />
                 <Bar
                   dataKey="spent"
                   name="Spent"
-                  fill="#14b8a6"
+                  fill="var(--accent-teal)"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>

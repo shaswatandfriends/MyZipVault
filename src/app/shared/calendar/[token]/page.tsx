@@ -84,22 +84,22 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
     label: "Actively Looking",
     color: "var(--primary)",
     bgColor: "var(--primary-light)",
-    borderColor: "#86EFAC",
-    dotColor: "#22C55E",
+    borderColor: "var(--status-green-border)",
+    dotColor: "var(--primary-vivid)",
   },
   open: {
     label: "Open to Opportunities",
-    color: "#92400E",
-    bgColor: "#FEF9C3",
-    borderColor: "#FDE047",
-    dotColor: "#EAB308",
+    color: "var(--status-amber-dark)",
+    bgColor: "var(--badge-yellow-bg)",
+    borderColor: "var(--badge-yellow-border)",
+    dotColor: "var(--badge-yellow)",
   },
   not_available: {
     label: "Not Available",
-    color: "#991B1B",
-    bgColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
-    dotColor: "#EF4444",
+    color: "var(--status-red-dark)",
+    bgColor: "var(--badge-red-bg)",
+    borderColor: "var(--status-red-border)",
+    dotColor: "var(--badge-red)",
   },
 };
 
@@ -537,15 +537,15 @@ export default function SharedCalendarPage({
 
                     if (status === "available") {
                       bgClass = "bg-emerald-50";
-                      dotColor = "#22C55E";
+                      dotColor = "var(--primary-vivid)";
                       borderClass = "border-emerald-200";
                     } else if (status === "blocked") {
                       bgClass = "bg-red-50";
-                      dotColor = "#EF4444";
+                      dotColor = "var(--badge-red)";
                       borderClass = "border-red-200";
                     } else if (status === "mixed") {
                       bgClass = "bg-amber-50";
-                      dotColor = "#EAB308";
+                      dotColor = "var(--badge-yellow)";
                       borderClass = "border-amber-200";
                     }
 

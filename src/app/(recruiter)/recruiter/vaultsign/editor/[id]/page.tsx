@@ -642,7 +642,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <button
                 key={v.key}
                 onClick={() => { insertVariable(v.key); setShowVariablesPanel(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#F0FDF4] hover:bg-primary-light text-primary font-medium transition-colors border border-transparent hover:border-primary/20"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-primary-light hover:bg-primary-light text-primary font-medium transition-colors border border-transparent hover:border-primary/20"
               >
                 {v.label}
               </button>
@@ -657,14 +657,14 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <div key={v.key} className="flex items-center gap-1">
                 <button
                   onClick={() => { insertVariable(v.key); setShowVariablesPanel(false); }}
-                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#1D4ED8] font-medium transition-colors"
+                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-status-blue-bg hover:bg-badge-blue-bg text-status-blue-dark font-medium transition-colors"
                 >
                   {v.label}
                 </button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
+                  className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
                   onClick={() => setCustomVariables(customVariables.filter((cv) => cv.key !== v.key))}
                 >
                   <X className="h-3 w-3" />
@@ -731,7 +731,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               </div>
               <button 
                 onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
-                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-[#D1D5DB]'}`}
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-disabled-border'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
@@ -769,7 +769,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
+                  className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
                   onClick={() => removeSigner(index)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -778,7 +778,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             ))}
 
             {showAddSigner && (
-              <div className="p-2 rounded-lg border border-primary/20 bg-[#F0FDF4] space-y-1.5">
+              <div className="p-2 rounded-lg border border-primary/20 bg-primary-light space-y-1.5">
                 <Input
                   placeholder="Name"
                   value={newSignerName}
@@ -838,7 +838,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-primary/30 hover:bg-[#F0FDF4] transition-colors text-foreground cursor-pointer"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-primary/30 hover:bg-primary-light transition-colors text-foreground cursor-pointer"
                                 onClick={() => addSignField(type, index)}
                               >
                                 <span className="text-sm">{FIELD_TYPE_ICONS[type]}</span>
@@ -865,7 +865,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-4 w-4 p-0 text-text-muted hover:text-[#DC2626]"
+                          className="h-4 w-4 p-0 text-text-muted hover:text-status-red"
                           onClick={() => removeSignField(field.id)}
                         >
                           <X className="h-2.5 w-2.5" />
@@ -920,7 +920,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* View Mode Toggle */}
-          <div className="hidden sm:flex items-center bg-[#F3F4F6] rounded-lg p-0.5">
+          <div className="hidden sm:flex items-center bg-surface-2 rounded-lg p-0.5">
             <button
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 viewMode === "edit" ? "bg-white text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
@@ -974,7 +974,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 <Eye className="h-4 w-4 mr-2" /> Generate PDF Preview
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[#DC2626] focus:text-[#DC2626]" onClick={() => setShowDeleteDialog(true)}>
+              <DropdownMenuItem className="text-status-red focus:text-status-red" onClick={() => setShowDeleteDialog(true)}>
                 <Trash2 className="h-4 w-4 mr-2" /> Delete Document
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -984,7 +984,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
       {/* Toolbar — Only show in Edit mode, Desktop — Word-style ribbon */}
       {viewMode === "edit" && (
-        <div className="hidden lg:flex bg-[#F8F9FA] border-b border-border px-1 py-0.5 flex-wrap gap-y-0">
+        <div className="hidden lg:flex bg-toolbar-bg border-b border-border px-1 py-0.5 flex-wrap gap-y-0">
           {/* Clipboard Group */}
           <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
             <div className="flex items-center gap-0.5">
@@ -1055,7 +1055,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-primary" : "text-text-secondary"}`} title="Font Color">
+                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Font Color">
                     <Palette className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
@@ -1070,7 +1070,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-primary" : "text-text-secondary"}`} title="Highlight">
+                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Highlight">
                     <Highlighter className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
@@ -1269,7 +1269,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <ZoomIn className="h-4 w-4" />
             </Button>
             <Separator orientation="vertical" className="h-6 mx-1" />
-            <Badge variant="outline" className="text-[10px] bg-[#F0FDF4] text-primary border-primary/20">
+            <Badge variant="outline" className="text-[10px] bg-primary-light text-primary border-primary/20">
               PDF Preview
             </Badge>
           </div>
@@ -1290,19 +1290,19 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Center — Editor or PDF Preview */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
+        <div className="flex-1 overflow-y-auto bg-surface-2">
           {viewMode === "edit" ? (
             <>
               {/* Info banner for Word documents */}
-              <div className="bg-[#EFF6FF] border-b border-[#BFDBFE] px-4 py-2 flex items-center gap-2">
-                <Eye className="h-4 w-4 text-[#2563EB] flex-shrink-0" />
-                <p className="text-xs text-[#1E40AF]">
+              <div className="bg-status-blue-bg border-b border-status-blue-border px-4 py-2 flex items-center gap-2">
+                <Eye className="h-4 w-4 text-status-blue flex-shrink-0" />
+                <p className="text-xs text-status-blue-dark">
                   <strong>Tip:</strong> Use <strong>Preview</strong> mode to see the document with proper page breaks and formatting.
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-auto h-6 text-[10px] border-[#2563EB]/30 text-[#2563EB] hover:bg-[#DBEAFE] flex-shrink-0"
+                  className="ml-auto h-6 text-[10px] border-status-blue/30 text-status-blue hover:bg-badge-blue-bg flex-shrink-0"
                   onClick={() => {
                     if (pdfUrl) {
                       setViewMode("preview");
@@ -1330,7 +1330,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : pdfError ? (
                 <div className="flex flex-col items-center gap-3 py-20 max-w-md text-center">
-                  <AlertTriangle className="h-8 w-8 text-[#D97706]" />
+                  <AlertTriangle className="h-8 w-8 text-status-amber" />
                   <p className="text-sm font-medium text-foreground">PDF Preview Error</p>
                   <p className="text-xs text-text-secondary">{pdfError}</p>
                   <Button variant="outline" size="sm" onClick={handleGeneratePreview} className="mt-2">
@@ -1346,7 +1346,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   </Button>
                 </div>
               ) : (
-                <div className="shadow-lg border border-border rounded-lg overflow-hidden bg-[#F3F4F6]">
+                <div className="shadow-lg border border-border rounded-lg overflow-hidden bg-surface-2">
                   <canvas ref={pdfCanvasRef} className="block" />
                 </div>
               )}
@@ -1390,7 +1390,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#DC2626]">
+            <DialogTitle className="flex items-center gap-2 text-status-red">
               <Trash2 className="h-5 w-5" /> Delete Document
             </DialogTitle>
             <DialogDescription>
@@ -1441,27 +1441,27 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         }
         .tiptap-editor .tiptap p {
           margin-bottom: 0.5em;
-          color: #374151;
+          color: var(--text-secondary);
           line-height: 1.6;
         }
         .tiptap-editor .tiptap h1 {
           font-size: 1.75rem;
           font-weight: 700;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1.5em;
           margin-bottom: 0.5em;
         }
         .tiptap-editor .tiptap h2 {
           font-size: 1.4rem;
           font-weight: 600;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1.2em;
           margin-bottom: 0.4em;
         }
         .tiptap-editor .tiptap h3 {
           font-size: 1.15rem;
           font-weight: 600;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1em;
           margin-bottom: 0.3em;
         }
@@ -1485,12 +1485,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         }
         .tiptap-editor .tiptap table td,
         .tiptap-editor .tiptap table th {
-          border: 1px solid #E5E7EB;
+          border: 1px solid var(--border);
           padding: 8px;
           min-width: 60px;
         }
         .tiptap-editor .tiptap table th {
-          background: #F3F4F6;
+          background: var(--surface-2);
           font-weight: 600;
         }
         .tiptap-editor .tiptap img {
@@ -1502,7 +1502,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #9CA3AF;
+          color: var(--text-muted);
           pointer-events: none;
           height: 0;
         }
@@ -1554,9 +1554,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           font-size: 9px;
           font-weight: 700;
           letter-spacing: 2px;
-          color: #166534;
-          background: #F0FDF4;
-          border: 1px solid #166534/30;
+          color: var(--status-green-dark);
+          background: var(--status-green-bg);
+          border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
           padding: 3px 16px;
           border-radius: 4px;
           white-space: nowrap;
@@ -1591,9 +1591,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           font-size: 9px;
           font-weight: 700;
           letter-spacing: 2px;
-          color: #166534;
-          background: #F0FDF4;
-          border: 1px solid #166534/30;
+          color: var(--status-green-dark);
+          background: var(--status-green-bg);
+          border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
           padding: 3px 16px;
           border-radius: 4px;
           white-space: nowrap;
@@ -1627,8 +1627,8 @@ function ToolbarButton({
             size="sm"
             className={`h-7 w-7 p-0 transition-all rounded ${
               isActive
-                ? "bg-primary-light text-primary shadow-[inset_0_0_0_1px_#166534/30]"
-                : "text-foreground hover:bg-[#F3F4F6] hover:text-foreground active:bg-surface-3"
+                ? "bg-primary-light text-primary ring-1 ring-primary/30"
+                : "text-foreground hover:bg-surface-2 hover:text-foreground active:bg-surface-3"
             }`}
             onClick={onClick}
             title={title}

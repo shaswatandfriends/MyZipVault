@@ -59,6 +59,28 @@
   --color-badge-green: var(--badge-green);
   --color-badge-green-bg: var(--badge-green-bg);
 
+  /* Status / Destructive tokens */
+  --color-status-red: var(--status-red);
+  --color-status-red-bg: var(--status-red-bg);
+  --color-status-red-dark: var(--status-red-dark);
+  --color-status-red-border: var(--status-red-border);
+  --color-status-red-hover: var(--status-red-hover);
+  --color-status-amber: var(--status-amber);
+  --color-status-amber-bg: var(--status-amber-bg);
+  --color-status-amber-dark: var(--status-amber-dark);
+  --color-status-blue: var(--status-blue);
+  --color-status-blue-bg: var(--status-blue-bg);
+  --color-status-blue-dark: var(--status-blue-dark);
+  --color-status-blue-border: var(--status-blue-border);
+  --color-status-green-bg: var(--status-green-bg);
+  --color-status-green-dark: var(--status-green-dark);
+  --color-status-green-border: var(--status-green-border);
+  --color-accent-teal-hover: var(--accent-teal-hover);
+  --color-badge-yellow-border: var(--badge-yellow-border);
+  --color-hover-bg: var(--hover-bg);
+  --color-toolbar-bg: var(--toolbar-bg);
+  --color-disabled-border: var(--disabled-border);
+
   /* Glass tokens */
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
@@ -133,6 +155,28 @@
   --badge-green: #059669;
   --badge-green-bg: #D1FAE5;
 
+  /* ─── Status / Destructive Tokens ──────────────────────────────────── */
+  --status-red: #DC2626;
+  --status-red-bg: #FEF2F2;
+  --status-red-dark: #991B1B;
+  --status-red-border: #FCA5A5;
+  --status-red-hover: #B91C1C;
+  --status-amber: #D97706;
+  --status-amber-bg: #FFFBEB;
+  --status-amber-dark: #92400E;
+  --status-blue: #2563EB;
+  --status-blue-bg: #EFF6FF;
+  --status-blue-dark: #1E40AF;
+  --status-blue-border: #BFDBFE;
+  --status-green-bg: #F0FDF4;
+  --status-green-dark: #166534;
+  --status-green-border: #86EFAC;
+  --accent-teal-hover: #0F766E;
+  --badge-yellow-border: #FDE047;
+  --hover-bg: #F1F5F9;
+  --toolbar-bg: #F8F9FA;
+  --disabled-border: #CBD5E1;
+
   /* ─── Glass Tokens — More Frosted ────────────────────────────────── */
   --glass-bg: rgba(255, 255, 255, 0.65);
   --glass-border: rgba(255, 255, 255, 0.5);
@@ -181,6 +225,17 @@
   --chart-4: #10B981;
   --chart-5: #34D399;
 
+  /* Pipeline visualization colors */
+  --pipeline-new-lead: #10b981;
+  --pipeline-doc-pending: #f59e0b;
+  --pipeline-submitted: #3b82f6;
+  --pipeline-interested-no-job: #8b5cf6;
+  --pipeline-interview-scheduled: #06b6d4;
+  --pipeline-offer-sent: #ec4899;
+  --pipeline-onboarding: #14b8a6;
+  --pipeline-started: #22c55e;
+  --pipeline-not-interested: #ef4444;
+
   /* ─── Sidebar ──────────────────────────────────────────────────── */
   --sidebar: rgba(255, 255, 255, 0.82);
   --sidebar-foreground: #0F172A;
@@ -222,6 +277,28 @@
   --badge-blue-bg: rgba(96, 165, 250, 0.12);
   --badge-green: #34D399;
   --badge-green-bg: rgba(52, 211, 153, 0.12);
+
+  /* ─── Dark Status Tokens ─────────────────────────────────────────── */
+  --status-red: #F87171;
+  --status-red-bg: rgba(248, 113, 113, 0.12);
+  --status-red-dark: #FECACA;
+  --status-red-border: rgba(248, 113, 113, 0.25);
+  --status-red-hover: #FCA5A5;
+  --status-amber: #FBBF24;
+  --status-amber-bg: rgba(251, 191, 36, 0.12);
+  --status-amber-dark: #FDE68A;
+  --status-blue: #60A5FA;
+  --status-blue-bg: rgba(96, 165, 250, 0.12);
+  --status-blue-dark: #93C5FD;
+  --status-blue-border: rgba(96, 165, 250, 0.25);
+  --status-green-bg: rgba(52, 211, 153, 0.12);
+  --status-green-dark: #6EE7B7;
+  --status-green-border: rgba(52, 211, 153, 0.25);
+  --accent-teal-hover: #14B8A6;
+  --badge-yellow-border: rgba(251, 191, 36, 0.25);
+  --hover-bg: #162032;
+  --toolbar-bg: #1E293B;
+  --disabled-border: rgba(255, 255, 255, 0.12);
 
   /* ─── Dark Glass Tokens ────────────────────────────────────────── */
   --glass-bg: rgba(30, 41, 59, 0.65);
@@ -269,6 +346,17 @@
   --chart-3: #22D3EE;
   --chart-4: #6EE7B7;
   --chart-5: #A7F3D0;
+
+  /* Pipeline visualization colors (dark mode — lighter tints) */
+  --pipeline-new-lead: #34D399;
+  --pipeline-doc-pending: #FBBF24;
+  --pipeline-submitted: #60A5FA;
+  --pipeline-interested-no-job: #A78BFA;
+  --pipeline-interview-scheduled: #22D3EE;
+  --pipeline-offer-sent: #F472B6;
+  --pipeline-onboarding: #2DD4BF;
+  --pipeline-started: #4ADE80;
+  --pipeline-not-interested: #F87171;
 
   --sidebar: rgba(11, 17, 32, 0.85);
   --sidebar-foreground: #F1F5F9;

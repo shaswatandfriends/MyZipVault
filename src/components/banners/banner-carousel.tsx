@@ -215,7 +215,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                   href={currentBanner.ctaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#14532D]"
+                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
                 >
                   {currentBanner.ctaText}
                   <ExternalLink className="size-3.5" />

@@ -35,44 +35,26 @@ export class SigningErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{ backgroundColor: "var(--background)" }}
-          className="min-h-screen flex items-center justify-center p-4"
-        >
-          <div
-            className="bg-white rounded-2xl border border-[var(--border)] p-8 max-w-md w-full text-center"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
-          >
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <div className="bg-card rounded-2xl border border-border p-8 max-w-md w-full text-center shadow-sm">
             {/* VaultSign Logo */}
             <div className="mb-6">
-              <div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                style={{ backgroundColor: "#FEF3C7" }}
-              >
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-status-amber-bg">
                 <span style={{ fontSize: "32px" }}>&#x1F4C4;</span>
               </div>
-              <h1
-                className="text-2xl font-extrabold mb-1"
-                style={{ color: "var(--primary)", letterSpacing: "-0.5px" }}
-              >
+              <h1 className="text-2xl font-extrabold mb-1 text-primary" style={{ letterSpacing: "-0.5px" }}>
                 &#x1F510; VaultSign
               </h1>
-              <p
-                className="text-xs uppercase tracking-widest"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <p className="text-xs uppercase tracking-widest text-text-secondary">
                 by MyZipVault
               </p>
             </div>
 
             {/* Friendlier heading for signers */}
-            <h2
-              className="text-xl font-bold mb-2"
-              style={{ color: "var(--foreground)" }}
-            >
+            <h2 className="text-xl font-bold mb-2 text-foreground">
               We had trouble loading your document
             </h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm mb-6 text-text-secondary">
               Something went wrong while preparing your document for signing.
               This is usually temporary. Please try again or contact the person
               who sent you this document.
@@ -80,17 +62,8 @@ export class SigningErrorBoundary extends React.Component<
 
             {/* Error details */}
             {this.state.error && (
-              <div
-                className="mb-6 rounded-lg p-3 text-left"
-                style={{
-                  backgroundColor: "#FEF2F2",
-                  border: "1px solid #FECACA",
-                }}
-              >
-                <p
-                  className="text-xs font-mono break-all"
-                  style={{ color: "#DC2626" }}
-                >
+              <div className="mb-6 rounded-lg p-3 text-left bg-status-red-bg border border-status-red-border">
+                <p className="text-xs font-mono break-all text-status-red">
                   {this.state.error.message}
                 </p>
               </div>
@@ -100,20 +73,7 @@ export class SigningErrorBoundary extends React.Component<
             <div className="space-y-3">
               <button
                 onClick={this.handleReset}
-                className="w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  border: "2px solid #166534",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "#14532D";
-                }}
-                onMouseOut={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "var(--primary)";
-                }}
+                className="w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm bg-primary hover:bg-status-green-dark cursor-pointer border-2 border-primary"
               >
                 Try Again
               </button>
@@ -124,43 +84,22 @@ export class SigningErrorBoundary extends React.Component<
                     window.history.back();
                   }
                 }}
-                className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm"
-                style={{
-                  color: "#374151",
-                  border: "1px solid #E5E7EB",
-                  backgroundColor: "#FFFFFF",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "var(--background)";
-                }}
-                onMouseOut={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "#FFFFFF";
-                }}
+                className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-text-secondary border border-border bg-card hover:bg-background cursor-pointer"
               >
                 Go Back
               </button>
 
               <a
                 href="mailto:support@myzipvault.com"
-                className="block text-xs"
-                style={{
-                  color: "var(--accent-teal)",
-                  textDecoration: "underline",
-                }}
+                className="block text-xs text-accent-teal underline"
               >
                 Contact the Sender
               </a>
             </div>
 
             {/* Footer branding */}
-            <div
-              className="mt-8 pt-4"
-              style={{ borderTop: "1px solid #E5E7EB" }}
-            >
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <div className="mt-8 pt-4 border-t border-border">
+              <p className="text-xs text-text-muted">
                 VaultSign by MyZipVault — Secure Electronic Signatures
               </p>
             </div>

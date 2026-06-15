@@ -25,16 +25,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
-  partially_signed: { label: "Partially Signed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
-  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-};
+import { vaultSignStatusColors, destructiveColors } from "@/lib/status-colors";
 
 export default function VaultSignDashboardPage() {
   const router = useRouter();
@@ -383,8 +374,8 @@ export default function VaultSignDashboardPage() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-[#2563EB]" />
+                <div className="w-10 h-10 rounded-lg bg-status-blue-bg flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-status-blue" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
@@ -421,8 +412,8 @@ export default function VaultSignDashboardPage() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#FEF2F2] flex items-center justify-center">
-                  <XCircle className="h-5 w-5 text-[#DC2626]" />
+                <div className="w-10 h-10 rounded-lg bg-status-red-bg flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-status-red" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.declined}</p>
@@ -440,8 +431,8 @@ export default function VaultSignDashboardPage() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#FFFBEB] flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-[#D97706]" />
+                <div className="w-10 h-10 rounded-lg bg-status-amber-bg flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-status-amber" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.expiring_soon}</p>
@@ -589,7 +580,7 @@ export default function VaultSignDashboardPage() {
                     </TableRow>
                   ) : (
                     filteredDocs.map((doc) => {
-                      const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
+                      const statusConf = vaultSignStatusColors[doc.status] || vaultSignStatusColors.draft;
                       return (
                         <TableRow key={doc.id} className="cursor-pointer hover:bg-background" onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}>
                           <TableCell>
@@ -601,7 +592,7 @@ export default function VaultSignDashboardPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>
+                            <Badge className={`${statusConf.bg} ${statusConf.text} border-0`}>
                               {statusConf.label}
                             </Badge>
                           </TableCell>
@@ -612,8 +603,8 @@ export default function VaultSignDashboardPage() {
                                 key={i}
                                 className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
                                 style={{
-                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
-                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)",
+                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "var(--status-red-bg)" : "var(--surface-2)",
+                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "var(--status-red)" : "var(--text-secondary)",
                                 }}
                                 title={`${s.name} - ${s.status}`}
                               >
@@ -673,7 +664,7 @@ export default function VaultSignDashboardPage() {
                                 </DropdownMenuItem>
                                 {["draft", "completed", "expired", "voided"].includes(doc.status) && (
                                   <DropdownMenuItem
-                                    className="text-[#DC2626] focus:text-[#DC2626]"
+                                    className="text-status-red focus:text-status-red"
                                     onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -708,11 +699,11 @@ export default function VaultSignDashboardPage() {
               ) : (
                 <div className="divide-y divide-[var(--border)] vaultsign-stagger animate-vaultsign-fade-in">
                   {filteredDocs.map((doc) => {
-                    const statusConf = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
+                    const statusConf = vaultSignStatusColors[doc.status] || vaultSignStatusColors.draft;
                     return (
                       <div
                         key={doc.id}
-                        className="p-4 cursor-pointer hover:bg-background active:bg-[#F3F4F6] transition-colors"
+                        className="p-4 cursor-pointer hover:bg-background active:bg-surface-2 transition-colors"
                         onClick={() => router.push(`/recruiter/vaultsign/${doc.id}`)}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -722,7 +713,7 @@ export default function VaultSignDashboardPage() {
                               {doc.document_type} • {doc.source_type === "word" ? "Word" : "PDF"}
                             </p>
                           </div>
-                          <Badge className={`${statusConf.bg} ${statusConf.color} border-0 flex-shrink-0`}>
+                          <Badge className={`${statusConf.bg} ${statusConf.text} border-0 flex-shrink-0`}>
                             {statusConf.label}
                           </Badge>
                         </div>
@@ -734,8 +725,8 @@ export default function VaultSignDashboardPage() {
                                 key={i}
                                 className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-bold"
                                 style={{
-                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6",
-                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)",
+                                  backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "var(--status-red-bg)" : "var(--surface-2)",
+                                  color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "var(--status-red)" : "var(--text-secondary)",
                                 }}
                                 title={`${s.name} - ${s.status}`}
                               >
@@ -784,7 +775,7 @@ export default function VaultSignDashboardPage() {
                                 </DropdownMenuItem>
                                 {["draft", "completed", "expired", "voided"].includes(doc.status) && (
                                   <DropdownMenuItem
-                                    className="text-[#DC2626] focus:text-[#DC2626]"
+                                    className="text-status-red focus:text-status-red"
                                     onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" /> Delete

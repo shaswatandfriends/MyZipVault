@@ -123,7 +123,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#DBEAFE", color: "#1E40AF", border: "none" }}
+        style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}
       >
         {action}
       </Badge>
@@ -133,7 +133,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#FEE2E2", color: "#991B1B", border: "none" }}
+        style={{ background: "var(--badge-red-bg)", color: "var(--status-red-dark)", border: "none" }}
       >
         {action}
       </Badge>
@@ -143,7 +143,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#E0E7FF", color: "#3730A3", border: "none" }}
+        style={{ background: "var(--status-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}
       >
         {action}
       </Badge>
@@ -153,7 +153,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}
+        style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}
       >
         {action}
       </Badge>
@@ -163,7 +163,7 @@ function getActionBadge(action: string) {
     return (
       <Badge
         className="text-xs font-medium"
-        style={{ background: "#F3E8FF", color: "#6B21A8", border: "none" }}
+        style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue)", border: "none" }}
       >
         {action}
       </Badge>
@@ -186,10 +186,10 @@ function getActionBadge(action: string) {
 function getRoleBadge(role: string | null) {
   if (!role) return <span style={{ color: "var(--text-muted)" }}>—</span>;
   const colors: Record<string, { bg: string; color: string }> = {
-    super_admin: { bg: "#FEE2E2", color: "#991B1B" },
-    platform_admin: { bg: "#FEF3C7", color: "#92400E" },
-    client_admin: { bg: "#DBEAFE", color: "#1E40AF" },
-    client_recruiter: { bg: "#E0E7FF", color: "#3730A3" },
+    super_admin: { bg: "var(--badge-red-bg)", color: "var(--status-red-dark)" },
+    platform_admin: { bg: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)" },
+    client_admin: { bg: "var(--badge-blue-bg)", color: "var(--status-blue-dark)" },
+    client_recruiter: { bg: "var(--status-blue-bg)", color: "var(--status-blue-dark)" },
     candidate: { bg: "var(--primary-light)", color: "var(--primary)" },
   };
   const c = colors[role] || { bg: "var(--surface-2)", color: "var(--text-muted)" };
@@ -386,7 +386,7 @@ export default function SkillChecklistAuditLogsPage() {
           <Button
             className="text-white gap-2"
             style={{ background: "var(--primary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-hover)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
             onClick={exportCSV}
             disabled={isLoading}
@@ -672,7 +672,7 @@ export default function SkillChecklistAuditLogsPage() {
                 onClick={() => setPage(p)}
                 {...(p === page
                   ? {
-                      style: { background: "var(--primary)", color: "#fff" },
+                      style: { background: "var(--primary)", color: "var(--primary-foreground)" },
                     }
                   : {
                       style: { borderColor: "var(--border)" },

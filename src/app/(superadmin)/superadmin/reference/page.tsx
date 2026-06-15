@@ -61,13 +61,13 @@ function getStatusBadge(status: string) {
   switch (status) {
     case "pending_request":
       return (
-        <Badge className="text-xs" style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}>
           Pending Request
         </Badge>
       );
     case "sent":
       return (
-        <Badge className="text-xs" style={{ background: "#DBEAFE", color: "#1E40AF", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}>
           Sent
         </Badge>
       );
@@ -79,7 +79,7 @@ function getStatusBadge(status: string) {
       );
     case "expired":
       return (
-        <Badge className="text-xs" style={{ background: "#FEE2E2", color: "#991B1B", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-red-bg)", color: "var(--status-red-dark)", border: "none" }}>
           Expired
         </Badge>
       );
@@ -98,13 +98,13 @@ function getEmploymentBadge(status: string) {
       );
     case "ending_contract":
       return (
-        <Badge className="text-xs" style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}>
           Ending Contract
         </Badge>
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -241,8 +241,8 @@ export default function ReferenceOverviewPage() {
               <CardTitle className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                 Pending
               </CardTitle>
-              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "#FEF3C7" }}>
-                <Clock className="size-4" style={{ color: "#92400E" }} />
+              <div className="flex size-9 items-center justify-center rounded-lg" style={{ background: "var(--badge-yellow-bg)" }}>
+                <Clock className="size-4" style={{ color: "var(--status-amber-dark)" }} />
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">

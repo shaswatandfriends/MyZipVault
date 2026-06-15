@@ -284,7 +284,7 @@ function LivePreview({
         <div className="flex gap-1">
           <div
             className="rounded-md px-2 py-0.5 text-[8px] font-medium border"
-            style={{ borderColor: "#D1D5DB", color: data.colors.textSecondary }}
+            style={{ borderColor: "var(--disabled-border)", color: data.colors.textSecondary }}
           >
             Log In
           </div>
@@ -360,7 +360,7 @@ function LivePreview({
       </div>
 
       {/* Feature Cards Preview */}
-      <div className="px-3 py-4" style={{ backgroundColor: "#F3F4F6" }}>
+      <div className="px-3 py-4" style={{ backgroundColor: "var(--surface-2)" }}>
         <p
           className="text-center text-[7px] font-medium tracking-widest uppercase"
           style={{ color: data.colors.accent }}
@@ -734,7 +734,7 @@ export default function LandingPageEditorPage() {
           <Button
             variant="outline"
             onClick={handleDiscard}
-            className="border-[#D1D5DB] text-text-secondary rounded-xl hover:text-foreground"
+            className="border-[var(--disabled-border)] text-text-secondary rounded-xl hover:text-foreground"
           >
             <RotateCcw className="size-4 mr-1.5" />
             Discard Changes
@@ -1121,7 +1121,7 @@ export default function LandingPageEditorPage() {
               <div
                 className="rounded-xl border border-border overflow-hidden flex justify-center"
                 style={{
-                  backgroundColor: "#F3F4F6",
+                  backgroundColor: "var(--surface-2)",
                   transition: "all 0.3s ease",
                 }}
               >

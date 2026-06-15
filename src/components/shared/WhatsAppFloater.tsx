@@ -45,7 +45,7 @@ export default function WhatsAppFloater() {
         onMouseLeave={() => setHovered(false)}
         className="flex size-14 items-center justify-center rounded-full transition-all duration-200 ease-in-out hover:scale-110"
         style={{
-          background: "#25D366",
+          background: "var(--primary)",
           boxShadow: hovered
             ? "0 6px 20px rgba(37, 211, 102, 0.5)"
             : "0 4px 12px rgba(37, 211, 102, 0.4)",

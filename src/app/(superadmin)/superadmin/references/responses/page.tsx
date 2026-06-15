@@ -91,11 +91,11 @@ const empStatusLabel: Record<string, string> = {
 function getRatingBadge(rating: number) {
   switch (rating) {
     case 1:
-      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-[#FEE2E2] text-[#DC2626] font-bold text-xs">1</span>;
+      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-badge-red-bg text-status-red font-bold text-xs">1</span>;
     case 2:
-      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-[#FEF9C3] text-[#CA8A04] font-bold text-xs">2</span>;
+      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-badge-yellow-bg text-status-amber font-bold text-xs">2</span>;
     case 3:
-      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-[#DBEAFE] text-[#2563EB] font-bold text-xs">3</span>;
+      return <span className="inline-flex items-center justify-center size-7 rounded-md bg-badge-blue-bg text-status-blue font-bold text-xs">3</span>;
     case 4:
       return <span className="inline-flex items-center justify-center size-7 rounded-md bg-primary text-white font-bold text-xs">4</span>;
     default:

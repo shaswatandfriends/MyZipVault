@@ -81,13 +81,13 @@ function getEmploymentBadge(status: string) {
       );
     case "ending_contract":
       return (
-        <Badge className="text-xs" style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}>
           Ending Contract
         </Badge>
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -127,13 +127,13 @@ function getResponseTypeBadge(type: string) {
       );
     case "yes_no":
       return (
-        <Badge className="text-xs" style={{ background: "#DBEAFE", color: "#1E40AF", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}>
           Yes/No
         </Badge>
       );
     case "text":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
           Text
         </Badge>
       );
@@ -490,7 +490,7 @@ export default function ReferenceResponsesPage() {
                             answer.answerText === "yes" ? (
                               <span style={{ color: "var(--primary)" }}>✓ Yes</span>
                             ) : answer.answerText === "no" ? (
-                              <span style={{ color: "#991B1B" }}>✗ No</span>
+                              <span style={{ color: "var(--status-red-dark)" }}>✗ No</span>
                             ) : (
                               answer.answerText
                             )
@@ -518,7 +518,7 @@ export default function ReferenceResponsesPage() {
                     </h4>
                     <div
                       className="rounded-lg border p-3"
-                      style={{ borderColor: "var(--border)", background: "#F0FDF4" }}
+                      style={{ borderColor: "var(--border)", background: "var(--status-green-bg)" }}
                     >
                       <p className="text-sm" style={{ color: "var(--text-primary)" }}>
                         {selectedResponse.overallComment}

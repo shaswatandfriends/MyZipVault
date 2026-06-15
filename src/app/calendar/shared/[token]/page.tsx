@@ -206,7 +206,7 @@ export default function SharedCalendarPage() {
                 return (
                   <button key={idx} type="button"
                     onClick={() => setSelectedDate(selectedDate && isSameDay(selectedDate, date) ? null : date)}
-                    className={`p-2 min-h-[60px] text-left transition-colors ${inMonth ? "bg-white" : "bg-[#FAFAFA]"} ${isToday ? "ring-2 ring-[var(--primary)] ring-inset" : ""} ${colorClass} ${selectedDate && isSameDay(selectedDate, date) ? "ring-2 ring-[var(--primary)] ring-inset" : ""} hover:bg-[#F3F4F6]`}>
+                    className={`p-2 min-h-[60px] text-left transition-colors ${inMonth ? "bg-white" : "bg-surface-2"} ${isToday ? "ring-2 ring-[var(--primary)] ring-inset" : ""} ${colorClass} ${selectedDate && isSameDay(selectedDate, date) ? "ring-2 ring-[var(--primary)] ring-inset" : ""} hover:bg-surface-2`}>
                     <div className={`text-xs font-medium ${inMonth ? "text-foreground" : "text-text-muted"}`}>{format(date, "d")}</div>
                     {slots.length > 0 && inMonth && (
                       <div className="mt-1 space-y-0.5">

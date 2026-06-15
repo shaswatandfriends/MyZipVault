@@ -65,6 +65,7 @@ import {
   ClipboardList,
 } from "@/lib/icons";
 import { toast } from "sonner";
+import { calendarEventColors } from "@/lib/status-colors";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -168,21 +169,21 @@ const STATUS_CONFIG = {
     emoji: "🟢",
     color: "var(--primary)",
     bgColor: "var(--primary-light)",
-    borderColor: "#86EFAC",
+    borderColor: "var(--status-green-border)",
   },
   open: {
     label: "Open to Opportunities",
     emoji: "🟡",
-    color: "#92400E",
-    bgColor: "#FEF9C3",
-    borderColor: "#FDE047",
+    color: "var(--status-amber-dark)",
+    bgColor: "var(--badge-yellow-bg)",
+    borderColor: "var(--badge-yellow-border)",
   },
   not_available: {
     label: "Not Available Right Now",
     emoji: "🔴",
-    color: "#991B1B",
-    bgColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
+    color: "var(--status-red-dark)",
+    bgColor: "var(--badge-red-bg)",
+    borderColor: "var(--status-red-border)",
   },
 } as const;
 
@@ -747,7 +748,7 @@ export default function CalendarPage() {
       />
 
       <Tabs defaultValue="my-calendar" className="space-y-6">
-        <TabsList className="bg-[#F3F4F6]">
+        <TabsList className="bg-surface-2">
           <TabsTrigger value="my-calendar" className="gap-1.5 data-[state=active]:bg-white">
             <CalendarDays className="size-4" />
             My Calendar
@@ -1046,9 +1047,9 @@ export default function CalendarPage() {
                                   key={dayVal}
                                   className={`
                                     h-8 rounded text-[9px] flex items-center justify-center transition-colors
-                                    ${hasSlot ? "" : "bg-[#FAFAFA]"}
-                                    ${isAvailable ? "bg-emerald-100 text-emerald-800 font-medium" : ""}
-                                    ${isBlocked ? "bg-red-100 text-red-800 font-medium" : ""}
+                                    ${hasSlot ? "" : "bg-surface-2"}
+                                    ${isAvailable ? `${calendarEventColors.available.bg} ${calendarEventColors.available.text} font-medium` : ""}
+                                    ${isBlocked ? `${calendarEventColors.blocked.bg} ${calendarEventColors.blocked.text} font-medium` : ""}
                                   `}
                                 >
                                   {matchingSlots.length > 0 && matchingSlots[0].label && (
@@ -1066,15 +1067,15 @@ export default function CalendarPage() {
                   {/* Legend */}
                   <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-border">
                     <div className="flex items-center gap-1.5">
-                      <div className="size-3 rounded bg-emerald-100 border border-emerald-300" />
+                      <div className={`size-3 rounded ${calendarEventColors.available.bg} ${calendarEventColors.available.border}`} />
                       <span className="text-xs text-muted-foreground">Available</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="size-3 rounded bg-red-100 border border-red-300" />
+                      <div className={`size-3 rounded ${calendarEventColors.blocked.bg} ${calendarEventColors.blocked.border}`} />
                       <span className="text-xs text-muted-foreground">Blocked</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="size-3 rounded bg-[#FAFAFA] border border-gray-200" />
+                      <div className="size-3 rounded bg-surface-2 border border-gray-200" />
                       <span className="text-xs text-muted-foreground">Not Set</span>
                     </div>
                   </div>
@@ -1106,7 +1107,7 @@ export default function CalendarPage() {
                             >
                               <div
                                 className={`size-2.5 rounded-full shrink-0 ${
-                                  slot.is_available ? "bg-emerald-500" : "bg-red-500"
+                                  slot.is_available ? "bg-primary" : "bg-status-red"
                                 }`}
                               />
                               <div className="flex-1 min-w-0">
@@ -1194,7 +1195,7 @@ export default function CalendarPage() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Ban className="size-5 text-red-500" />
+                      <Ban className={`size-5 ${calendarEventColors.blocked.text}`} />
                       Blocked Dates
                     </CardTitle>
                   </CardHeader>
@@ -1205,7 +1206,7 @@ export default function CalendarPage() {
                           .sort((a, b) => a.getTime() - b.getTime())
                           .map((date, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-sm">
-                              <div className="size-2 rounded-full bg-red-500 shrink-0" />
+                              <div className={`size-2 rounded-full ${calendarEventColors.blocked.text} shrink-0`} />
                               <span>{date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
                             </div>
                           ))}
@@ -1525,7 +1526,7 @@ export default function CalendarPage() {
                         return (
                           <div
                             key={req.id}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-border bg-[#FAFAFA]"
+                            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-border bg-surface-2"
                           >
                             <div className="size-10 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
                               <Building2 className="size-5 text-accent-teal" />
@@ -1757,7 +1758,7 @@ export default function CalendarPage() {
                                           ? matching.some((s) => s.is_available)
                                             ? "bg-teal-100 text-teal-800 font-medium"
                                             : "bg-red-100 text-red-800"
-                                          : "bg-[#FAFAFA]"
+                                          : "bg-surface-2"
                                       }`}
                                     >
                                       {matching.length > 0 && matching[0].label && (

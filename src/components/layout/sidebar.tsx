@@ -54,6 +54,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserRole } from "@/lib/types";
 
 // ─── Nav Item Types ────────────────────────────────────────────────────
@@ -437,8 +438,11 @@ export function AppSidebar() {
 
         {/* ── Bottom Section: User + Sign Out ── */}
         <div className="shrink-0 space-y-2 border-t border-border p-3">
-          {/* Notification Bell (all roles) */}
-          <NotificationBell variant="sidebar" />
+          {/* Theme Toggle + Notification Bell (all roles) */}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <NotificationBell variant="sidebar" />
+          </div>
 
           {/* User Info */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2 transition-colors">

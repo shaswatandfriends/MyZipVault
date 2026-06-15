@@ -62,21 +62,21 @@ function getActionBadge(action: string) {
   }
   if (action.startsWith("UPDATE")) {
     return (
-      <Badge className="text-xs" style={{ background: "#DBEAFE", color: "#1E40AF", border: "none" }}>
+      <Badge className="text-xs" style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}>
         {action}
       </Badge>
     );
   }
   if (action.startsWith("DELETE")) {
     return (
-      <Badge className="text-xs" style={{ background: "#FEE2E2", color: "#991B1B", border: "none" }}>
+      <Badge className="text-xs" style={{ background: "var(--badge-red-bg)", color: "var(--status-red-dark)", border: "none" }}>
         {action}
       </Badge>
     );
   }
   if (action.startsWith("RESEND")) {
     return (
-      <Badge className="text-xs" style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}>
+      <Badge className="text-xs" style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}>
         {action}
       </Badge>
     );
@@ -88,19 +88,19 @@ function getEntityTypeBadge(type: string | null) {
   switch (type) {
     case "CandidateReference":
       return (
-        <Badge className="text-xs" style={{ background: "#E0E7FF", color: "#3730A3", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--status-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}>
           CandidateReference
         </Badge>
       );
     case "ReferenceQuestion":
       return (
-        <Badge className="text-xs" style={{ background: "#FCE7F3", color: "#9D174D", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-red-bg)", color: "var(--status-red-dark)", border: "none" }}>
           ReferenceQuestion
         </Badge>
       );
     case "ReferenceResponse":
       return (
-        <Badge className="text-xs" style={{ background: "#ECFDF5", color: "#065F46", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--status-green-bg)", color: "var(--status-green-dark)", border: "none" }}>
           ReferenceResponse
         </Badge>
       );
@@ -368,7 +368,7 @@ export default function ReferenceAuditLogsPage() {
                             {log.userEmail || "—"}
                           </p>
                           {log.role && (
-                            <Badge className="text-[10px] mt-0.5" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+                            <Badge className="text-[10px] mt-0.5" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
                               {log.role}
                             </Badge>
                           )}

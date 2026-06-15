@@ -141,7 +141,7 @@ export default function AnnouncementsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#F3F4F6] p-1 rounded-lg">
+        <TabsList className="bg-surface-2 p-1 rounded-lg">
           <TabsTrigger
             value="banners"
             className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4"
@@ -294,7 +294,7 @@ function BannersTab() {
 
       {/* Channel Tabs + Create Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-1 rounded-lg bg-[#F3F4F6] p-1">
+        <div className="flex items-center gap-1 rounded-lg bg-surface-2 p-1">
           {bannerChannels.map((ch) => (
             <button
               key={ch.key}
@@ -349,7 +349,7 @@ function BannersTab() {
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Thumbnail */}
-                  <div className="size-16 rounded-lg bg-[#F3F4F6] border border-border overflow-hidden shrink-0">
+                  <div className="size-16 rounded-lg bg-surface-2 border border-border overflow-hidden shrink-0">
                     {banner.imageUrl ? (
                       <img
                         src={banner.imageUrl}

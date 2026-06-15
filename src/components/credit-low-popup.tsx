@@ -96,8 +96,8 @@ export function CreditLowPopup() {
       <DialogContent className="sm:max-w-md border-[var(--border)] bg-white" showCloseButton={false}>
         <DialogHeader className="text-center sm:text-center">
           {/* Icon */}
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#F0FDF4]">
-            <Coins className="h-7 w-7 text-[#16A34A]" />
+          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary-light">
+            <Coins className="h-7 w-7 text-primary" />
           </div>
 
           <DialogTitle className="text-xl font-semibold text-[var(--foreground)]" style={{ fontFamily: "'Satoshi', sans-serif" }}>
@@ -114,7 +114,7 @@ export function CreditLowPopup() {
           <span className="text-sm font-medium text-[var(--text-secondary)]">Current Balance</span>
           <div className="flex items-baseline gap-1.5">
             <span
-              className="text-4xl font-bold text-[#16A34A]"
+              className="text-4xl font-bold text-primary"
               style={{ fontFamily: "'Satoshi', sans-serif" }}
             >
               {balance}
@@ -133,7 +133,7 @@ export function CreditLowPopup() {
           {/* Primary: Buy Credits */}
           <Button
             onClick={handleBuyCredits}
-            className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold"
+            className="w-full bg-primary hover:bg-primary-hover text-white font-semibold"
             size="lg"
           >
             <ShoppingCart className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function CreditLowPopup() {
           <Button
             onClick={handleContactSales}
             variant="outline"
-            className="w-full border-[#16A34A] text-[#16A34A] hover:bg-[#F0FDF4] font-semibold"
+            className="w-full border-primary text-primary hover:bg-primary-light font-semibold"
             size="lg"
           >
             <Mail className="h-4 w-4" />

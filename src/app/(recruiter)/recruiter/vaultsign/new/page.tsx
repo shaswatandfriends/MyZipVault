@@ -252,7 +252,7 @@ function NewDocumentContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "template" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
+                  source === "template" ? "border-primary bg-primary-light" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("template")}
               >
@@ -265,7 +265,7 @@ function NewDocumentContent() {
 
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "upload_pdf" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
+                  source === "upload_pdf" ? "border-primary bg-primary-light" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("upload_pdf")}
               >
@@ -278,7 +278,7 @@ function NewDocumentContent() {
 
               <Card
                 className={`rounded-2xl cursor-pointer transition-all border-2 ${
-                  source === "blank" ? "border-primary bg-[#F0FDF4]" : "border-border hover:border-primary/30"
+                  source === "blank" ? "border-primary bg-primary-light" : "border-border hover:border-primary/30"
                 }`}
                 onClick={() => setSource("blank")}
               >
@@ -463,7 +463,7 @@ function NewDocumentContent() {
                     </Select>
                   </div>
                   {signers.length > 1 && (
-                    <Button variant="ghost" size="sm" className="text-text-muted hover:text-[#DC2626]" onClick={() => removeSigner(index)}>
+                    <Button variant="ghost" size="sm" className="text-text-muted hover:text-status-red" onClick={() => removeSigner(index)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}

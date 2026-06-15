@@ -38,10 +38,10 @@ function CircularProgress({
     percentage >= 100
       ? "var(--primary)"
       : percentage >= 50
-        ? "#16A34A"
+        ? "var(--primary)"
         : percentage >= 25
-          ? "#F59E0B"
-          : "#EF4444";
+          ? "var(--gold)"
+          : "var(--badge-red)";
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -113,7 +113,7 @@ function CompletionItem({
           <div
             className={cn(
               "size-10 rounded-lg flex items-center justify-center shrink-0",
-              isComplete ? "bg-primary/10" : "bg-[#F3F4F6]"
+              isComplete ? "bg-primary/10" : "bg-surface-2"
             )}
           >
             <Icon

@@ -468,7 +468,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
               </div>
               <button 
                 onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
-                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-[#D1D5DB]'}`}
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-surface-3'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
@@ -506,7 +506,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
+                  className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
                   onClick={() => removeSigner(index)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -515,7 +515,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
             ))}
 
             {showAddSigner && (
-              <div className="p-2 rounded-lg border border-primary/20 bg-[#F0FDF4] space-y-1.5">
+              <div className="p-2 rounded-lg border border-primary/20 bg-primary-light space-y-1.5">
                 <Input
                   placeholder="Name"
                   value={newSignerName}
@@ -594,7 +594,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   <div
                     key={field.id}
                     className={`flex items-center justify-between p-1.5 rounded border mb-1 cursor-pointer transition-colors ${
-                      selectedField === field.id ? "border-primary bg-[#F0FDF4]" : "border-border"
+                      selectedField === field.id ? "border-primary bg-primary-light" : "border-border"
                     }`}
                     onClick={() => {
                       setSelectedField(field.id);
@@ -610,7 +610,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 text-text-muted hover:text-[#DC2626]"
+                      className="h-4 w-4 p-0 text-text-muted hover:text-status-red"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeField(field.id);
@@ -720,7 +720,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
               {pdfError && !pdfDoc && (
                 <div className="w-full min-h-[500px] bg-white rounded-lg border border-border shadow-lg flex flex-col items-center justify-center gap-4 p-8">
                   <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-                    <X className="h-8 w-8 text-[#DC2626]" />
+                    <X className="h-8 w-8 text-status-red" />
                   </div>
                   <div className="text-center">
                     <h3 className="font-semibold text-foreground mb-1">Failed to render PDF</h3>
@@ -810,7 +810,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                       </span>
                       {isSelected && (
                         <button
-                          className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-[#DC2626] text-white flex items-center justify-center"
+                          className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-status-red text-white flex items-center justify-center"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeField(field.id);

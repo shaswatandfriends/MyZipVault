@@ -110,7 +110,7 @@ export default function SigningCompletePage() {
                   {signer.status === "signed" ? (
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                   ) : (
-                    <Clock className="h-4 w-4 text-[#D97706]" />
+                    <Clock className="h-4 w-4 text-status-amber" />
                   )}
                   <span className={signer.status === "signed" ? "text-primary" : "text-text-secondary"}>
                     {signer.name}
@@ -125,7 +125,7 @@ export default function SigningCompletePage() {
         </div>
 
         {/* Legal notice */}
-        <div className="flex items-start gap-2 text-left mb-6 p-3 bg-[#F0FDF4] rounded-lg">
+        <div className="flex items-start gap-2 text-left mb-6 p-3 bg-primary-light rounded-lg">
           <Shield className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
           <p className="text-xs text-foreground">
             This document was signed using VaultSign by MyZipVault. Your electronic signature is legally binding
@@ -135,16 +135,16 @@ export default function SigningCompletePage() {
 
         {/* Create Account CTA for new/external users */}
         {signingData?.signer && !signingData.signer.user_id && (
-          <div className="mb-4 p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20 text-left">
+          <div className="mb-4 p-4 bg-status-blue-bg rounded-xl border border-status-blue/20 text-left">
             <div className="flex items-center gap-2 mb-2">
-              <UserPlus className="h-5 w-5 text-[#2563EB]" />
+              <UserPlus className="h-5 w-5 text-status-blue" />
               <h3 className="font-medium text-foreground text-sm">Create Your Account</h3>
             </div>
             <p className="text-xs text-text-secondary mb-3">
               You signed as a guest. Create a free account to track all your documents, get notifications, and sign faster next time.
             </p>
             <Button
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white w-full h-9 text-sm"
+              className="bg-status-blue hover:bg-status-blue-dark text-white w-full h-9 text-sm"
               onClick={() => window.location.href = "/register?email=" + encodeURIComponent(signingData.signer.email || "")}
             >
               <UserPlus className="h-4 w-4 mr-2" /> Create Free Account

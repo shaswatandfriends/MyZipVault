@@ -110,7 +110,7 @@ function TrustPointsEditor({
       </Label>
       {points.map((p, i) => (
         <div key={i} className="flex items-center gap-2">
-          <GripVertical className="size-4 text-[#D1D5DB] shrink-0" />
+          <GripVertical className="size-4 text-disabled-border shrink-0" />
           <Input
             value={p}
             onChange={(e) => update(i, e.target.value)}
@@ -120,7 +120,7 @@ function TrustPointsEditor({
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 text-text-muted hover:text-status-red transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -131,7 +131,7 @@ function TrustPointsEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
+        className="border-dashed border-disabled-border text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <Plus className="size-3.5 mr-1" />
         Add Trust Point
@@ -200,7 +200,7 @@ function StatsCardEditor({
       </Label>
       {stats.map((s, i) => (
         <div key={i} className="flex items-start gap-2">
-          <GripVertical className="size-4 text-[#D1D5DB] shrink-0 mt-2.5" />
+          <GripVertical className="size-4 text-disabled-border shrink-0 mt-2.5" />
           <div className="flex-1 grid grid-cols-2 gap-2">
             <Input
               value={s.value}
@@ -218,7 +218,7 @@ function StatsCardEditor({
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 mt-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 mt-1.5 text-text-muted hover:text-status-red transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -229,7 +229,7 @@ function StatsCardEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
+        className="border-dashed border-disabled-border text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <Plus className="size-3.5 mr-1" />
         Add Stat
@@ -280,8 +280,8 @@ function SlideshowImagesEditor({
             />
           )}
           {!url && (
-            <div className="size-10 rounded-lg shrink-0 border border-dashed border-[#D1D5DB] flex items-center justify-center">
-              <ImageIcon className="size-4 text-[#D1D5DB]" />
+            <div className="size-10 rounded-lg shrink-0 border border-dashed border-disabled-border flex items-center justify-center">
+              <ImageIcon className="size-4 text-disabled-border" />
             </div>
           )}
           <Input
@@ -293,7 +293,7 @@ function SlideshowImagesEditor({
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
+            className="shrink-0 p-1.5 text-text-muted hover:text-status-red transition-colors"
           >
             <Trash2 className="size-4" />
           </button>
@@ -304,7 +304,7 @@ function SlideshowImagesEditor({
         variant="outline"
         size="sm"
         onClick={add}
-        className="border-dashed border-[#D1D5DB] text-text-secondary rounded-xl hover:text-primary hover:border-primary"
+        className="border-dashed border-disabled-border text-text-secondary rounded-xl hover:text-primary hover:border-primary"
       >
         <ImagePlus className="size-3.5 mr-1" />
         Add Image
@@ -426,8 +426,8 @@ export default function AuthPageEditorPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-10 w-64 bg-[#F3F4F6] rounded-xl animate-pulse" />
-        <div className="h-96 bg-[#F3F4F6] rounded-2xl animate-pulse" />
+        <div className="h-10 w-64 bg-surface-2 rounded-xl animate-pulse" />
+        <div className="h-96 bg-surface-2 rounded-2xl animate-pulse" />
       </div>
     );
   }
@@ -451,7 +451,7 @@ export default function AuthPageEditorPage() {
           <Button
             variant="outline"
             onClick={handleDiscard}
-            className="border-[#D1D5DB] text-text-secondary rounded-xl hover:text-foreground"
+            className="border-disabled-border text-text-secondary rounded-xl hover:text-foreground"
           >
             <RotateCcw className="size-4 mr-1.5" />
             Restore Defaults
@@ -516,7 +516,7 @@ export default function AuthPageEditorPage() {
                 <button
                   type="button"
                   onClick={() => updateBranding("logoUrl", "")}
-                  className="shrink-0 p-1.5 text-text-muted hover:text-[#DC2626] transition-colors"
+                  className="shrink-0 p-1.5 text-text-muted hover:text-status-red transition-colors"
                 >
                   <Trash2 className="size-4" />
                 </button>

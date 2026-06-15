@@ -12,24 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "Pending", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  sent: { label: "Awaiting Signature", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
-  viewed: { label: "Viewed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  signed: { label: "Signed", color: "text-primary", bg: "bg-primary-light" },
-  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-};
-
-const DOC_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
-  partially_signed: { label: "In Progress", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
-  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-};
+import { vaultSignStatusColors, signerStatusColors } from "@/lib/status-colors";
 
 export default function CandidateVaultSignPage() {
   const router = useRouter();
@@ -116,28 +99,28 @@ export default function CandidateVaultSignPage() {
         ) : (
           <div className="space-y-3 vaultsign-stagger animate-vaultsign-slide-up">
             {documents.map((item: any, index: number) => {
-              const docStatus = DOC_STATUS_CONFIG[item.document?.status] || DOC_STATUS_CONFIG.draft;
-              const signerStatus = STATUS_CONFIG[item.signer_status] || STATUS_CONFIG.pending;
+              const docStatus = vaultSignStatusColors[item.document?.status] || vaultSignStatusColors.draft;
+              const signerStatus = signerStatusColors[item.signer_status] || signerStatusColors.pending;
               return (
                 <Card key={index} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#F0FDF4] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center">
                           <FileSignature className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{item.document?.document_name}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs text-text-secondary">{item.document?.organization?.name}</span>
-                            <Badge className={`${docStatus.bg} ${docStatus.color} border-0 text-[10px]`}>
+                            <Badge className={`${docStatus.bg} ${docStatus.text} border-0 text-[10px]`}>
                               {docStatus.label}
                             </Badge>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={`${signerStatus.bg} ${signerStatus.color} border-0`}>
+                        <Badge className={`${signerStatus.bg} ${signerStatus.text} border-0`}>
                           {signerStatus.label}
                         </Badge>
                         {item.signer_status !== "signed" && item.signer_status !== "declined" && item.sign_token && (

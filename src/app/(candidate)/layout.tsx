@@ -27,10 +27,10 @@ function CircularProgress({
     percentage >= 100
       ? "var(--primary)"
       : percentage >= 50
-        ? "#10B981"
+        ? "var(--primary-vivid)"
         : percentage >= 25
-          ? "#F59E0B"
-          : "#EF4444";
+          ? "var(--gold)"
+          : "var(--badge-red)";
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -39,7 +39,7 @@ function CircularProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E2E8F0"
+          stroke="var(--border)"
           strokeWidth={strokeWidth}
           fill="none"
         />

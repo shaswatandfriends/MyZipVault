@@ -111,11 +111,11 @@ function questionTypeBadgeColor(type: string): { bg: string; fg: string } {
     case "rating_3":
       return { bg: "var(--primary-light)", fg: "var(--primary)" };
     case "yes_no":
-      return { bg: "#DBEAFE", fg: "#2563EB" };
+      return { bg: "var(--badge-blue-bg)", fg: "var(--status-blue)" };
     case "text":
       return { bg: "var(--surface-2)", fg: "var(--text-muted)" };
     default:
-      return { bg: "#F3F4F6", fg: "var(--text-secondary)" };
+      return { bg: "var(--surface-2)", fg: "var(--text-secondary)" };
   }
 }
 
@@ -125,14 +125,14 @@ function getCategoryTypeBadge(
 ): { label: string; bg: string; fg: string } {
   const catSkills = skills.filter((s) => s.categoryId === categoryId);
   if (catSkills.length === 0) {
-    return { label: "Default", bg: "#F3F4F6", fg: "var(--text-secondary)" };
+    return { label: "Default", bg: "var(--surface-2)", fg: "var(--text-secondary)" };
   }
   const types = new Set(catSkills.map((s) => s.questionType));
   if (types.size === 1) {
     const t = Array.from(types)[0];
     return { label: questionTypeLabel(t), ...questionTypeBadgeColor(t) };
   }
-  return { label: "Mixed", bg: "#FEF3C7", fg: "#92400E" };
+  return { label: "Mixed", bg: "var(--badge-yellow-bg)", fg: "var(--status-amber-dark)" };
 }
 
 // ─── Main Component ─────────────────────────────────────────────────

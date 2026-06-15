@@ -98,7 +98,7 @@ export function AdminSidebar() {
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
                           ? "bg-[var(--primary-light)] font-semibold text-[var(--primary)]"
-                          : "text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
+                          : "text-[var(--text-secondary)] hover:bg-surface-2 hover:text-foreground"
                       )}
                     >
                       <Link href={item.href}>
@@ -133,7 +133,7 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign Out"
-              className="text-[var(--text-secondary)] hover:bg-[#F3F4F6] hover:text-[var(--foreground)]"
+              className="text-[var(--text-secondary)] hover:bg-surface-2 hover:text-foreground"
               onClick={() => signOut({ callbackUrl: "/admin-login" })}
             >
               <LogOut className="size-5" />

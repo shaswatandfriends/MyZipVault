@@ -96,8 +96,8 @@ export default function CandidateVaultSignDetailPage() {
               </div>
               <Badge className={
                 signer?.status === "signed" ? "bg-primary-light text-primary border-0" :
-                signer?.status === "declined" ? "bg-[#FEF2F2] text-[#DC2626] border-0" :
-                "bg-[#EFF6FF] text-[#2563EB] border-0"
+                signer?.status === "declined" ? "bg-status-red-bg text-status-red border-0" :
+                "bg-status-blue-bg text-status-blue border-0"
               }>
                 {signer?.status === "signed" ? "Signed" : signer?.status === "declined" ? "Declined" : "Pending"}
               </Badge>
@@ -125,7 +125,7 @@ export default function CandidateVaultSignDetailPage() {
                         <Clock className="h-4 w-4 text-text-secondary" />
                       )}
                       <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-[8px] bg-[#F3F4F6]">{s.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-[8px] bg-surface-2">{s.name?.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span className="text-foreground">{s.name}</span>
                       <Badge variant="outline" className="text-[10px]">{s.role}</Badge>

@@ -25,7 +25,7 @@ interface AuthSlideshowPanelProps {
   slideshowImages?: string[];
 }
 
-const FALLBACK_GRADIENT = "linear-gradient(135deg, #059669 0%, #0D9488 50%, #06B6D4 100%)";
+const FALLBACK_GRADIENT = "linear-gradient(135deg, var(--primary) 0%, var(--accent-teal) 50%, var(--accent-cyan) 100%)";
 
 // ─── Animated Mesh Background ───────────────────────────────────────
 function MeshBackground() {
@@ -268,7 +268,7 @@ export default function AuthSlideshowPanel({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <div className="text-[#FCD34D] text-sm mb-2 tracking-wider">
+              <div className="text-[var(--gold-light)] text-sm mb-2 tracking-wider">
                 ★★★★★
               </div>
               <p className="text-white/90 text-sm italic leading-relaxed mb-3">

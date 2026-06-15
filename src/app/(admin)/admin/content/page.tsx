@@ -21,6 +21,7 @@ import {
   X,
   Loader2,
 } from "@/lib/icons";
+import { priorityColors, destructiveColors } from "@/lib/status-colors";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -665,13 +666,13 @@ export default function AdminContentPage() {
   const getRatingBtnClass = (rating: number, selected: number | null) => {
     const isSelected = selected === rating;
     const base = "w-10 h-10 rounded-lg font-bold text-sm border-2 transition-all ";
-    switch (rating) {
-      case 1: return base + (isSelected ? "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626]" : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]");
-      case 2: return base + (isSelected ? "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04]" : "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]");
-      case 3: return base + (isSelected ? "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB]" : "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]");
-      case 4: return base + (isSelected ? "bg-primary border-primary text-white" : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary");
-      default: return base;
-    }
+    if (rating === 4) return base + (isSelected ? "bg-primary border-primary text-white" : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary");
+    const p = priorityColors[rating];
+    if (!p) return base;
+    const borderCls = p.text.replace("text-", "border-");
+    return isSelected
+      ? `${base}${p.bg} ${borderCls} ${p.text}`
+      : `${base}border-gray-200 text-gray-400 hover:${borderCls} hover:${p.text}`;
   };
 
   return (
@@ -827,7 +828,7 @@ export default function AdminContentPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-[#DC2626] text-[#DC2626] hover:bg-[#FEE2E2] bg-transparent"
+                    className="border-status-red text-status-red hover:bg-badge-red-bg bg-transparent"
                     onClick={() => { setDeleteAllStep(1); setDeleteAllOtp(["", "", "", "", "", ""]); setDeleteAllModalOpen(true); }}
                   >
                     <Trash2 className="size-4" />
@@ -1421,9 +1422,9 @@ export default function AdminContentPage() {
               </div>
 
               {/* Warning box */}
-              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
-                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#92400E]">
+              <div className="bg-badge-yellow-bg border border-status-amber rounded-lg p-4 flex gap-3">
+                <AlertTriangle className="size-5 text-status-amber flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-status-amber-dark">
                   Importing will <strong>ADD</strong> new data to existing skills. To replace all data, use Delete All Data first, then import. Duplicate skills (same Profession + Job Title + Specialty + Category + Skill Name) will be skipped.
                 </p>
               </div>
@@ -1432,11 +1433,11 @@ export default function AdminContentPage() {
               {importValidationResult && (
                 <div className="space-y-3">
                   {importValidationResult.errorRows > 0 && (
-                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#991B1B]">
+                    <div className="bg-status-red-bg border border-status-red-border rounded-lg p-4">
+                      <p className="text-sm font-semibold text-status-red-dark">
                         {importValidationResult.errorRows} row(s) have errors
                       </p>
-                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
+                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-status-red-dark space-y-1">
                         {importValidationResult.errors.slice(0, 10).map((e, i) => (
                           <p key={i}>Row {e.row}: {e.message}</p>
                         ))}
@@ -1447,7 +1448,7 @@ export default function AdminContentPage() {
                     </div>
                   )}
                   {importValidationResult.validRows > 0 && (
-                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
+                    <div className="bg-status-green-bg border border-primary/30 rounded-lg p-4">
                       <p className="text-sm font-semibold text-primary">
                         {importValidationResult.validRows} valid row(s) found out of {importValidationResult.totalRows} total
                       </p>
@@ -1498,7 +1499,7 @@ export default function AdminContentPage() {
           ) : (
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
-              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+              <div className="size-16 rounded-full bg-status-green-bg flex items-center justify-center">
                 <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">{importResult.imported} skills imported successfully</h3>
@@ -1524,12 +1525,12 @@ export default function AdminContentPage() {
                 <DialogTitle className="text-center">Delete All Skills Data?</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col items-center gap-4">
-                <div className="size-16 rounded-full bg-[#FEF2F2] flex items-center justify-center">
-                  <AlertTriangle className="size-8 text-[#DC2626]" />
+                <div className="size-16 rounded-full bg-status-red-bg flex items-center justify-center">
+                  <AlertTriangle className="size-8 text-status-red" />
                 </div>
-                <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4 w-full">
-                  <p className="text-sm text-[#991B1B] font-medium">This will permanently delete:</p>
-                  <ul className="mt-2 text-sm text-[#991B1B] list-disc list-inside space-y-1">
+                <div className="bg-status-red-bg border border-status-red-border rounded-lg p-4 w-full">
+                  <p className="text-sm text-status-red-dark font-medium">This will permanently delete:</p>
+                  <ul className="mt-2 text-sm text-status-red-dark list-disc list-inside space-y-1">
                     <li>All professions</li>
                     <li>All job titles</li>
                     <li>All specialties</li>
@@ -1537,8 +1538,8 @@ export default function AdminContentPage() {
                     <li>All individual skills</li>
                     <li>All reference questions</li>
                   </ul>
-                  <p className="mt-3 text-sm text-[#991B1B] font-semibold">This action cannot be undone.</p>
-                  <p className="mt-1 text-sm text-[#991B1B]">To proceed, you will need to verify with a one-time code.</p>
+                  <p className="mt-3 text-sm text-status-red-dark font-semibold">This action cannot be undone.</p>
+                  <p className="mt-1 text-sm text-status-red-dark">To proceed, you will need to verify with a one-time code.</p>
                 </div>
               </div>
               <DialogFooter className="gap-2">
@@ -1546,7 +1547,7 @@ export default function AdminContentPage() {
                   Cancel
                 </Button>
                 <Button
-                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  className={destructiveColors.buttonBg + " " + destructiveColors.buttonText}
                   onClick={handleRequestOtp}
                   disabled={deleteAllSending}
                 >
@@ -1589,7 +1590,7 @@ export default function AdminContentPage() {
                   </button>
                 </div>
                 <Button
-                  className="w-full bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  className={"w-full " + destructiveColors.buttonBg + " " + destructiveColors.buttonText}
                   onClick={handleDeleteAll}
                   disabled={deleteAllOtp.join("").length !== 6 || deleteAllDeleting}
                 >
@@ -1650,15 +1651,15 @@ export default function AdminContentPage() {
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
                     <div className="grid grid-cols-4 gap-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
+                        <div className="size-6 rounded bg-badge-red-bg border-2 border-status-red flex items-center justify-center font-bold text-status-red">1</div>
                         <span>No theory / experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
+                        <div className="size-6 rounded bg-badge-yellow-bg border-2 border-status-amber flex items-center justify-center font-bold text-status-amber">2</div>
                         <span>Limited Experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
+                        <div className="size-6 rounded bg-badge-blue-bg border-2 border-status-blue flex items-center justify-center font-bold text-status-blue">3</div>
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
@@ -1776,15 +1777,15 @@ export default function AdminContentPage() {
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Rating Scale:</p>
                     <div className="grid grid-cols-4 gap-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">1</div>
+                        <div className="size-6 rounded bg-badge-red-bg border-2 border-status-red flex items-center justify-center font-bold text-status-red">1</div>
                         <span>No theory / experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">2</div>
+                        <div className="size-6 rounded bg-badge-yellow-bg border-2 border-status-amber flex items-center justify-center font-bold text-status-amber">2</div>
                         <span>Limited Experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">3</div>
+                        <div className="size-6 rounded bg-badge-blue-bg border-2 border-status-blue flex items-center justify-center font-bold text-status-blue">3</div>
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
@@ -1892,9 +1893,9 @@ export default function AdminContentPage() {
               </div>
 
               {/* Warning box */}
-              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
-                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#92400E]">
+              <div className="bg-badge-yellow-bg border border-status-amber rounded-lg p-4 flex gap-3">
+                <AlertTriangle className="size-5 text-status-amber flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-status-amber-dark">
                   Importing will <strong>ADD</strong> new questions to existing data. To replace all data, use Delete All Data first, then import. Duplicate questions (same Employment Status + Question Text) will be skipped.
                 </p>
               </div>
@@ -1903,11 +1904,11 @@ export default function AdminContentPage() {
               {refImportValidationResult && (
                 <div className="space-y-3">
                   {refImportValidationResult.errorRows > 0 && (
-                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#991B1B]">
+                    <div className="bg-status-red-bg border border-status-red-border rounded-lg p-4">
+                      <p className="text-sm font-semibold text-status-red-dark">
                         {refImportValidationResult.errorRows} row(s) have errors
                       </p>
-                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
+                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-status-red-dark space-y-1">
                         {refImportValidationResult.errors.slice(0, 10).map((e, i) => (
                           <p key={i}>Row {e.row}: {e.message}</p>
                         ))}
@@ -1918,7 +1919,7 @@ export default function AdminContentPage() {
                     </div>
                   )}
                   {refImportValidationResult.validRows > 0 && (
-                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
+                    <div className="bg-status-green-bg border border-primary/30 rounded-lg p-4">
                       <p className="text-sm font-semibold text-primary">
                         {refImportValidationResult.validRows} valid row(s) found out of {refImportValidationResult.totalRows} total
                       </p>
@@ -1965,7 +1966,7 @@ export default function AdminContentPage() {
           ) : (
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
-              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+              <div className="size-16 rounded-full bg-status-green-bg flex items-center justify-center">
                 <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">{refImportResult.imported} questions imported successfully</h3>

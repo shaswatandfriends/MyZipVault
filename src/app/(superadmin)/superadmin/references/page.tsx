@@ -50,6 +50,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { priorityColors, destructiveColors } from "@/lib/status-colors";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ReferenceQuestionItem {
@@ -467,34 +468,37 @@ export default function SuperadminReferencesPage() {
     const isSelected = selected === rating;
     const base =
       "w-10 h-10 rounded-lg font-bold text-sm border-2 transition-all ";
+    const colors = priorityColors[rating];
+    if (!colors) return base;
+
     switch (rating) {
       case 1:
         return (
           base +
           (isSelected
-            ? "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626]"
-            : "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]")
+            ? `${colors.bg} border-status-red ${colors.text}`
+            : "border-border text-text-muted hover:border-status-red hover:text-status-red")
         );
       case 2:
         return (
           base +
           (isSelected
-            ? "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04]"
-            : "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]")
+            ? `${colors.bg} border-status-amber ${colors.text}`
+            : "border-border text-text-muted hover:border-status-amber hover:text-status-amber")
         );
       case 3:
         return (
           base +
           (isSelected
-            ? "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB]"
-            : "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]")
+            ? `${colors.bg} border-status-blue ${colors.text}`
+            : "border-border text-text-muted hover:border-status-blue hover:text-status-blue")
         );
       case 4:
         return (
           base +
           (isSelected
-            ? "bg-primary border-primary text-white"
-            : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary")
+            ? "bg-primary border-primary text-primary-foreground"
+            : "border-border text-text-muted hover:border-primary hover:text-primary")
         );
       default:
         return base;
@@ -505,11 +509,11 @@ export default function SuperadminReferencesPage() {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "current":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100";
+        return "bg-primary-light text-primary border-primary/30 hover:bg-primary-light";
       case "ending_contract":
-        return "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100";
+        return "bg-status-amber-bg text-status-amber border-status-amber/30 hover:bg-status-amber-bg";
       case "past":
-        return "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100";
+        return "bg-surface-2 text-text-secondary border-border hover:bg-surface-2";
       default:
         return "";
     }
@@ -555,7 +559,7 @@ export default function SuperadminReferencesPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-primary hover:bg-primary-hover text-primary-foreground"
                 onClick={() => openQuestionDialog()}
               >
                 <Plus className="size-4" />
@@ -598,7 +602,7 @@ export default function SuperadminReferencesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-[#DC2626] text-[#DC2626] hover:bg-[#FEE2E2] bg-transparent"
+                className="border-status-red text-status-red hover:bg-badge-red-bg bg-transparent"
                 onClick={() => {
                   setDeleteAllStep(1);
                   setDeleteAllOtp(["", "", "", "", "", ""]);
@@ -783,7 +787,7 @@ export default function SuperadminReferencesPage() {
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground"
               onClick={saveQuestion}
               disabled={actionLoading}
             >
@@ -844,9 +848,9 @@ export default function SuperadminReferencesPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Card 1 - Download Template */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
+                <Card className="border-2 border-dashed border-border hover:border-primary/30 transition-colors">
                   <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <FileSpreadsheet className="size-8 text-emerald-600" />
+                    <FileSpreadsheet className="size-8 text-primary" />
                     <h3 className="font-semibold text-sm">
                       Download Template
                     </h3>
@@ -866,19 +870,19 @@ export default function SuperadminReferencesPage() {
                 </Card>
 
                 {/* Card 2 - Upload Data */}
-                <Card className="border-2 border-dashed border-gray-200 hover:border-emerald-300 transition-colors">
+                <Card className="border-2 border-dashed border-border hover:border-primary/30 transition-colors">
                   <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <Upload className="size-8 text-orange-500" />
+                    <Upload className="size-8 text-status-amber" />
                     <h3 className="font-semibold text-sm">Upload Data</h3>
                     <p className="text-xs text-muted-foreground">
                       Upload your completed Excel file. Data will be validated
                       before import.
                     </p>
                     <div className="w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-2 transition-colors">
                         {importFile ? (
                           <div className="flex items-center gap-2">
-                            <CheckCircle2 className="size-5 text-emerald-600" />
+                            <CheckCircle2 className="size-5 text-primary" />
                             <span className="text-sm font-medium">
                               {importFile.name}
                             </span>
@@ -904,7 +908,7 @@ export default function SuperadminReferencesPage() {
                       </label>
                     </div>
                     <Button
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
                       disabled={!importFile || importValidating}
                       onClick={handleValidate}
                     >
@@ -920,9 +924,9 @@ export default function SuperadminReferencesPage() {
               </div>
 
               {/* Warning box */}
-              <div className="bg-[#FEF9C3] border border-[#CA8A04] rounded-lg p-4 flex gap-3">
-                <AlertTriangle className="size-5 text-[#CA8A04] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#92400E]">
+              <div className="bg-badge-yellow-bg border border-status-amber rounded-lg p-4 flex gap-3">
+                <AlertTriangle className="size-5 text-status-amber flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-status-amber-dark">
                   Importing will <strong>ADD</strong> new questions to existing
                   data. To replace all data, use Delete All Data first, then
                   import. Duplicate questions (same Employment Status + Question
@@ -934,11 +938,11 @@ export default function SuperadminReferencesPage() {
               {importValidationResult && (
                 <div className="space-y-3">
                   {importValidationResult.errorRows > 0 && (
-                    <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4">
-                      <p className="text-sm font-semibold text-[#991B1B]">
+                    <div className="bg-status-red-bg border border-status-red-border rounded-lg p-4">
+                      <p className="text-sm font-semibold text-status-red-dark">
                         {importValidationResult.errorRows} row(s) have errors
                       </p>
-                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-[#991B1B] space-y-1">
+                      <div className="mt-2 max-h-32 overflow-y-auto text-xs text-status-red-dark space-y-1">
                         {importValidationResult.errors
                           .slice(0, 10)
                           .map((e, i) => (
@@ -956,7 +960,7 @@ export default function SuperadminReferencesPage() {
                     </div>
                   )}
                   {importValidationResult.validRows > 0 && (
-                    <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-lg p-4">
+                    <div className="bg-primary-light border border-status-green-border rounded-lg p-4">
                       <p className="text-sm font-semibold text-primary">
                         {importValidationResult.validRows} valid row(s) found
                         out of {importValidationResult.totalRows} total
@@ -1003,7 +1007,7 @@ export default function SuperadminReferencesPage() {
                       )}
                       <div className="mt-4 flex gap-2">
                         <Button
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="bg-primary hover:bg-primary-hover text-primary-foreground"
                           onClick={handleImport}
                           disabled={importImporting}
                         >
@@ -1030,7 +1034,7 @@ export default function SuperadminReferencesPage() {
           ) : (
             /* Import Success */
             <div className="flex flex-col items-center py-8 text-center gap-3">
-              <div className="size-16 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+              <div className="size-16 rounded-full bg-primary-light flex items-center justify-center">
                 <Check className="size-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">
@@ -1042,7 +1046,7 @@ export default function SuperadminReferencesPage() {
                 </p>
               )}
               <Button
-                className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="mt-4 bg-primary hover:bg-primary-hover text-primary-foreground"
                 onClick={() => {
                   setImportModalOpen(false);
                   resetImportModal();
@@ -1071,14 +1075,14 @@ export default function SuperadminReferencesPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="flex flex-col items-center gap-4">
-                <div className="size-16 rounded-full bg-[#FEF2F2] flex items-center justify-center">
-                  <AlertTriangle className="size-8 text-[#DC2626]" />
+                <div className="size-16 rounded-full bg-status-red-bg flex items-center justify-center">
+                  <AlertTriangle className="size-8 text-status-red" />
                 </div>
-                <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg p-4 w-full">
-                  <p className="text-sm text-[#991B1B] font-medium">
+                <div className="bg-status-red-bg border border-status-red-border rounded-lg p-4 w-full">
+                  <p className="text-sm text-status-red-dark font-medium">
                     This will permanently delete:
                   </p>
-                  <ul className="mt-2 text-sm text-[#991B1B] list-disc list-inside space-y-1">
+                  <ul className="mt-2 text-sm text-status-red-dark list-disc list-inside space-y-1">
                     <li>All professions</li>
                     <li>All job titles</li>
                     <li>All specialties</li>
@@ -1086,10 +1090,10 @@ export default function SuperadminReferencesPage() {
                     <li>All skills</li>
                     <li>All reference questions</li>
                   </ul>
-                  <p className="mt-3 text-sm text-[#991B1B] font-semibold">
+                  <p className="mt-3 text-sm text-status-red-dark font-semibold">
                     This action cannot be undone.
                   </p>
-                  <p className="mt-1 text-sm text-[#991B1B]">
+                  <p className="mt-1 text-sm text-status-red-dark">
                     To proceed, you will need to verify with a one-time code.
                   </p>
                 </div>
@@ -1102,7 +1106,7 @@ export default function SuperadminReferencesPage() {
                   Cancel
                 </Button>
                 <Button
-                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  className={`${destructiveColors.buttonBg} ${destructiveColors.buttonText}`}
                   onClick={handleRequestOtp}
                   disabled={deleteAllSending}
                 >
@@ -1147,7 +1151,7 @@ export default function SuperadminReferencesPage() {
                 </div>
                 <div className="text-center">
                   <button
-                    className="text-sm text-emerald-600 hover:underline disabled:opacity-50 disabled:no-underline"
+                    className="text-sm text-primary hover:underline disabled:opacity-50 disabled:no-underline"
                     onClick={handleRequestOtp}
                     disabled={resendCooldown > 0 || deleteAllSending}
                   >
@@ -1157,7 +1161,7 @@ export default function SuperadminReferencesPage() {
                   </button>
                 </div>
                 <Button
-                  className="w-full bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                  className={`w-full ${destructiveColors.buttonBg} ${destructiveColors.buttonText}`}
                   onClick={handleDeleteAll}
                   disabled={
                     deleteAllOtp.join("").length !== 6 || deleteAllDeleting
@@ -1183,7 +1187,7 @@ export default function SuperadminReferencesPage() {
           onClick={() => setPreviewModalOpen(false)}
         >
           <div
-            className="bg-white rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col"
+            className="bg-background rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1193,7 +1197,7 @@ export default function SuperadminReferencesPage() {
               </h2>
               <button
                 onClick={() => setPreviewModalOpen(false)}
-                className="size-8 flex items-center justify-center rounded-lg hover:bg-gray-100"
+                className="size-8 flex items-center justify-center rounded-lg hover:bg-surface-2"
               >
                 <X className="size-5" />
               </button>
@@ -1228,8 +1232,8 @@ export default function SuperadminReferencesPage() {
                         onClick={() => handlePreviewTabChange(tab.value)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           previewStatus === tab.value
-                            ? "bg-emerald-600 text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-surface-2 text-text-secondary hover:bg-surface-2"
                         }`}
                       >
                         {tab.label}
@@ -1238,31 +1242,31 @@ export default function SuperadminReferencesPage() {
                   </div>
 
                   {/* Rating scale legend */}
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-surface-2 rounded-lg p-4">
                     <p className="text-xs font-semibold text-muted-foreground mb-2">
                       Rating Scale:
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center font-bold text-[#DC2626]">
+                        <div className={`size-6 rounded ${priorityColors[1].bg} border-2 border-status-red flex items-center justify-center font-bold ${priorityColors[1].text}`}>
                           1
                         </div>
                         <span>No theory / experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#FEF9C3] border-2 border-[#CA8A04] flex items-center justify-center font-bold text-[#CA8A04]">
+                        <div className={`size-6 rounded ${priorityColors[2].bg} border-2 border-status-amber flex items-center justify-center font-bold ${priorityColors[2].text}`}>
                           2
                         </div>
                         <span>Limited Experience</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-[#DBEAFE] border-2 border-[#2563EB] flex items-center justify-center font-bold text-[#2563EB]">
+                        <div className={`size-6 rounded ${priorityColors[3].bg} border-2 border-status-blue flex items-center justify-center font-bold ${priorityColors[3].text}`}>
                           3
                         </div>
                         <span>Experienced</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="size-6 rounded bg-primary border-2 border-primary flex items-center justify-center font-bold text-white">
+                        <div className="size-6 rounded bg-primary border-2 border-primary flex items-center justify-center font-bold text-primary-foreground">
                           4
                         </div>
                         <span>Proficient</span>
@@ -1283,7 +1287,7 @@ export default function SuperadminReferencesPage() {
                       previewData.questions.map((question, idx) => (
                         <div
                           key={question.id}
-                          className="flex items-start justify-between py-3 border-b border-gray-100 gap-4"
+                          className="flex items-start justify-between py-3 border-b border-border gap-4"
                         >
                           <div className="flex items-start gap-3 flex-1">
                             <span className="text-sm text-muted-foreground font-medium mt-0.5">
@@ -1307,10 +1311,10 @@ export default function SuperadminReferencesPage() {
                               </div>
                             ) : question.responseType === "yes_no" ? (
                               <div className="flex gap-2">
-                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-emerald-600 hover:text-emerald-600">
+                                <button className="px-4 h-10 rounded-lg border-2 border-border text-text-muted text-sm font-medium hover:border-primary hover:text-primary">
                                   Yes
                                 </button>
-                                <button className="px-4 h-10 rounded-lg border-2 border-gray-200 text-gray-400 text-sm font-medium hover:border-red-600 hover:text-red-600">
+                                <button className="px-4 h-10 rounded-lg border-2 border-border text-text-muted text-sm font-medium hover:border-status-red hover:text-status-red">
                                   No
                                 </button>
                               </div>
@@ -1358,7 +1362,7 @@ export default function SuperadminReferencesPage() {
                         <Label className="text-sm font-medium">
                           Digital Signature
                         </Label>
-                        <div className="h-16 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-muted-foreground">
+                        <div className="h-16 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-sm text-muted-foreground">
                           Signature area (disabled in preview)
                         </div>
                         <Input
@@ -1379,7 +1383,7 @@ export default function SuperadminReferencesPage() {
 
             {/* Footer */}
             {previewData && (
-              <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-sm text-muted-foreground">
+              <div className="px-6 py-3 border-t bg-surface-2 flex items-center justify-between text-sm text-muted-foreground">
                 <span>
                   {previewData.totalQuestions} questions for{" "}
                   {formatStatusLabel(previewData.employmentStatus)}

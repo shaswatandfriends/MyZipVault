@@ -164,7 +164,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[var(--foreground)]">
+          <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 ease-in-out hover:bg-surface-2 hover:text-foreground">
             <BellIcon className="size-5 shrink-0" />
             <span>Notifications</span>
             {unreadCount > 0 && (

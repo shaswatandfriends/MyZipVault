@@ -27,28 +27,21 @@ import { Separator } from "@/components/ui/separator";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { vaultSignStatusColors, destructiveColors } from "@/lib/status-colors";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
-  partially_signed: { label: "In Progress", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
-  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-};
+const STATUS_CONFIG = vaultSignStatusColors;
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
   document_created: { label: "Created", color: "text-text-secondary" },
-  document_sent: { label: "Sent", color: "text-[#2563EB]" },
-  document_viewed: { label: "Viewed", color: "text-[#7C3AED]" },
+  document_sent: { label: "Sent", color: "text-status-blue" },
+  document_viewed: { label: "Viewed", color: "text-purple-500" },
   signer_signed: { label: "Signed", color: "text-primary" },
-  signer_declined: { label: "Declined", color: "text-[#DC2626]" },
+  signer_declined: { label: "Declined", color: "text-status-red" },
   document_completed: { label: "Completed", color: "text-primary" },
   document_voided: { label: "Voided", color: "text-text-secondary" },
   document_expired: { label: "Expired", color: "text-text-secondary" },
-  reminder_sent: { label: "Reminder", color: "text-[#D97706]" },
-  document_revised: { label: "Revised", color: "text-[#2563EB]" },
+  reminder_sent: { label: "Reminder", color: "text-status-amber" },
+  document_revised: { label: "Revised", color: "text-status-blue" },
 };
 
 const DOCUMENT_TYPES = [
@@ -455,7 +448,7 @@ export default function SuperAdminVaultSignPage() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
-                        <Badge className={`${template.is_active ? "bg-primary-light text-primary" : "bg-[#F3F4F6] text-text-secondary"} border-0 text-[10px]`}>
+                        <Badge className={`${template.is_active ? "bg-primary-light text-primary" : "bg-surface-2 text-text-secondary"} border-0 text-[10px]`}>
                           {template.is_active ? "Active" : "Inactive"}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">{template.document_type}</Badge>
@@ -477,7 +470,7 @@ export default function SuperAdminVaultSignPage() {
                           onClick={() => duplicateTemplate(template)} title="Duplicate">
                           <Copy className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-xs text-text-muted hover:text-[#DC2626] h-7"
+                        <Button variant="ghost" size="sm" className="text-xs text-text-muted hover:text-status-red h-7"
                           onClick={() => deleteTemplate(template.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -605,13 +598,13 @@ export default function SuperAdminVaultSignPage() {
                               </TableCell>
                               <TableCell className="text-sm text-text-secondary">{doc.organization?.name || "—"}</TableCell>
                               <TableCell>
-                                <Badge className={`${sc.bg} ${sc.color} border-0`}>{sc.label}</Badge>
+                                <Badge className={`${sc.bg} ${sc.text} border-0`}>{sc.label}</Badge>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   {doc.signers?.slice(0, 3).map((s: any, i: number) => (
                                     <div key={i} className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[7px] font-bold"
-                                      style={{ backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "#FEF2F2" : "#F3F4F6", color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "#DC2626" : "var(--text-secondary)" }}
+                                      style={{ backgroundColor: s.status === "signed" ? "var(--primary-light)" : s.status === "declined" ? "var(--status-red-bg)" : "var(--surface-2)", color: s.status === "signed" ? "var(--primary)" : s.status === "declined" ? "var(--status-red)" : "var(--text-secondary)" }}
                                       title={`${s.name} - ${s.status}`}>
                                       {s.name?.charAt(0)?.toUpperCase()}
                                     </div>
@@ -625,12 +618,12 @@ export default function SuperAdminVaultSignPage() {
                                   {["sent", "partially_signed"].includes(doc.status) && (
                                     <>
                                       {doc.signers?.filter((s: any) => s.status === "pending").slice(0, 1).map((s: any) => (
-                                        <Button key={s.id} variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#D97706]"
+                                        <Button key={s.id} variant="ghost" size="sm" className="h-7 w-7 p-0 text-status-amber"
                                           onClick={() => handleRemindDoc(doc.id, s.id)} title="Send Reminder">
                                           <Send className="h-3 w-3" />
                                         </Button>
                                       ))}
-                                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#DC2626]"
+                                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-status-red"
                                         onClick={() => handleVoidDoc(doc.id)} title="Void">
                                         <Ban className="h-3 w-3" />
                                       </Button>
@@ -693,12 +686,12 @@ export default function SuperAdminVaultSignPage() {
                 {/* Overview Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6 animate-vaultsign-fade-in">
                   {[
-                    { label: "Total Docs", value: analytics.overview.totalDocuments, icon: FileText, color: "bg-[#EFF6FF]", iconColor: "text-[#2563EB]" },
+                    { label: "Total Docs", value: analytics.overview.totalDocuments, icon: FileText, color: "bg-status-blue-bg", iconColor: "text-status-blue" },
                     { label: "Completed", value: analytics.overview.completedDocuments, icon: CheckCircle2, color: "bg-primary-light", iconColor: "text-primary" },
-                    { label: "Declined", value: analytics.overview.declinedDocuments, icon: XCircle, color: "bg-[#FEF2F2]", iconColor: "text-[#DC2626]" },
-                    { label: "Expired", value: analytics.overview.expiredDocuments, icon: AlertTriangle, color: "bg-[#FFFBEB]", iconColor: "text-[#D97706]" },
-                    { label: "Completion Rate", value: `${analytics.overview.completionRate}%`, icon: TrendingUp, color: "bg-[#F0FDF4]", iconColor: "text-primary" },
-                    { label: "Avg Sign Time", value: `${analytics.overview.avgSigningHours}h`, icon: Clock, color: "bg-[#EFF6FF]", iconColor: "text-[#2563EB]" },
+                    { label: "Declined", value: analytics.overview.declinedDocuments, icon: XCircle, color: "bg-status-red-bg", iconColor: "text-status-red" },
+                    { label: "Expired", value: analytics.overview.expiredDocuments, icon: AlertTriangle, color: "bg-status-amber-bg", iconColor: "text-status-amber" },
+                    { label: "Completion Rate", value: `${analytics.overview.completionRate}%`, icon: TrendingUp, color: "bg-status-green-bg", iconColor: "text-primary" },
+                    { label: "Avg Sign Time", value: `${analytics.overview.avgSigningHours}h`, icon: Clock, color: "bg-status-blue-bg", iconColor: "text-status-blue" },
                   ].map((stat, i) => (
                     <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                       <CardContent className="p-3">
@@ -727,10 +720,10 @@ export default function SuperAdminVaultSignPage() {
                           const pct = analytics.overview.totalDocuments > 0 ? Math.round((count / analytics.overview.totalDocuments) * 100) : 0;
                           return (
                             <div key={status} className="flex items-center gap-3">
-                              <Badge className={`${sc.bg} ${sc.color} border-0 text-[10px] w-24 justify-center`}>{sc.label}</Badge>
-                              <div className="flex-1 bg-[#F3F4F6] rounded-full h-4 overflow-hidden">
+                              <Badge className={`${sc.bg} ${sc.text} border-0 text-[10px] w-24 justify-center`}>{sc.label}</Badge>
+                              <div className="flex-1 bg-surface-2 rounded-full h-4 overflow-hidden">
                                 <div className={`h-full rounded-full ${sc.bg.replace("bg-", "bg-")} transition-all`}
-                                  style={{ width: `${pct}%`, backgroundColor: status === "completed" ? "var(--primary)" : status === "declined" ? "#DC2626" : status === "sent" ? "#2563EB" : status === "partially_signed" ? "#D97706" : "var(--text-muted)" }} />
+                                  style={{ width: `${pct}%`, backgroundColor: status === "completed" ? "var(--primary)" : status === "declined" ? "var(--status-red)" : status === "sent" ? "var(--status-blue)" : status === "partially_signed" ? "var(--status-amber)" : "var(--text-muted)" }} />
                               </div>
                               <span className="text-xs text-text-secondary w-16 text-right">{count} ({pct}%)</span>
                             </div>
@@ -751,7 +744,7 @@ export default function SuperAdminVaultSignPage() {
                           return (
                             <div key={type} className="flex items-center gap-3">
                               <span className="text-xs text-foreground w-32 truncate">{label}</span>
-                              <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
+                              <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
                                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                               </div>
                               <span className="text-xs text-text-secondary w-12 text-right">{count}</span>
@@ -774,20 +767,20 @@ export default function SuperAdminVaultSignPage() {
                               <div key={m.month} className="flex items-center gap-3">
                                 <span className="text-xs text-text-secondary w-16">{m.month.slice(5)}</span>
                                 <div className="flex-1 flex items-center gap-1">
-                                  <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
+                                  <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
                                     <div className="h-full rounded-full bg-primary" style={{ width: `${(m.created / maxCreated) * 100}%` }} />
                                   </div>
                                 </div>
                                 <span className="text-xs text-foreground w-6 text-right">{m.created}</span>
                                 <span className="text-[10px] text-primary w-6">{m.completed}</span>
-                                <span className="text-[10px] text-[#DC2626] w-6">{m.declined}</span>
+                                <span className="text-[10px] text-status-red w-6">{m.declined}</span>
                               </div>
                             );
                           })}
                           <div className="flex items-center gap-4 text-[10px] text-text-secondary mt-2">
                             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> Created</span>
                             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary opacity-60" /> Completed</span>
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> Declined</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-status-red" /> Declined</span>
                           </div>
                         </div>
                       ) : (
@@ -807,8 +800,8 @@ export default function SuperAdminVaultSignPage() {
                             return (
                               <div key={i} className="flex items-center gap-3">
                                 <span className="text-xs text-foreground w-32 truncate">{org.name}</span>
-                                <div className="flex-1 bg-[#F3F4F6] rounded-full h-3 overflow-hidden">
-                                  <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${(org.documentCount / maxDocs) * 100}%` }} />
+                                <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
+                                  <div className="h-full rounded-full bg-status-blue" style={{ width: `${(org.documentCount / maxDocs) * 100}%` }} />
                                 </div>
                                 <span className="text-xs text-text-secondary w-8 text-right">{org.documentCount}</span>
                               </div>
@@ -831,12 +824,12 @@ export default function SuperAdminVaultSignPage() {
                         <p className="text-2xl font-bold text-foreground">{analytics.signers.total}</p>
                         <p className="text-xs text-text-secondary">Total Signers</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-[#F0FDF4]">
+                      <div className="text-center p-3 rounded-lg bg-status-green-bg">
                         <p className="text-2xl font-bold text-primary">{analytics.signers.signed}</p>
                         <p className="text-xs text-text-secondary">Signed</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-[#EFF6FF]">
-                        <p className="text-2xl font-bold text-[#2563EB]">{analytics.signers.signRate}%</p>
+                      <div className="text-center p-3 rounded-lg bg-status-blue-bg">
+                        <p className="text-2xl font-bold text-status-blue">{analytics.signers.signRate}%</p>
                         <p className="text-xs text-text-secondary">Sign Rate</p>
                       </div>
                     </div>

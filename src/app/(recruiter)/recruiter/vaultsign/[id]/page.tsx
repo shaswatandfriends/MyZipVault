@@ -17,23 +17,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
+import { vaultSignStatusColors, signerStatusColors, destructiveColors } from "@/lib/status-colors";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  sent: { label: "Sent", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]" },
-  partially_signed: { label: "Partially Signed", color: "text-[#D97706]", bg: "bg-[#FFFBEB]" },
-  completed: { label: "Completed", color: "text-primary", bg: "bg-primary-light" },
-  declined: { label: "Declined", color: "text-[#DC2626]", bg: "bg-[#FEF2F2]" },
-  expired: { label: "Expired", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-  voided: { label: "Voided", color: "text-text-secondary", bg: "bg-[#F3F4F6]" },
-};
-
-const SIGNER_STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
-  pending: { icon: Clock, color: "text-text-secondary" },
-  sent: { icon: Mail, color: "text-[#2563EB]" },
-  viewed: { icon: Eye, color: "text-[#D97706]" },
-  signed: { icon: CheckCircle2, color: "text-primary" },
-  declined: { icon: XCircle, color: "text-[#DC2626]" },
+const SIGNER_ICON_MAP: Record<string, any> = {
+  pending: Clock,
+  sent: Mail,
+  viewed: Eye,
+  signed: CheckCircle2,
+  declined: XCircle,
 };
 
 const TIMELINE_STEPS = [
@@ -272,7 +263,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   if (!document) return null;
 
-  const statusConf = STATUS_CONFIG[document.status] || STATUS_CONFIG.draft;
+  const statusConf = vaultSignStatusColors[document.status] || vaultSignStatusColors.draft;
   const timelineProgress = TIMELINE_STEPS.findIndex((s) => s.key === document.status);
 
   return (
@@ -290,7 +281,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 {document.document_name}
               </h1>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <Badge className={`${statusConf.bg} ${statusConf.color} border-0`}>{statusConf.label}</Badge>
+                <Badge className={`${statusConf.bg} ${statusConf.text} border-0`}>{statusConf.label}</Badge>
                 <span className="text-xs text-text-secondary">
                   {document.source_type === "word" ? "Word Document" : "PDF Document"} • {document.document_type}
                 </span>
@@ -325,7 +316,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </>
             )}
             {["sent", "partially_signed"].includes(document.status) && (
-              <Button variant="outline" size="sm" className="border-[#DC2626]/30 text-[#DC2626] hover:bg-[#FEF2F2]" onClick={handleVoid} disabled={actionLoading === "void"}>
+              <Button variant="outline" size="sm" className="border-status-red-border/30 text-status-red hover:bg-status-red-bg" onClick={handleVoid} disabled={actionLoading === "void"}>
                 <Ban className="h-4 w-4 mr-1" /> Void
               </Button>
             )}
@@ -353,7 +344,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       <button
                         type="button"
                         onClick={() => router.push(`/recruiter/vaultsign?status=${step.key}`)}
-                        className="flex items-center gap-2 flex-shrink-0 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#F0FDF4] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1"
+                        className="flex items-center gap-2 flex-shrink-0 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-primary-light transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1"
                       >
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-transform hover:scale-110 ${
                           i <= timelineProgress ? "bg-primary text-white" : "bg-surface-3 text-text-muted"
@@ -388,8 +379,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               <CardContent className="p-4 pt-0">
                 <div className="space-y-3 vaultsign-stagger animate-vaultsign-slide-up">
                   {document.signers?.map((signer: any) => {
-                    const sConfig = SIGNER_STATUS_CONFIG[signer.status] || SIGNER_STATUS_CONFIG.pending;
-                    const StatusIcon = sConfig.icon;
+                    const signerColor = signerStatusColors[signer.status] || signerStatusColors.pending;
+                    const StatusIcon = SIGNER_ICON_MAP[signer.status] || Clock;
                     return (
                       <div key={signer.id} className="flex items-center gap-3 p-3 rounded-xl border border-border">
                         <Avatar className="h-10 w-10">
@@ -403,8 +394,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <Badge variant="outline" className="text-[10px]">{signer.role}</Badge>
                             <div className="flex items-center gap-1">
-                              <StatusIcon className={`h-3.5 w-3.5 ${sConfig.color}`} />
-                              <span className={`text-xs ${sConfig.color}`}>
+                              <StatusIcon className={`h-3.5 w-3.5 ${signerColor.text}`} />
+                              <span className={`text-xs ${signerColor.text}`}>
                                 {signer.status === "signed" && signer.signed_at
                                   ? `Signed ${new Date(signer.signed_at).toLocaleDateString()}`
                                   : signer.status.charAt(0).toUpperCase() + signer.status.slice(1)}
@@ -416,7 +407,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-primary hover:bg-[#F0FDF4]"
+                            className="text-primary hover:bg-primary-light"
                             onClick={() => handleRemind(signer.id)}
                           >
                             <Bell className="h-4 w-4" />

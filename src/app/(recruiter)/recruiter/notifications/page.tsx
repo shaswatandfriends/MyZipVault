@@ -473,7 +473,7 @@ export default function RecruiterNotificationsPage() {
         actions={
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <Badge className="bg-primary text-white border-[#14532D] hover:bg-primary-hover text-sm px-2.5">
+              <Badge className="bg-primary text-white border-primary-hover hover:bg-primary-hover text-sm px-2.5">
                 {unreadCount} unread
               </Badge>
             )}

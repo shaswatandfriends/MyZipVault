@@ -548,7 +548,7 @@ export default function SkillsOverviewPage() {
                       }}
                       formatter={(value: number) => [`${value} requests`, "Count"]}
                     />
-                    <Bar dataKey="count" fill="#0d9488" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill="var(--accent-teal)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

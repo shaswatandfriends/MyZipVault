@@ -21,7 +21,7 @@ export default function SignLayout({
         <p className="text-xs text-text-muted">
           Powered by <span className="font-medium text-text-secondary">VaultSign</span> — MyZipVault Secure Electronic Signatures
         </p>
-        <p className="text-[10px] text-[#D1D5DB] mt-0.5">
+        <p className="text-[10px] text-disabled-border mt-0.5">
           Your electronic signature is legally binding under the ESIGN Act and UETA
         </p>
       </footer>

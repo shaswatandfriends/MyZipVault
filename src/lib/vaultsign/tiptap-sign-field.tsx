@@ -11,14 +11,14 @@ import React from "react";
 
 // Color map for signer indices
 const SIGNER_COLORS = [
-  "#166534", // green
-  "#0D9488", // teal
+  "var(--status-green-dark)", // green
+  "var(--accent-teal)", // teal
   "#7C3AED", // purple
-  "#DC2626", // red
-  "#D97706", // amber
-  "#2563EB", // blue
+  "var(--status-red)", // red
+  "var(--status-amber)", // amber
+  "var(--status-blue)", // blue
   "#DB2777", // pink
-  "#059669", // emerald
+  "var(--primary)", // emerald
 ];
 
 // Field type display info

@@ -374,10 +374,10 @@ export default function RecruiterBillingPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
                   <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
                   <Tooltip
-                    contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px" }}
+                    contentStyle={{ borderRadius: "8px", border: "1px solid var(--border)", fontSize: "13px" }}
                     formatter={(value: number) => [`${value} credits`, "Used"]}
                   />
-                  <Bar dataKey="used" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="used" fill="var(--primary-vivid)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

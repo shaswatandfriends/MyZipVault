@@ -159,7 +159,7 @@ export default function ReferenceOverviewPage() {
             <Button variant="outline" size="sm" onClick={fetchData}>
               <RefreshCw className="size-4" /> Refresh
             </Button>
-            <Button size="sm" className="bg-primary hover:bg-[#14532d] text-white" onClick={handleExportAll}>
+            <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" onClick={handleExportAll}>
               <Download className="size-4" /> Export All
             </Button>
           </div>

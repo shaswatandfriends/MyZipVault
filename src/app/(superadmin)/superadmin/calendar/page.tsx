@@ -122,15 +122,15 @@ function formatShortDate(dateStr: string): string {
 }
 
 const PIPELINE_COLORS: Record<string, string> = {
-  new_lead: "#10b981",
-  doc_pending: "#f59e0b",
-  submitted: "#3b82f6",
-  interested_no_job: "#8b5cf6",
-  interview_scheduled: "#06b6d4",
-  offer_sent: "#ec4899",
-  onboarding: "#14b8a6",
-  started: "#22c55e",
-  not_interested: "#ef4444",
+  new_lead: "var(--pipeline-new-lead)",
+  doc_pending: "var(--pipeline-doc-pending)",
+  submitted: "var(--pipeline-submitted)",
+  interested_no_job: "var(--pipeline-interested-no-job)",
+  interview_scheduled: "var(--pipeline-interview-scheduled)",
+  offer_sent: "var(--pipeline-offer-sent)",
+  onboarding: "var(--pipeline-onboarding)",
+  started: "var(--pipeline-started)",
+  not_interested: "var(--pipeline-not-interested)",
 };
 
 // ─── Skeletons ──────────────────────────────────────────────────────
@@ -791,7 +791,7 @@ function PipelineTab({
                 <Tooltip
                   contentStyle={{
                     borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--border)",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                   }}
                   formatter={(value: number) => [`${value} leads`, "Count"]}
@@ -800,7 +800,7 @@ function PipelineTab({
                   {pipelineOverview.map((entry) => (
                     <Cell
                       key={entry.stage}
-                      fill={PIPELINE_COLORS[entry.stage] || "#6b7280"}
+                      fill={PIPELINE_COLORS[entry.stage] || "var(--text-muted)"}
                     />
                   ))}
                 </Bar>
@@ -820,7 +820,7 @@ function PipelineTab({
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">{stage.label}</span>
-                    <span className="text-lg font-bold" style={{ color: PIPELINE_COLORS[stage.stage] || "#6b7280" }}>
+                    <span className="text-lg font-bold" style={{ color: PIPELINE_COLORS[stage.stage] || "var(--text-muted)" }}>
                       {stage.count}
                     </span>
                   </div>
@@ -829,7 +829,7 @@ function PipelineTab({
                       className="h-2 rounded-full transition-all"
                       style={{
                         width: `${pct}%`,
-                        backgroundColor: PIPELINE_COLORS[stage.stage] || "#6b7280",
+                        backgroundColor: PIPELINE_COLORS[stage.stage] || "var(--text-muted)",
                       }}
                     />
                   </div>

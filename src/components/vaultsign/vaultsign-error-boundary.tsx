@@ -35,61 +35,34 @@ export class VaultSignErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{ backgroundColor: "var(--background)" }}
-          className="min-h-screen flex items-center justify-center p-4"
-        >
-          <div
-            className="bg-white rounded-2xl border border-[var(--border)] p-8 max-w-md w-full text-center"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
-          >
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <div className="bg-card rounded-2xl border border-border p-8 max-w-md w-full text-center shadow-sm">
             {/* VaultSign Logo */}
             <div className="mb-6">
-              <div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                style={{ backgroundColor: "#FEF2F2" }}
-              >
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-status-red-bg">
                 <span style={{ fontSize: "32px" }}>&#x26A0;&#xFE0F;</span>
               </div>
-              <h1
-                className="text-2xl font-extrabold mb-1"
-                style={{ color: "var(--primary)", letterSpacing: "-0.5px" }}
-              >
+              <h1 className="text-2xl font-extrabold mb-1 text-primary" style={{ letterSpacing: "-0.5px" }}>
                 &#x1F510; VaultSign
               </h1>
-              <p
-                className="text-xs uppercase tracking-widest"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <p className="text-xs uppercase tracking-widest text-text-secondary">
                 by MyZipVault
               </p>
             </div>
 
             {/* Error Heading */}
-            <h2
-              className="text-xl font-bold mb-2"
-              style={{ color: "var(--foreground)" }}
-            >
+            <h2 className="text-xl font-bold mb-2 text-foreground">
               Something went wrong
             </h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm mb-6 text-text-secondary">
               We encountered an unexpected error while loading this page. This
               has been logged and our team will investigate.
             </p>
 
             {/* Error details (collapsed) */}
             {this.state.error && (
-              <div
-                className="mb-6 rounded-lg p-3 text-left"
-                style={{
-                  backgroundColor: "#FEF2F2",
-                  border: "1px solid #FECACA",
-                }}
-              >
-                <p
-                  className="text-xs font-mono break-all"
-                  style={{ color: "#DC2626" }}
-                >
+              <div className="mb-6 rounded-lg p-3 text-left bg-status-red-bg border border-status-red-border">
+                <p className="text-xs font-mono break-all text-status-red">
                   {this.state.error.message}
                 </p>
               </div>
@@ -99,52 +72,21 @@ export class VaultSignErrorBoundary extends React.Component<
             <div className="space-y-3">
               <button
                 onClick={this.handleReset}
-                className="w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  border: "2px solid #166534",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "#14532D";
-                }}
-                onMouseOut={(e) => {
-                  (e.target as HTMLButtonElement).style.backgroundColor =
-                    "var(--primary)";
-                }}
+                className="w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm bg-primary hover:bg-status-green-dark cursor-pointer border-2 border-primary"
               >
                 Try Again
               </button>
 
               <a
                 href="/recruiter/vaultsign"
-                className="block w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-center"
-                style={{
-                  color: "var(--primary)",
-                  border: "1px solid #E5E7EB",
-                  backgroundColor: "#FFFFFF",
-                  textDecoration: "none",
-                }}
-                onMouseOver={(e) => {
-                  (e.target as HTMLAnchorElement).style.backgroundColor =
-                    "#F0FDF4";
-                }}
-                onMouseOut={(e) => {
-                  (e.target as HTMLAnchorElement).style.backgroundColor =
-                    "#FFFFFF";
-                }}
+                className="block w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-center text-primary border border-border bg-card hover:bg-primary-light no-underline"
               >
                 Go to Dashboard
               </a>
 
               <a
                 href="mailto:support@myzipvault.com"
-                className="block text-xs"
-                style={{
-                  color: "var(--accent-teal)",
-                  textDecoration: "underline",
-                }}
+                className="block text-xs text-accent-teal underline"
               >
                 Contact Support
               </a>

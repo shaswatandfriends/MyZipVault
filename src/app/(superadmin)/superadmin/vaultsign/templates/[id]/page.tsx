@@ -404,7 +404,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               <button
                 key={v.key}
                 onClick={() => { insertVariable(v.label); setShowVariablesPanel(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#F0FDF4] hover:bg-primary-light text-primary font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-primary-light hover:bg-primary-light text-primary font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
               >
                 {v.label}
               </button>
@@ -419,7 +419,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               <button
                 key={v.key}
                 onClick={() => { insertVariable(`{{${v.key}}}`); setShowVariablesPanel(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#F0FDF4] hover:bg-primary-light text-primary font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-primary-light hover:bg-primary-light text-primary font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
               >
                 {`{{${v.key}}}`}
               </button>
@@ -434,14 +434,14 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               <div key={v.key} className="flex items-center gap-1">
                 <button
                   onClick={() => { insertVariable(`{{${v.key}}}`); setShowVariablesPanel(false); }}
-                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#1D4ED8] font-mono font-medium transition-colors"
+                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-status-blue-bg hover:bg-badge-blue-bg text-status-blue-dark font-mono font-medium transition-colors"
                 >
                   {`{{${v.key}}}`}
                 </button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
+                  className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
                   onClick={() => setCustomVariables(customVariables.filter((cv) => cv.key !== v.key))}
                 >
                   <X className="h-3 w-3" />
@@ -491,7 +491,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               </div>
               <button 
                 onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
-                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-[#D1D5DB]'}`}
+                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-primary' : 'bg-surface-3'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
@@ -536,7 +536,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 text-text-muted hover:text-[#DC2626]"
+                    className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
                     onClick={() => removeSignerSlot(slot.index)}
                   >
                     <Trash2 className="h-3 w-3" />
@@ -564,7 +564,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-primary/30 hover:bg-[#F0FDF4] transition-colors text-foreground cursor-pointer"
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-primary/30 hover:bg-primary-light transition-colors text-foreground cursor-pointer"
                             onClick={() => addSignField(type, slot.index)}
                           >
                             <span className="text-sm">{FIELD_TYPE_ICONS[type]}</span>
@@ -591,7 +591,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 text-text-muted hover:text-[#DC2626]"
+                      className="h-4 w-4 p-0 text-text-muted hover:text-status-red"
                       onClick={() => removeSignField(field.id)}
                     >
                       <X className="h-2.5 w-2.5" />
@@ -662,7 +662,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
       </div>
 
       {/* Desktop Toolbar — Word-style ribbon */}
-      <div className="hidden lg:flex bg-[#F8F9FA] border-b border-border px-1 py-0.5 flex-wrap gap-y-0">
+      <div className="hidden lg:flex bg-toolbar-bg border-b border-border px-1 py-0.5 flex-wrap gap-y-0">
         {/* Clipboard Group */}
         <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
           <div className="flex items-center gap-0.5">
@@ -733,7 +733,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F0FDF4] text-primary" : "text-text-secondary"}`} title="Font Color">
+                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Font Color">
                   <Palette className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -748,7 +748,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F0FDF4] text-primary" : "text-text-secondary"}`} title="Highlight">
+                <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Highlight">
                   <Highlighter className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -935,7 +935,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
         </div>
 
         {/* Center — Editor */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
+        <div className="flex-1 overflow-y-auto bg-surface-2">
           <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-border bg-white min-h-[800px]">
             <EditorContent editor={editor} className="tiptap-editor" />
           </div>
@@ -984,27 +984,27 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
         }
         .tiptap-editor .tiptap p {
           margin-bottom: 0.5em;
-          color: #374151;
+          color: var(--text-secondary);
           line-height: 1.6;
         }
         .tiptap-editor .tiptap h1 {
           font-size: 1.75rem;
           font-weight: 700;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1.5em;
           margin-bottom: 0.5em;
         }
         .tiptap-editor .tiptap h2 {
           font-size: 1.4rem;
           font-weight: 600;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1.2em;
           margin-bottom: 0.4em;
         }
         .tiptap-editor .tiptap h3 {
           font-size: 1.15rem;
           font-weight: 600;
-          color: #111827;
+          color: var(--foreground);
           margin-top: 1em;
           margin-bottom: 0.3em;
         }
@@ -1028,12 +1028,12 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
         }
         .tiptap-editor .tiptap table td,
         .tiptap-editor .tiptap table th {
-          border: 1px solid #E5E7EB;
+          border: 1px solid var(--border);
           padding: 8px;
           min-width: 60px;
         }
         .tiptap-editor .tiptap table th {
-          background: #F3F4F6;
+          background: var(--surface-2);
           font-weight: 600;
         }
         .tiptap-editor .tiptap img {
@@ -1045,7 +1045,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
         .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #9CA3AF;
+          color: var(--text-muted);
           pointer-events: none;
           height: 0;
         }
@@ -1076,12 +1076,12 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
           background: linear-gradient(to bottom,
             #ffffff 0%,
             #ffffff 38%,
-            #E5E7EB 38%,
-            #E5E7EB 40%,
+            var(--border) 38%,
+            var(--border) 40%,
             #ffffff 40%,
             #ffffff 60%,
-            #E5E7EB 60%,
-            #E5E7EB 62%,
+            var(--border) 60%,
+            var(--border) 62%,
             #ffffff 62%,
             #ffffff 100%
           );
@@ -1096,9 +1096,9 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
           font-size: 9px;
           font-weight: 700;
           letter-spacing: 2px;
-          color: #166534;
-          background: #F0FDF4;
-          border: 1px solid #166534/30;
+          color: var(--status-green-dark);
+          background: var(--primary-light);
+          border: 1px solid var(--status-green-dark);
           padding: 3px 16px;
           border-radius: 4px;
           white-space: nowrap;
@@ -1113,12 +1113,12 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
           background: linear-gradient(to bottom,
             #ffffff 0%,
             #ffffff 38%,
-            #E5E7EB 38%,
-            #E5E7EB 40%,
+            var(--border) 38%,
+            var(--border) 40%,
             #ffffff 40%,
             #ffffff 60%,
-            #E5E7EB 60%,
-            #E5E7EB 62%,
+            var(--border) 60%,
+            var(--border) 62%,
             #ffffff 62%,
             #ffffff 100%
           );
@@ -1132,9 +1132,9 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
           font-size: 9px;
           font-weight: 700;
           letter-spacing: 2px;
-          color: #166534;
-          background: #F0FDF4;
-          border: 1px solid #166534/30;
+          color: var(--status-green-dark);
+          background: var(--primary-light);
+          border: 1px solid var(--status-green-dark);
           padding: 3px 16px;
           border-radius: 4px;
           white-space: nowrap;
@@ -1168,8 +1168,8 @@ function ToolbarButton({
             size="sm"
             className={`h-7 w-7 p-0 transition-all rounded ${
               isActive
-                ? "bg-primary-light text-primary shadow-[inset_0_0_0_1px_#166534/30]"
-                : "text-foreground hover:bg-[#F3F4F6] hover:text-foreground active:bg-surface-3"
+                ? "bg-primary-light text-primary ring-1 ring-primary/30"
+                : "text-foreground hover:bg-surface-2 hover:text-foreground active:bg-surface-3"
             }`}
             onClick={onClick}
             title={title}

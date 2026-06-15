@@ -82,13 +82,13 @@ function getEmploymentBadge(status: string) {
       );
     case "ending_contract":
       return (
-        <Badge className="text-xs" style={{ background: "#FEF3C7", color: "#92400E", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-yellow-bg)", color: "var(--status-amber-dark)", border: "none" }}>
           Ending Contract
         </Badge>
       );
     case "past":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
           Past
         </Badge>
       );
@@ -126,13 +126,13 @@ function getResponseTypeBadge(type: string) {
       );
     case "yes_no":
       return (
-        <Badge className="text-xs" style={{ background: "#DBEAFE", color: "#1E40AF", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--badge-blue-bg)", color: "var(--status-blue-dark)", border: "none" }}>
           Yes/No
         </Badge>
       );
     case "text":
       return (
-        <Badge className="text-xs" style={{ background: "#F3F4F6", color: "var(--text-secondary)", border: "none" }}>
+        <Badge className="text-xs" style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "none" }}>
           Text
         </Badge>
       );
@@ -288,7 +288,7 @@ export default function ReferenceQuestionsPage() {
             onClick={() => openDialog()}
             className="text-white gap-1.5"
             style={{ background: "var(--primary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-hover)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
           >
             <Plus className="size-4" />
@@ -475,7 +475,7 @@ export default function ReferenceQuestionsPage() {
               disabled={actionLoading}
               className="text-white"
               style={{ background: "var(--primary)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#14532D")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-hover)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
             >
               {actionLoading ? (

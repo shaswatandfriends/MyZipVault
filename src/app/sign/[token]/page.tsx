@@ -370,7 +370,7 @@ export default function PublicSigningPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-md text-center">
-          <AlertTriangle className="h-12 w-12 text-[#D97706] mx-auto mb-4" />
+          <AlertTriangle className="h-12 w-12 text-status-amber mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Sign</h2>
           <p className="text-text-secondary">{error}</p>
         </div>
@@ -409,7 +409,7 @@ export default function PublicSigningPage() {
         <Button
           variant="outline"
           size="sm"
-          className="text-[#DC2626] border-[#DC2626]/30 hover:bg-[#FEF2F2] text-xs flex-shrink-0 h-7"
+          className="text-status-red border-status-red-border/30 hover:bg-status-red-bg text-xs flex-shrink-0 h-7"
           onClick={() => setShowDeclineModal(true)}
         >
           Decline
@@ -458,7 +458,7 @@ export default function PublicSigningPage() {
                     <div
                       key={field.id}
                       className={`absolute cursor-pointer vaultsign-field-drag flex items-center justify-center text-xs font-medium rounded border-2 transition-all ${
-                        isFilled ? "border-green-500 bg-green-50/80" : "border-primary bg-[#F0FDF4]/80 hover:bg-primary-light/80"
+                        isFilled ? "border-green-500 bg-green-50/80" : "border-primary bg-primary-light/80 hover:bg-primary-light/80"
                       }`}
                       style={{
                         left: `${field.x_percent}%`,
@@ -504,13 +504,13 @@ export default function PublicSigningPage() {
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">{FIELD_TYPE_ICONS[field.type]}</span>
                     <span className="text-sm font-medium text-foreground">{field.label}</span>
-                    {field.required && <Badge variant="outline" className="text-[10px] h-4 text-[#DC2626] border-[#DC2626]/30">Required</Badge>}
+                    {field.required && <Badge variant="outline" className="text-[10px] h-4 text-status-red border-status-red-border/30">Required</Badge>}
                   </div>
 
                   {field.type === "signature" ? (
                     <Button
                       variant="outline"
-                      className={`w-full h-12 border-dashed border-primary/30 text-primary hover:bg-[#F0FDF4] ${!fieldValues[field.id] ? "animate-vaultsign-pulse-green" : ""}`}
+                      className={`w-full h-12 border-dashed border-primary/30 text-primary hover:bg-primary-light ${!fieldValues[field.id] ? "animate-vaultsign-pulse-green" : ""}`}
                       onClick={() => openSignatureModal(field.id)}
                     >
                       {fieldValues[field.id] ? (
@@ -616,7 +616,7 @@ export default function PublicSigningPage() {
                       key={font.value}
                       className={`p-3 rounded-lg border text-center transition-colors ${
                         selectedFont === font.value
-                          ? "border-primary bg-[#F0FDF4]"
+                          ? "border-primary bg-primary-light"
                           : "border-border hover:border-primary/30"
                       }`}
                       onClick={() => setSelectedFont(font.value)}

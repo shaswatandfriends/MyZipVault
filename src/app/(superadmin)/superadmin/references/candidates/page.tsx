@@ -136,11 +136,11 @@ function getEmploymentBadge(status: string) {
 function getRatingBadge(rating: number) {
   switch (rating) {
     case 1:
-      return <span className="inline-flex items-center justify-center size-6 rounded bg-[#FEE2E2] text-[#DC2626] font-bold text-[10px]">1</span>;
+      return <span className="inline-flex items-center justify-center size-6 rounded bg-badge-red-bg text-status-red font-bold text-[10px]">1</span>;
     case 2:
-      return <span className="inline-flex items-center justify-center size-6 rounded bg-[#FEF9C3] text-[#CA8A04] font-bold text-[10px]">2</span>;
+      return <span className="inline-flex items-center justify-center size-6 rounded bg-badge-yellow-bg text-status-amber font-bold text-[10px]">2</span>;
     case 3:
-      return <span className="inline-flex items-center justify-center size-6 rounded bg-[#DBEAFE] text-[#2563EB] font-bold text-[10px]">3</span>;
+      return <span className="inline-flex items-center justify-center size-6 rounded bg-badge-blue-bg text-status-blue font-bold text-[10px]">3</span>;
     case 4:
       return <span className="inline-flex items-center justify-center size-6 rounded bg-primary text-white font-bold text-[10px]">4</span>;
     default:

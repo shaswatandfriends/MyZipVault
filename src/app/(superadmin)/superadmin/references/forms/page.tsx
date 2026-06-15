@@ -199,7 +199,7 @@ export default function RefFormsPage() {
             <Button variant="outline" size="sm" onClick={() => openPreview(activeTab)}>
               <Eye className="size-4" /> Preview Form
             </Button>
-            <Button size="sm" className="bg-primary hover:bg-[#14532d] text-white" asChild>
+            <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" asChild>
               <Link href="/superadmin/references">
                 <Plus className="size-4" /> Add Question
               </Link>
@@ -265,7 +265,7 @@ export default function RefFormsPage() {
                     <p className="text-sm text-muted-foreground">
                       No questions configured for {empStatusLabel[status]}
                     </p>
-                    <Button size="sm" className="mt-3 bg-primary hover:bg-[#14532d] text-white" asChild>
+                    <Button size="sm" className="mt-3 bg-primary hover:bg-primary-hover text-white" asChild>
                       <Link href="/superadmin/references">Add Questions</Link>
                     </Button>
                   </div>
@@ -382,10 +382,10 @@ export default function RefFormsPage() {
                               className="size-10 rounded-lg font-bold text-sm border-2 border-gray-200 transition-all"
                               style={{
                                 backgroundColor:
-                                  r === 1 ? "#FEE2E2" : r === 2 ? "#FEF9C3" : r === 3 ? "#DBEAFE" : "var(--primary)",
-                                color: r === 1 ? "#DC2626" : r === 2 ? "#CA8A04" : r === 3 ? "#2563EB" : "white",
+                                  r === 1 ? "var(--badge-red-bg)" : r === 2 ? "var(--badge-yellow-bg)" : r === 3 ? "var(--badge-blue-bg)" : "var(--primary)",
+                                color: r === 1 ? "var(--status-red)" : r === 2 ? "var(--status-amber)" : r === 3 ? "var(--status-blue)" : "white",
                                 borderColor:
-                                  r === 1 ? "#DC2626" : r === 2 ? "#CA8A04" : r === 3 ? "#2563EB" : "var(--primary)",
+                                  r === 1 ? "var(--status-red)" : r === 2 ? "var(--status-amber)" : r === 3 ? "var(--status-blue)" : "var(--primary)",
                               }}
                             >
                               {r}

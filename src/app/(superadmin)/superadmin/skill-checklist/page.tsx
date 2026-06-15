@@ -186,7 +186,7 @@ const statCards: StatCardConfig[] = [
     key: "completionRate",
     icon: LayoutDashboard,
     iconBg: "bg-primary-light",
-    iconColor: "text-[#14532D]",
+    iconColor: "text-primary-hover",
     format: (v) => `${v}%`,
     sub: (s) => `${s.completed} of ${s.linksGenerated} links`,
   },
@@ -360,7 +360,7 @@ export default function SkillChecklistOverviewPage() {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="text-primary hover:text-[#14532D]"
+                  className="text-primary hover:text-primary-hover"
                 >
                   Clear filters
                 </Button>
@@ -541,8 +541,8 @@ export default function SkillChecklistOverviewPage() {
                                     : row.completionRate >= 50
                                     ? "var(--accent-teal)"
                                     : row.completionRate >= 25
-                                    ? "#CA8A04"
-                                    : "#DC2626",
+                                    ? "var(--status-amber)"
+                                    : "var(--status-red)",
                               }}
                             />
                           </div>
