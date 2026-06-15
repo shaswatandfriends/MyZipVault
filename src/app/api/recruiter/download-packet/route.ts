@@ -6,6 +6,7 @@ import { generateChecklistPdf, generateReferencePdf } from "@/lib/pdf";
 import { getSignedUrl, STORAGE_BUCKETS } from "@/lib/storage";
 import { ZipArchive } from "archiver";
 import { Readable } from "stream";
+import { storeDocumentVerification, generateVerificationCode, generateDocumentId } from "@/lib/document-verification";
 
 // ─── Auth & Role Check ────────────────────────────────────────────
 async function requireRecruiter() {
@@ -181,6 +182,19 @@ async function handleIndividualDownload(
     case "checklist": {
       const pdfData = await buildChecklistPdfData(docId);
       const pdfBuffer = await generateChecklistPdf(pdfData);
+
+      // Store verification record
+      const sigDate = pdfData.signatureDate || "N/A";
+      const verInput = `${pdfData.candidateName}-${pdfData.checklistName}-${sigDate}`;
+      await storeDocumentVerification({
+        documentId: generateDocumentId("MZV"),
+        verificationCode: generateVerificationCode(verInput),
+        documentType: "checklist",
+        candidateName: pdfData.candidateName,
+        documentName: `${pdfData.checklistName} - ${pdfData.candidateName}`,
+        signedAt: pdfData.signatureDate ? new Date(pdfData.signatureDate) : undefined,
+      });
+
       return new NextResponse(pdfBuffer, {
         status: 200,
         headers: {
@@ -241,6 +255,19 @@ async function handleIndividualDownload(
     case "reference": {
       const pdfData = await buildReferencePdfData(docId);
       const pdfBuffer = await generateReferencePdf(pdfData);
+
+      // Store verification record
+      const refSigDate = pdfData.signatureDate || "N/A";
+      const refVerInput = `${pdfData.nurseName}-reference-${refSigDate}`;
+      await storeDocumentVerification({
+        documentId: generateDocumentId("MZV-REF"),
+        verificationCode: generateVerificationCode(refVerInput),
+        documentType: "reference",
+        candidateName: pdfData.nurseName,
+        documentName: `Reference - ${pdfData.nurseName}`,
+        signedAt: pdfData.signatureDate ? new Date(pdfData.signatureDate) : undefined,
+      });
+
       return new NextResponse(pdfBuffer, {
         status: 200,
         headers: {
@@ -314,6 +341,17 @@ async function handleZipDownload(candidateId: number, userId: number) {
             name: `Checklists/${sanitizeFileName(checklistName)}.pdf`,
             buffer: pdfBuffer,
           });
+          // Store verification record
+          const zipSigDate = pdfData.signatureDate || "N/A";
+          const zipVerInput = `${pdfData.candidateName}-${pdfData.checklistName}-${zipSigDate}`;
+          await storeDocumentVerification({
+            documentId: generateDocumentId("MZV"),
+            verificationCode: generateVerificationCode(zipVerInput),
+            documentType: "checklist",
+            candidateName: pdfData.candidateName,
+            documentName: `${pdfData.checklistName} - ${pdfData.candidateName}`,
+            signedAt: pdfData.signatureDate ? new Date(pdfData.signatureDate) : undefined,
+          });
           break;
         }
 
@@ -369,6 +407,17 @@ async function handleZipDownload(candidateId: number, userId: number) {
           fileEntries.push({
             name: `References/${sanitizeFileName(refName)}.pdf`,
             buffer: pdfBuffer,
+          });
+          // Store verification record
+          const refZipSigDate = pdfData.signatureDate || "N/A";
+          const refZipVerInput = `${pdfData.nurseName}-reference-${refZipSigDate}`;
+          await storeDocumentVerification({
+            documentId: generateDocumentId("MZV-REF"),
+            verificationCode: generateVerificationCode(refZipVerInput),
+            documentType: "reference",
+            candidateName: pdfData.nurseName,
+            documentName: `Reference - ${pdfData.nurseName}`,
+            signedAt: pdfData.signatureDate ? new Date(pdfData.signatureDate) : undefined,
           });
           break;
         }

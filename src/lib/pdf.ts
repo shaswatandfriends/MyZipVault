@@ -147,6 +147,10 @@ function verificationBox(docId: string, verCode: string): any {
             { text: `Verification Code: ${verCode}`, fontSize: 9, color: TEXT_MEDIUM, width: '50%' },
           ],
         },
+        {
+          text: `Verify at: myzipvault.com/verify-document`,
+          fontSize: 8, color: BRAND_COLOR, margin: [0, 6, 0, 0],
+        },
       ],
       fillColor: '#F0FDFA', border: [false, false, false, false], margin: [20, 16, 20, 16],
     }]] },
@@ -1049,6 +1053,10 @@ export async function generateChecklistPdf(data: {
             { text: `Document ID: ${docId}`, fontSize: 9, color: CL_GRAY2, width: '50%' },
             { text: `Verification Code: ${verCode}`, fontSize: 9, color: CL_GRAY2, width: '50%' },
           ],
+        },
+        {
+          text: `Verify at: myzipvault.com/verify-document`,
+          fontSize: 8, color: CL_GREEN, margin: [0, 6, 0, 0],
         },
       ],
       fillColor: CL_GREEN_SURF, border: [false, false, false, false], margin: [20, 16, 20, 16],

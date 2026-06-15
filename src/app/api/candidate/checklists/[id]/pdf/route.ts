@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateChecklistPdf } from "@/lib/pdf";
+import { storeDocumentVerification, generateVerificationCode, generateDocumentId } from "@/lib/document-verification";
 
 export async function GET(
   request: Request,
@@ -140,6 +141,24 @@ export async function GET(
     });
 
     const fileName = `${(candidate.first_name || "candidate").replace(/\s+/g, "-")}-${(candidate.last_name || "").replace(/\s+/g, "-")}-checklist.pdf`;
+
+    // Store verification record so the document can be verified publicly
+    const signatureDate = response.signature_date
+      ? new Date(response.signature_date).toLocaleDateString("en-US")
+      : "N/A";
+    const verInput = `${candidateName}-${template.name}-${signatureDate}`;
+    const docId = generateDocumentId("MZV");
+    const verCode = generateVerificationCode(verInput);
+
+    await storeDocumentVerification({
+      documentId: docId,
+      verificationCode: verCode,
+      documentType: "checklist",
+      sourceId: response.id,
+      candidateName,
+      documentName: `${template.name} - ${candidateName}`,
+      signedAt: response.signature_date ? new Date(response.signature_date) : undefined,
+    });
 
     const disposition =
       mode === "preview"
