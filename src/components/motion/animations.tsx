@@ -8,6 +8,7 @@ export const springConfig = {
   gentle: { type: "spring" as const, stiffness: 120, damping: 14, mass: 1 },
   snappy: { type: "spring" as const, stiffness: 300, damping: 20, mass: 0.8 },
   bouncy: { type: "spring" as const, stiffness: 400, damping: 15, mass: 0.6 },
+  dramatic: { type: "spring" as const, stiffness: 500, damping: 25, mass: 0.5 },
 };
 
 /* ─── FadeIn — generic reveal on mount ─────────────────────────────── */
@@ -126,12 +127,13 @@ export function ScaleIn({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{
-        duration: 0.3,
+        type: "spring",
+        stiffness: 300,
+        damping: 20,
         delay,
-        ease: [0.16, 1, 0.3, 1],
       }}
       className={className}
     >
@@ -255,11 +257,43 @@ export function AnimatedCard({
         hoverLift
           ? {
               y: -4,
-              boxShadow: "0 20px 60px rgba(5, 150, 105, 0.1), 0 8px 20px rgba(0,0,0,0.05)",
+              boxShadow: "0 20px 60px rgba(5, 150, 105, 0.12), 0 8px 20px rgba(0,0,0,0.06)",
             }
           : undefined
       }
       whileTap={hoverLift ? { scale: 0.98 } : undefined}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── TiltCard — 3D tilt on hover ──────────────────────────────────── */
+export function TiltCard({
+  children,
+  className,
+  delay = 0,
+  tiltAmount = 8,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+  tiltAmount?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{
+        rotateX: -tiltAmount / 3,
+        rotateY: tiltAmount / 3,
+        scale: 1.02,
+        boxShadow: "0 30px 80px rgba(5,150,105,0.15), 0 10px 30px rgba(0,0,0,0.06)",
+      }}
+      whileTap={{ scale: 0.98 }}
+      style={{ perspective: 1000, transformStyle: "preserve-3d" }}
       className={className}
     >
       {children}
@@ -307,6 +341,63 @@ export function PageTransition({
       transition={{
         duration: 0.25,
         ease: [0.16, 1, 0.3, 1],
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── MorphTransition — morphing shape transition ──────────────────── */
+export function MorphTransition({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, borderRadius: "50%" }}
+      animate={{ opacity: 1, scale: 1, borderRadius: "var(--radius-lg, 18px)" }}
+      transition={{
+        duration: 0.6,
+        delay,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── GlowPulse — pulsing glow effect for attention ───────────────── */
+export function GlowPulse({
+  children,
+  className,
+  color = "rgba(5, 150, 105, 0.3)",
+}: {
+  children: ReactNode;
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <motion.div
+      animate={{
+        boxShadow: [
+          `0 0 0 0 ${color}`,
+          `0 0 0 12px ${color.replace(/[\d.]+\)$/, "0")}`,
+          `0 0 0 0 ${color.replace(/[\d.]+\)$/, "0")}`,
+        ],
+      }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
       }}
       className={className}
     >

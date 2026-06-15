@@ -339,21 +339,21 @@ export function AppSidebar() {
       <div className="glass-sidebar flex h-full w-full flex-col overflow-hidden border-r border-sidebar-border">
         {/* ── Top Section: Logo + Brand ── */}
         <div className="flex shrink-0 items-center gap-3 px-4 py-4">
-          <div className="flex size-7 items-center justify-center rounded-lg btn-gradient text-xs font-bold text-white">
+          <div className="flex size-8 items-center justify-center rounded-xl btn-gradient text-xs font-bold text-white shadow-glow">
             ZV
           </div>
           <div className="flex flex-col gap-0.5">
             <span
-              className="text-[15px] font-semibold leading-tight text-foreground font-heading tracking-tight"
+              className="text-[15px] font-bold leading-tight text-foreground font-heading tracking-tight"
             >
               MyZipVault
             </span>
-            <span className="text-[11px] font-medium text-text-muted">
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
               {label}
             </span>
           </div>
         </div>
-        <div className="mx-3 h-px shrink-0 bg-border" />
+        <div className="mx-3 h-px shrink-0 bg-gradient-to-r from-transparent via-border to-transparent" />
 
         {/* ── Navigation Section ── */}
         <ScrollArea className="flex-1 overflow-hidden px-3 py-3">
@@ -368,13 +368,16 @@ export function AppSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out relative",
                     isActive
-                      ? "bg-primary-light font-semibold text-primary shadow-sm"
+                      ? "font-semibold text-primary bg-primary-light"
                       : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                   )}
                 >
-                  <item.icon className="size-5 shrink-0" />
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-primary to-accent-teal" />
+                  )}
+                  <item.icon className={cn("size-5 shrink-0 transition-colors", isActive ? "text-primary" : "text-text-muted group-hover:text-text-secondary")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -412,13 +415,16 @@ export function AppSidebar() {
                       <Link
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out relative",
                           isActive
-                            ? "bg-primary-light font-semibold text-primary"
+                            ? "font-semibold text-primary bg-primary-light"
                             : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                         )}
                       >
-                        <item.icon className="size-5 shrink-0" />
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-primary to-accent-teal" />
+                        )}
+                        <item.icon className={cn("size-5 shrink-0 transition-colors", isActive ? "text-primary" : "text-text-muted group-hover:text-text-secondary")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>
@@ -435,12 +441,12 @@ export function AppSidebar() {
           <NotificationBell variant="sidebar" />
 
           {/* User Info */}
-          <div className="flex items-center gap-3 rounded-xl px-3 py-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary">
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2 transition-colors">
+            <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent-teal text-xs font-bold text-white shadow-sm">
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">
+              <p className="truncate text-sm font-semibold text-foreground">
                 {displayName}
               </p>
               <p

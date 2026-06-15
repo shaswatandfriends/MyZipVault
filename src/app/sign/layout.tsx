@@ -4,7 +4,7 @@ export default function SignLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#F8F7F4]">
+    <div className="min-h-screen bg-background">
       {children}
     </div>
   );

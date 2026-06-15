@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,10 +28,14 @@ import {
   FileDown,
   Eye,
   Download,
+  Sparkles,
+  Check,
+  ChevronLeft,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 interface SkillItem {
@@ -104,28 +107,16 @@ interface SignatureData {
 /* ─── Rating Config (1-4 scale) ─────────────────────────────────────── */
 const RATING_LABELS: Record<string, string> = {
   "1": "No Experience",
-  "2": "Limited Experience",
+  "2": "Limited",
   "3": "Experienced",
   "4": "Proficient",
 };
 
-const ratingBtnStyles: Record<string, { selected: string; unselected: string }> = {
-  "1": {
-    selected: "bg-[#FEE2E2] border-[#DC2626] text-[#DC2626] shadow-sm",
-    unselected: "border-gray-200 text-gray-400 hover:border-[#DC2626] hover:text-[#DC2626]",
-  },
-  "2": {
-    selected: "bg-[#FEF9C3] border-[#CA8A04] text-[#CA8A04] shadow-sm",
-    unselected: "border-gray-200 text-gray-400 hover:border-[#CA8A04] hover:text-[#CA8A04]",
-  },
-  "3": {
-    selected: "bg-[#DBEAFE] border-[#2563EB] text-[#2563EB] shadow-sm",
-    unselected: "border-gray-200 text-gray-400 hover:border-[#2563EB] hover:text-[#2563EB]",
-  },
-  "4": {
-    selected: "bg-[#166534] border-[#166534] text-white shadow-sm",
-    unselected: "border-gray-200 text-gray-400 hover:border-[#166534] hover:text-[#166534]",
-  },
+const RATING_SHORT_LABELS: Record<string, string> = {
+  "1": "None",
+  "2": "Low",
+  "3": "Good",
+  "4": "Pro",
 };
 
 /* ─── Signature Fonts ───────────────────────────────────────────────── */
@@ -271,7 +262,7 @@ export default function ChecklistAssessmentPage({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [categoryList]);
 
-  // Initialize signature pad — depends on allSkillsRated (canvas must be in DOM)
+  // Initialize signature pad
   useEffect(() => {
     if (!allSkillsRated) return;
     if (sigPadInitialized.current) return;
@@ -294,7 +285,7 @@ export default function ChecklistAssessmentPage({
 
         sigPadRef.current = new SignaturePad(canvas, {
           backgroundColor: "rgb(255,255,255)",
-          penColor: "rgb(22,101,52)",
+          penColor: "rgb(5,150,105)",
           onEnd: () => {
             const pad = sigPadRef.current;
             if (pad && !pad.isEmpty()) {
@@ -367,7 +358,6 @@ export default function ChecklistAssessmentPage({
     if (text.trim()) {
       setSignatureData({ type: "type", font: selectedFont, text: text.trim() });
     } else {
-      // If typed text is cleared, remove the signature
       if (signatureData?.type === "type") {
         setSignatureData(null);
       }
@@ -468,7 +458,6 @@ export default function ChecklistAssessmentPage({
     if (currentIdx < categoryList.length - 1) {
       scrollToCategory(categoryList[currentIdx + 1]);
     } else if (allSkillsRated) {
-      // Last category and all rated — scroll to signature section
       setTimeout(() => {
         const sigEl = document.getElementById("signature-section");
         if (sigEl && scrollContainerRef.current) {
@@ -522,7 +511,6 @@ export default function ChecklistAssessmentPage({
     } else if (signatureData?.type === "upload" && signatureData.image_base64) {
       signatureBase64 = signatureData.image_base64;
     } else if (signatureData?.type === "type" && signatureData.text) {
-      // For typed signatures, generate a canvas-based image
       const canvas = document.createElement("canvas");
       canvas.width = 460;
       canvas.height = 160;
@@ -530,7 +518,7 @@ export default function ChecklistAssessmentPage({
       if (ctx) {
         ctx.fillStyle = "rgb(255,255,255)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "rgb(22,101,52)";
+        ctx.fillStyle = "rgb(5,150,105)";
         ctx.font = `36px ${signatureData.font || "'Dancing Script', cursive"}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -569,8 +557,11 @@ export default function ChecklistAssessmentPage({
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-center space-y-4">
-          <Loader2 className="size-10 text-[#166534] animate-spin mx-auto" />
-          <p className="text-sm text-[#6B7280]">Loading assessment...</p>
+          <div className="relative mx-auto">
+            <Loader2 className="size-10 text-primary animate-spin" />
+            <div className="absolute inset-0 size-10 mx-auto rounded-full animate-pulse-glow" />
+          </div>
+          <p className="text-sm text-text-secondary font-medium">Loading assessment...</p>
         </div>
       </div>
     );
@@ -590,97 +581,111 @@ export default function ChecklistAssessmentPage({
       : null;
 
     return (
-      <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
+      <FadeIn className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
         {/* Success header */}
-        <Card className="border-[#BBF7D0]">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-full bg-[#DCFCE7] flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="size-6 text-[#166534]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[#111827]">Checklist Submitted</h3>
-                  <p className="text-sm text-[#6B7280]">
-                    {data.template.name} — {data.template.profession}
-                    {data.template.specialty ? ` — ${data.template.specialty}` : ""}
-                  </p>
-                  {submittedDate && (
-                    <p className="text-xs text-[#9CA3AF] mt-0.5">
-                      Submitted on {submittedDate}
-                    </p>
-                  )}
-                </div>
+        <div className="premium-card p-6">
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-badge-green-bg flex items-center justify-center shrink-0 animate-glow-pulse">
+                <CheckCircle2 className="size-7 text-primary" />
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  className="gap-2 border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]"
-                  onClick={() => window.open(pdfPreviewUrl, '_blank')}
-                >
-                  <Eye className="size-4" /> Preview PDF
-                </Button>
-                <Button
-                  className="gap-2 bg-[#166534] hover:bg-[#14532D]"
-                  onClick={() => window.open(pdfDownloadUrl, '_blank')}
-                >
-                  <Download className="size-4" /> Download PDF
-                </Button>
+              <div>
+                <h3 className="text-lg font-bold text-foreground font-heading tracking-tight">Checklist Submitted</h3>
+                <p className="text-sm text-text-secondary">
+                  {data.template.name} — {data.template.profession}
+                  {data.template.specialty ? ` — ${data.template.specialty}` : ""}
+                </p>
+                {submittedDate && (
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Submitted on {submittedDate}
+                  </p>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Button
+                variant="outline"
+                className="btn-outline-premium gap-2 rounded-xl h-10"
+                onClick={() => window.open(pdfPreviewUrl, '_blank')}
+              >
+                <Eye className="size-4" /> Preview PDF
+              </Button>
+              <Button
+                className="btn-gradient gap-2 rounded-xl h-10 font-semibold"
+                onClick={() => window.open(pdfDownloadUrl, '_blank')}
+              >
+                <Download className="size-4" /> Download PDF
+              </Button>
+            </div>
+          </div>
+        </div>
 
-        {/* Inline PDF preview — use object tag for better cross-browser support */}
-        <Card className="border-[#E5E7EB] overflow-hidden">
-          <CardHeader className="px-5 py-3 border-b border-[#E5E7EB] bg-[#FAFAF8]">
-            <div className="flex items-center justify-between">
+        {/* Inline PDF preview */}
+        <div className="glass-card-static overflow-hidden">
+          <div className="relative z-10">
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-surface-2/50">
               <div className="flex items-center gap-2">
-                <FileDown className="size-4 text-[#166534]" />
-                <span className="text-sm font-semibold text-[#111827]">Checklist PDF</span>
+                <FileDown className="size-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Checklist PDF</span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs text-[#166534] border-[#166534]/30">
+                <Badge className="bg-badge-green-bg text-badge-green border-badge-green/20 text-xs font-semibold px-2.5 rounded-lg">
                   Completed
                 </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1.5 text-[#166534] hover:bg-[#DCFCE7] h-7 px-2"
+                  className="gap-1.5 text-primary hover:bg-primary-light rounded-lg h-7 px-2"
                   onClick={() => window.open(pdfPreviewUrl, '_blank')}
                 >
                   <Eye className="size-3.5" /> Open in new tab
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
             <object
               data={pdfPreviewUrl}
               type="application/pdf"
               className="w-full border-0"
               style={{ height: '70vh' }}
             >
-              {/* Fallback when browser can't embed PDFs */}
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <FileDown className="size-12 text-[#9CA3AF] mb-4" />
-                <p className="text-sm font-medium text-[#374151] mb-1">PDF preview not available</p>
-                <p className="text-xs text-[#6B7280] mb-4">Your browser may not support embedded PDFs.</p>
+                <FileDown className="size-12 text-text-muted mb-4" />
+                <p className="text-sm font-medium text-foreground mb-1">PDF preview not available</p>
+                <p className="text-xs text-text-secondary mb-4">Your browser may not support embedded PDFs.</p>
                 <Button
-                  className="gap-2 bg-[#166534] hover:bg-[#14532D]"
+                  className="btn-gradient gap-2 rounded-xl h-10 font-semibold"
                   onClick={() => window.open(pdfDownloadUrl, '_blank')}
                 >
                   <Download className="size-4" /> Download PDF
                 </Button>
               </div>
             </object>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Back button */}
         <div className="flex justify-center">
           <Link href="/checklists">
-            <Button variant="ghost" className="gap-2">
+            <Button variant="ghost" className="gap-2 text-text-secondary hover:text-foreground">
+              <ArrowLeft className="size-4" /> Back to Checklists
+            </Button>
+          </Link>
+        </div>
+      </FadeIn>
+    );
+  }
+
+  if (data.skills.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="glass-card-static p-8 max-w-md w-full mx-4 text-center">
+          <Lock className="size-12 text-text-muted mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-foreground font-heading">No skills found</h3>
+          <p className="text-sm text-text-secondary mt-1">
+            This checklist template has no skills configured yet.
+          </p>
+          <Link href="/checklists">
+            <Button variant="outline" className="btn-outline-premium mt-4 gap-2 rounded-xl">
               <ArrowLeft className="size-4" /> Back to Checklists
             </Button>
           </Link>
@@ -689,50 +694,34 @@ export default function ChecklistAssessmentPage({
     );
   }
 
-  if (data.skills.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="p-8 text-center">
-            <Lock className="size-12 text-[#9CA3AF] mx-auto mb-4" />
-            <h3 className="text-lg font-medium">No skills found</h3>
-            <p className="text-sm text-[#6B7280] mt-1">
-              This checklist template has no skills configured yet.
-            </p>
-            <Link href="/checklists">
-              <Button variant="outline" className="mt-4 gap-2">
-                <ArrowLeft className="size-4" /> Back to Checklists
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
       {/* ── Sticky Top Bar ──────────────────────────────────────────── */}
-      <div className="shrink-0 bg-white border-b border-[#E5E7EB] z-50">
+      <div className="shrink-0 glass-header z-50">
         {/* Progress bar (very top) */}
-        <div className="h-[4px] bg-[#F3F4F6]">
+        <div className="h-1 bg-surface-2">
           <div
-            className="h-full bg-[#166534] transition-all duration-500 ease-out"
-            style={{ width: `${completionPct}%` }}
+            className="h-full transition-all duration-500 ease-out rounded-r-full"
+            style={{
+              width: `${completionPct}%`,
+              background: completionPct === 100
+                ? 'var(--gradient-primary-gloss)'
+                : 'var(--gradient-primary)',
+            }}
           />
         </div>
 
         <div className="flex items-center justify-between px-4 sm:px-6 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/checklists">
-              <Button variant="ghost" size="sm" className="gap-1 shrink-0 px-2">
+              <Button variant="ghost" size="sm" className="gap-1.5 shrink-0 px-2 text-text-secondary hover:text-foreground rounded-xl">
                 <ArrowLeft className="size-4" />
                 <span className="hidden sm:inline">Back</span>
               </Button>
             </Link>
             <div className="min-w-0">
-              <h1 className="text-sm font-semibold truncate">{data.template.name}</h1>
-              <p className="text-xs text-[#6B7280] truncate">
+              <h1 className="text-sm font-bold truncate text-foreground font-heading tracking-tight">{data.template.name}</h1>
+              <p className="text-xs text-text-secondary truncate">
                 {data.template.profession}
                 {data.template.specialty ? ` — ${data.template.specialty}` : ""}
                 {data.client.organizationName ? ` · ${data.client.organizationName}` : ""}
@@ -741,20 +730,21 @@ export default function ChecklistAssessmentPage({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {autoSaveStatus === "saving" && (
-              <span className="text-xs text-[#6B7280] flex items-center gap-1">
+              <span className="text-xs text-text-secondary flex items-center gap-1">
                 <Loader2 className="size-3 animate-spin" /> Saving...
               </span>
             )}
             {autoSaveStatus === "saved" && (
-              <span className="text-xs text-[#166534] font-medium flex items-center gap-1">
+              <span className="text-xs text-primary font-medium flex items-center gap-1">
                 <Save className="size-3" /> Saved
               </span>
             )}
             <Badge
-              variant={completionPct === 100 ? "default" : "secondary"}
               className={cn(
-                "text-xs tabular-nums",
-                completionPct === 100 && "bg-[#166534] text-white"
+                "text-xs tabular-nums font-semibold rounded-lg px-2.5",
+                completionPct === 100
+                  ? "bg-badge-green-bg text-badge-green border-badge-green/20"
+                  : "bg-surface-2 text-text-secondary border-border"
               )}
             >
               {completionPct}%
@@ -766,26 +756,29 @@ export default function ChecklistAssessmentPage({
       {/* ── Main Body: Sidebar Scroller + Content ──────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── Left Sidebar: Category Navigation ────────────────────── */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-[#E5E7EB] bg-[#FAFAF8]">
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-border glass-sidebar">
           {/* Checklist info card */}
-          <div className="p-4 border-b border-[#E5E7EB]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="size-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center shrink-0">
-                <ClipboardCheck className="size-4 text-[#166534]" />
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="size-9 rounded-xl bg-primary-light flex items-center justify-center shrink-0">
+                <ClipboardCheck className="size-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-[#111827] truncate">{data.template.name}</p>
-                <p className="text-[10px] text-[#9CA3AF]">
+                <p className="text-xs font-bold text-foreground truncate font-heading tracking-tight">{data.template.name}</p>
+                <p className="text-[10px] text-text-muted">
                   {ratedSkills} of {totalSkills} skills
                 </p>
               </div>
             </div>
-            <Progress value={completionPct} className="h-1.5" />
+            <Progress
+              value={completionPct}
+              className="h-2 rounded-full bg-surface-3 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent-teal [&>div]:rounded-full"
+            />
           </div>
 
           {/* Rating legend */}
-          <div className="p-4 border-b border-[#E5E7EB]">
-            <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+          <div className="p-4 border-b border-border">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2.5">
               Rating Scale
             </p>
             <div className="grid grid-cols-2 gap-1.5">
@@ -793,14 +786,15 @@ export default function ChecklistAssessmentPage({
                 <div key={val} className="flex items-center gap-1.5">
                   <span
                     className={cn(
-                      "inline-flex items-center justify-center rounded-md border-2 px-1.5 py-0.5 text-[10px] font-bold",
-                      ratingBtnStyles[val].selected
+                      "rating-btn selected w-7 h-7 text-[10px]",
+                      `[data-rating="${val}"]`
                     )}
+                    data-rating={val}
                   >
                     {val}
                   </span>
-                  <span className="text-[10px] text-[#6B7280] leading-tight">
-                    {RATING_LABELS[val]}
+                  <span className="text-[10px] text-text-secondary leading-tight">
+                    {RATING_SHORT_LABELS[val]}
                   </span>
                 </div>
               ))}
@@ -808,8 +802,8 @@ export default function ChecklistAssessmentPage({
           </div>
 
           {/* Category list */}
-          <nav className="flex-1 overflow-y-auto p-2">
-            <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider px-2 mb-1.5">
+          <nav className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 mb-1.5">
               Categories
             </p>
             <div className="space-y-0.5">
@@ -824,26 +818,26 @@ export default function ChecklistAssessmentPage({
                     key={cat}
                     onClick={() => scrollToCategory(cat)}
                     className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-sm",
+                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all text-sm",
                       isActive
-                        ? "bg-[#DCFCE7] text-[#166534] font-semibold"
-                        : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                        ? "bg-primary-light text-primary font-semibold"
+                        : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                     )}
                   >
                     <div
                       className={cn(
-                        "size-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2",
+                        "size-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2 transition-all",
                         catComplete
-                          ? "bg-[#166534] border-[#166534] text-white"
+                          ? "bg-primary border-primary text-primary-foreground"
                           : isActive
-                          ? "border-[#166534] text-[#166534]"
-                          : "border-[#D1D5DB] text-[#9CA3AF]"
+                          ? "border-primary text-primary"
+                          : "border-border text-text-muted"
                       )}
                     >
-                      {catComplete ? "✓" : ratedInCat}
+                      {catComplete ? <Check className="size-3" /> : ratedInCat}
                     </div>
                     <span className="flex-1 truncate text-xs">{cat}</span>
-                    <span className="text-[10px] text-[#9CA3AF] tabular-nums">
+                    <span className="text-[10px] text-text-muted tabular-nums">
                       {ratedInCat}/{catSkills.length}
                     </span>
                   </button>
@@ -869,19 +863,19 @@ export default function ChecklistAssessmentPage({
                   }, 100);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-sm mt-2",
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all text-sm mt-2",
                   hasValidSignature
-                    ? "bg-[#DCFCE7] text-[#166534] font-semibold"
-                    : "bg-[#166534]/5 text-[#166534] hover:bg-[#DCFCE7]"
+                    ? "bg-primary-light text-primary font-semibold"
+                    : "bg-primary/5 text-primary hover:bg-primary-light"
                 )}
               >
                 <div className={cn(
-                  "size-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2",
+                  "size-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2 transition-all",
                   hasValidSignature
-                    ? "bg-[#166534] border-[#166534] text-white"
-                    : "border-[#166534] text-[#166534]"
+                    ? "bg-primary border-primary text-primary-foreground"
+                    : "border-primary text-primary"
                 )}>
-                  {hasValidSignature ? "✓" : <Pencil className="size-2.5" />}
+                  {hasValidSignature ? <Check className="size-3" /> : <Pencil className="size-2.5" />}
                 </div>
                 <span className="flex-1 truncate text-xs font-medium">Sign & Submit</span>
               </button>
@@ -889,8 +883,8 @@ export default function ChecklistAssessmentPage({
           </nav>
 
           {/* Bottom info */}
-          <div className="p-3 border-t border-[#E5E7EB]">
-            <div className="flex items-center gap-1.5 text-[10px] text-[#9CA3AF]">
+          <div className="p-3 border-t border-border">
+            <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
               <Info className="size-3" />
               Your progress is auto-saved
             </div>
@@ -900,7 +894,7 @@ export default function ChecklistAssessmentPage({
         {/* ── Right: Scrollable Content Area ─────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile category chips */}
-          <div className="lg:hidden shrink-0 border-b border-[#E5E7EB] bg-white">
+          <div className="lg:hidden shrink-0 border-b border-border glass-header">
             <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto no-scrollbar">
               {categoryList.map((cat) => {
                 const catSkills = groupedSkills[cat];
@@ -915,10 +909,10 @@ export default function ChecklistAssessmentPage({
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all shrink-0",
                       isActive
-                        ? "bg-[#166534] text-white border-[#166534]"
+                        ? "btn-gradient text-primary-foreground border-transparent"
                         : catComplete
-                        ? "bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]"
-                        : "bg-white text-[#6B7280] border-[#E5E7EB] hover:border-[#166534]"
+                        ? "bg-badge-green-bg text-badge-green border-badge-green/20"
+                        : "bg-surface text-text-secondary border-border hover:border-primary"
                     )}
                   >
                     {catComplete && <CheckCircle2 className="size-3" />}
@@ -943,7 +937,7 @@ export default function ChecklistAssessmentPage({
                       }
                     }, 100);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap bg-[#166534]/10 text-[#166534] border-[#166534]/30 shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap bg-primary/10 text-primary border-primary/30 shrink-0"
                 >
                   <Pencil className="size-3" />
                   Sign & Submit
@@ -955,24 +949,28 @@ export default function ChecklistAssessmentPage({
           {/* Scrollable content */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto custom-scrollbar"
           >
             <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6 pb-32">
               {/* Info banner */}
-              <div className="flex items-start gap-3 rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
-                <Info className="size-4 text-[#166534] shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-[#166534]">
-                    <span className="font-semibold">{data.client.organizationName || "A recruiter"}</span> has requested your skills self-assessment.
-                  </p>
-                  <p className="text-xs text-[#166534]/70 mt-0.5">
-                    Complete this once and it saves to your vault. Rate each skill honestly based on your experience level.
-                  </p>
+              <FadeIn>
+                <div className="flex items-start gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
+                  <div className="size-8 rounded-lg bg-primary-light flex items-center justify-center shrink-0 mt-0.5">
+                    <Sparkles className="size-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-foreground font-medium">
+                      <span className="font-bold">{data.client.organizationName || "A recruiter"}</span> has requested your skills self-assessment.
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Complete this once and it saves to your vault. Rate each skill honestly based on your experience level.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </FadeIn>
 
               {/* Skills by Category */}
-              {categoryList.map((category) => {
+              {categoryList.map((category, catIndex) => {
                 const categorySkills = groupedSkills[category];
                 const ratedInCat = categorySkills.filter((s) => isRatingDone(ratings[s.id])).length;
                 const catComplete = ratedInCat === categorySkills.length;
@@ -985,30 +983,30 @@ export default function ChecklistAssessmentPage({
                   >
                     {/* Category header */}
                     <div className={cn(
-                      "rounded-xl py-3 px-4 flex items-center justify-between mb-3 border",
+                      "rounded-xl py-3 px-4 flex items-center justify-between mb-3 border transition-all",
                       catComplete
-                        ? "bg-[#DCFCE7] border-[#BBF7D0]"
-                        : "bg-white border-[#E5E7EB] border-l-4 border-l-[#166534]"
+                        ? "bg-badge-green-bg border-primary/20"
+                        : "border-l-4 border-l-primary bg-surface border-border"
                     )}>
-                      <div className="flex items-center gap-2">
-                        {catComplete && <CheckCircle2 className="size-4 text-[#166534]" />}
+                      <div className="flex items-center gap-2.5">
+                        {catComplete && <CheckCircle2 className="size-4 text-primary animate-success-check" />}
                         <span className={cn(
-                          "font-semibold text-sm",
-                          catComplete ? "text-[#166534]" : "text-[#111827]"
+                          "font-bold text-sm font-heading tracking-tight",
+                          catComplete ? "text-primary" : "text-foreground"
                         )}>
                           {category}
                         </span>
                       </div>
                       <span className={cn(
-                        "text-xs tabular-nums",
-                        catComplete ? "text-[#166534] font-medium" : "text-[#9CA3AF]"
+                        "text-xs tabular-nums font-medium",
+                        catComplete ? "text-primary" : "text-text-muted"
                       )}>
                         {ratedInCat}/{categorySkills.length} rated
                       </span>
                     </div>
 
                     {/* Skills in this category */}
-                    <div className="space-y-2">
+                    <StaggerChildren staggerDelay={0.03} className="space-y-2.5">
                       {categorySkills.map((skill, skillIdx) => {
                         const rating = ratings[skill.id];
                         const currentValue = rating?.ratingValue ?? null;
@@ -1016,159 +1014,169 @@ export default function ChecklistAssessmentPage({
                         const isRated = isRatingDone(rating);
 
                         return (
-                          <div
-                            key={skill.id}
-                            className={cn(
-                              "bg-white border rounded-xl p-4 transition-all",
-                              isRated
-                                ? "border-[#166534]/20 shadow-sm"
-                                : "border-[#E5E7EB] hover:border-[#D1D5DB]"
-                            )}
-                          >
-                            <div className="flex flex-col gap-3">
-                              {/* Skill name + N/A toggle */}
-                              <div className="flex items-start gap-3">
-                                <span className="text-xs text-[#9CA3AF] mt-0.5 shrink-0 tabular-nums">
-                                  {skillIdx + 1}.
-                                </span>
-                                <p className={cn(
-                                  "text-sm font-medium flex-1",
-                                  isNa && "text-[#9CA3AF] line-through"
-                                )}>
-                                  {skill.skillName}
-                                </p>
-                                {skill.hasNaOption && (
-                                  <button
-                                    type="button"
-                                    onClick={() => saveRating(skill.id, null, !isNa)}
-                                    className={cn(
-                                      "text-xs px-2.5 py-1 rounded-full border transition-all shrink-0",
-                                      isNa
-                                        ? "bg-[#0D9488]/10 border-[#0D9488] text-[#0D9488] font-medium"
-                                        : "border-[#E5E7EB] text-[#9CA3AF] hover:border-[#0D9488]"
-                                    )}
-                                  >
-                                    N/A
-                                  </button>
+                          <StaggerItem key={skill.id}>
+                            <div
+                              className={cn(
+                                "rounded-xl p-4 transition-all border",
+                                isRated
+                                  ? "border-primary/20 bg-primary/[0.02] shadow-sm"
+                                  : "border-border bg-surface hover:border-border-strong"
+                              )}
+                            >
+                              <div className="flex flex-col gap-3">
+                                {/* Skill name + N/A toggle */}
+                                <div className="flex items-start gap-3">
+                                  <span className="text-xs text-text-muted mt-0.5 shrink-0 tabular-nums font-medium">
+                                    {skillIdx + 1}.
+                                  </span>
+                                  <p className={cn(
+                                    "text-sm font-medium flex-1",
+                                    isNa && "text-text-muted line-through"
+                                  )}>
+                                    {skill.skillName}
+                                  </p>
+                                  {skill.hasNaOption && (
+                                    <button
+                                      type="button"
+                                      onClick={() => saveRating(skill.id, null, !isNa)}
+                                      className={cn(
+                                        "text-xs px-3 py-1 rounded-full border transition-all shrink-0 font-medium",
+                                        isNa
+                                          ? "bg-accent-teal/10 border-accent-teal text-accent-teal"
+                                          : "border-border text-text-muted hover:border-accent-teal hover:text-accent-teal"
+                                      )}
+                                    >
+                                      N/A
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Rating 1-4 */}
+                                {(skill.questionType === "rating_1_4" || skill.questionType === "rating_1_5") && !isNa && (
+                                  <div className="flex flex-wrap gap-2 pl-5">
+                                    {(["1", "2", "3", "4"] as const).map((val) => {
+                                      const isSelected = currentValue === val;
+                                      return (
+                                        <button
+                                          key={val}
+                                          type="button"
+                                          onClick={() => saveRating(skill.id, val, false)}
+                                          data-rating={val}
+                                          className={cn(
+                                            "rating-btn",
+                                            isSelected && "selected animate-rating-pop"
+                                          )}
+                                        >
+                                          {val}
+                                        </button>
+                                      );
+                                    })}
+                                    <div className="flex items-center ml-1">
+                                      <span className="text-[11px] text-text-muted">
+                                        {currentValue ? RATING_LABELS[currentValue] : "Select rating"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Yes/No */}
+                                {skill.questionType === "yes_no" && !isNa && (
+                                  <div className="flex gap-2.5 pl-5">
+                                    <button
+                                      type="button"
+                                      onClick={() => saveRating(skill.id, "yes", false)}
+                                      className={cn(
+                                        "px-5 py-2 rounded-xl border-2 text-sm font-semibold transition-all",
+                                        currentValue === "yes"
+                                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                          : "border-border hover:border-primary text-text-secondary"
+                                      )}
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => saveRating(skill.id, "no", false)}
+                                      className={cn(
+                                        "px-5 py-2 rounded-xl border-2 text-sm font-semibold transition-all",
+                                        currentValue === "no"
+                                          ? "bg-badge-red text-white border-badge-red shadow-sm"
+                                          : "border-border hover:border-badge-red text-text-secondary"
+                                      )}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Text */}
+                                {skill.questionType === "text" && !isNa && (
+                                  <div className="pl-5">
+                                    <Textarea
+                                      placeholder="Enter your response..."
+                                      defaultValue={currentValue || ""}
+                                      className="max-w-lg rounded-xl border-border focus:border-primary resize-none"
+                                      onChange={(e) => debouncedSave(skill.id, e.target.value)}
+                                      onBlur={(e) => saveRating(skill.id, e.target.value, false)}
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Rated indicator */}
+                                {isRated && !isNa && (
+                                  <div className="flex items-center gap-1.5 pl-5 mt-0.5">
+                                    <CheckCircle2 className="size-3.5 text-primary" />
+                                    <span className="text-xs text-primary font-medium">
+                                      {(skill.questionType === "rating_1_4" || skill.questionType === "rating_1_5")
+                                        ? RATING_LABELS[currentValue as string] || `Rated ${currentValue}`
+                                        : skill.questionType === "yes_no"
+                                        ? currentValue === "yes" ? "Yes" : "No"
+                                        : "Response saved"}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* N/A indicator */}
+                                {isNa && (
+                                  <div className="flex items-center gap-1.5 pl-5 mt-0.5">
+                                    <span className="text-xs text-accent-teal font-medium">
+                                      Marked as N/A
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-
-                              {/* Rating 1-4 */}
-                              {(skill.questionType === "rating_1_4" || skill.questionType === "rating_1_5") && !isNa && (
-                                <div className="flex flex-wrap gap-2 pl-5">
-                                  {(["1", "2", "3", "4"] as const).map((val) => {
-                                    const isSelected = currentValue === val;
-                                    const style = ratingBtnStyles[val];
-                                    return (
-                                      <button
-                                        key={val}
-                                        type="button"
-                                        onClick={() => saveRating(skill.id, val, false)}
-                                        className={cn(
-                                          "flex flex-col items-center px-3 py-2 rounded-lg border-2 text-sm transition-all min-w-[56px]",
-                                          isSelected
-                                            ? cn(style.selected, "scale-105")
-                                            : style.unselected
-                                        )}
-                                      >
-                                        <span className="text-base font-bold">{val}</span>
-                                        <span className="text-[9px] opacity-70 mt-0.5 leading-tight text-center">
-                                          {RATING_LABELS[val]}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Yes/No */}
-                              {skill.questionType === "yes_no" && !isNa && (
-                                <div className="flex gap-2 pl-5">
-                                  <button
-                                    type="button"
-                                    onClick={() => saveRating(skill.id, "yes", false)}
-                                    className={cn(
-                                      "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
-                                      currentValue === "yes"
-                                        ? "bg-[#166534] text-white border-[#166534]"
-                                        : "border-[#E5E7EB] hover:border-[#166534] text-[#6B7280]"
-                                    )}
-                                  >
-                                    ✓ Yes
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => saveRating(skill.id, "no", false)}
-                                    className={cn(
-                                      "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
-                                      currentValue === "no"
-                                        ? "bg-[#DC2626] text-white border-[#DC2626]"
-                                        : "border-[#E5E7EB] hover:border-[#DC2626] text-[#6B7280]"
-                                    )}
-                                  >
-                                    ✕ No
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Text */}
-                              {skill.questionType === "text" && !isNa && (
-                                <div className="pl-5">
-                                  <Textarea
-                                    placeholder="Enter your response..."
-                                    defaultValue={currentValue || ""}
-                                    className="max-w-lg"
-                                    onChange={(e) => debouncedSave(skill.id, e.target.value)}
-                                    onBlur={(e) => saveRating(skill.id, e.target.value, false)}
-                                  />
-                                </div>
-                              )}
-
-                              {/* Rated indicator */}
-                              {isRated && !isNa && (
-                                <div className="flex items-center gap-1.5 pl-5 mt-1">
-                                  <CheckCircle2 className="size-3.5 text-[#166534]" />
-                                  <span className="text-xs text-[#166534] font-medium">
-                                    {(skill.questionType === "rating_1_4" || skill.questionType === "rating_1_5")
-                                      ? RATING_LABELS[currentValue as string] || `Rated ${currentValue}`
-                                      : skill.questionType === "yes_no"
-                                      ? currentValue === "yes" ? "Yes" : "No"
-                                      : "Response saved"}
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* N/A indicator */}
-                              {isNa && (
-                                <div className="flex items-center gap-1.5 pl-5 mt-1">
-                                  <span className="text-xs text-[#0D9488] font-medium">
-                                    Marked as N/A
-                                  </span>
-                                </div>
-                              )}
                             </div>
-                          </div>
+                          </StaggerItem>
                         );
                       })}
-                    </div>
+                    </StaggerChildren>
                   </div>
                 );
               })}
 
               {/* ── Signature Section ────────────────────────────────── */}
               {allSkillsRated && (
-                <div id="signature-section" className="scroll-mt-4">
-                  <Card className="border-[#BBF7D0] overflow-hidden">
-                    <CardContent className="p-6 sm:p-8 space-y-5">
-                      <div>
-                        <p className="text-xs font-semibold tracking-wider text-[#166534] uppercase mb-1">
-                          Final Step
-                        </p>
-                        <h3 className="text-lg font-semibold">Attestation & Signature</h3>
+                <FadeIn id="signature-section" className="scroll-mt-4">
+                  <div className="premium-card overflow-hidden">
+                    <div className="relative z-10 p-6 sm:p-8 space-y-6">
+                      {/* Header with gradient accent */}
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: 'var(--gradient-primary-gloss)' }}
+                        >
+                          <ShieldCheck className="size-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold tracking-widest text-primary uppercase">
+                            Final Step
+                          </p>
+                          <h3 className="text-lg font-bold text-foreground font-heading tracking-tight">Attestation & Signature</h3>
+                        </div>
                       </div>
 
-                      <div className="bg-[#F8F7F4] rounded-lg p-4">
-                        <p className="text-sm leading-relaxed text-[#374151]">
+                      {/* Attestation text */}
+                      <div className="rounded-xl bg-surface-2 p-4 border border-border">
+                        <p className="text-sm leading-relaxed text-text-secondary">
                           I hereby certify that the skills self-assessment provided above
                           is true and accurate to the best of my knowledge. I understand
                           that this information will be shared with requesting healthcare
@@ -1180,42 +1188,43 @@ export default function ChecklistAssessmentPage({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="legalName">Full Legal Name</Label>
+                          <Label htmlFor="legalName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Full Legal Name</Label>
                           <Input
                             id="legalName"
                             placeholder="Type your full legal name"
                             value={candidateNameSigned}
                             onChange={(e) => setCandidateNameSigned(e.target.value)}
+                            className="rounded-xl border-border focus:border-primary h-11"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Date</Label>
+                          <Label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Date</Label>
                           <Input
                             value={new Date().toLocaleDateString()}
                             disabled
-                            className="bg-[#F8F7F4]"
+                            className="rounded-xl bg-surface-2 border-border h-11"
                           />
                         </div>
                       </div>
 
                       {/* ── Signature Method Tabs ─────────────────────────── */}
                       <div className="space-y-3">
-                        <Label>Your Signature</Label>
+                        <Label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Your Signature</Label>
                         <Tabs
                           value={signatureMethod}
                           onValueChange={(v) => setSignatureMethod(v as SignatureType)}
                           className="w-full"
                         >
-                          <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="draw" className="gap-1.5">
+                          <TabsList className="grid w-full grid-cols-3 rounded-xl h-11">
+                            <TabsTrigger value="draw" className="gap-1.5 rounded-lg text-xs font-medium">
                               <Pencil className="size-3.5" />
                               Draw
                             </TabsTrigger>
-                            <TabsTrigger value="type" className="gap-1.5">
+                            <TabsTrigger value="type" className="gap-1.5 rounded-lg text-xs font-medium">
                               <Type className="size-3.5" />
                               Type
                             </TabsTrigger>
-                            <TabsTrigger value="upload" className="gap-1.5">
+                            <TabsTrigger value="upload" className="gap-1.5 rounded-lg text-xs font-medium">
                               <Upload className="size-3.5" />
                               Upload
                             </TabsTrigger>
@@ -1227,12 +1236,12 @@ export default function ChecklistAssessmentPage({
                               <div className="relative">
                                 <canvas
                                   ref={sigCanvasRef}
-                                  className="w-full border-[1.5px] border-[#E5E7EB] rounded-lg bg-white cursor-crosshair touch-none"
+                                  className="w-full border-2 border-border rounded-xl bg-white cursor-crosshair touch-none"
                                   style={{ height: "160px" }}
                                 />
                                 {!drawnSignatureBase64 && (
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <span className="text-[#9CA3AF] text-sm select-none">
+                                    <span className="text-text-muted text-sm select-none font-medium">
                                       Sign here
                                     </span>
                                   </div>
@@ -1242,7 +1251,7 @@ export default function ChecklistAssessmentPage({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-[#9CA3AF] text-xs gap-1"
+                                  className="text-text-muted text-xs gap-1 rounded-lg"
                                   onClick={() => {
                                     if (sigPadRef.current) {
                                       sigPadRef.current.clear();
@@ -1256,7 +1265,7 @@ export default function ChecklistAssessmentPage({
                                   <Trash2 className="size-3" /> Clear
                                 </Button>
                                 {drawnSignatureBase64 && (
-                                  <span className="text-xs text-[#166534] font-medium flex items-center gap-1">
+                                  <span className="text-xs text-primary font-medium flex items-center gap-1">
                                     <CheckCircle2 className="size-3" /> Signature captured
                                   </span>
                                 )}
@@ -1271,19 +1280,19 @@ export default function ChecklistAssessmentPage({
                                 value={typedSignatureText}
                                 onChange={(e) => handleTypedSignatureChange(e.target.value)}
                                 placeholder="Type your name"
-                                className="text-base"
+                                className="text-base rounded-xl h-11 border-border focus:border-primary"
                               />
-                              <p className="text-xs text-[#6B7280]">Choose a font style:</p>
+                              <p className="text-xs text-text-secondary">Choose a font style:</p>
                               <div className="grid grid-cols-2 gap-2">
                                 {SIGNATURE_FONTS.map((font) => (
                                   <button
                                     key={font.value}
                                     type="button"
                                     className={cn(
-                                      "p-3 rounded-lg border text-center transition-all",
+                                      "p-3 rounded-xl border text-center transition-all",
                                       selectedFont === font.value
-                                        ? "border-[#166534] bg-[#F0FDF4] ring-1 ring-[#166534]"
-                                        : "border-[#E5E7EB] hover:border-[#166534]/50"
+                                        ? "border-primary bg-primary-light ring-1 ring-primary"
+                                        : "border-border hover:border-primary/50"
                                     )}
                                     onClick={() => handleFontChange(font.value)}
                                   >
@@ -1293,14 +1302,14 @@ export default function ChecklistAssessmentPage({
                                     >
                                       {typedSignatureText || "Preview"}
                                     </span>
-                                    <p className="text-[10px] text-[#6B7280] mt-1">{font.name}</p>
+                                    <p className="text-[10px] text-text-muted mt-1">{font.name}</p>
                                   </button>
                                 ))}
                               </div>
                               {typedSignatureText.trim() && (
                                 <div className="flex items-center gap-1.5">
-                                  <CheckCircle2 className="size-3.5 text-[#166534]" />
-                                  <span className="text-xs text-[#166534] font-medium">Typed signature ready</span>
+                                  <CheckCircle2 className="size-3.5 text-primary" />
+                                  <span className="text-xs text-primary font-medium">Typed signature ready</span>
                                 </div>
                               )}
                             </div>
@@ -1311,7 +1320,7 @@ export default function ChecklistAssessmentPage({
                             <div className="space-y-3">
                               {uploadedSignatureBase64 ? (
                                 <div className="space-y-3">
-                                  <div className="border rounded-lg bg-white p-3 flex items-center justify-center">
+                                  <div className="border rounded-xl bg-white p-3 flex items-center justify-center border-primary/20">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                       src={uploadedSignatureBase64}
@@ -1323,7 +1332,7 @@ export default function ChecklistAssessmentPage({
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="text-[#9CA3AF] text-xs gap-1"
+                                      className="text-text-muted text-xs gap-1 rounded-lg"
                                       onClick={() => {
                                         setUploadedSignatureBase64("");
                                         if (signatureData?.type === "upload") {
@@ -1333,15 +1342,15 @@ export default function ChecklistAssessmentPage({
                                     >
                                       <Trash2 className="size-3" /> Remove
                                     </Button>
-                                    <span className="text-xs text-[#166534] font-medium flex items-center gap-1">
+                                    <span className="text-xs text-primary font-medium flex items-center gap-1">
                                       <CheckCircle2 className="size-3" /> Signature uploaded
                                     </span>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-6 text-center hover:border-[#166534]/50 transition-colors">
-                                  <Upload className="size-8 text-[#9CA3AF] mx-auto mb-2" />
-                                  <p className="text-sm text-[#6B7280] mb-2">
+                                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                                  <Upload className="size-8 text-text-muted mx-auto mb-2" />
+                                  <p className="text-sm text-text-secondary mb-2">
                                     Upload an image of your signature
                                   </p>
                                   <Input
@@ -1350,7 +1359,7 @@ export default function ChecklistAssessmentPage({
                                     onChange={handleSignatureUpload}
                                     className="max-w-xs mx-auto"
                                   />
-                                  <p className="text-[10px] text-[#9CA3AF] mt-2">
+                                  <p className="text-[10px] text-text-muted mt-2">
                                     PNG, JPG, or SVG — max 5MB
                                   </p>
                                 </div>
@@ -1361,13 +1370,13 @@ export default function ChecklistAssessmentPage({
 
                         {/* Current signature preview */}
                         {hasValidSignature && signatureData?.type !== "draw" && (
-                          <div className="mt-2 p-3 border border-[#BBF7D0] bg-[#F0FDF4] rounded-lg">
-                            <p className="text-[10px] font-semibold text-[#166534] uppercase tracking-wider mb-1.5">
+                          <div className="mt-2 p-3 border border-primary/20 bg-primary/5 rounded-xl">
+                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1.5">
                               Signature Preview
                             </p>
                             {signatureData.type === "type" && signatureData.text && (
                               <p
-                                className="text-2xl text-[#166534]"
+                                className="text-2xl text-primary"
                                 style={{ fontFamily: signatureData.font || "'Dancing Script', cursive" }}
                               >
                                 {signatureData.text}
@@ -1386,7 +1395,7 @@ export default function ChecklistAssessmentPage({
                       </div>
 
                       <Button
-                        className="w-full gap-2 bg-[#166534] hover:bg-[#14532D]"
+                        className="btn-gradient w-full gap-2 rounded-xl font-bold text-base"
                         size="lg"
                         style={{ padding: "16px" }}
                         disabled={
@@ -1411,7 +1420,7 @@ export default function ChecklistAssessmentPage({
                         !candidateNameSigned.trim() ||
                         !hasValidSignature) &&
                         !isSubmitting && (
-                        <p className="text-xs text-[#9CA3AF] text-center">
+                        <p className="text-xs text-text-muted text-center">
                           {!allSkillsRated
                             ? "Please rate all skills before submitting"
                             : !candidateNameSigned.trim()
@@ -1419,37 +1428,41 @@ export default function ChecklistAssessmentPage({
                               : "Please provide your signature (draw, type, or upload)"}
                         </p>
                       )}
-                    </CardContent>
-                  </Card>
-                </div>
+                    </div>
+                  </div>
+                </FadeIn>
               )}
             </div>
           </div>
 
           {/* ── Floating Bottom Bar ──────────────────────────────────────── */}
-          <div className="shrink-0 border-t border-[#E5E7EB] bg-white px-4 sm:px-6 py-3">
+          <div className="shrink-0 border-t border-border glass-header px-4 sm:px-6 py-3">
             <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1.5 rounded-xl text-text-secondary hover:text-foreground"
                 disabled={categoryList.indexOf(activeCategory) <= 0}
                 onClick={goToPrevCategory}
               >
-                <ArrowLeft className="size-4" /> Prev
+                <ChevronLeft className="size-4" /> Prev
               </Button>
 
-              <div className="flex items-center gap-2 flex-1 justify-center">
-                <span className="text-xs text-[#6B7280] hidden sm:inline">
+              <div className="flex items-center gap-2.5 flex-1 justify-center">
+                <span className="text-xs text-text-secondary hidden sm:inline font-medium">
                   {ratedSkills} of {totalSkills} skills
                 </span>
                 <Progress
                   value={completionPct}
-                  className="w-[120px] h-1.5 hidden sm:block"
+                  className="w-[120px] h-2 hidden sm:block rounded-full bg-surface-3 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent-teal [&>div]:rounded-full"
                 />
                 <Badge
-                  variant="outline"
-                  className="text-xs tabular-nums"
+                  className={cn(
+                    "text-xs tabular-nums font-semibold rounded-lg px-2.5",
+                    completionPct === 100
+                      ? "bg-badge-green-bg text-badge-green border-badge-green/20"
+                      : "bg-surface-2 text-text-secondary border-border"
+                  )}
                 >
                   {completionPct}%
                 </Badge>
@@ -1457,7 +1470,7 @@ export default function ChecklistAssessmentPage({
 
               <Button
                 size="sm"
-                className="gap-1"
+                className="btn-gradient gap-1.5 rounded-xl font-semibold"
                 onClick={goToNextCategory}
                 disabled={
                   categoryList.indexOf(activeCategory) === categoryList.length - 1 &&

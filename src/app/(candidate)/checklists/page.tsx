@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -15,10 +14,14 @@ import {
   Clock,
   CheckCircle2,
   Download,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
 } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FadeIn, StaggerChildren, StaggerItem, CountUp } from "@/components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -79,41 +82,102 @@ function getDisplayStatus(item: ChecklistItem): DisplayStatus {
   return "pending";
 }
 
-function getStatusBadge(status: DisplayStatus) {
+function getStatusConfig(status: DisplayStatus) {
   switch (status) {
     case "pending":
-      return (
-        <Badge className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100">
-          <Clock className="size-3 mr-1" />
-          Pending
-        </Badge>
-      );
+      return {
+        label: "Pending",
+        icon: Clock,
+        badgeClass: "bg-badge-yellow-bg text-badge-yellow border-badge-yellow/20",
+        dotClass: "bg-badge-yellow",
+        ringClass: "ring-badge-yellow/30",
+      };
     case "in_progress":
-      return (
-        <Badge className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
-          <Loader2 className="size-3 mr-1" />
-          In Progress
-        </Badge>
-      );
+      return {
+        label: "In Progress",
+        icon: Loader2,
+        badgeClass: "bg-badge-blue-bg text-badge-blue border-badge-blue/20",
+        dotClass: "bg-badge-blue",
+        ringClass: "ring-badge-blue/30",
+      };
     case "completed":
-      return (
-        <Badge className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
-          <CheckCircle2 className="size-3 mr-1" />
-          Completed
-        </Badge>
-      );
+      return {
+        label: "Completed",
+        icon: CheckCircle2,
+        badgeClass: "bg-badge-green-bg text-badge-green border-badge-green/20",
+        dotClass: "bg-badge-green",
+        ringClass: "ring-badge-green/30",
+      };
   }
 }
 
-function getStatusColor(status: DisplayStatus) {
-  switch (status) {
-    case "pending":
-      return "text-amber-600";
-    case "in_progress":
-      return "text-blue-600";
-    case "completed":
-      return "text-green-600";
-  }
+// ─── Stat Card Component ──────────────────────────────────────────────────
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  isActive,
+  onClick,
+  delay = 0,
+}: {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  color: "amber" | "blue" | "green";
+  isActive: boolean;
+  onClick: () => void;
+  delay?: number;
+}) {
+  const colorMap = {
+    amber: {
+      iconBg: "bg-badge-yellow-bg",
+      iconText: "text-badge-yellow",
+      ring: "ring-badge-yellow/40",
+      gradient: "from-amber-500/5 to-transparent",
+    },
+    blue: {
+      iconBg: "bg-badge-blue-bg",
+      iconText: "text-badge-blue",
+      ring: "ring-badge-blue/40",
+      gradient: "from-blue-500/5 to-transparent",
+    },
+    green: {
+      iconBg: "bg-badge-green-bg",
+      iconText: "text-badge-green",
+      ring: "ring-badge-green/40",
+      gradient: "from-emerald-500/5 to-transparent",
+    },
+  };
+
+  const c = colorMap[color];
+
+  return (
+    <FadeIn delay={delay} direction="up" distance={16}>
+      <button
+        onClick={onClick}
+        className={cn(
+          "premium-card w-full text-left p-5 cursor-pointer transition-all duration-300",
+          isActive && `ring-2 ${c.ring}`
+        )}
+      >
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
+              {label}
+            </p>
+            <p className="text-3xl font-bold text-foreground font-heading tracking-tight">
+              <CountUp value={value} duration={0.8} delay={delay * 0.001} />
+            </p>
+          </div>
+          <div className={cn("size-12 rounded-xl flex items-center justify-center", c.iconBg)}>
+            <Icon className={cn("size-5", c.iconText)} />
+          </div>
+        </div>
+      </button>
+    </FadeIn>
+  );
 }
 
 // ─── Main Page Component ──────────────────────────────────────────────────
@@ -124,7 +188,7 @@ export default function CandidateChecklistsPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "in_progress" | "completed">("all");
 
-  // ─── Fetch Checklists ─────────────────────────────────────────────────
+  // ─── Fetch Checklists ─────────────────────────────────────────────
 
   const fetchChecklists = useCallback(async () => {
     try {
@@ -143,7 +207,7 @@ export default function CandidateChecklistsPage() {
     fetchChecklists();
   }, [fetchChecklists]);
 
-  // ─── Stats ────────────────────────────────────────────────────────────
+  // ─── Stats ────────────────────────────────────────────────────────
 
   const stats = useMemo(() => {
     const pending = checklists.filter(
@@ -158,77 +222,73 @@ export default function CandidateChecklistsPage() {
     return { pending, inProgress, completed };
   }, [checklists]);
 
-  // ─── Filtered Checklists ──────────────────────────────────────────────
+  // ─── Filtered Checklists ──────────────────────────────────────────
 
   const filteredChecklists = useMemo(() => {
     if (filter === "all") return checklists;
     return checklists.filter((c) => getDisplayStatus(c) === filter);
   }, [checklists, filter]);
 
-  // ─── Loading State ────────────────────────────────────────────────────
+  // ─── Loading State ────────────────────────────────────────────────
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PageHeader
           title="My Checklists"
           description="View and complete your skills checklists requested by recruiters."
         />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-12" />
-              </CardContent>
-            </Card>
+            <div key={i} className="premium-card p-5">
+              <div className="relative z-10">
+                <Skeleton className="h-3 w-16 mb-2" />
+                <Skeleton className="h-8 w-10" />
+              </div>
+            </div>
           ))}
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-48" />
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <Skeleton className="h-10 w-28" />
+            <div key={i} className="premium-card p-5">
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="space-y-2.5 flex-1">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
-              </CardContent>
-            </Card>
+                <Skeleton className="h-10 w-28 rounded-xl" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
     );
   }
 
-  // ─── Error State ──────────────────────────────────────────────────────
+  // ─── Error State ──────────────────────────────────────────────────
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PageHeader
           title="My Checklists"
           description="View and complete your skills checklists requested by recruiters."
         />
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={fetchChecklists} variant="outline">
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="glass-card-static p-8 text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchChecklists} variant="outline" className="btn-outline-premium">
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // ─── Main Render ──────────────────────────────────────────────────────
+  // ─── Main Render ──────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="My Checklists"
         description="View and complete your skills checklists requested by recruiters."
@@ -236,126 +296,82 @@ export default function CandidateChecklistsPage() {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card
-          className={cn(
-            "hover:shadow-md transition-shadow cursor-pointer",
-            filter === "pending" && "ring-2 ring-amber-300"
-          )}
+        <StatCard
+          label="Pending"
+          value={stats.pending}
+          icon={Clock}
+          color="amber"
+          isActive={filter === "pending"}
           onClick={() => setFilter(filter === "pending" ? "all" : "pending")}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
-                  Pending
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.pending}
-                </p>
-              </div>
-              <div className="size-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Clock className="size-5 text-amber-600" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Awaiting your response
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className={cn(
-            "hover:shadow-md transition-shadow cursor-pointer",
-            filter === "in_progress" && "ring-2 ring-blue-300"
-          )}
+          delay={0}
+        />
+        <StatCard
+          label="In Progress"
+          value={stats.inProgress}
+          icon={TrendingUp}
+          color="blue"
+          isActive={filter === "in_progress"}
           onClick={() => setFilter(filter === "in_progress" ? "all" : "in_progress")}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                  In Progress
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.inProgress}
-                </p>
-              </div>
-              <div className="size-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Loader2 className="size-5 text-blue-600" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Partially completed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className={cn(
-            "hover:shadow-md transition-shadow cursor-pointer",
-            filter === "completed" && "ring-2 ring-green-300"
-          )}
+          delay={100}
+        />
+        <StatCard
+          label="Completed"
+          value={stats.completed}
+          icon={ShieldCheck}
+          color="green"
+          isActive={filter === "completed"}
           onClick={() => setFilter(filter === "completed" ? "all" : "completed")}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">
-                  Completed
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.completed}
-                </p>
-              </div>
-              <div className="size-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <CheckCircle2 className="size-5 text-green-600" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Submitted & verified
-            </p>
-          </CardContent>
-        </Card>
+          delay={200}
+        />
       </div>
 
       {/* Filter indicator */}
       {filter !== "all" && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[#6B7280]">
-            Showing: <span className="font-semibold capitalize">{filter.replace("_", " ")}</span>
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs h-6 px-2"
-            onClick={() => setFilter("all")}
-          >
-            Clear filter
-          </Button>
-        </div>
+        <FadeIn duration={0.2}>
+          <div className="flex items-center gap-3 px-1">
+            <div className={cn(
+              "size-2 rounded-full",
+              filter === "pending" ? "bg-badge-yellow" :
+              filter === "in_progress" ? "bg-badge-blue" : "bg-badge-green"
+            )} />
+            <span className="text-sm text-text-secondary">
+              Showing: <span className="font-semibold text-foreground capitalize">{filter.replace("_", " ")}</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7 px-3 rounded-lg text-text-muted hover:text-foreground"
+              onClick={() => setFilter("all")}
+            >
+              Clear filter
+            </Button>
+          </div>
+        </FadeIn>
       )}
 
       {/* Checklist List */}
       {filteredChecklists.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="size-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <ClipboardCheck className="size-7 text-gray-400" />
+        <FadeIn>
+          <div className="glass-card-static p-12 text-center">
+            <div className="size-16 rounded-2xl bg-surface-2 flex items-center justify-center mx-auto mb-5">
+              <ClipboardCheck className="size-8 text-text-muted" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-700">
+            <h3 className="text-lg font-bold text-foreground font-heading tracking-tight">
               {filter !== "all" ? "No checklists match this filter" : "No checklists yet"}
             </h3>
-            <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+            <p className="text-sm text-text-secondary mt-2 max-w-md mx-auto">
               {filter !== "all"
                 ? "Try a different filter or clear it to see all checklists."
                 : "When a recruiter sends you a skills checklist, it will appear here. Check back soon!"}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FadeIn>
       ) : (
-        <div className="space-y-3">
+        <StaggerChildren staggerDelay={0.06} className="space-y-4">
           {filteredChecklists.map((checklist) => {
             const displayStatus = getDisplayStatus(checklist);
+            const statusConfig = getStatusConfig(displayStatus);
+            const StatusIcon = statusConfig.icon;
             const completionPct = checklist.completionPct;
             const totalSkills = checklist.template.skills.length;
             const ratedSkills = checklist.existingRatings.filter(
@@ -364,76 +380,78 @@ export default function CandidateChecklistsPage() {
             const categoryCount = new Set(checklist.template.skills.map((s) => s.category)).size;
 
             return (
-              <Card
-                key={checklist.id}
-                className="hover:shadow-md transition-shadow group"
-              >
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <StaggerItem key={checklist.id}>
+                <div className="premium-card group p-5 sm:p-6">
+                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
                     {/* Left: Info */}
-                    <div className="flex-1 min-w-0 space-y-2.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base font-bold text-gray-900 truncate">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h3 className="text-base font-bold text-foreground font-heading tracking-tight truncate">
                           {checklist.template.name}
                         </h3>
-                        {getStatusBadge(displayStatus)}
+                        <Badge className={cn("text-[11px] font-semibold border gap-1.5 px-2.5 py-0.5 rounded-lg", statusConfig.badgeClass)}>
+                          <StatusIcon className={cn("size-3", displayStatus === "in_progress" && "animate-spin")} />
+                          {statusConfig.label}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className="bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] text-xs hover:bg-[#DCFCE7]">
+                        <Badge className="bg-badge-green-bg text-badge-green border-badge-green/20 text-xs font-semibold px-2.5 py-0.5 rounded-lg hover:bg-badge-green-bg">
                           {checklist.template.profession}
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="text-xs border-gray-300 text-gray-600"
+                          className="text-xs border-border text-text-secondary px-2.5 py-0.5 rounded-lg"
                         >
                           {checklist.template.specialty}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-text-secondary">
                         From{" "}
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-foreground">
                           {checklist.recruiter.name}
                         </span>
                         {checklist.recruiter.organization && (
                           <>
-                            {" "}
-                            at{" "}
-                            <span className="font-medium text-gray-700">
+                            {" "}at{" "}
+                            <span className="font-medium text-foreground">
                               {checklist.recruiter.organization}
                             </span>
                           </>
                         )}
                       </p>
                       {/* Meta info */}
-                      <div className="flex items-center gap-3 text-xs text-[#9CA3AF]">
+                      <div className="flex items-center gap-3 text-xs text-text-muted">
                         <span>{categoryCount} {categoryCount === 1 ? "category" : "categories"}</span>
-                        <span>·</span>
+                        <span className="text-border">|</span>
                         <span>{totalSkills} skills</span>
-                        <span>·</span>
+                        <span className="text-border">|</span>
                         <span>Sent {new Date(checklist.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                       {/* Completion bar */}
                       {displayStatus !== "completed" && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Progress</span>
-                            <span className={cn("text-xs font-semibold", getStatusColor(displayStatus))}>
+                            <span className="text-xs font-medium text-text-secondary">Progress</span>
+                            <span className="text-xs font-bold text-primary">
                               {completionPct}% ({ratedSkills}/{totalSkills})
                             </span>
                           </div>
-                          <Progress value={completionPct} className="h-1.5" />
+                          <Progress
+                            value={completionPct}
+                            className="h-2 rounded-full bg-surface-3 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent-teal [&>div]:rounded-full"
+                          />
                         </div>
                       )}
                     </div>
 
                     {/* Right: Action Buttons */}
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-2.5">
                       {displayStatus === "completed" ? (
                         <>
                           <Link href={`/checklists/${checklist.id}`}>
                             <Button
                               variant="outline"
-                              className="gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                              className="btn-outline-premium gap-2 rounded-xl h-10"
                             >
                               <Eye className="size-4" />
                               View
@@ -441,7 +459,7 @@ export default function CandidateChecklistsPage() {
                           </Link>
                           <Button
                             variant="outline"
-                            className="gap-2 border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]"
+                            className="gap-2 border-primary/30 text-primary hover:bg-primary-light rounded-xl h-10"
                             onClick={() => window.open(`/api/candidate/checklists/${checklist.id}/pdf?mode=download`, '_blank')}
                           >
                             <Download className="size-4" />
@@ -451,11 +469,11 @@ export default function CandidateChecklistsPage() {
                       ) : (
                         <Link href={`/checklists/${checklist.id}`}>
                           <Button
-                            className="gap-2 bg-[#166534] hover:bg-[#14532D] text-white group-hover:shadow-md transition-all"
+                            className="btn-gradient gap-2 rounded-xl h-10 font-semibold"
                           >
                             {displayStatus === "in_progress" ? (
                               <>
-                                <ClipboardCheck className="size-4" />
+                                <Sparkles className="size-4" />
                                 Continue Assessment
                               </>
                             ) : (
@@ -469,11 +487,11 @@ export default function CandidateChecklistsPage() {
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </StaggerItem>
             );
           })}
-        </div>
+        </StaggerChildren>
       )}
     </div>
   );

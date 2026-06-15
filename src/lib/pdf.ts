@@ -63,12 +63,12 @@ async function getPrinter(): Promise<any> {
   return printerInstance;
 }
 
-const BRAND_COLOR = '#0f766e';
-const BRAND_LIGHT = '#f0fdfa';
-const TEXT_DARK = '#1a1a1a';
-const TEXT_MEDIUM = '#4a4a4a';
-const TEXT_LIGHT = '#6b7280';
-const BORDER_COLOR = '#d1d5db';
+const BRAND_COLOR = '#059669';
+const BRAND_LIGHT = '#F0FDFA';
+const TEXT_DARK = '#0F172A';
+const TEXT_MEDIUM = '#475569';
+const TEXT_LIGHT = '#94A3B8';
+const BORDER_COLOR = '#E2E8F0';
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
@@ -481,23 +481,25 @@ export async function generateInvoicePdf(data: {
 // 3. Checklist PDF — Premium Enterprise Design (pdfmake)
 // ─────────────────────────────────────────────────────────────
 
-const CL_GREEN = '#166534';
+const CL_GREEN = '#059669';
 const CL_TEAL  = '#0D9488';
-const CL_GREEN_LIGHT = '#DCFCE7';
+const CL_CYAN  = '#06B6D4';
+const CL_GREEN_LIGHT = '#D1FAE5';
 const CL_TEAL_LIGHT  = '#CCFBF1';
+const CL_CYAN_LIGHT  = '#CFFAFE';
 const CL_WARN  = '#CA8A04';
 const CL_WARN_LIGHT  = '#FEF9C3';
 const CL_ERR   = '#DC2626';
 const CL_ERR_LIGHT   = '#FEE2E2';
-const CL_TEXT  = '#111827';
-const CL_GRAY1 = '#374151';
-const CL_GRAY2 = '#6B7280';
-const CL_GRAY3 = '#9CA3AF';
-const CL_BORDER = '#E5E7EB';
-const CL_SURF  = '#F9FAFB';
-const CL_SURF2 = '#F3F4F6';
-const CL_GREEN_SURF = '#F0FDF4';
-const CL_GREEN_BORDER = '#BBF7D0';
+const CL_TEXT  = '#0F172A';
+const CL_GRAY1 = '#475569';
+const CL_GRAY2 = '#64748B';
+const CL_GRAY3 = '#94A3B8';
+const CL_BORDER = '#E2E8F0';
+const CL_SURF  = '#F8FAFC';
+const CL_SURF2 = '#F1F5F9';
+const CL_GREEN_SURF = '#F0FDFA';
+const CL_GREEN_BORDER = '#6EE7B7';
 
 const RATING_CFG: Record<string, { label: string; color: string; bg: string }> = {
   '4': { label: 'Proficient',      color: CL_GREEN, bg: CL_GREEN_LIGHT },
@@ -591,11 +593,12 @@ export async function generateChecklistPdf(data: {
   // PAGE 1 — COVER PAGE
   // ══════════════════════════════════════════════════════════════
 
-  // Top gradient bar (simulated with two rectangles)
+  // Top gradient bar (simulated with three rectangles — emerald → teal → cyan)
   content.push({
     canvas: [
-      { type: 'rect', x: 0, y: 0, w: 298, h: 8, color: CL_GREEN },
-      { type: 'rect', x: 298, y: 0, w: 299, h: 8, color: CL_TEAL },
+      { type: 'rect', x: 0, y: 0, w: 200, h: 8, color: CL_GREEN },
+      { type: 'rect', x: 200, y: 0, w: 200, h: 8, color: CL_TEAL },
+      { type: 'rect', x: 400, y: 0, w: 197, h: 8, color: CL_CYAN },
     ],
     margin: [-48, -40, -48, 0],
   });
@@ -760,11 +763,12 @@ export async function generateChecklistPdf(data: {
     margin: [0, 0, 0, 16],
   });
 
-  // Bottom gradient bar
+  // Bottom gradient bar (3-color)
   content.push({
     canvas: [
-      { type: 'rect', x: 0, y: 0, w: 298, h: 4, color: CL_GREEN },
-      { type: 'rect', x: 298, y: 0, w: 299, h: 4, color: CL_TEAL },
+      { type: 'rect', x: 0, y: 0, w: 200, h: 4, color: CL_GREEN },
+      { type: 'rect', x: 200, y: 0, w: 200, h: 4, color: CL_TEAL },
+      { type: 'rect', x: 400, y: 0, w: 197, h: 4, color: CL_CYAN },
     ],
     margin: [-48, 16, -48, 0],
   });

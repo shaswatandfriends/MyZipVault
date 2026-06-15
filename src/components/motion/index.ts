@@ -8,5 +8,8 @@ export {
   AnimatedCard,
   Pressable,
   PageTransition,
+  TiltCard,
+  MorphTransition,
+  GlowPulse,
   springConfig,
 } from "./animations";
