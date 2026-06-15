@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/components/providers/auth-provider";
+import { PageTransition } from "@/components/motion";
 import Link from "next/link";
 import { ArrowUpRight } from "@/lib/icons";
 
@@ -24,9 +25,9 @@ function CircularProgress({
 
   const color =
     percentage >= 100
-      ? "#166534"
+      ? "#059669"
       : percentage >= 50
-        ? "#16A34A"
+        ? "#10B981"
         : percentage >= 25
           ? "#F59E0B"
           : "#EF4444";
@@ -38,7 +39,7 @@ function CircularProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E5E7EB"
+          stroke="#E2E8F0"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -53,6 +54,7 @@ function CircularProgress({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           className="transition-all duration-700 ease-out"
+          style={{ filter: `drop-shadow(0 0 4px ${color}40)` }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
@@ -98,18 +100,15 @@ export default function CandidateLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 items-center gap-3 border-b border-[#E5E7EB] px-6 bg-white">
-          <SidebarTrigger className="-ml-1 text-[#6B7280] hover:text-[#111827]" />
-          <Separator orientation="vertical" className="mr-2 !h-4 bg-[#E5E7EB]" />
+        <header className="glass-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
+          <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
+          <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />
           <div className="flex items-center justify-between flex-1 min-w-0">
             <div className="min-w-0">
-              <h1
-                className="text-sm font-semibold text-[#111827] truncate"
-                style={{ fontFamily: "'Clash Display', sans-serif" }}
-              >
+              <h1 className="text-sm font-semibold text-foreground truncate font-heading tracking-tight">
                 Welcome, {displayName}
               </h1>
-              <p className="text-[11px] text-[#6B7280] truncate">
+              <p className="text-xs text-text-secondary truncate">
                 Here&apos;s an overview of your vault
               </p>
             </div>
@@ -117,19 +116,26 @@ export default function CandidateLayout({
               <div className="relative flex items-center gap-2 cursor-pointer">
                 <CircularProgress percentage={profileCompletion} size={32} strokeWidth={3} />
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-medium text-[#111827] group-hover:text-[#166534] transition-colors leading-tight">
+                  <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors leading-tight">
                     Profile
                   </span>
-                  <span className="text-[9px] text-[#6B7280] leading-tight">
+                  <span className="text-[10px] text-text-secondary leading-tight">
                     {profileCompletion}% done
                   </span>
                 </div>
-                <ArrowUpRight className="size-2.5 text-[#9CA3AF] group-hover:text-[#166534] transition-colors" />
+                <ArrowUpRight className="size-2.5 text-text-muted group-hover:text-primary transition-colors" />
               </div>
             </Link>
           </div>
         </header>
-        <div className="p-6 md:p-8 bg-[#F8F7F4] min-h-screen">{children}</div>
+        <div className="relative min-h-screen">
+          <div className="mesh-background" />
+          <div className="p-6 md:p-10 relative z-10">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

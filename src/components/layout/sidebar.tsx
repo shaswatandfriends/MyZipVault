@@ -261,8 +261,8 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
         className={cn(
           "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
           isAnyActive
-            ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-            : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+            ? "bg-primary-light font-semibold text-primary"
+            : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
         )}
       >
         <group.icon className="size-5 shrink-0" />
@@ -277,11 +277,11 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
 
       {/* Collapsible content */}
       {isExpanded && (
-        <div className="ml-2 pl-4 border-l border-[#E5E7EB] space-y-2">
+        <div className="ml-2 pl-4 border-l border-border space-y-2">
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
-              <p className="px-3 pt-2 pb-1 text-[10px] font-bold tracking-widest text-[#9CA3AF] uppercase">
+              <p className="px-3 pt-2 pb-1 text-[10px] font-bold tracking-widest text-text-muted uppercase">
                 {section.title}
               </p>
               {/* Section items */}
@@ -296,8 +296,8 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ease-in-out",
                       isActive
-                        ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                        : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                        ? "bg-primary-light font-semibold text-primary"
+                        : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                     )}
                   >
                     <item.icon className="size-4 shrink-0" />
@@ -336,25 +336,24 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <div className="flex h-full w-full flex-col overflow-hidden bg-white border-r border-[#E5E7EB]">
+      <div className="glass-sidebar flex h-full w-full flex-col overflow-hidden border-r border-sidebar-border">
         {/* ── Top Section: Logo + Brand ── */}
         <div className="flex shrink-0 items-center gap-3 px-4 py-4">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-[#166534] text-xs font-bold text-white">
+          <div className="flex size-7 items-center justify-center rounded-lg btn-gradient text-xs font-bold text-white">
             ZV
           </div>
           <div className="flex flex-col gap-0.5">
             <span
-              className="text-[15px] font-semibold leading-tight text-[#111827]"
-              style={{ fontFamily: "'Clash Display', sans-serif" }}
+              className="text-[15px] font-semibold leading-tight text-foreground font-heading tracking-tight"
             >
               MyZipVault
             </span>
-            <span className="text-[11px] font-medium text-[#9CA3AF]">
+            <span className="text-[11px] font-medium text-text-muted">
               {label}
             </span>
           </div>
         </div>
-        <div className="mx-3 h-px shrink-0 bg-[#E5E7EB]" />
+        <div className="mx-3 h-px shrink-0 bg-border" />
 
         {/* ── Navigation Section ── */}
         <ScrollArea className="flex-1 overflow-hidden px-3 py-3">
@@ -371,8 +370,8 @@ export function AppSidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                     isActive
-                      ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                      : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                      ? "bg-primary-light font-semibold text-primary shadow-sm"
+                      : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                   )}
                 >
                   <item.icon className="size-5 shrink-0" />
@@ -384,7 +383,7 @@ export function AppSidebar() {
             {/* Superadmin: Collapsible Groups */}
             {isSuperAdmin && (
               <>
-                <div className="my-1.5 h-px bg-[#E5E7EB]" />
+                <div className="my-1.5 h-px bg-border" />
                 {superAdminGroups.map((group) => (
                   <NavGroupSection
                     key={group.title}
@@ -392,7 +391,7 @@ export function AppSidebar() {
                     pathname={pathname}
                   />
                 ))}
-                <div className="my-1.5 h-px bg-[#E5E7EB]" />
+                <div className="my-1.5 h-px bg-border" />
 
                 {/* Bottom nav items for superadmin with section dividers */}
                 {superAdminBottomNav.map((item, index) => {
@@ -404,8 +403,8 @@ export function AppSidebar() {
                     <React.Fragment key={item.href}>
                       {sectionLabel && (
                         <>
-                          {index > 0 && <div className="my-1 h-px bg-[#E5E7EB]" />}
-                          <p className="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-[#9CA3AF] uppercase">
+                          {index > 0 && <div className="my-1 h-px bg-border" />}
+                          <p className="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
                             {sectionLabel}
                           </p>
                         </>
@@ -415,8 +414,8 @@ export function AppSidebar() {
                         className={cn(
                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
                           isActive
-                            ? "bg-[#DCFCE7] font-semibold text-[#166534]"
-                            : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
+                            ? "bg-primary-light font-semibold text-primary"
+                            : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
                         )}
                       >
                         <item.icon className="size-5 shrink-0" />
@@ -431,21 +430,21 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="shrink-0 space-y-2 border-t border-[#E5E7EB] p-3">
+        <div className="shrink-0 space-y-2 border-t border-border p-3">
           {/* Notification Bell (all roles) */}
           <NotificationBell variant="sidebar" />
 
           {/* User Info */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-[#DCFCE7] text-xs font-semibold text-[#166534]">
+            <div className="flex size-8 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary">
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-[#111827]">
+              <p className="truncate text-sm font-medium text-foreground">
                 {displayName}
               </p>
               <p
-                className="truncate text-xs text-[#9CA3AF]"
+                className="truncate text-xs text-text-muted"
                 title={user?.email ?? ""}
               >
                 {user?.email}
@@ -456,29 +455,28 @@ export function AppSidebar() {
           {/* Logout Button with Confirmation */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all duration-200 ease-in-out hover:bg-[#F3F4F6] hover:text-[#111827]">
+              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-secondary transition-all duration-200 ease-in-out hover:bg-surface-2 hover:text-foreground">
                 <LogOut className="size-5" />
                 <span>Sign Out</span>
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="border-[#E5E7EB] bg-white">
+            <AlertDialogContent className="border-border bg-surface glass-card-static">
               <AlertDialogHeader>
                 <AlertDialogTitle
-                  className="text-[#111827]"
-                  style={{ fontFamily: "'Clash Display', sans-serif" }}
+                  className="text-foreground font-heading tracking-tight"
                 >
                   Sign out of MyZipVault?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-[#6B7280]">
+                <AlertDialogDescription className="text-text-secondary">
                   You will need to sign in again to access your account. Any unsaved changes may be lost.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6]">
+                <AlertDialogCancel className="border-border text-text-secondary hover:bg-surface-2">
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-[#166534] text-white hover:bg-[#14532D]"
+                  className="btn-gradient text-white hover:brightness-110"
                   onClick={async () => {
                     let redirectUrl = "/login";
                     if (role === "super_admin") {
