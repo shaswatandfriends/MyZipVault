@@ -1,16 +1,52 @@
-// pdfmake has ESM/CJS compatibility issues with Turbopack, so we use dynamic import
+// pdfmake 0.3.x server-side usage requires three components:
+//   1. PdfPrinter from 'pdfmake/js/Printer' (NOT from 'pdfmake' — that only exports virtualfs etc.)
+//   2. A virtual-fs instance (from pdfmake.virtualfs) with font files written as decoded Buffers
+//   3. A URLResolver from 'pdfmake/js/URLResolver' for resolving font/image URLs
+//
+// The vfs_fonts module stores fonts as base64 strings — they MUST be decoded to Buffers
+// before writing to virtualfs, otherwise fontkit throws "Unknown font format".
 let printerInstance: any = null;
 
 async function getPrinter(): Promise<any> {
   if (printerInstance) return printerInstance;
-  
-  // Dynamic import to handle ESM/CJS compatibility
-  const pdfmake = await import('pdfmake');
-  const PdfPrinter = pdfmake.default || pdfmake;
-  
-  const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
-  const vfs = (vfsFontsModule as any).default?.pdfMake?.vfs || (vfsFontsModule as any).pdfMake?.vfs || (vfsFontsModule as any).default || vfsFontsModule;
-  
+
+  // 1. Import PdfPrinter from the correct subpath
+  let PdfPrinter: any;
+  try {
+    const printerModule = await import('pdfmake/js/Printer');
+    PdfPrinter = printerModule.default || printerModule;
+  } catch {
+    const printerModule = await import('pdfmake/src/Printer');
+    PdfPrinter = printerModule.default || printerModule;
+  }
+
+  // 2. Import URLResolver
+  let URLResolver: any;
+  try {
+    const urlModule = await import('pdfmake/js/URLResolver');
+    URLResolver = urlModule.default || urlModule;
+  } catch {
+    const urlModule = await import('pdfmake/src/URLResolver');
+    URLResolver = urlModule.default || urlModule;
+  }
+
+  // 3. Get the virtual-fs instance from the pdfmake module
+  const pdfmakeModule = await import('pdfmake');
+  const pdfmake: any = pdfmakeModule.default || pdfmakeModule;
+  const fs = pdfmake.virtualfs;
+
+  // 4. Load base64 font data and write decoded Buffers into virtualfs
+  const vfsModule = await import('pdfmake/build/vfs_fonts');
+  const vfsData: any = vfsModule.default?.pdfMake?.vfs
+    || vfsModule.pdfMake?.vfs
+    || vfsModule.default
+    || vfsModule;
+  for (const [name, b64] of Object.entries(vfsData)) {
+    if (typeof b64 === 'string' && name.endsWith('.ttf')) {
+      fs.writeFileSync(name, Buffer.from(b64, 'base64'));
+    }
+  }
+
   const fonts = {
     Roboto: {
       normal: 'Roboto-Regular.ttf',
@@ -19,9 +55,10 @@ async function getPrinter(): Promise<any> {
       bolditalics: 'Roboto-MediumItalic.ttf',
     },
   };
-  
-  const printer = new PdfPrinter(fonts);
-  printer.vfs = vfs;
+
+  // 5. Create printer with all required dependencies
+  const urlResolver = new URLResolver(fs);
+  const printer = new PdfPrinter(fonts, fs, urlResolver);
   printerInstance = printer;
   return printerInstance;
 }
@@ -83,8 +120,9 @@ function createBrandLine(): any {
 
 async function pdfDocToBuffer(docDefinition: any): Promise<Buffer> {
   const printer = await getPrinter();
+  // pdfmake 0.3.x: createPdfKitDocument is async
+  const doc = await printer.createPdfKitDocument(docDefinition);
   return new Promise((resolve, reject) => {
-    const doc = printer.createPdfKitDocument(docDefinition);
     const chunks: Buffer[] = [];
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -152,6 +190,7 @@ export async function generateBaaPdf(data: {
   const docDefinition: any = {
     pageSize: 'LETTER',
     pageMargins: [60, 80, 60, 60],
+    defaultStyle: { font: 'Roboto' },
     styles: baseStyles,
     header: (currentPage: number, pageCount: number) => {
       if (currentPage === 1) return {};
@@ -295,6 +334,7 @@ export async function generateInvoicePdf(data: {
   const docDefinition: any = {
     pageSize: 'LETTER',
     pageMargins: [60, 60, 60, 60],
+    defaultStyle: { font: 'Roboto' },
     styles: baseStyles,
     footer: (currentPage: number, pageCount: number) => {
       return {
@@ -964,6 +1004,7 @@ export async function generateChecklistPdf(data: {
   const docDefinition: any = {
     pageSize: { width: 595.28, height: 841.89 },
     pageMargins: [48, 40, 48, 40],
+    defaultStyle: { font: 'Roboto' },
     content,
     styles: {
       coverTitle: { fontSize: 36, bold: true, color: CL_TEXT, characterSpacing: -0.5 },
@@ -1052,6 +1093,7 @@ export async function generateReferencePdf(data: {
   const docDefinition: any = {
     pageSize: 'LETTER',
     pageMargins: [50, 70, 50, 60],
+    defaultStyle: { font: 'Roboto' },
     styles: baseStyles,
     header: (currentPage: number) => {
       if (currentPage === 1) return {};
@@ -1258,6 +1300,7 @@ export async function generateResumePdf(data: {
   const docDefinition: any = {
     pageSize: 'LETTER',
     pageMargins: [60, 50, 60, 50],
+    defaultStyle: { font: 'Roboto' },
     styles: {
       ...baseStyles,
       nameTitle: {

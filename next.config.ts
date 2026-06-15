@@ -43,13 +43,19 @@ const nextConfig: NextConfig = {
 
   // pdfmake uses dynamic requires that break with Vercel's bundler.
   // Marking as external ensures the serverless function loads it correctly.
-  serverExternalPackages: ["pdfmake"],
+  serverExternalPackages: ["pdfmake", "pdfkit"],
 
-  // Include pdfkit's font data files in the serverless function bundle.
-  // PDFKit reads these files at runtime using __dirname + '/data/...',
-  // but Vercel's bundler doesn't detect these dynamic file reads.
+  // Include pdfkit's font data files and pdfmake's full package in the
+  // serverless function bundle. Vercel's bundler doesn't detect dynamic
+  // file reads (__dirname + '/data/...') or subpath imports.
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/pdfkit/js/data/**/*", "./node_modules/pdfmake/build/**/*"],
+    "/*": [
+      "./node_modules/pdfkit/js/data/**/*",
+      "./node_modules/pdfmake/build/**/*",
+      "./node_modules/pdfmake/js/**/*",
+      "./node_modules/pdfmake/src/**/*",
+      "./node_modules/pdfmake/fonts/**/*",
+    ],
   },
 };
 
