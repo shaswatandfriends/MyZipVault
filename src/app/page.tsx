@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
+  Search,
   ClipboardCheck,
   FileText,
   Bell,
@@ -960,6 +961,10 @@ function Footer({ content }: { content?: LandingPageContent }) {
             </span>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-text-muted">
+            <Link href="/verify-document" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+              <Search className="size-3.5" />
+              Verify Checklist
+            </Link>
             <Link href="/about" className="hover:text-foreground transition-colors">
               About
             </Link>
@@ -1056,6 +1061,12 @@ export default function LandingPage() {
           </div>
           <ViewToggle view={view} setView={setView} />
           <nav className="flex items-center gap-2">
+            <Link href="/verify-document">
+              <button className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:text-foreground hover:bg-primary-light/50 transition-colors">
+                <Search className="size-3.5" />
+                Verify Checklist
+              </button>
+            </Link>
             <Link href={view === "candidate" ? "/login" : "/agency-login"}>
               <button className="btn-outline-premium rounded-lg px-4 py-2 text-sm font-medium">
                 Log In
