@@ -23,9 +23,9 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document"];
 
-const PUBLIC_ROUTE_PREFIXES = ["/reference/", "/sign/"];
+const PUBLIC_ROUTE_PREFIXES = ["/reference/", "/sign/", "/shared/"];
 
 function getRoleDashboard(role: UserRole): string {
   switch (role) {
@@ -107,9 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Authenticated user on a public route — redirect to their dashboard
-    // Exception: reference form pages are always public (for managers)
+    // Exceptions: routes that should remain accessible even when logged in
+    const ALWAYS_ACCESSIBLE_PUBLIC_ROUTES = ["/verify-document", "/shared/"];
     const isPrefixPublic = PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-    if (isPublicRoute && pathname !== "/onboard" && !isPrefixPublic) {
+    const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
+    if (isPublicRoute && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible) {
       const dashboard = getRoleDashboard(user!.role);
       router.replace(dashboard);
       return;

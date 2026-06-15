@@ -151,7 +151,7 @@ export function RecruiterSidebar() {
             <SidebarMenuButton
               tooltip="Sign Out"
               className="text-[var(--text-secondary)] hover:bg-surface-2 hover:text-foreground"
-              onClick={() => signOut({ callbackUrl: "/agency-login" })}
+              onClick={async () => { try { await signOut({ redirect: false }); } catch {} window.location.href = "/agency-login"; }}
             >
               <LogOut className="size-5" />
               <span>Sign Out</span>

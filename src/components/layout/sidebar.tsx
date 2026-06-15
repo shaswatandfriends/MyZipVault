@@ -496,7 +496,12 @@ export function AppSidebar() {
                     } else if (role === "platform_admin") {
                       redirectUrl = "/admin-login";
                     }
-                    await signOut({ callbackUrl: redirectUrl });
+                    try {
+                      await signOut({ redirect: false });
+                      window.location.href = redirectUrl;
+                    } catch {
+                      window.location.href = redirectUrl;
+                    }
                   }}
                 >
                   Sign Out

@@ -232,7 +232,8 @@ export default function CandidateSettingsPage() {
       });
 
       // Sign out the user
-      await signOut({ callbackUrl: "/login" });
+      await signOut({ redirect: false });
+      window.location.href = "/login";
     } catch {
       toast.error("Failed to delete account");
     } finally {

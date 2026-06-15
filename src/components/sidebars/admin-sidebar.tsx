@@ -134,7 +134,7 @@ export function AdminSidebar() {
             <SidebarMenuButton
               tooltip="Sign Out"
               className="text-[var(--text-secondary)] hover:bg-surface-2 hover:text-foreground"
-              onClick={() => signOut({ callbackUrl: "/admin-login" })}
+              onClick={async () => { try { await signOut({ redirect: false }); } catch {} window.location.href = "/admin-login"; }}
             >
               <LogOut className="size-5" />
               <span>Sign Out</span>
