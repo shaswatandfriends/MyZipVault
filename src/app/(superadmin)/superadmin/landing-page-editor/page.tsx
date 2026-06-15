@@ -16,6 +16,7 @@ import {
   PanelBottom,
   Loader2,
   CheckCircle2,
+  ExternalLink,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
@@ -581,9 +582,12 @@ export default function LandingPageEditorPage() {
         setData(json);
         setLoadedFromServer(true);
         setHasUnsavedChanges(false);
+      } else {
+        console.error("Landing page content load failed:", res.status, res.statusText);
       }
-    } catch {
-      // Silently fail — will use default data
+    } catch (err) {
+      console.error("Landing page content load error:", err);
+      // Will use default data
     } finally {
       setLoading(false);
     }
@@ -669,7 +673,13 @@ export default function LandingPageEditorPage() {
       const result = await res.json();
       setLastSaved(result.savedAt || new Date().toISOString());
       setHasUnsavedChanges(false);
-      toast.success("Landing page published successfully!");
+      toast.success("Landing page published successfully!", {
+        description: "The live page has been updated.",
+        action: {
+          label: "View Live",
+          onClick: () => window.open("/", "_blank"),
+        },
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
@@ -761,6 +771,14 @@ export default function LandingPageEditorPage() {
               </>
             ) : null}
           </div>
+          <Button
+            variant="outline"
+            onClick={() => window.open("/", "_blank")}
+            className="border-[var(--disabled-border)] text-text-secondary rounded-xl hover:text-foreground"
+          >
+            <ExternalLink className="size-4 mr-1.5" />
+            View Live Page
+          </Button>
           <Button
             variant="outline"
             onClick={handleDiscard}

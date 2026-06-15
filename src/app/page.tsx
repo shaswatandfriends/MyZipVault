@@ -995,7 +995,7 @@ export default function LandingPage() {
   useEffect(() => {
     fetch(`/api/superadmin/landing-page?t=${Date.now()}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch");
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
         return res.json();
       })
       .then((data: LandingPageContent) => {
@@ -1029,8 +1029,9 @@ export default function LandingPage() {
           }
         }
       })
-      .catch(() => {
-        // Silently fail — hardcoded defaults will be used
+      .catch((err) => {
+        console.error("Landing page content fetch failed:", err);
+        // Fallback to defaults — hardcoded defaults will be used
       });
   }, []);
 

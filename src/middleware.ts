@@ -12,6 +12,9 @@ export default withAuth({
       const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/ai/debug", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/"];
 
+      // Allow public GET access to landing page content (so the public landing page can fetch it)
+      if (pathname === "/api/superadmin/landing-page" && req.method === "GET") return true;
+
       if (publicRoutes.some((r) => pathname === r)) return true;
       if (publicPrefixes.some((p) => pathname.startsWith(p))) return true;
 

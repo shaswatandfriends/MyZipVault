@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = 'force-dynamic';
 
@@ -167,6 +168,9 @@ export async function POST(request: Request) {
         entity_type: "platform_setting",
       },
     });
+
+    // Revalidate the landing page so visitors see the new content
+    revalidatePath("/", "layout");
 
     return NextResponse.json({
       success: true,
