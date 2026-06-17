@@ -61,6 +61,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────────────
+interface EmailCampaignListItem {
+  id: number;
+  name: string;
+  subject: string;
+  body: string;
+  target_role: string;
+  status: string;
+  total_recipients: number;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  creator: {
+    id: number;
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+  } | null;
+  _count: { recipients: number };
+}
+
+interface EmailCampaignRecipient {
+  id: number;
+  recipient_email: string;
+  recipient_name: string | null;
+  status: string;
+  error_message: string | null;
+  sent_at: string | null;
+  brevo_message_id: string | null;
+}
+
+interface EmailCampaignDetail extends EmailCampaignListItem {
+  recipients: EmailCampaignRecipient[];
+  target_filter: string | null;
+}
+
+
 interface Announcement {
   id: number;
   message: string;
@@ -791,159 +829,144 @@ function BannerFormDialog({
 // EMAIL CAMPAIGNS TAB (preserved from original)
 // ═══════════════════════════════════════════════════════════════════
 function CampaignsTab() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [campaigns, setCampaigns] = useState<EmailCampaignListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showCampaignDialog, setShowCampaignDialog] = useState(false);
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
+  const [detailCampaign, setDetailCampaign] = useState<EmailCampaignDetail | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [sendTarget, setSendTarget] = useState<EmailCampaignListItem | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EmailCampaignListItem | null>(null);
 
-  // Campaign form state
-  const [campaignTargetRoles, setCampaignTargetRoles] = useState<string[]>(["all_candidates"]);
-  const [campaignSendEmail, setCampaignSendEmail] = useState(true);
-  const [campaignEmailTemplate, setCampaignEmailTemplate] = useState("new_features");
-  const [campaignAnnouncementId, setCampaignAnnouncementId] = useState<number | null>(null);
-  const [campaignResult, setCampaignResult] = useState<{
-    sentCount: number;
-    failedCount: number;
-    totalTargets: number;
-    notificationsCreated: number;
-  } | null>(null);
-  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
-
-  // Create/Edit form state
-  const [formMessage, setFormMessage] = useState("");
+  // Create form state
+  const [formName, setFormName] = useState("");
+  const [formSubject, setFormSubject] = useState("");
+  const [formBody, setFormBody] = useState("");
   const [formTargetRole, setFormTargetRole] = useState("all");
-  const [formIsActive, setFormIsActive] = useState(false);
-  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchAnnouncements = useCallback(async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
-      const res = await fetch("/api/superadmin/announcements");
+      setIsLoading(true);
+      const res = await fetch("/api/superadmin/email-campaigns");
       if (res.ok) {
         const data = await res.json();
-        setAnnouncements(data.announcements || []);
+        setCampaigns(data.campaigns || []);
+      } else {
+        toast.error("Failed to load email campaigns");
       }
     } catch {
-      toast.error("Failed to load announcements");
+      toast.error("Failed to load email campaigns");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, [fetchAnnouncements]);
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
-  const handleCreateOrUpdateAnnouncement = async () => {
-    if (!formMessage.trim()) {
-      toast.error("Message is required");
+  const handleCreate = async () => {
+    if (!formName.trim() || !formSubject.trim() || !formBody.trim()) {
+      toast.error("All fields are required");
       return;
     }
-
-    setIsSubmittingForm(true);
+    setIsSubmitting(true);
     try {
-      const action = editingAnnouncement ? "update" : "create";
-      const body: Record<string, unknown> = {
-        action,
-        message: formMessage,
-        targetRole: formTargetRole,
-        isActive: formIsActive,
-      };
-      if (editingAnnouncement) body.id = editingAnnouncement.id;
-
-      const res = await fetch("/api/superadmin/announcements", {
+      const res = await fetch("/api/superadmin/email-campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          name: formName,
+          subject: formSubject,
+          body: formBody,
+          targetRole: formTargetRole,
+        }),
       });
-
       if (res.ok) {
-        toast.success(editingAnnouncement ? "Announcement updated" : "Announcement created");
+        toast.success("Campaign created as draft. Click 'Send' to deliver to recipients.");
         setShowCreateDialog(false);
-        fetchAnnouncements();
+        setFormName("");
+        setFormSubject("");
+        setFormBody("");
+        setFormTargetRole("all");
+        fetchCampaigns();
       } else {
-        toast.error("Failed to save announcement");
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to create campaign");
       }
     } catch {
-      toast.error("Failed to save announcement");
+      toast.error("Failed to create campaign");
     } finally {
-      setIsSubmittingForm(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleToggle = async (id: number, isActive: boolean) => {
+  const handleSend = async (campaign: EmailCampaignListItem) => {
+    setIsSending(true);
+    setSendTarget(campaign);
     try {
-      const res = await fetch("/api/superadmin/announcements", {
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaign.id}/send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle", id, isActive }),
       });
-      if (res.ok) {
-        setAnnouncements((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, isActive } : a))
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        toast.success(
+          `Campaign sent \u2014 ${data.sentCount} delivered, ${data.failedCount} failed.`,
+          { description: `Total recipients: ${data.totalRecipients}` }
         );
-        toast.success(isActive ? "Announcement activated" : "Announcement deactivated");
+        fetchCampaigns();
+      } else {
+        toast.error(data.error || "Failed to send campaign");
       }
     } catch {
-      toast.error("Failed to toggle announcement");
+      toast.error("Failed to send campaign");
+    } finally {
+      setIsSending(false);
+      setSendTarget(null);
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch("/api/superadmin/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id }),
+      const res = await fetch(`/api/superadmin/email-campaigns/${id}`, {
+        method: "DELETE",
       });
       if (res.ok) {
-        setAnnouncements((prev) => prev.filter((a) => a.id !== id));
-        toast.success("Announcement deleted");
+        toast.success("Campaign deleted");
+        fetchCampaigns();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to delete campaign");
       }
     } catch {
-      toast.error("Failed to delete announcement");
+      toast.error("Failed to delete campaign");
     }
     setDeleteTarget(null);
   };
 
-  const handleSendCampaign = async () => {
-    setIsSendingCampaign(true);
-    setCampaignResult(null);
+  const openDetail = async (campaign: EmailCampaignListItem) => {
+    setDetailCampaign(null);
+    setIsDetailLoading(true);
     try {
-      const res = await fetch("/api/superadmin/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "send_campaign",
-          targetRoles: campaignTargetRoles,
-          sendEmail: campaignSendEmail,
-          emailTemplate: campaignEmailTemplate,
-          announcementId: campaignAnnouncementId,
-        }),
-      });
-
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaign.id}?recipientLimit=100`);
       if (res.ok) {
         const data = await res.json();
-        setCampaignResult({
-          sentCount: data.sentCount,
-          failedCount: data.failedCount,
-          totalTargets: data.totalTargets,
-          notificationsCreated: data.notificationsCreated,
-        });
-        toast.success(`Campaign sent to ${data.totalTargets} users`);
+        setDetailCampaign(data.campaign);
       } else {
-        toast.error("Failed to send campaign");
+        toast.error("Failed to load campaign details");
       }
     } catch {
-      toast.error("Failed to send campaign");
+      toast.error("Failed to load campaign details");
     } finally {
-      setIsSendingCampaign(false);
+      setIsDetailLoading(false);
     }
   };
 
-  const activeCount = announcements.filter((a) => a.isActive).length;
-  const inactiveCount = announcements.filter((a) => !a.isActive).length;
+  // ─── Stats ─────────────────────────────────────────────────────────
+  const totalCampaigns = campaigns.length;
+  const totalEmailsSent = campaigns.reduce((sum, c) => sum + c.sent_count, 0);
+  const totalEmailsFailed = campaigns.reduce((sum, c) => sum + c.failed_count, 0);
 
   return (
     <div className="space-y-6">
@@ -955,8 +978,8 @@ function CampaignsTab() {
               <Mail className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-foreground">{announcements.length}</p>
-              <p className="text-xs text-text-secondary">Total Announcements</p>
+              <p className="text-2xl font-semibold text-foreground">{totalCampaigns}</p>
+              <p className="text-xs text-text-secondary">Total Campaigns</p>
             </div>
           </CardContent>
         </Card>
@@ -966,150 +989,230 @@ function CampaignsTab() {
               <CheckCircle2 className="size-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-foreground">{activeCount}</p>
-              <p className="text-xs text-text-secondary">Active</p>
+              <p className="text-2xl font-semibold text-foreground">{totalEmailsSent}</p>
+              <p className="text-xs text-text-secondary">Emails Delivered</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-gray-100 flex items-center justify-center">
-              <ToggleLeft className="size-5 text-gray-500" />
+            <div className="size-10 rounded-lg bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="size-5 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-foreground">{inactiveCount}</p>
-              <p className="text-xs text-text-secondary">Inactive</p>
+              <p className="text-2xl font-semibold text-foreground">{totalEmailsFailed}</p>
+              <p className="text-xs text-text-secondary">Failed Deliveries</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Action Bar */}
+      <div className="flex items-center gap-3">
         <Button
-          onClick={() => {
-            setEditingAnnouncement(null);
-            setFormMessage("");
-            setFormTargetRole("all");
-            setFormIsActive(false);
-            setShowCreateDialog(true);
-          }}
+          onClick={() => setShowCreateDialog(true)}
           className="gap-2 bg-primary hover:bg-primary-hover"
         >
           <Plus className="size-4" />
-          Create Announcement
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setCampaignResult(null);
-            setShowCampaignDialog(true);
-          }}
-          className="gap-2"
-        >
-          <Send className="size-4" />
-          Send Email Campaign
+          Create Email Campaign
         </Button>
       </div>
 
-      {/* Announcements List */}
+      {/* Campaigns List */}
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))}
         </div>
-      ) : announcements.length === 0 ? (
+      ) : campaigns.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Mail className="size-10 text-text-muted mx-auto mb-3" />
-            <p className="text-sm font-medium text-foreground">No announcements yet</p>
-            <p className="text-xs text-text-secondary mt-1">Create an announcement to send targeted emails and notifications.</p>
+            <p className="text-sm font-medium text-foreground">No email campaigns yet</p>
+            <p className="text-xs text-text-secondary mt-1">
+              Create your first campaign to send batch emails to specific user segments.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {announcements.map((ann) => (
-            <Card key={ann.id} className={cn(!ann.isActive && "opacity-60")}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">{ann.message}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <Badge variant="outline" className="text-xs">
-                        {roleLabels[ann.targetRole] || ann.targetRole}
-                      </Badge>
-                      <span className="text-[11px] text-text-muted">{formatDate(ann.createdAt)}</span>
+          {campaigns.map((c) => {
+            const statusColor =
+              c.status === "sent"
+                ? "text-green-600 bg-green-50 border-green-200"
+                : c.status === "draft"
+                ? "text-amber-600 bg-amber-50 border-amber-200"
+                : c.status === "sending"
+                ? "text-blue-600 bg-blue-50 border-blue-200"
+                : c.status === "partial_failure"
+                ? "text-orange-600 bg-orange-50 border-orange-200"
+                : "text-gray-600 bg-gray-50 border-gray-200";
+
+            return (
+              <Card key={c.id} className="overflow-hidden">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-base font-semibold text-foreground truncate">
+                          {c.name}
+                        </h3>
+                        <Badge variant="outline" className={cn("text-xs", statusColor)}>
+                          {c.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-text-secondary truncate">
+                        <span className="font-medium">Subject:</span> {c.subject}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-text-muted flex-wrap">
+                        <span>
+                          Target: <span className="font-medium text-text-secondary">{roleLabels[c.target_role] || c.target_role}</span>
+                        </span>
+                        <span>\u2022</span>
+                        <span>
+                          Created: <span className="font-medium text-text-secondary">{formatDate(c.created_at)}</span>
+                        </span>
+                        {c.creator && (
+                          <>
+                            <span>\u2022</span>
+                            <span>
+                              By:{" "}
+                              <span className="font-medium text-text-secondary">
+                                {[c.creator.first_name, c.creator.last_name].filter(Boolean).join(" ") || c.creator.email}
+                              </span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDetail(c)}
+                        className="gap-1.5"
+                      >
+                        <Eye className="size-3.5" />
+                        View
+                      </Button>
+                      {c.status === "draft" && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSend(c)}
+                            disabled={isSending && sendTarget?.id === c.id}
+                            className="gap-1.5 bg-primary hover:bg-primary-hover"
+                          >
+                            {isSending && sendTarget?.id === c.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Send className="size-3.5" />
+                            )}
+                            Send
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteTarget(c)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Switch
-                      checked={ann.isActive}
-                      onCheckedChange={(checked) => handleToggle(ann.id, checked)}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingAnnouncement(ann);
-                        setFormMessage(ann.message);
-                        setFormTargetRole(ann.targetRole);
-                        setFormIsActive(ann.isActive);
-                        setShowCreateDialog(true);
-                      }}
-                    >
-                      <Pencil className="size-4 text-text-secondary" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(ann)}>
-                      <Trash2 className="size-4 text-red-500" />
-                    </Button>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border">
+                    <div className="text-center">
+                      <p className="text-xs text-text-muted mb-0.5">Recipients</p>
+                      <p className="text-lg font-semibold text-foreground">{c.total_recipients}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-text-muted mb-0.5">Delivered</p>
+                      <p className="text-lg font-semibold text-green-600">{c.sent_count}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-text-muted mb-0.5">Failed</p>
+                      <p className="text-lg font-semibold text-red-600">{c.failed_count}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Create/Edit Announcement Dialog */}
+      {/* ─── Create Campaign Dialog ─────────────────────────────────── */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
-              {editingAnnouncement ? "Edit Announcement" : "Create Announcement"}
+              Create Email Campaign
             </DialogTitle>
             <DialogDescription>
-              {editingAnnouncement
-                ? "Update this announcement message."
-                : "Create a new announcement that can be sent as email campaigns and notifications."}
+              Draft a batch email to send to a specific user segment. After creating, you can review and send it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Message *</Label>
-              <Textarea
-                value={formMessage}
-                onChange={(e) => setFormMessage(e.target.value)}
-                placeholder="Enter announcement message..."
-                rows={3}
+              <Label>Campaign Name *</Label>
+              <Input
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="e.g. New Feature Announcement - June 2026"
               />
+              <p className="text-[11px] text-text-muted">Internal name \u2014 not shown to recipients.</p>
             </div>
+
             <div className="space-y-1.5">
-              <Label>Target Role</Label>
+              <Label>Target Audience *</Label>
               <Select value={formTargetRole} onValueChange={setFormTargetRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="candidate">Candidates</SelectItem>
-                  <SelectItem value="client_recruiter">Recruiters & Agencies</SelectItem>
+                  <SelectItem value="all">All Active Users</SelectItem>
+                  <SelectItem value="candidate">Candidates Only</SelectItem>
+                  <SelectItem value="client_recruiter">Recruiters Only</SelectItem>
+                  <SelectItem value="client_admin">Agency Admins Only</SelectItem>
+                  <SelectItem value="platform_admin">Platform Admins</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Active</Label>
-              <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
+
+            <div className="space-y-1.5">
+              <Label>Subject Line *</Label>
+              <Input
+                value={formSubject}
+                onChange={(e) => setFormSubject(e.target.value)}
+                placeholder="e.g. New: VaultSign documents are here"
+              />
+              <p className="text-[11px] text-text-muted">
+                Variables: <code className="text-[10px] bg-muted px-1 rounded">{`{{first_name}}`}</code>,{" "}
+                <code className="text-[10px] bg-muted px-1 rounded">{`{{last_name}}`}</code>,{" "}
+                <code className="text-[10px] bg-muted px-1 rounded">{`{{name}}`}</code>,{" "}
+                <code className="text-[10px] bg-muted px-1 rounded">{`{{email}}`}</code>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Email Body (HTML) *</Label>
+              <Textarea
+                value={formBody}
+                onChange={(e) => setFormBody(e.target.value)}
+                placeholder={`<h2>Hello {{first_name}},</h2>
+<p>We've launched a new feature...</p>
+<p><a href="https://myzipvault.com">Log in to try it</a></p>`}
+                rows={10}
+                className="font-mono text-xs"
+              />
+              <p className="text-[11px] text-text-muted">
+                Plain HTML supported. Same variables as subject line. Sent via Brevo from noreply@myzipvault.com.
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -1117,148 +1220,150 @@ function CampaignsTab() {
               Cancel
             </Button>
             <Button
-              onClick={handleCreateOrUpdateAnnouncement}
-              disabled={isSubmittingForm || !formMessage.trim()}
+              onClick={handleCreate}
+              disabled={isSubmitting || !formName.trim() || !formSubject.trim() || !formBody.trim()}
               className="bg-primary hover:bg-primary-hover"
             >
-              {isSubmittingForm && <Loader2 className="size-4 mr-1 animate-spin" />}
-              {editingAnnouncement ? "Update" : "Create"}
+              {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
+              Save as Draft
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Email Campaign Dialog */}
-      <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
-        <DialogContent className="max-w-lg">
+      {/* ─── Campaign Detail Dialog ─────────────────────────────────── */}
+      <Dialog open={!!detailCampaign || isDetailLoading} onOpenChange={(open) => !open && setDetailCampaign(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
-              Send Email Campaign
+              Campaign Details
             </DialogTitle>
             <DialogDescription>
-              Target specific user segments with email announcements and in-app notifications.
+              View recipient delivery status and campaign metadata.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Target Segment *</Label>
-              <Select
-                value={campaignTargetRoles[0]}
-                onValueChange={(val) => setCampaignTargetRoles([val])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="all_candidates">All Candidates</SelectItem>
-                  <SelectItem value="all_recruiters">All Recruiters & Agencies</SelectItem>
-                  <SelectItem value="expiring_credentials">Expiring Credentials (30 days)</SelectItem>
-                  <SelectItem value="inactive_users">Inactive Users (30 days)</SelectItem>
-                </SelectContent>
-              </Select>
+
+          {isDetailLoading ? (
+            <div className="py-8 flex items-center justify-center">
+              <Loader2 className="size-6 animate-spin text-text-muted" />
             </div>
-
-            <div className="space-y-1.5">
-              <Label>Attach Announcement (optional)</Label>
-              <Select
-                value={campaignAnnouncementId?.toString() || "none"}
-                onValueChange={(val) =>
-                  setCampaignAnnouncementId(val === "none" ? null : parseInt(val))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {announcements.map((a) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.message.slice(0, 50)}...
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Send Email</Label>
-                <p className="text-[11px] text-text-muted">Also send via email (Brevo)</p>
-              </div>
-              <Switch checked={campaignSendEmail} onCheckedChange={setCampaignSendEmail} />
-            </div>
-
-            {campaignSendEmail && (
-              <div className="space-y-1.5">
-                <Label>Email Template</Label>
-                <Select value={campaignEmailTemplate} onValueChange={setCampaignEmailTemplate}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credential_expiry_reminder">Credential Expiry Reminder</SelectItem>
-                    <SelectItem value="profile_completion">Profile Completion</SelectItem>
-                    <SelectItem value="new_features">New Features</SelectItem>
-                    <SelectItem value="monthly_digest">Monthly Digest</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {campaignResult && (
-              <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-4">
-                  <p className="text-sm font-medium text-green-800 mb-2">Campaign Results</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <p className="text-green-600">Total Targets</p>
-                      <p className="font-semibold text-green-800">{campaignResult.totalTargets}</p>
-                    </div>
-                    <div>
-                      <p className="text-green-600">Emails Sent</p>
-                      <p className="font-semibold text-green-800">{campaignResult.sentCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-green-600">Failed</p>
-                      <p className="font-semibold text-green-800">{campaignResult.failedCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-green-600">Notifications Created</p>
-                      <p className="font-semibold text-green-800">{campaignResult.notificationsCreated}</p>
-                    </div>
+          ) : detailCampaign ? (
+            <div className="space-y-4">
+              {/* Campaign info */}
+              <div className="space-y-2 pb-4 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-foreground">{detailCampaign.name}</h3>
+                  <Badge variant="outline" className="text-xs">
+                    {detailCampaign.status.replace("_", " ")}
+                  </Badge>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  <span className="font-medium">Subject:</span> {detailCampaign.subject}
+                </p>
+                <div className="grid grid-cols-4 gap-3 mt-3">
+                  <div className="text-center bg-muted/50 rounded-md p-2">
+                    <p className="text-[10px] text-text-muted">Recipients</p>
+                    <p className="text-base font-semibold text-foreground">{detailCampaign.total_recipients}</p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  <div className="text-center bg-green-50 rounded-md p-2">
+                    <p className="text-[10px] text-green-700">Delivered</p>
+                    <p className="text-base font-semibold text-green-700">{detailCampaign.sent_count}</p>
+                  </div>
+                  <div className="text-center bg-red-50 rounded-md p-2">
+                    <p className="text-[10px] text-red-700">Failed</p>
+                    <p className="text-base font-semibold text-red-700">{detailCampaign.failed_count}</p>
+                  </div>
+                  <div className="text-center bg-muted/50 rounded-md p-2">
+                    <p className="text-[10px] text-text-muted">Target</p>
+                    <p className="text-xs font-semibold text-foreground mt-1">
+                      {roleLabels[detailCampaign.target_role] || detailCampaign.target_role}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recipient list */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">
+                  Recipient Delivery Status
+                </h4>
+                {detailCampaign.recipients.length === 0 ? (
+                  <p className="text-xs text-text-muted py-4 text-center">
+                    No recipients yet. Send the campaign to populate this list.
+                  </p>
+                ) : (
+                  <div className="max-h-80 overflow-y-auto border border-border rounded-md">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          <th className="text-left p-2 font-medium text-text-secondary">Recipient</th>
+                          <th className="text-left p-2 font-medium text-text-secondary">Email</th>
+                          <th className="text-left p-2 font-medium text-text-secondary">Status</th>
+                          <th className="text-left p-2 font-medium text-text-secondary">Sent At</th>
+                          <th className="text-left p-2 font-medium text-text-secondary">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailCampaign.recipients.map((r) => {
+                          const statusBadge = (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                r.status === "sent" && "text-green-700 bg-green-50 border-green-200",
+                                r.status === "failed" && "text-red-700 bg-red-50 border-red-200",
+                                r.status === "pending" && "text-amber-700 bg-amber-50 border-amber-200"
+                              )}
+                            >
+                              {r.status}
+                            </Badge>
+                          );
+
+                          return (
+                            <tr key={r.id} className="border-t border-border">
+                              <td className="p-2 text-text-foreground">
+                                {r.recipient_name || r.recipient_email}
+                              </td>
+                              <td className="p-2 text-text-secondary">{r.recipient_email}</td>
+                              <td className="p-2">{statusBadge}</td>
+                              <td className="p-2 text-text-muted">
+                                {r.sent_at ? formatDate(r.sent_at) : "\u2014"}
+                              </td>
+                              <td className="p-2 text-red-600 text-[10px] max-w-xs truncate" title={r.error_message || ""}>
+                                {r.error_message || "\u2014"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {detailCampaign._count.recipients > detailCampaign.recipients.length && (
+                  <p className="text-[11px] text-text-muted mt-2">
+                    Showing first {detailCampaign.recipients.length} of {detailCampaign._count.recipients} recipients.
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : null}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCampaignDialog(false)}>
+            <Button variant="outline" onClick={() => setDetailCampaign(null)}>
               Close
-            </Button>
-            <Button
-              onClick={handleSendCampaign}
-              disabled={isSendingCampaign}
-              className="bg-primary hover:bg-primary-hover"
-            >
-              {isSendingCampaign ? (
-                <Loader2 className="size-4 mr-1 animate-spin" />
-              ) : (
-                <Send className="size-4 mr-1" />
-              )}
-              Send Campaign
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* ─── Delete Confirmation ────────────────────────────────────── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Announcement</AlertDialogTitle>
+            <AlertDialogTitle>Delete Draft Campaign</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this announcement? This action cannot be undone.
+              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+              Only draft campaigns can be deleted; sent campaigns are kept for audit.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
