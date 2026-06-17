@@ -21,8 +21,9 @@ export default withAuth({
       // Static files and API routes for auth
       if (pathname.startsWith("/_next/")) return true;
 
-      // Not authenticated
-      if (!token) return false;
+      // Not authenticated — also catch tokens where the JWT refresh callback
+      // cleared the id (happens when user is deleted/suspended mid-session)
+      if (!token || !token.id) return false;
 
       const role = token.role as string;
 

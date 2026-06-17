@@ -69,8 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useMemo<AuthUser | null>(() => {
     if (!session?.user) return null;
     const u = session.user as Record<string, unknown>;
+    // If JWT refresh callback cleared the id (user deleted/suspended mid-session),
+    // treat as unauthenticated so the user is redirected to login.
+    if (!u.id) return null;
+    const userId = Number(u.id);
+    if (!userId) return null;
     return {
-      id: Number(u.id),
+      id: userId,
       email: u.email as string,
       role: u.role as UserRole,
       organizationId: u.organizationId as number | null,

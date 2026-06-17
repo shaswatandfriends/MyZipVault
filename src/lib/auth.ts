@@ -159,6 +159,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      // ── Initial sign-in: `user` object is present ──
       if (user) {
         token.id = user.id;
         token.role = (user as Record<string, unknown>).role as string;
@@ -166,7 +167,63 @@ export const authOptions: NextAuthOptions = {
         token.isApproved = (user as Record<string, unknown>).isApproved as boolean;
         token.firstName = (user as Record<string, unknown>).firstName as string | null;
         token.lastName = (user as Record<string, unknown>).lastName as string | null;
+        token.lastRefreshedAt = Date.now();
+        return token;
       }
+
+      // ── Subsequent token refreshes: re-fetch user from DB every 5 minutes ──
+      // This ensures role/approval/status changes propagate within 5 minutes
+      // instead of waiting up to 24 hours for the JWT to expire.
+      const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      const lastRefreshedAt = (token.lastRefreshedAt as number) || 0;
+
+      if (Date.now() - lastRefreshedAt < REFRESH_INTERVAL_MS) {
+        return token; // Throttled — return token as-is
+      }
+
+      const userId = Number(token.id);
+      if (!userId) return token;
+
+      try {
+        const dbUser = await db.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            role: true,
+            organization_id: true,
+            is_approved: true,
+            first_name: true,
+            last_name: true,
+            account_status: true,
+          },
+        });
+
+        if (!dbUser) {
+          // User was deleted — invalidate token by clearing id.
+          // NextAuth will treat this as unauthenticated and force re-login.
+          console.warn(`[AUTH] User ${userId} not found during JWT refresh — invalidating session`);
+          return { ...token, id: "" } as typeof token;
+        }
+
+        // Account suspended/deleted mid-session — invalidate token
+        if (["suspended", "deleted", "suspended_deleting"].includes(dbUser.account_status)) {
+          console.warn(`[AUTH] User ${userId} account_status=${dbUser.account_status} — invalidating session`);
+          return { ...token, id: "" } as typeof token;
+        }
+
+        // Update token with fresh values from DB
+        token.role = dbUser.role;
+        token.organizationId = dbUser.organization_id;
+        token.isApproved = dbUser.is_approved;
+        token.firstName = dbUser.first_name;
+        token.lastName = dbUser.last_name;
+        token.lastRefreshedAt = Date.now();
+      } catch (error) {
+        // DB error — don't kill the session, just log and keep stale token
+        // (next refresh attempt will retry)
+        console.error("[AUTH] Failed to refresh JWT from DB:", error);
+      }
+
       return token;
     },
     async session({ session, token }) {
