@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60, // 24 hours absolute max
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -168,8 +168,29 @@ export const authOptions: NextAuthOptions = {
         token.firstName = (user as Record<string, unknown>).firstName as string | null;
         token.lastName = (user as Record<string, unknown>).lastName as string | null;
         token.lastRefreshedAt = Date.now();
+        token.lastActivity = Date.now();
         return token;
       }
+
+      // ─── Gap 10: Session inactivity timeout ──────────────────────────
+      // For HIPAA compliance, sessions expire after 30 minutes of inactivity.
+      // The lastActivity timestamp is updated on every JWT callback (which
+      // runs on every page load / API call via getSession()).
+      // If the user hasn't made a request in 30 minutes, invalidate the session.
+      const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+      const lastActivity = (token.lastActivity as number) || 0;
+
+      if (lastActivity > 0 && Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS) {
+        console.warn(
+          `[AUTH] Session expired due to inactivity — userId: ${token.id}, lastActivity: ${new Date(lastActivity).toISOString()}, inactive for: ${Math.round((Date.now() - lastActivity) / 60000)}min`
+        );
+        // Clear the token id — middleware and AuthProvider will treat this as
+        // unauthenticated and redirect to login
+        return { ...token, id: "" } as typeof token;
+      }
+
+      // Update lastActivity on every request (user is still active)
+      token.lastActivity = Date.now();
 
       // ── Subsequent token refreshes: re-fetch user from DB every 5 minutes ──
       // This ensures role/approval/status changes propagate within 5 minutes
@@ -178,7 +199,7 @@ export const authOptions: NextAuthOptions = {
       const lastRefreshedAt = (token.lastRefreshedAt as number) || 0;
 
       if (Date.now() - lastRefreshedAt < REFRESH_INTERVAL_MS) {
-        return token; // Throttled — return token as-is
+        return token; // Throttled — return token as-is (lastActivity already updated)
       }
 
       const userId = Number(token.id);
