@@ -29,6 +29,17 @@ export async function GET(
         },
         template: { select: { id: true, name: true } },
         creator: { select: { id: true, first_name: true, last_name: true, email: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            company_logo_url: true,
+            company_address: true,
+            company_phone: true,
+            company_email: true,
+            company_website: true,
+          },
+        },
         revised_from_document: {
           select: { id: true, document_name: true, status: true },
         },

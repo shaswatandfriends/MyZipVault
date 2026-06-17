@@ -86,6 +86,15 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // Header & Footer config
   const [showHeaderFooter, setShowHeaderFooter] = useState(true);
+  // Organization info for header/footer live preview
+  const [organization, setOrganization] = useState<{
+    name: string | null;
+    company_logo_url: string | null;
+    company_address: string | null;
+    company_phone: string | null;
+    company_email: string | null;
+    company_website: string | null;
+  } | null>(null);
 
   // Delete dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -185,6 +194,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       setSigners(data.signers || []);
       setSignFields(data.sign_fields || []);
       setPlaceholderValues(data.placeholder_values || {});
+      // Store organization info for header/footer live preview
+      setOrganization(data.organization || null);
 
       if (data.show_header_footer !== undefined) {
         setShowHeaderFooter(data.show_header_footer);
@@ -1184,9 +1195,70 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
-      {/* Mobile Toolbar (simplified) — only in edit mode */}
+      {/* Mobile Toolbar (enhanced) — only in edit mode */}
       {viewMode === "edit" && (
         <div className="lg:hidden bg-white border-b border-border px-2 py-1.5 flex items-center gap-1 overflow-x-auto">
+          {/* Style/Heading selector */}
+          <Select value={
+            editor?.isActive("heading", { level: 1 }) ? "1"
+            : editor?.isActive("heading", { level: 2 }) ? "2"
+            : editor?.isActive("heading", { level: 3 }) ? "3"
+            : "0"
+          } onValueChange={(val) => {
+            if (val === "0") editor?.chain().focus().setParagraph().run();
+            else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
+          }}>
+            <SelectTrigger className="w-[100px] h-8 text-[11px] flex-shrink-0">
+              <SelectValue placeholder="Style" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Normal</SelectItem>
+              <SelectItem value="1">Heading 1</SelectItem>
+              <SelectItem value="2">Heading 2</SelectItem>
+              <SelectItem value="3">Heading 3</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Font family */}
+          <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
+            if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
+            else editor?.chain().focus().setFontFamily(val).run();
+          }}>
+            <SelectTrigger className="w-[90px] h-8 text-[11px] flex-shrink-0">
+              <SelectValue placeholder="Font" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Default">Default</SelectItem>
+              <SelectItem value="Arial">Arial</SelectItem>
+              <SelectItem value="Georgia">Georgia</SelectItem>
+              <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+              <SelectItem value="Courier New">Courier New</SelectItem>
+              <SelectItem value="Verdana">Verdana</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Font size */}
+          <Select value={((): string => {
+            const fs = editor?.getAttributes("textStyle").fontSize;
+            if (!fs) return "11";
+            const num = parseInt(String(fs));
+            return isNaN(num) ? "11" : String(num);
+          })()} onValueChange={(val) => {
+            editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
+          }}>
+            <SelectTrigger className="w-[55px] h-8 text-[11px] flex-shrink-0">
+              <SelectValue placeholder="Size" />
+            </SelectTrigger>
+            <SelectContent>
+              {[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72].map((s) => (
+                <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
+
+          {/* Text formatting */}
           <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold">
             <Bold className="h-4 w-4" />
           </ToolbarButton>
@@ -1199,19 +1271,66 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
             <Strikethrough className="h-4 w-4" />
           </ToolbarButton>
+
+          {/* Color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Font Color">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="grid grid-cols-5 gap-1">
+                {["#000000", "#374151", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB", "#9CA3AF"].map((color) => (
+                  <button key={color} className="w-7 h-7 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Highlight */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${editor?.isActive("highlight") ? "bg-primary-light text-primary" : "text-text-secondary"}`} title="Highlight">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="grid grid-cols-4 gap-1">
+                {[
+                  { color: "#FEF08A", label: "Yellow" },
+                  { color: "#BBF7D0", label: "Green" },
+                  { color: "#BFDBFE", label: "Blue" },
+                  { color: "#FECACA", label: "Red" },
+                ].map(({ color, label }) => (
+                  <button key={color} className="w-7 h-7 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
+                ))}
+                <button className="w-7 h-7 rounded border border-border text-xs flex items-center justify-center hover:scale-110 transition-transform col-span-4 mt-1" onClick={() => editor?.chain().focus().unsetHighlight().run()} title="Remove highlight">
+                  <Minus className="h-3 w-3 mr-1" /> Remove
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <Separator orientation="vertical" className="h-6 mx-0.5" />
+
+          {/* Alignment */}
           <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
             <AlignLeft className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Center">
             <AlignCenter className="h-4 w-4" />
           </ToolbarButton>
+
+          {/* Lists */}
           <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
             <List className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
             <ListOrdered className="h-4 w-4" />
           </ToolbarButton>
+
+          {/* Undo/Redo */}
           <Separator orientation="vertical" className="h-6 mx-0.5" />
           <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo">
             <Undo2 className="h-4 w-4" />
@@ -1219,19 +1338,35 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolbarButton>
+
+          {/* More menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-text-secondary">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("right").run()}>
                 <AlignRight className="h-4 w-4 mr-2" /> Align Right
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor?.chain().focus().setTextAlign("justify").run()}>
                 <AlignJustify className="h-4 w-4 mr-2" /> Justify
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>
+                Line spacing: 1.0
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>
+                Line spacing: 1.15
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>
+                Line spacing: 1.5
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>
+                Line spacing: 2.0
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => editor?.chain().focus().insertPageBreak().run()}>
                 <FileText className="h-4 w-4 mr-2" /> Page Break
               </DropdownMenuItem>
@@ -1240,6 +1375,13 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { const url = prompt("Enter image URL:"); if (url) editor?.chain().focus().setImage({ src: url }).run(); }}>
                 <ImagePlus className="h-4 w-4 mr-2" /> Insert Image
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => editor?.chain().focus().toggleSubscript().run()}>
+                <SubIcon className="h-4 w-4 mr-2" /> Subscript
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().toggleSuperscript().run()}>
+                <SupIcon className="h-4 w-4 mr-2" /> Superscript
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1317,7 +1459,71 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </Button>
               </div>
               <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-border bg-white min-h-[800px]">
+                {/* Live header preview — mirrors PDF header layout */}
+                {showHeaderFooter && organization && (
+                  <div className="px-10 pt-5 pb-2 border-b border-border/60">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-2 min-w-0">
+                        {organization.company_logo_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={organization.company_logo_url}
+                            alt={`${organization.name || "Company"} logo`}
+                            className="w-9 h-9 object-contain flex-shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          {organization.name && (
+                            <p className="text-sm font-bold text-primary leading-tight">
+                              {organization.name}
+                            </p>
+                          )}
+                          <div className="text-[8px] text-text-muted leading-snug mt-0.5">
+                            {organization.company_phone && <span>{organization.company_phone}</span>}
+                            {organization.company_phone && organization.company_email && <span> | </span>}
+                            {organization.company_email && <span>{organization.company_email}</span>}
+                            {organization.company_website && (
+                              <>
+                                {(organization.company_phone || organization.company_email) && <span> | </span>}
+                                <span>{organization.company_website}</span>
+                              </>
+                            )}
+                          </div>
+                          {organization.company_address && (
+                            <p className="text-[8px] text-text-muted leading-snug">
+                              {organization.company_address}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {docName && (
+                        <p className="text-[10px] font-semibold text-text-secondary text-right flex-shrink-0 mt-1">
+                          {docName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Editor content */}
                 <EditorContent editor={editor} className="tiptap-editor" />
+
+                {/* Live footer preview — mirrors PDF footer layout */}
+                {showHeaderFooter && (
+                  <div className="px-10 pt-2 pb-4 border-t border-border/60 mt-2">
+                    <p className="text-[7px] text-text-muted text-center leading-snug">
+                      © {new Date().getFullYear()} {organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.
+                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-[6px] text-text-muted/70 text-center flex-1">
+                        Powered by VaultSign
+                      </p>
+                      <p className="text-[8px] text-text-muted italic flex-shrink-0">
+                        Page 1
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           ) : (
