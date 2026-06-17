@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getSignedUrl, STORAGE_BUCKETS } from "@/lib/storage";
+import { logAudit } from "@/lib/audit";
 
 /**
  * POST /api/storage/signed-url
@@ -64,6 +65,18 @@ export async function POST(request: Request) {
       console.warn(
         `[SIGNED_URL] Access denied — userId: ${userId}, role: ${userRole}, fileUrl: ${fileUrl.substring(0, 80)}...`
       );
+
+      // ─── Gap 14: audit log denied access attempts ───
+      await logAudit({
+        userId,
+        role: userRole,
+        action: "document_view_denied",
+        entityType: "file",
+        entityId: 0,
+      }).catch((err) =>
+        console.error("[SIGNED_URL] Failed to log denied access:", err)
+      );
+
       return NextResponse.json(
         { error: "Access denied — you do not have permission to view this file" },
         { status: 403 }
@@ -75,6 +88,20 @@ export async function POST(request: Request) {
 
     // Generate a signed URL valid for 15 minutes (was 1 hour — reduced per Gap 3)
     const signedUrl = await getSignedUrl(storageBucket, fileUrl, 900);
+
+    // ─── Gap 14: audit log every document view ───
+    // This logs every time a recruiter (or admin) generates a signed URL
+    // to view a document. Critical for HIPAA compliance — answers
+    // "who viewed this credential and when?"
+    await logAudit({
+      userId,
+      role: userRole,
+      action: "document_viewed",
+      entityType: storageBucket,
+      entityId: 0, // We don't have the entity ID here, just the URL
+    }).catch((err) =>
+      console.error("[SIGNED_URL] Failed to log document view:", err)
+    );
 
     return NextResponse.json({ signedUrl, isLocal: false });
   } catch (error) {
