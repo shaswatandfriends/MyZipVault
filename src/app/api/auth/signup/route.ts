@@ -3,11 +3,25 @@ import { hash } from "bcryptjs";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 export async function POST(request: Request) {
   try {
+    // ─── Gap 9: Rate limit signup — max 3 per IP per hour ───
+    const clientIp = getClientIp(request);
+    const rateLimit = await checkRateLimit("signup", clientIp, 3, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many signups from this IP. Please try again in ${rateLimit.retryAfterSeconds} seconds.`,
+          retryAfter: rateLimit.retryAfterSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { email, password, firstName, lastName } = body;
 
@@ -48,11 +62,16 @@ export async function POST(request: Request) {
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
+      // Record this attempt to prevent email enumeration via timing
+      await recordRateLimitAttempt("signup", clientIp, 3600);
       return NextResponse.json(
         { error: "An account with this email already exists" },
         { status: 409 }
       );
     }
+
+    // Record the rate limit attempt (counts toward the 3/hour limit)
+    await recordRateLimitAttempt("signup", clientIp, 3600);
 
     const passwordHash = await hash(password, 12);
 

@@ -32,6 +32,21 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        // ─── Gap 9: Rate limit login attempts ────────────────────────
+        // Max 10 failed attempts per email per 15 minutes
+        // (OTP login for superadmin has its own rate limiting via /api/auth/otp/send)
+        if (credentials.email !== "__superadmin__") {
+          const { checkRateLimit, recordRateLimitAttempt, clearRateLimit } = await import("@/lib/rate-limiter");
+          const loginEmail = credentials.email.toLowerCase().trim();
+          const loginLimit = await checkRateLimit("login_failed", loginEmail, 10, 900); // 10 attempts per 15 min
+
+          if (!loginLimit.allowed) {
+            throw new Error(
+              `Too many login attempts. Please try again in ${loginLimit.retryAfterSeconds} seconds.`
+            );
+          }
+        }
+
         // ── Superadmin OTP login ──
         if (credentials.email === "__superadmin__" && credentials.password.startsWith("otp:")) {
           if (!SUPERADMIN_EMAIL) {
@@ -108,6 +123,11 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          // ─── Gap 9: Record failed login attempt ───
+          if (credentials.email !== "__superadmin__") {
+            const { recordRateLimitAttempt } = await import("@/lib/rate-limiter");
+            await recordRateLimitAttempt("login_failed", lookupEmail.toLowerCase().trim(), 900);
+          }
           throw new Error("Invalid email or password");
         }
 
@@ -138,7 +158,18 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isValidPassword) {
+          // ─── Gap 9: Record failed login attempt ───
+          if (credentials.email !== "__superadmin__") {
+            const { recordRateLimitAttempt } = await import("@/lib/rate-limiter");
+            await recordRateLimitAttempt("login_failed", lookupEmail.toLowerCase().trim(), 900);
+          }
           throw new Error("Invalid email or password");
+        }
+
+        // ─── Gap 9: Clear failed login attempts on success ───
+        if (credentials.email !== "__superadmin__") {
+          const { clearRateLimit } = await import("@/lib/rate-limiter");
+          await clearRateLimit("login_failed", lookupEmail.toLowerCase().trim());
         }
 
         return {
