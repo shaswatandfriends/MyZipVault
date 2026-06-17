@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logCandidateShared } from "@/lib/audit";
+import { requireEmailVerified } from "@/lib/email-verification";
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
     if (userRole !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Require email verification (Gap 5)
+    const verificationCheck = await requireEmailVerified(userId);
+    if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
 
     const body = await request.json();
     const { shareRequestId, itemType, itemId, expiryDays } = body;

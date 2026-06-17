@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
+import { requireEmailVerified } from "@/lib/email-verification";
 
 /**
  * POST /api/credentials/upload
@@ -34,6 +35,10 @@ export async function POST(request: Request) {
     if (userRole !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Require email verification (Gap 5)
+    const verificationCheck = await requireEmailVerified(userId);
+    if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
 
     // Parse FormData
     const formData = await request.formData();
