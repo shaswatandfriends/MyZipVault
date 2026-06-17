@@ -14,7 +14,8 @@ const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
  *
  * Security:
  * - Only the env-configured SUPERADMIN_EMAIL can receive an OTP
- * - Rate-limited by client-side cooldown (60s) + OTP expiry (5 min)
+ * - Rate-limited by server-side 60-second cooldown + OTP expiry (5 min)
+ * - No hourly cap (removed per user instruction — 60s cooldown is the sole limit)
  * - Previous OTPs are overwritten (only one valid OTP at a time)
  */
 export async function POST() {
@@ -65,33 +66,9 @@ export async function POST() {
       }
     }
 
-    // Max OTP requests: limit to 5 per hour to prevent abuse
-    const otpCountRecord = await db.platformSetting.findUnique({
-      where: { setting_key: "superadmin_otp_request_count" },
-    });
-    const otpCountResetRecord = await db.platformSetting.findUnique({
-      where: { setting_key: "superadmin_otp_count_reset_at" },
-    });
-
-    let otpCount = 0;
-    let countResetAt = otpCountResetRecord ? new Date(otpCountResetRecord.setting_value) : new Date();
-
-    if (otpCountRecord?.setting_value) {
-      // Reset counter if more than 1 hour has passed
-      if (Date.now() - countResetAt.getTime() > 60 * 60 * 1000) {
-        otpCount = 0;
-        countResetAt = new Date();
-      } else {
-        otpCount = parseInt(otpCountRecord.setting_value, 10) || 0;
-      }
-    }
-
-    if (otpCount >= 5) {
-      return NextResponse.json(
-        { error: "Too many verification code requests. Please try again later." },
-        { status: 429 }
-      );
-    }
+    // Rate limit policy: 60-second cooldown between OTP requests only.
+    // No hourly cap — user explicitly requested 60-second cooldown as the sole limit.
+    // (Previous 5-per-hour cap was removed per user instruction.)
 
     // Generate a 6-digit OTP using crypto.randomInt for cryptographic randomness
     const otp = crypto.randomInt(100000, 1000000).toString();
@@ -139,17 +116,9 @@ export async function POST() {
       },
     });
 
-    // Increment OTP request counter
-    await db.platformSetting.upsert({
-      where: { setting_key: "superadmin_otp_request_count" },
-      update: { setting_value: String(otpCount + 1), updated_by: user.id },
-      create: { setting_key: "superadmin_otp_request_count", setting_value: "1", updated_by: user.id },
-    });
-    await db.platformSetting.upsert({
-      where: { setting_key: "superadmin_otp_count_reset_at" },
-      update: { setting_value: countResetAt.toISOString(), updated_by: user.id },
-      create: { setting_key: "superadmin_otp_count_reset_at", setting_value: countResetAt.toISOString(), updated_by: user.id },
-    });
+    // Note: Previously tracked `superadmin_otp_request_count` and `superadmin_otp_count_reset_at`
+    // for a 5-per-hour cap. These settings are no longer read or written.
+    // Existing rows in `platform_settings` are left as-is (no destructive cleanup).
 
     // Try to send OTP via email
     const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
