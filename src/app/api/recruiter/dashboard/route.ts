@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getScopedClientUserIds } from "@/lib/recruiter-scope";
 
 export async function GET(request: Request) {
   try {
@@ -27,14 +28,17 @@ export async function GET(request: Request) {
     const period = searchParams.get("period") || "month"; // week | month | all
 
     // Get all checklist requests from this organization's recruiters
-    const orgUsers = await db.user.findMany({
-      where: { organization_id: organizationId, role: { in: ["client_recruiter", "client_admin"] } },
-      select: { id: true },
-    });
-    const orgUserIds = orgUsers.map((u) => u.id);
+    // ─── Gap 1 fix: scope by user, not org ───
+    // Individual recruiters see only their own candidates.
+    // Client admins see all recruiters' candidates in their org.
+    const scope = await getScopedClientUserIds(userRole, userId, organizationId);
+    if (!scope) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const scopedUserIds = scope.clientUserIds;
 
     const checklistRequests = await db.checklistRequest.findMany({
-      where: { client_user_id: { in: orgUserIds } },
+      where: { client_user_id: { in: scopedUserIds } },
       include: {
         candidate_user: {
           select: {
@@ -56,12 +60,12 @@ export async function GET(request: Request) {
       orderBy: { created_at: "desc" },
     });
 
-    // Get consent shares for these candidates
+    // Get consent shares for these candidates — scoped to this recruiter/admin's users
     const candidateIds = [...new Set(checklistRequests.map((cr) => cr.candidate_user_id))];
     const consentShares = await db.consentShare.findMany({
       where: {
         candidate_user_id: { in: candidateIds },
-        client_user_id: { in: orgUserIds },
+        client_user_id: { in: scopedUserIds },
         is_deleted: false,
       },
       include: {

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logRecruiterUnlocked } from "@/lib/audit";
 import { checkCreditAccess, deductCredits } from "@/lib/credit-gating";
+import { canRecruiterUnlockShare } from "@/lib/recruiter-scope";
 
 export async function POST(
   request: Request,
@@ -45,6 +46,28 @@ export async function POST(
 
     if (!consentShare || consentShare.candidate_user_id !== candidateId) {
       return NextResponse.json({ error: "Consent share not found" }, { status: 404 });
+    }
+
+    // ─── Gap 1 fix: verify this recruiter can unlock THIS share ───
+    // Individual recruiters can only unlock shares addressed to them.
+    // Client admins can unlock shares addressed to any recruiter in their org.
+    const canUnlock = await canRecruiterUnlockShare(
+      userRole,
+      userId,
+      organizationId,
+      consentShare.client_user_id
+    );
+    if (!canUnlock) {
+      console.warn(
+        `[UNLOCK] Access denied — userId: ${userId}, role: ${userRole}, shareClientUserId: ${consentShare.client_user_id}, candidateId: ${candidateId}`
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Access denied — this document was not shared with you. Only the recruiter it was shared with (or a client admin in the same org) can unlock it.",
+        },
+        { status: 403 }
+      );
     }
 
     // Check if already unlocked
