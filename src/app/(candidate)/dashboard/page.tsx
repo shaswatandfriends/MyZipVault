@@ -264,6 +264,105 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
+      {/* ── Getting Started Onboarding (for new users) ── */}
+      {data && (data.profile?.profileCompletionPct ?? 0) < 50 && !thankYouState?.show && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="size-5 text-primary" />
+              <h2 className="font-semibold text-base text-foreground">Getting Started</h2>
+              <Badge variant="outline" className="ml-auto text-xs">
+                {data.profile?.profileCompletionPct ?? 0}% complete
+              </Badge>
+            </div>
+            <p className="text-xs text-text-secondary mb-4">
+              Complete these steps to build your vault and make your profile visible to recruiters.
+            </p>
+            <div className="space-y-2">
+              {/* Step 1: Resume */}
+              <Link
+                href="/vault/resume"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+              >
+                {data.resume ? (
+                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                ) : (
+                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${data.resume ? "text-text-secondary line-through" : "text-foreground"}`}>
+                    Upload your resume
+                  </p>
+                  <p className="text-xs text-text-muted">PDF or Word — we&apos;ll parse it automatically</p>
+                </div>
+                {!data.resume && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+              </Link>
+
+              {/* Step 2: Credentials */}
+              <Link
+                href="/vault/credentials"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+              >
+                {data.credentials.total > 0 ? (
+                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                ) : (
+                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${data.credentials.total > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                    Add a credential
+                  </p>
+                  <p className="text-xs text-text-muted">BLS, ACLS, immunizations, licenses, etc.</p>
+                </div>
+                {data.credentials.total === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+              </Link>
+
+              {/* Step 3: Checklist */}
+              <Link
+                href="/checklists"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+              >
+                {data.checklists.completed > 0 ? (
+                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                ) : (
+                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${data.checklists.completed > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                    Complete a skill checklist
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {data.checklists.pending > 0
+                      ? `You have ${data.checklists.pending} pending request${data.checklists.pending > 1 ? "s" : ""}`
+                      : "Recruiters will send these — check back soon"}
+                  </p>
+                </div>
+                {data.checklists.completed === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+              </Link>
+
+              {/* Step 4: References */}
+              <Link
+                href="/references"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+              >
+                {data.references.total > 0 ? (
+                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                ) : (
+                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${data.references.total > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                    Request a reference
+                  </p>
+                  <p className="text-xs text-text-muted">Ask a manager to verify your work history</p>
+                </div>
+                {data.references.total === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Quick Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="group hover:shadow-md transition-shadow">
