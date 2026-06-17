@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   CalendarDays,
   ClipboardCheck,
+  Briefcase,
 } from "@/lib/icons";
 
 import {
@@ -42,6 +43,7 @@ const navItems = [
   { title: "Credentials", href: "/vault/credentials", icon: ShieldCheck },
   { title: "Resume", href: "/vault/resume", icon: FileText },
   { title: "References", href: "/references", icon: Users },
+  { title: "Recruiters", href: "/recruiters", icon: Briefcase },
   { title: "Sharing", href: "/sharing", icon: Share2 },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
