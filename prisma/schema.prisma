@@ -11,6 +11,9 @@ datasource db {
 // ─── 1. Organizations ────────────────────────────────────────────────
 model Organization {
   id                  Int                  @id @default(autoincrement())
+  public_id           String               @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — prevents enumeration of agency IDs in URLs.
+    // Internal joins still use INT id; this is for public APIs only.
   name                String
   credits_balance     Int                  @default(0)
   baa_status          String               @default("pending")
@@ -41,6 +44,9 @@ model Organization {
 // ─── 2. Users ────────────────────────────────────────────────────────
 model User {
   id                   Int                   @id @default(autoincrement())
+  public_id            String                @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — prevents enumeration of user IDs in URLs.
+    // Internal joins still use INT id; this is for public APIs only.
   email                String                @unique
   password_hash        String
   role                 String
@@ -222,6 +228,9 @@ model SkillRating {
 // ─── 10. Credentials ────────────────────────────────────────────────
 model Credential {
   id                   Int           @id @default(autoincrement())
+  public_id            String        @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — used in public credential verification URLs.
+    // Internal joins still use INT id.
   candidate_user_id    Int
   document_name        String
   file_url             String
@@ -256,6 +265,9 @@ model Resume {
 // ─── 12. Candidate References ───────────────────────────────────────
 model CandidateReference {
   id                  Int                @id @default(autoincrement())
+  public_id           String             @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — used in public reference form URL /reference/[publicId].
+    // Internal joins still use INT id.
   candidate_user_id   Int
   manager_user_id     Int?
   manager_first_name  String?
@@ -511,6 +523,9 @@ model AutomatedRule {
 // ─── 29. Invite Tokens ─────────────────────────────────────────────
 model InviteToken {
   id              Int       @id @default(autoincrement())
+  public_id       String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — used in invite URLs.
+    // Internal joins still use INT id. `token` field is still used for auth.
   token           String    @unique
   email           String
   role            String    @default("candidate")
@@ -730,6 +745,9 @@ model VaultSignTemplate {
 // ─── 41. VaultSign Documents ────────────────────────────────────────
 model VaultSignDocument {
   id                       Int       @id @default(autoincrement())
+  public_id                String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — used in public document URLs.
+    // Internal joins still use INT id.
   organization_id          Int
   created_by_user_id       Int
   template_id              Int?
@@ -767,6 +785,9 @@ model VaultSignDocument {
 // ─── 42. VaultSign Signers ──────────────────────────────────────────
 model VaultSignSigner {
   id                     Int       @id @default(autoincrement())
+  public_id              String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // External-facing UUID — used in public signing page URL.
+    // Internal joins still use INT id. sign_token is still used for auth.
   document_id            Int
   user_id                Int?      // null for external signers
   name                   String
