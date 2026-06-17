@@ -3,15 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
-import { Loader2, Mail, RefreshCw, ArrowRight, ShieldCheck, Zap } from "@/lib/icons";
+import { Loader2, Mail, RefreshCw, ArrowRight, ShieldCheck, Zap, Lock, ArrowLeft } from "@/lib/icons";
 import { toast } from "sonner";
 import Link from "next/link";
 import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
@@ -19,9 +17,9 @@ import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 type LoginStep = "request" | "verify";
 
 const trustPoints = [
-  "Highest Security Level",
-  "Full System Access",
-  "Audit Trail Enabled",
+  "Highest security level — OTP required",
+  "Full system access with audit trail",
+  "All actions logged for compliance",
 ];
 
 export default function SuperAdminLoginPage() {
@@ -31,7 +29,6 @@ export default function SuperAdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Resend cooldown timer
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
@@ -167,184 +164,377 @@ export default function SuperAdminLoginPage() {
     setOtp("");
   };
 
+  const buttonStyle = (isLoading: boolean, disabled?: boolean): React.CSSProperties => ({
+    width: "100%",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    padding: "1rem 1.5rem",
+    background: "var(--editorial-navy)",
+    color: "var(--editorial-cream)",
+    fontSize: "0.875rem",
+    fontWeight: 600,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    border: "1px solid var(--editorial-navy)",
+    borderRadius: "2px",
+    cursor: isLoading || disabled ? "not-allowed" : "pointer",
+    opacity: isLoading || disabled ? 0.7 : 1,
+    transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+  });
+
+  const ghostButtonStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    background: "transparent",
+    color: "var(--editorial-ink-soft)",
+    fontSize: "0.8125rem",
+    fontWeight: 500,
+    border: "none",
+    borderRadius: "2px",
+    cursor: "pointer",
+    transition: "color 150ms",
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Slideshow */}
+    <div
+      className="min-h-screen flex"
+      style={{ background: "var(--editorial-cream)" }}
+    >
       <AuthSlideshowPanel
-        tagline="Platform Administration"
+        tagline="Platform administration."
         trustPoints={trustPoints}
       />
 
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
-        {/* Subtle mesh background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
-        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
-
-        <motion.div
-          className="max-w-[420px] w-full relative z-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
+      <div
+        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
+        style={{ background: "var(--editorial-cream)" }}
+      >
+        <div className="max-w-[440px] w-full relative">
           {/* Mobile branding */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
-              <span className="text-white text-2xl font-bold font-heading">ZV</span>
+          <div className="lg:hidden text-center mb-10">
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+                marginBottom: "1rem",
+              }}
+            >
+              M
             </div>
-            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
+            <h2
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "var(--editorial-navy)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              MyZipVault
+            </h2>
           </div>
 
-          {/* Glass card wrapping form */}
-          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
-            {step === "request" ? (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
-                    Super Admin Portal
-                  </h1>
-                  <p className="text-text-secondary text-base mt-2">
-                    Verify your identity with a one-time code
+          {step === "request" ? (
+            <>
+              {/* Eyebrow */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "var(--editorial-gold-dark)",
+                  }}
+                >
+                  Super Admin Portal
+                </span>
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: "var(--editorial-font-serif)",
+                  fontSize: "2.5rem",
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.02em",
+                  color: "var(--editorial-navy)",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                Verify your identity.
+              </h1>
+              <p
+                style={{
+                  fontSize: "1rem",
+                  lineHeight: 1.6,
+                  color: "var(--editorial-ink-soft)",
+                  marginBottom: "2.5rem",
+                }}
+              >
+                Confirm with a one-time code sent to your email.
+              </p>
+
+              <div className="space-y-5">
+                {/* Fixed email indicator */}
+                <div className="space-y-2">
+                  <span
+                    style={{
+                      fontSize: "0.6875rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.15em",
+                      textTransform: "uppercase",
+                      color: "var(--editorial-ink-soft)",
+                    }}
+                  >
+                    Email
+                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.625rem",
+                      background: "var(--editorial-cream-cool)",
+                      border: "1px solid var(--editorial-rule)",
+                      borderRadius: "2px",
+                      padding: "0.875rem 1rem",
+                    }}
+                  >
+                    <Mail className="size-4 shrink-0" style={{ color: "var(--editorial-gold-dark)" }} />
+                    <span style={{ fontSize: "0.9375rem", color: "var(--editorial-navy)", fontWeight: 500 }}>
+                      Super Administrator
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "0.75rem", color: "var(--editorial-ink-muted)", marginTop: "0.375rem" }}>
+                    Email is configured server-side for security.
                   </p>
                 </div>
 
-                <div className="space-y-5">
-                  {/* Fixed email indicator */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                      Email
-                    </span>
-                    <div className="flex items-center gap-2 bg-primary-light border border-primary/20 rounded-xl px-4 py-3">
-                      <Mail className="size-4 text-primary shrink-0" />
-                      <span className="text-sm text-primary font-medium">Super Administrator</span>
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      Email is configured server-side for security
-                    </p>
+                <button
+                  type="button"
+                  style={buttonStyle(isLoading)}
+                  disabled={isLoading}
+                  onClick={handleSendOtp}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy-light)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy)";
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Sending Code...
+                    </>
+                  ) : (
+                    <>
+                      Send Verification Code
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Eyebrow */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "var(--editorial-gold-dark)",
+                  }}
+                >
+                  Email Verification
+                </span>
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: "var(--editorial-font-serif)",
+                  fontSize: "2.5rem",
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.02em",
+                  color: "var(--editorial-navy)",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                Enter the code.
+              </h1>
+              <p
+                style={{
+                  fontSize: "1rem",
+                  lineHeight: 1.6,
+                  color: "var(--editorial-ink-soft)",
+                  marginBottom: "2.5rem",
+                }}
+              >
+                We sent a 6-digit code to your email.
+              </p>
+
+              <form onSubmit={handleVerifyOtp} className="space-y-6">
+                <div className="space-y-4">
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={setOtp}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
                   </div>
-                  <Button
+                  <p style={{ fontSize: "0.75rem", color: "var(--editorial-ink-muted)", textAlign: "center" }}>
+                    Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  style={buttonStyle(isLoading, otp.length !== 6)}
+                  disabled={isLoading || otp.length !== 6}
+                  onMouseEnter={(e) => {
+                    if (!isLoading && otp.length === 6) e.currentTarget.style.background = "var(--editorial-navy-light)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy)";
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify &amp; Sign In
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
+                </button>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+                  <button
                     type="button"
-                    className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
-                    disabled={isLoading}
-                    onClick={handleSendOtp}
+                    style={ghostButtonStyle}
+                    onClick={handleBackToRequest}
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" />
-                        Sending Code...
-                      </>
-                    ) : (
-                      <>
-                        Send Verification Code
-                        <ArrowRight className="size-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-8">
-                  <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
-                    Email Verification
-                  </h1>
-                  <p className="text-text-secondary text-base mt-2">
-                    Enter the 6-digit code sent to your email
-                  </p>
-                </div>
-
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="space-y-4">
-                    <span className="text-sm font-medium text-text-secondary text-center block">
-                      Enter the 6-digit code from your email
-                    </span>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={otp}
-                        onChange={setOtp}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                        </InputOTPGroup>
-                        <InputOTPSeparator />
-                        <InputOTPGroup>
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                    <p className="text-xs text-text-muted text-center">
-                      Code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
-                    </p>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
-                    disabled={isLoading || otp.length !== 6}
+                    <ArrowLeft className="size-3.5" />
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      ...ghostButtonStyle,
+                      color: resendCooldown > 0 || isLoading ? "var(--editorial-ink-muted)" : "var(--editorial-navy)",
+                      fontWeight: 600,
+                    }}
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || isLoading}
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      <>
-                        Verify &amp; Sign In
-                        <ArrowRight className="size-4" />
-                      </>
-                    )}
-                  </Button>
-                  <div className="flex items-center justify-between gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-text-secondary"
-                      onClick={handleBackToRequest}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-primary hover:text-primary-hover font-semibold transition-colors"
-                      onClick={handleResendOtp}
-                      disabled={resendCooldown > 0 || isLoading}
-                    >
-                      <RefreshCw className={`size-3.5 mr-1 ${isLoading ? "animate-spin" : ""}`} />
-                      {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
-                    </Button>
-                  </div>
-                </form>
-              </>
-            )}
-          </div>
+                    <RefreshCw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                    {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
 
           {/* Security badges */}
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <ShieldCheck className="size-3" /> HIPAA
-            </div>
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <Zap className="size-3" /> 256-bit
-            </div>
+          <div
+            style={{
+              marginTop: "2.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--editorial-rule-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+            }}
+          >
+            {[
+              { icon: ShieldCheck, label: "HIPAA Aligned" },
+              { icon: Lock, label: "256-bit Encryption" },
+              { icon: Zap, label: "OTP Secured" },
+            ].map(({ icon: Icon, label }, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                }}
+              >
+                <Icon className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+                <span
+                  style={{
+                    fontSize: "0.6875rem",
+                    letterSpacing: "0.05em",
+                    color: "var(--editorial-ink-muted)",
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-6 text-center">
+          <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
             <Link
               href="/"
-              className="text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--editorial-ink-muted)",
+                textDecoration: "none",
+              }}
             >
               &larr; Back to main site
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
