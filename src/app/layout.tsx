@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -26,6 +26,16 @@ const satoshi = localFont({
     },
   ],
   variable: "--font-satoshi",
+  display: "swap",
+});
+
+// Editorial Premium serif — used for headlines in the new design direction.
+// Existing Satoshi headlines are NOT replaced; this is additive.
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -61,7 +71,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${satoshi.variable} antialiased bg-background text-foreground font-sans`}
+        className={`${inter.variable} ${satoshi.variable} ${playfair.variable} antialiased bg-background text-foreground font-sans`}
       >
         <ProxyModeBanner />
         <ThemeProvider
