@@ -204,22 +204,39 @@ export async function POST(request: Request) {
     }
 
     if (org && org.credits_balance >= totalCredits) {
-      await db.organization.update({
-        where: { id: organizationId },
-        data: { credits_balance: org.credits_balance - totalCredits },
-      });
-
-      await db.creditTransaction.create({
+      // ─── Gap 11 fix: atomic conditional update ───
+      // Only succeeds if credits_balance is still >= totalCredits at the
+      // moment of update. If two concurrent requests both passed the check
+      // above, only one will actually deduct — the other gets count=0.
+      const deductResult = await db.organization.updateMany({
+        where: {
+          id: organizationId,
+          credits_balance: { gte: totalCredits },
+        },
         data: {
-          organization_id: organizationId,
-          transaction_type: "deduction",
-          credit_amount: -totalCredits,
-          description: `Checklist request sent to ${firstName} ${lastName} (${docCount} documents)`,
+          credits_balance: { decrement: totalCredits },
         },
       });
 
-      // Audit log for credit deduction
-      await logCreditsDeducted(userId, organizationId, totalCredits);
+      if (deductResult.count > 0) {
+        // Deduction succeeded — create the audit transaction record
+        await db.creditTransaction.create({
+          data: {
+            organization_id: organizationId,
+            transaction_type: "deduction",
+            credit_amount: -totalCredits,
+            description: `Checklist request sent to ${firstName} ${lastName} (${docCount} documents)`,
+          },
+        });
+
+        // Audit log for credit deduction
+        await logCreditsDeducted(userId, organizationId, totalCredits);
+      } else {
+        // Race condition lost — another concurrent request consumed the credits first
+        console.warn(
+          `[SEND_REQUEST] Race condition — org ${organizationId} credits deducted by concurrent request. Skipping deduction for this request.`
+        );
+      }
     }
 
     // Update user last activity
