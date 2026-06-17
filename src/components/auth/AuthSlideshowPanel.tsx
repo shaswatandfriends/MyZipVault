@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, ShieldCheck, Zap, Clock } from "@/lib/icons";
+import { Check, ShieldCheck, Lock, BadgeCheck } from "@/lib/icons";
 
 // ─── Types ────────────────────────────────────────────────────────────
 interface StatItem {
@@ -25,62 +24,6 @@ interface AuthSlideshowPanelProps {
   slideshowImages?: string[];
 }
 
-const FALLBACK_GRADIENT = "linear-gradient(135deg, var(--primary) 0%, var(--accent-teal) 50%, var(--accent-cyan) 100%)";
-
-// ─── Animated Mesh Background ───────────────────────────────────────
-function MeshBackground() {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Base gradient */}
-      <div
-        className="absolute inset-0"
-        style={{ background: FALLBACK_GRADIENT }}
-      />
-      {/* Animated orbs */}
-      <motion.div
-        className="absolute top-[10%] left-[10%] size-[500px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)" }}
-        animate={{
-          x: [0, 30, -20, 0],
-          y: [0, -25, 15, 0],
-          scale: [1, 1.1, 0.95, 1],
-        }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute bottom-[15%] right-[5%] size-[400px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)" }}
-        animate={{
-          x: [0, -25, 20, 0],
-          y: [0, 20, -30, 0],
-          scale: [1, 0.9, 1.15, 1],
-        }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute top-[50%] left-[40%] size-[300px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(52,211,153,0.2) 0%, transparent 70%)" }}
-        animate={{
-          x: [0, 40, -15, 0],
-          y: [0, -20, 25, 0],
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)
-          `,
-          backgroundSize: "60px 60px",
-        }}
-      />
-    </div>
-  );
-}
-
 // ─── Component ───────────────────────────────────────────────────────
 export default function AuthSlideshowPanel({
   tagline,
@@ -88,7 +31,7 @@ export default function AuthSlideshowPanel({
   quoteCard,
   statsCard,
   platformName = "MyZipVault",
-  logoText = "ZV",
+  logoText = "M",
   logoUrl = "",
   slideshowImages = [],
 }: AuthSlideshowPanelProps) {
@@ -114,245 +57,354 @@ export default function AuthSlideshowPanel({
     });
   }, [images]);
 
-  // Auto-rotate slideshow every 5 seconds
+  // Auto-rotate slideshow every 6 seconds (slower for editorial feel)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % images.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(interval);
   }, [images.length]);
 
-  // Handle image load failure — fall back to gradient
+  // Handle image load failure — fall back to solid navy
   const handleImageError = useCallback((index: number) => {
     setFailedImages((prev) => new Set(prev).add(index));
   }, []);
 
   return (
-    <div className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden">
-      {/* Animated mesh background */}
-      <MeshBackground />
+    <div
+      className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden"
+      style={{ background: "var(--editorial-navy)" }}
+    >
+      {/* Slideshow Images — full-bleed, with subtle crossfade */}
+      {images.map((src, i) =>
+        i === currentSlide && !failedImages.has(i) ? (
+          <img
+            key={`slide-${i}`}
+            src={src}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000"
+            style={{
+              opacity: i === currentSlide ? 1 : 0,
+              filter: "grayscale(20%) contrast(1.05)",
+            }}
+            loading="eager"
+            fetchPriority={i === 0 ? "high" : "auto"}
+            onError={() => handleImageError(i)}
+          />
+        ) : null
+      )}
 
-      {/* Slideshow Images */}
-      <AnimatePresence mode="wait">
-        {images.map((src, i) =>
-          i === currentSlide && !failedImages.has(i) ? (
-            <motion.img
-              key={`slide-${i}`}
-              src={failedImages.has(i) ? "" : src}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover object-center z-[1]"
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-              loading="eager"
-              fetchPriority={i === 0 ? "high" : "auto"}
-              onError={() => handleImageError(i)}
-            />
-          ) : null
-        )}
-      </AnimatePresence>
-
-      {/* Gradient Overlay */}
+      {/* Navy gradient overlay — keeps text readable while preserving image */}
       <div
-        className="absolute inset-0 z-[2]"
+        className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgba(5, 150, 105, 0.88) 0%, rgba(13, 148, 136, 0.82) 50%, rgba(6, 182, 212, 0.78) 100%)",
+            "linear-gradient(135deg, rgba(11, 31, 58, 0.92) 0%, rgba(11, 31, 58, 0.78) 50%, rgba(6, 18, 36, 0.85) 100%)",
         }}
       />
 
-      {/* Content (z-index 3) */}
-      <motion.div
-        className="relative z-[3] flex flex-col items-center justify-center p-12 text-center w-full"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="max-w-sm">
-          {/* Logo mark — glass effect */}
-          <motion.div
-            className="inline-flex items-center justify-center mb-6"
-            style={{
-              width: 72,
-              height: 72,
-              background: "rgba(255,255,255,0.18)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,0.25)",
-              borderRadius: 20,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.3)",
-            }}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.3 }}
-          >
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt={platformName}
-                className="w-10 h-10 object-contain"
-              />
-            ) : (
-              <span className="text-white text-[28px] font-bold font-heading tracking-tight">
-                {logoText}
-              </span>
-            )}
-          </motion.div>
+      {/* Subtle paper-grain texture overlay (very low opacity) */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(245, 240, 230, 0.4) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(201, 169, 97, 0.3) 0%, transparent 50%)
+          `,
+        }}
+      />
 
-          {/* Brand name */}
-          <motion.h2
-            className="text-[34px] font-bold text-white mb-2 font-heading tracking-tight"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+      {/* Content */}
+      <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
+        {/* Top: Logo + brand */}
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={platformName}
+              className="w-10 h-10 object-contain"
+              style={{ filter: "brightness(0) invert(1)" }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                background: "var(--editorial-gold)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--editorial-navy)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+              }}
+            >
+              {logoText}
+            </div>
+          )}
+          <span
+            style={{
+              fontFamily: "var(--editorial-font-serif)",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "var(--editorial-cream)",
+              letterSpacing: "-0.02em",
+            }}
           >
             {platformName}
-          </motion.h2>
+          </span>
+        </div>
 
-          {/* Tagline */}
-          <motion.p
-            className="text-white/80 text-base mb-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+        {/* Middle: Tagline + trust points */}
+        <div className="max-w-md">
+          {/* Eyebrow */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "var(--editorial-gold)",
+              }}
+            >
+              Welcome
+            </span>
+          </div>
+
+          {/* Tagline — large serif */}
+          <h2
+            style={{
+              fontFamily: "var(--editorial-font-serif)",
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              color: "var(--editorial-cream)",
+              marginBottom: "2rem",
+            }}
           >
             {tagline}
-          </motion.p>
+          </h2>
 
-          {/* Trust points */}
-          <motion.div
-            className="space-y-4"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
+          {/* Trust points — minimal, with gold checkmarks */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {trustPoints.map((point, idx) => (
-              <motion.div
+              <div
                 key={point}
-                className="flex items-center justify-center gap-3"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.875rem",
+                }}
               >
                 <div
-                  className="shrink-0 flex items-center justify-center"
                   style={{
-                    width: 24,
-                    height: 24,
-                    background: "rgba(255,255,255,0.2)",
-                    borderRadius: 999,
-                    boxShadow: "0 0 12px rgba(255,255,255,0.1)",
+                    width: 20,
+                    height: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <Check className="size-3.5 text-white" />
+                  <Check
+                    className="size-4"
+                    style={{ color: "var(--editorial-gold)" }}
+                  />
                 </div>
-                <span className="text-white text-sm font-medium">{point}</span>
-              </motion.div>
+                <span
+                  style={{
+                    color: "var(--editorial-cream)",
+                    fontSize: "0.9375rem",
+                    lineHeight: 1.5,
+                    opacity: 0.9,
+                  }}
+                >
+                  {point}
+                </span>
+              </div>
             ))}
-          </motion.div>
+          </div>
+        </div>
 
-          {/* Quote Card — Glass */}
+        {/* Bottom: Quote + Stats + security badges */}
+        <div className="space-y-6">
+          {/* Quote card — editorial style, no glass */}
           {quoteCard && (
-            <motion.div
-              className="mt-12 text-left"
+            <div
               style={{
-                background: "rgba(255,255,255,0.12)",
-                backdropFilter: "blur(16px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: 16,
-                padding: "24px 28px",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.15)",
+                borderLeft: "2px solid var(--editorial-gold)",
+                paddingLeft: "1.5rem",
+                paddingTop: "0.5rem",
+                paddingBottom: "0.5rem",
               }}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <div className="text-[var(--gold-light)] text-sm mb-2 tracking-wider">
+              <div
+                style={{
+                  color: "var(--editorial-gold)",
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.2em",
+                  marginBottom: "0.75rem",
+                }}
+              >
                 ★★★★★
               </div>
-              <p className="text-white/90 text-sm italic leading-relaxed mb-3">
+              <p
+                style={{
+                  fontFamily: "var(--editorial-font-serif)",
+                  fontStyle: "italic",
+                  fontSize: "1.0625rem",
+                  lineHeight: 1.6,
+                  color: "var(--editorial-cream)",
+                  marginBottom: "0.75rem",
+                }}
+              >
                 &ldquo;{quoteCard.text}&rdquo;
               </p>
-              <p className="text-white/70 text-[13px] font-semibold">
+              <p
+                style={{
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--editorial-cream)",
+                  opacity: 0.6,
+                }}
+              >
                 — {quoteCard.attribution}
               </p>
-            </motion.div>
+            </div>
           )}
 
-          {/* Stats Card — Glass */}
+          {/* Stats card — editorial, divider-based */}
           {statsCard && (
-            <motion.div
-              className="mt-12"
+            <div
               style={{
-                background: "rgba(255,255,255,0.12)",
-                backdropFilter: "blur(16px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: 16,
-                padding: "24px 28px",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.15)",
+                display: "flex",
+                borderTop: "1px solid rgba(245, 240, 230, 0.15)",
+                paddingTop: "1.5rem",
               }}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.9 }}
             >
-              <div className="flex items-center">
-                {statsCard.map((stat, i) => (
-                  <div key={i} className="flex-1 text-center relative">
-                    <p className="text-white text-2xl font-bold font-heading tracking-tight">
-                      {stat.value}
-                    </p>
-                    <p className="text-white/65 text-xs mt-1">
-                      {stat.label}
-                    </p>
-                    {i < statsCard.length - 1 && (
-                      <div
-                        className="absolute top-1 bottom-1"
-                        style={{
-                          right: 0,
-                          width: 1,
-                          background: "rgba(255,255,255,0.15)",
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+              {statsCard.map((stat, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1,
+                    textAlign: "left",
+                    borderRight:
+                      i < statsCard.length - 1
+                        ? "1px solid rgba(245, 240, 230, 0.15)"
+                        : "none",
+                    paddingRight: "1rem",
+                    paddingLeft: i === 0 ? "0" : "1rem",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "var(--editorial-font-serif)",
+                      fontSize: "1.875rem",
+                      fontWeight: 700,
+                      color: "var(--editorial-gold)",
+                      lineHeight: 1,
+                      marginBottom: "0.375rem",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "0.6875rem",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "var(--editorial-cream)",
+                      opacity: 0.6,
+                    }}
+                  >
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-      </motion.div>
 
-      {/* Indicator Dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-[3]">
-        {images.map((_, i) => (
-          <motion.div
-            key={i}
-            className="rounded-full"
+          {/* Security badges — minimal row */}
+          <div
             style={{
-              width: i === currentSlide ? 24 : 6,
-              height: 6,
-              background:
-                i === currentSlide
-                  ? "rgba(255,255,255,0.9)"
-                  : "rgba(255,255,255,0.4)",
+              display: "flex",
+              alignItems: "center",
+              gap: "1.5rem",
+              paddingTop: "1rem",
+              borderTop: "1px solid rgba(245, 240, 230, 0.1)",
             }}
-            layout
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          />
-        ))}
-      </div>
+          >
+            {[
+              { icon: ShieldCheck, label: "HIPAA Aligned" },
+              { icon: Lock, label: "256-bit Encryption" },
+              { icon: BadgeCheck, label: "SOC 2 Type II" },
+            ].map(({ icon: Icon, label }, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                }}
+              >
+                <Icon
+                  className="size-3.5"
+                  style={{ color: "var(--editorial-gold)" }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.6875rem",
+                    letterSpacing: "0.05em",
+                    color: "var(--editorial-cream)",
+                    opacity: 0.7,
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Bottom security badges */}
-      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-6 z-[3] opacity-50">
-        <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
-          <ShieldCheck className="size-3" /> HIPAA
-        </div>
-        <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
-          <Zap className="size-3" /> SOC 2
-        </div>
-        <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
-          <Clock className="size-3" /> 256-bit
+        {/* Slide indicators — minimal dots at bottom */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            display: "flex",
+            gap: "0.5rem",
+          }}
+        >
+          {images.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: i === currentSlide ? "24px" : "6px",
+                height: "2px",
+                background:
+                  i === currentSlide
+                    ? "var(--editorial-gold)"
+                    : "rgba(245, 240, 230, 0.3)",
+                transition: "width 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            />
+          ))}
         </div>
       </div>
     </div>

@@ -4,8 +4,7 @@ import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Loader2, Check, ShieldCheck, Zap, ArrowRight } from "@/lib/icons";
+import { Loader2, ArrowRight, ShieldCheck, Lock } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,9 +29,9 @@ function getRoleDashboard(role: string): string {
 }
 
 const trustPoints = [
-  "HIPAA-Aligned Security",
-  "You Control Access",
-  "100% Free for Nurses",
+  "HIPAA-aligned security architecture",
+  "You control who sees your credentials",
+  "Free forever for healthcare professionals",
 ];
 
 export default function LoginPage() {
@@ -96,10 +95,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div
+      className="min-h-screen flex"
+      style={{ background: "var(--editorial-cream)" }}
+    >
       {/* Left Panel - Slideshow */}
       <AuthSlideshowPanel
-        tagline="Healthcare credential verification, simplified"
+        tagline="Your credentials. Your terms."
         trustPoints={trustPoints}
         quoteCard={{
           text: "I used to fill out the same skills checklist 5 times per assignment. Now I do it once and share. Game changer.",
@@ -113,143 +115,343 @@ export default function LoginPage() {
       />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
-        {/* Subtle mesh background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
-        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
-
-        <motion.div
-          className="max-w-[420px] w-full relative z-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {/* Mobile branding */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
-              <span className="text-white text-2xl font-bold font-heading">ZV</span>
+      <div
+        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
+        style={{ background: "var(--editorial-cream)" }}
+      >
+        <div className="max-w-[440px] w-full relative">
+          {/* Mobile branding — only shown on small screens */}
+          <div className="lg:hidden text-center mb-10">
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+                marginBottom: "1rem",
+              }}
+            >
+              M
             </div>
-            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
+            <h2
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "var(--editorial-navy)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              MyZipVault
+            </h2>
           </div>
 
-          {/* Glass card wrapping form */}
-          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
-            <div className="mb-8">
-              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
-                Welcome back
-              </h1>
-              <p className="text-text-secondary text-base mt-2">
-                Sign in to your healthcare credential vault
-              </p>
-            </div>
+          {/* Eyebrow */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              marginBottom: "1rem",
+            }}
+          >
+            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "var(--editorial-gold-dark)",
+              }}
+            >
+              Sign In
+            </span>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.email ? "border-destructive" : ""}`}
-                  autoComplete="email"
-                />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email}</p>
-                )}
-              </div>
+          {/* Heading */}
+          <h1
+            style={{
+              fontFamily: "var(--editorial-font-serif)",
+              fontSize: "2.5rem",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              color: "var(--editorial-navy)",
+              marginBottom: "0.75rem",
+            }}
+          >
+            Welcome back.
+          </h1>
+          <p
+            style={{
+              fontSize: "1rem",
+              lineHeight: 1.6,
+              color: "var(--editorial-ink-soft)",
+              marginBottom: "2.5rem",
+            }}
+          >
+            Sign in to your healthcare credential vault.
+          </p>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                    Password
-                  </Label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs text-primary hover:text-primary-hover font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.password ? "border-destructive" : ""}`}
-                  autoComplete="current-password"
-                />
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
-                disabled={isLoading}
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label
+                htmlFor="email"
+                style={{
+                  fontSize: "0.6875rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "var(--editorial-ink-soft)",
+                }}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="size-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-surface px-3 text-text-muted">or</span>
-              </div>
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                disabled={isLoading}
+                style={{
+                  background: "var(--editorial-paper)",
+                  border: `1px solid ${errors.email ? "var(--editorial-danger)" : "var(--editorial-rule)"}`,
+                  borderRadius: "2px",
+                  height: "48px",
+                  color: "var(--editorial-ink)",
+                  fontSize: "0.9375rem",
+                }}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p style={{ fontSize: "0.75rem", color: "var(--editorial-danger)", marginTop: "0.25rem" }}>
+                  {errors.email}
+                </p>
+              )}
             </div>
 
-            <p className="text-sm text-text-secondary text-center">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-primary hover:text-primary-hover font-semibold transition-colors">
-                Sign up
-              </Link>
-            </p>
+            <div className="space-y-2">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Label
+                  htmlFor="password"
+                  style={{
+                    fontSize: "0.6875rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                    color: "var(--editorial-ink-soft)",
+                  }}
+                >
+                  Password
+                </Label>
+                <Link
+                  href="/forgot-password"
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--editorial-navy)",
+                    textDecoration: "none",
+                    fontWeight: 500,
+                    borderBottom: "1px solid var(--editorial-gold)",
+                    paddingBottom: "1px",
+                    transition: "color 150ms",
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                disabled={isLoading}
+                style={{
+                  background: "var(--editorial-paper)",
+                  border: `1px solid ${errors.password ? "var(--editorial-danger)" : "var(--editorial-rule)"}`,
+                  borderRadius: "2px",
+                  height: "48px",
+                  color: "var(--editorial-ink)",
+                  fontSize: "0.9375rem",
+                }}
+                autoComplete="current-password"
+              />
+              {errors.password && (
+                <p style={{ fontSize: "0.75rem", color: "var(--editorial-danger)", marginTop: "0.25rem" }}>
+                  {errors.password}
+                </p>
+              )}
+            </div>
 
-            <p className="text-sm text-text-secondary text-center mt-3">
-              Staffing agency or recruiter?{" "}
-              <Link href="/agency-login" className="text-primary hover:text-primary-hover font-semibold transition-colors">
-                Agency Login
-              </Link>
-            </p>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "1rem 1.5rem",
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                border: "1px solid var(--editorial-navy)",
+                borderRadius: "2px",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                opacity: isLoading ? 0.7 : 1,
+                transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy-light)";
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy)";
+              }}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="size-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              margin: "2rem 0",
+            }}
+          >
+            <div style={{ flex: 1, height: "1px", background: "var(--editorial-rule)" }} />
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                color: "var(--editorial-ink-muted)",
+              }}
+            >
+              or
+            </span>
+            <div style={{ flex: 1, height: "1px", background: "var(--editorial-rule)" }} />
           </div>
+
+          {/* Sign up link */}
+          <p
+            style={{
+              fontSize: "0.9375rem",
+              color: "var(--editorial-ink-soft)",
+              textAlign: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              style={{
+                color: "var(--editorial-navy)",
+                fontWeight: 600,
+                textDecoration: "none",
+                borderBottom: "1px solid var(--editorial-gold)",
+                paddingBottom: "1px",
+              }}
+            >
+              Sign up free
+            </Link>
+          </p>
+
+          <p
+            style={{
+              fontSize: "0.9375rem",
+              color: "var(--editorial-ink-soft)",
+              textAlign: "center",
+            }}
+          >
+            Staffing agency or recruiter?{" "}
+            <Link
+              href="/agency-login"
+              style={{
+                color: "var(--editorial-navy)",
+                fontWeight: 600,
+                textDecoration: "none",
+                borderBottom: "1px solid var(--editorial-gold)",
+                paddingBottom: "1px",
+              }}
+            >
+              Agency Login
+            </Link>
+          </p>
 
           {/* Security badges */}
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <ShieldCheck className="size-3" /> HIPAA
-            </div>
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <Zap className="size-3" /> 256-bit
-            </div>
+          <div
+            style={{
+              marginTop: "2.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--editorial-rule-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+            }}
+          >
+            {[
+              { icon: ShieldCheck, label: "HIPAA Aligned" },
+              { icon: Lock, label: "256-bit Encryption" },
+            ].map(({ icon: Icon, label }, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                }}
+              >
+                <Icon
+                  className="size-3.5"
+                  style={{ color: "var(--editorial-gold-dark)" }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.6875rem",
+                    letterSpacing: "0.05em",
+                    color: "var(--editorial-ink-muted)",
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
