@@ -94,10 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname) ||
       PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-    if (!session?.user) {
-      // Not authenticated — redirect to appropriate login page if not on a public route
+    // ─── Handle null user (session expired, inactivity timeout, or suspended) ───
+    // When JWT callback clears token.id (Gap 10: inactivity timeout, or
+    // Gap 2: account suspended), session?.user still exists but user is null.
+    // Treat this as unauthenticated — redirect to login.
+    if (!session?.user || !user) {
       if (!isPublicRoute) {
-        // Determine which login page to redirect to based on the route prefix
         let loginPage = "/login";
         if (pathname.startsWith("/superadmin")) {
           loginPage = "/superadmin-login";
@@ -117,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPrefixPublic = PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
     const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
     if (isPublicRoute && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible) {
-      const dashboard = getRoleDashboard(user!.role);
+      const dashboard = getRoleDashboard(user.role);
       router.replace(dashboard);
       return;
     }
