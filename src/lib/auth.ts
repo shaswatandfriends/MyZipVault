@@ -32,6 +32,21 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        // ─── Gap 9: Rate limit login attempts ────────────────────────
+        // Max 10 failed attempts per email per 15 minutes
+        // (OTP login for superadmin has its own rate limiting via /api/auth/otp/send)
+        if (credentials.email !== "__superadmin__") {
+          const { checkRateLimit, recordRateLimitAttempt, clearRateLimit } = await import("@/lib/rate-limiter");
+          const loginEmail = credentials.email.toLowerCase().trim();
+          const loginLimit = await checkRateLimit("login_failed", loginEmail, 10, 900); // 10 attempts per 15 min
+
+          if (!loginLimit.allowed) {
+            throw new Error(
+              `Too many login attempts. Please try again in ${loginLimit.retryAfterSeconds} seconds.`
+            );
+          }
+        }
+
         // ── Superadmin OTP login ──
         if (credentials.email === "__superadmin__" && credentials.password.startsWith("otp:")) {
           if (!SUPERADMIN_EMAIL) {
@@ -108,6 +123,11 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          // ─── Gap 9: Record failed login attempt ───
+          if (credentials.email !== "__superadmin__") {
+            const { recordRateLimitAttempt } = await import("@/lib/rate-limiter");
+            await recordRateLimitAttempt("login_failed", lookupEmail.toLowerCase().trim(), 900);
+          }
           throw new Error("Invalid email or password");
         }
 
@@ -138,7 +158,18 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isValidPassword) {
+          // ─── Gap 9: Record failed login attempt ───
+          if (credentials.email !== "__superadmin__") {
+            const { recordRateLimitAttempt } = await import("@/lib/rate-limiter");
+            await recordRateLimitAttempt("login_failed", lookupEmail.toLowerCase().trim(), 900);
+          }
           throw new Error("Invalid email or password");
+        }
+
+        // ─── Gap 9: Clear failed login attempts on success ───
+        if (credentials.email !== "__superadmin__") {
+          const { clearRateLimit } = await import("@/lib/rate-limiter");
+          await clearRateLimit("login_failed", lookupEmail.toLowerCase().trim());
         }
 
         return {
@@ -155,7 +186,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60, // 24 hours absolute max
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -168,8 +199,29 @@ export const authOptions: NextAuthOptions = {
         token.firstName = (user as Record<string, unknown>).firstName as string | null;
         token.lastName = (user as Record<string, unknown>).lastName as string | null;
         token.lastRefreshedAt = Date.now();
+        token.lastActivity = Date.now();
         return token;
       }
+
+      // ─── Gap 10: Session inactivity timeout ──────────────────────────
+      // For HIPAA compliance, sessions expire after 30 minutes of inactivity.
+      // The lastActivity timestamp is updated on every JWT callback (which
+      // runs on every page load / API call via getSession()).
+      // If the user hasn't made a request in 30 minutes, invalidate the session.
+      const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+      const lastActivity = (token.lastActivity as number) || 0;
+
+      if (lastActivity > 0 && Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS) {
+        console.warn(
+          `[AUTH] Session expired due to inactivity — userId: ${token.id}, lastActivity: ${new Date(lastActivity).toISOString()}, inactive for: ${Math.round((Date.now() - lastActivity) / 60000)}min`
+        );
+        // Clear the token id — middleware and AuthProvider will treat this as
+        // unauthenticated and redirect to login
+        return { ...token, id: "" } as typeof token;
+      }
+
+      // Update lastActivity on every request (user is still active)
+      token.lastActivity = Date.now();
 
       // ── Subsequent token refreshes: re-fetch user from DB every 5 minutes ──
       // This ensures role/approval/status changes propagate within 5 minutes
@@ -178,7 +230,7 @@ export const authOptions: NextAuthOptions = {
       const lastRefreshedAt = (token.lastRefreshedAt as number) || 0;
 
       if (Date.now() - lastRefreshedAt < REFRESH_INTERVAL_MS) {
-        return token; // Throttled — return token as-is
+        return token; // Throttled — return token as-is (lastActivity already updated)
       }
 
       const userId = Number(token.id);

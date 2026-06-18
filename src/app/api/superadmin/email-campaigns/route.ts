@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { emailCampaignCreateSchema, validateBody } from "@/lib/validation-schemas";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 /**
  * GET /api/superadmin/email-campaigns
@@ -62,27 +64,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, subject, body: emailBody, targetRole, targetFilter } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
+    // ─── Zod validation ───
+    const validation = validateBody(emailCampaignCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    if (!subject || typeof subject !== "string" || subject.trim().length === 0) {
-      return NextResponse.json({ error: "Email subject is required" }, { status: 400 });
-    }
-    if (!emailBody || typeof emailBody !== "string" || emailBody.trim().length === 0) {
-      return NextResponse.json({ error: "Email body is required" }, { status: 400 });
-    }
+    const { name, subject, body: rawBody, targetRole: finalTargetRole, targetFilter } = validation.data;
 
-    const validRoles = [
-      "all",
-      "candidate",
-      "client_recruiter",
-      "client_admin",
-      "platform_admin",
-      "super_admin",
-    ];
-    const finalTargetRole = validRoles.includes(targetRole) ? targetRole : "all";
+    // ─── HTML sanitization (XSS prevention) ───
+    // Strip dangerous tags, event handlers, and javascript: URLs from
+    // the email body before storing it.
+    const emailBody = sanitizeHtml(rawBody);
 
     const userId = Number((session.user as Record<string, unknown>).id);
     const campaign = await db.emailCampaign.create({

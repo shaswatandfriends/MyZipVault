@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
@@ -45,6 +46,17 @@ export async function POST(
     const campaignId = parseInt(id);
     if (isNaN(campaignId)) {
       return NextResponse.json({ error: "Invalid campaign ID" }, { status: 400 });
+    }
+
+    // ─── Rate limit: max 3 campaign sends per hour ───
+    // (each campaign can send up to 500 emails — this prevents Brevo credit drain)
+    const adminUserId = Number(session.user.id);
+    const rateLimit = await checkRateLimit("email_campaign_send", `user_${adminUserId}`, 3, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many campaign sends. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
+        { status: 429 }
+      );
     }
 
     // ─── 1. Load campaign ──────────────────────────────────────────────

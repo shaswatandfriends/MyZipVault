@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Loader2, Check, Eye, EyeOff, ShieldCheck, Zap, ArrowRight, X } from "@/lib/icons";
 import { toast } from "sonner";
 
@@ -137,7 +136,10 @@ function ResetPasswordForm() {
   const hasTokenError = !!errors.token;
 
   return (
-    <div className="min-h-screen flex">
+    <div
+      className="min-h-screen flex"
+      style={{ background: "var(--editorial-cream)" }}
+    >
       {/* Left Panel - Slideshow */}
       <AuthSlideshowPanel
         tagline="Healthcare credential verification, simplified"
@@ -145,41 +147,71 @@ function ResetPasswordForm() {
       />
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
-        {/* Subtle mesh background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
-        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+      <div
+        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
+        style={{ background: "var(--editorial-cream)" }}
+      >
 
-        <motion.div
-          className="max-w-[420px] w-full relative z-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
+        <div
+          className="max-w-[420px] w-full relative z-10">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
-              <span className="text-white text-2xl font-bold font-heading">ZV</span>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+                marginBottom: "1rem",
+              }}
+            >
+              M
             </div>
-            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
+            <h2
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "var(--editorial-navy)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              MyZipVault
+            </h2>
           </div>
 
           {/* Glass card wrapping content */}
-          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+          <div style={{ width: "100%" }}>
             {hasTokenError ? (
               <>
                 <div className="flex items-center justify-center size-16 bg-red-50 rounded-2xl mb-6">
                   <X className="size-8 text-red-500" />
                 </div>
-                <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                <h1
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "2.5rem",
+                fontWeight: 700,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                color: "var(--editorial-navy)",
+                marginBottom: "0.75rem",
+              }}
+            >
                   Invalid link
                 </h1>
                 <p className="text-text-secondary text-base mt-2 mb-8">
                   {errors.token}
                 </p>
                 <Link href="/forgot-password">
-                  <Button className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base">
+                  <Button style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}>
                     Request New Link
                     <ArrowRight className="size-4" />
                   </Button>
@@ -195,7 +227,17 @@ function ResetPasswordForm() {
                 <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
                   <ShieldCheck className="size-8 text-primary" />
                 </div>
-                <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+                <h1
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "2.5rem",
+                fontWeight: 700,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                color: "var(--editorial-navy)",
+                marginBottom: "0.75rem",
+              }}
+            >
                   Reset your password
                 </h1>
                 <p className="text-text-secondary text-base mt-2 mb-8">
@@ -302,7 +344,7 @@ function ResetPasswordForm() {
 
                   <Button
                     type="submit"
-                    className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
+                    style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -323,15 +365,27 @@ function ResetPasswordForm() {
           </div>
 
           {/* Security badges */}
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <ShieldCheck className="size-3" /> HIPAA
+          <div
+            style={{
+              marginTop: "2.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--editorial-rule-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
             </div>
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <Zap className="size-3" /> 256-bit
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

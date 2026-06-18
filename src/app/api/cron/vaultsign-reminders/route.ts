@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyCronAuth } from "@/lib/cron-auth";
 import { sendReminderEmail, generateSigningLink } from "@/lib/vaultsign/email";
 
 // Cron job: Send automatic reminders to signers who haven't signed yet
 // Called by external cron service or manually
 export async function GET(request: NextRequest) {
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
+
   try {
-    // Simple auth check using a cron secret
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const now = new Date();
 

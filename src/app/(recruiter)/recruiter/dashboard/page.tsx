@@ -101,7 +101,7 @@ function getComplianceBadge(status: Candidate["complianceStatus"]) {
   switch (status) {
     case "compliant":
       return (
-        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
           <CheckCircle2 className="size-3" />
           Compliant
         </Badge>
@@ -126,7 +126,7 @@ function getComplianceBadge(status: Candidate["complianceStatus"]) {
 function getComplianceDot(status: Candidate["complianceStatus"]) {
   switch (status) {
     case "compliant":
-      return <span className="inline-block size-2 rounded-full bg-emerald-500" />;
+      return <span className="inline-block size-2 rounded-full var(--editorial-navy) 0" />;
     case "pending":
       return <span className="inline-block size-2 rounded-full bg-amber-500" />;
     case "non_compliant":
@@ -278,7 +278,7 @@ export default function RecruiterDashboardPage() {
   function getBaaBadge(status: string) {
     switch (status) {
       case "signed":
-        return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Signed</Badge>;
+        return <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">Signed</Badge>;
       case "pending":
         return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Pending</Badge>;
       case "not_signed":
@@ -332,13 +332,13 @@ export default function RecruiterDashboardPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <Users className="size-4 text-emerald-600" />
+                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
+                  <Users className="size-4 var(--editorial-cream)" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.totalCandidates ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Candidates in pipeline</p>
+                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Candidates in pipeline</p>
               </CardContent>
             </Card>
 
@@ -378,13 +378,13 @@ export default function RecruiterDashboardPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Completed Packets</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
+                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
+                  <CheckCircle2 className="size-4 var(--editorial-cream)" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.completedPackets ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Fully verified checklists</p>
+                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Fully verified checklists</p>
               </CardContent>
             </Card>
 
@@ -395,13 +395,13 @@ export default function RecruiterDashboardPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Credits Used{period === "all" ? "" : ` ${period === "week" ? "This Week" : "This Month"}`}</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <CreditCard className="size-4 text-emerald-600" />
+                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
+                  <CreditCard className="size-4 var(--editorial-cream)" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats?.creditsUsedThisMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">
+                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">
                   of {stats?.creditsBalance ?? 0} remaining
                 </p>
               </CardContent>
@@ -414,13 +414,13 @@ export default function RecruiterDashboardPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">BAA Status</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <FileCheck className="size-4 text-emerald-600" />
+                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
+                  <FileCheck className="size-4 var(--editorial-cream)" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="mb-1">{getBaaBadge(stats?.baaStatus ?? "pending")}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-emerald-700 transition-colors">Business Associate Agreement</p>
+                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Business Associate Agreement</p>
               </CardContent>
             </Card>
           </>
@@ -456,7 +456,7 @@ export default function RecruiterDashboardPage() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="compliant">
                     <span className="flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="size-2 rounded-full var(--editorial-navy) 0" />
                       Compliant
                     </span>
                   </SelectItem>
@@ -506,14 +506,14 @@ export default function RecruiterDashboardPage() {
           ) : filteredCandidates.length === 0 ? (
             /* ── Empty state / Onboarding ─────────────────────────── */
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="size-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
-                <Send className="size-8 text-emerald-600" />
+              <div className="size-16 rounded-full var(--editorial-navy)  flex items-center justify-center mb-4">
+                <Send className="size-8 var(--editorial-cream)" />
               </div>
               <h3 className="text-lg font-semibold mb-1">Welcome! Get started by sending your first request</h3>
               <p className="text-sm text-muted-foreground max-w-md">
                 Send a verification request to a candidate to begin tracking their compliance and documents. It only takes a moment.
               </p>
-              <Button asChild className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button asChild className="mt-4" style={{ background: "var(--editorial-navy)", color: "var(--editorial-cream)" }}>
                 <Link href="/recruiter/send">
                   <Send className="size-4" />
                   Send New Request
@@ -549,12 +549,12 @@ export default function RecruiterDashboardPage() {
                             href={`/recruiter/candidates/${candidate.id}`}
                             className="flex items-center gap-3"
                           >
-                            <div className="flex size-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shrink-0">
+                            <div className="flex size-8 items-center justify-center rounded-full var(--editorial-navy)  var(--editorial-gold) text-xs font-semibold shrink-0">
                               {candidate.firstName?.[0]?.toUpperCase() ??
                                 candidate.email[0]?.toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-medium text-sm truncate group-hover:text-emerald-700 group-hover:underline underline-offset-2">
+                              <p className="font-medium text-sm truncate group-hover:var(--editorial-gold) group-hover:underline underline-offset-2">
                                 {fullName}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
@@ -566,7 +566,7 @@ export default function RecruiterDashboardPage() {
 
                         {/* Specialty */}
                         <TableCell>
-                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:text-emerald-700">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:var(--editorial-gold)">
                             {candidate.specialty || "—"}
                           </Link>
                         </TableCell>
@@ -591,7 +591,7 @@ export default function RecruiterDashboardPage() {
 
                         {/* Last Activity */}
                         <TableCell>
-                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm text-muted-foreground hover:text-emerald-700">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm text-muted-foreground hover:var(--editorial-gold)">
                             {formatDate(candidate.lastActivity)}
                           </Link>
                         </TableCell>
@@ -639,7 +639,7 @@ export default function RecruiterDashboardPage() {
                 Showing {filteredCandidates.length} of {data?.candidates.length ?? 0}{" "}
                 candidate{(data?.candidates.length ?? 0) !== 1 ? "s" : ""}
               </p>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/recruiter/send">
                   <ArrowUpRight className="size-3.5" />
                   View All Requests

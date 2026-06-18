@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { requireEmailVerified } from "@/lib/email-verification";
+import { referenceRequestSchema, validateBody } from "@/lib/validation-schemas";
 
 export async function POST(request: Request) {
   try {
@@ -17,15 +19,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { managerFirstName, managerLastName, managerEmail, managerPhone, facilityName, employmentStatus } = body;
+    // Require email verification (Gap 5)
+    const verificationCheck = await requireEmailVerified(userId);
+    if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
 
-    if (!managerFirstName || !managerLastName || !managerEmail || !facilityName || !employmentStatus) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
+    const body = await request.json();
+
+    // ─── Zod validation ───
+    const validation = validateBody(referenceRequestSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    const { managerFirstName, managerLastName, managerEmail, managerPhone, facilityName, employmentStatus } = validation.data;
 
     const reference = await db.candidateReference.create({
       data: {

@@ -10,9 +10,128 @@ interface SendEmailParams {
   templateKey: string;
   variables: Record<string, string>;
   phone?: string; // Optional phone for SMS
+  userId?: number; // Optional user ID for notification preference lookup (Gap 8)
+  /**
+   * Set to true to bypass notification preference checks.
+   * Use ONLY for critical account emails (password reset, account suspension,
+   * BAA signing, etc.) where the user MUST receive the email regardless of
+   * their preferences. Defaults to false.
+   */
+  bypassPreferences?: boolean;
 }
 
-export async function sendEmail({ to, templateKey, variables, phone }: SendEmailParams) {
+/**
+ * Default notification preferences (when user has not customized them).
+ * Per Gap 8 fix: these are honored by sendEmail() before sending.
+ */
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  email_notifications: true,
+  sms_notifications: true,
+  reminder_notifications: true,
+};
+
+/**
+ * Fetch a user's notification preferences from their candidate_profile.
+ * Returns defaults if user has no profile or preferences not set.
+ * Returns null if user not found (caller should treat as "use defaults").
+ *
+ * Note: only candidates have notification_preferences. Recruiters/admins
+ * always receive emails (they don't have a profile to customize).
+ */
+async function getUserNotificationPreferences(
+  email: string
+): Promise<typeof DEFAULT_NOTIFICATION_PREFERENCES> {
+  try {
+    const user = await db.user.findUnique({
+      where: { email },
+      select: {
+        role: true,
+        candidate_profile: {
+          select: { notification_preferences: true },
+        },
+      },
+    });
+
+    // Recruiters/admins/super_admins always get emails (no preference system)
+    if (!user || user.role !== "candidate") {
+      return DEFAULT_NOTIFICATION_PREFERENCES;
+    }
+
+    // Use defaults if no profile or no preferences set
+    if (!user.candidate_profile?.notification_preferences) {
+      return DEFAULT_NOTIFICATION_PREFERENCES;
+    }
+
+    // Parse stored preferences, falling back to defaults for missing keys
+    try {
+      const parsed = JSON.parse(user.candidate_profile.notification_preferences);
+      return {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...parsed,
+      };
+    } catch {
+      return DEFAULT_NOTIFICATION_PREFERENCES;
+    }
+  } catch (error) {
+    console.error("[EMAIL] Failed to fetch notification preferences:", error);
+    return DEFAULT_NOTIFICATION_PREFERENCES;
+  }
+}
+
+/**
+ * Categorize a template key into a notification type for preference checking.
+ *
+ * Categories:
+ *   - 'reminder' → respects reminder_notifications preference
+ *   - 'email' → respects email_notifications preference
+ *   - 'critical' → always sent (bypassPreferences=true passed by caller)
+ */
+function categorizeTemplate(templateKey: string): "reminder" | "email" | "critical" {
+  // Reminder templates (credential expiry, reference reminders, etc.)
+  const reminderKeys = [
+    "credential_expiry_reminder",
+    "reference_reminder",
+    "low_credit_alert",
+    "checklist_reminder",
+    "monthly_digest",
+  ];
+  if (reminderKeys.includes(templateKey)) return "reminder";
+
+  // All other templates are regular emails
+  return "email";
+}
+
+export async function sendEmail({
+  to,
+  templateKey,
+  variables,
+  phone,
+  userId,
+  bypassPreferences = false,
+}: SendEmailParams) {
+  // ─── Gap 8: Honor notification preferences ──────────────────────
+  // Check user's preferences before sending. Skip if user has opted out
+  // of this category of notification. Critical emails (password reset,
+  // account suspension, BAA) bypass this check.
+  if (!bypassPreferences) {
+    const prefs = await getUserNotificationPreferences(to);
+    const category = categorizeTemplate(templateKey);
+
+    if (category === "reminder" && !prefs.reminder_notifications) {
+      console.log(
+        `[EMAIL] Skipped ${templateKey} to ${to} — user opted out of reminder notifications`
+      );
+      return;
+    }
+
+    if (category === "email" && !prefs.email_notifications) {
+      console.log(
+        `[EMAIL] Skipped ${templateKey} to ${to} — user opted out of email notifications`
+      );
+      return;
+    }
+  }
+
   // Fetch the email template from database
   const template = await db.emailTemplate.findUnique({
     where: { template_key: templateKey },
@@ -41,9 +160,17 @@ export async function sendEmail({ to, templateKey, variables, phone }: SendEmail
       .join("");
   }
 
-  // Check if SMS should be sent (feature flag check)
+  // Check if SMS should be sent (feature flag check + user preference)
   const smsFlag = await db.featureFlag.findUnique({ where: { flag_name: "sms_notifications" } });
-  if (smsFlag?.is_enabled && phone && isTwilioConfigured()) {
+
+  // For SMS, also check the user's SMS notification preference (unless bypassing)
+  let smsAllowed = true;
+  if (!bypassPreferences && smsFlag?.is_enabled) {
+    const prefs = await getUserNotificationPreferences(to);
+    smsAllowed = prefs.sms_notifications;
+  }
+
+  if (smsFlag?.is_enabled && smsAllowed && phone && isTwilioConfigured()) {
     // Strip HTML for SMS - create a plain text version
     const plainText = htmlContent
       .replace(/<p>/g, "")
@@ -59,6 +186,10 @@ export async function sendEmail({ to, templateKey, variables, phone }: SendEmail
     if (smsResult.success) {
       console.log(`[NOTIFICATION] SMS sent to ${phone} for template ${templateKey}`);
     }
+  } else if (smsFlag?.is_enabled && !smsAllowed) {
+    console.log(
+      `[SMS] Skipped ${templateKey} to ${to} — user opted out of SMS notifications`
+    );
   } else if (smsFlag?.is_enabled) {
     console.log(`[SMS] Feature enabled but Twilio not configured or no phone provided. Would send SMS.`);
   }
@@ -185,6 +316,7 @@ export async function sendVerificationEmail(email: string, verificationLink: str
       candidate_name: email.split("@")[0],
       verification_link: verificationLink,
     },
+    bypassPreferences: true, // Critical — user must verify email
   });
 }
 
@@ -195,6 +327,7 @@ export async function sendPasswordResetEmail(email: string, resetLink: string) {
     variables: {
       reset_link: resetLink,
     },
+    bypassPreferences: true, // Critical — user requested password reset
   });
 }
 
@@ -207,5 +340,6 @@ export async function sendAccountSuspensionEmail(email: string, deletionDate: st
       deletion_date: deletionDate,
     },
     phone,
+    bypassPreferences: true, // Critical — account deletion notice (legal requirement)
   });
 }

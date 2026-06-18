@@ -119,8 +119,16 @@ export async function checkCreditAccess(
 
 // ─── deductCredits ─────────────────────────────────────────────────────
 /**
- * Deducts credits from an organization and creates a CreditTransaction record.
+ * Atomically deducts credits from an organization and creates a CreditTransaction record.
+ *
+ * ATOMICITY (Gap 11 fix):
+ *   Uses a conditional UPDATE with WHERE credits_balance >= amount.
+ *   If two concurrent requests both pass checkCreditAccess, only one will
+ *   actually succeed in deducting — the other gets a row count of 0 and
+ *   throws an error.
+ *
  * Should only be called after checkCreditAccess has confirmed sufficient balance.
+ * Throws Error if the deduction fails (race condition lost, or org not found).
  */
 export async function deductCredits(
   organizationId: number,
@@ -128,24 +136,49 @@ export async function deductCredits(
   description: string,
   userId?: number
 ): Promise<{ newBalance: number }> {
-  const org = await db.organization.findUnique({
+  if (amount <= 0) {
+    throw new Error(`Invalid deduction amount: ${amount}`);
+  }
+
+  // Atomic conditional update — only succeeds if balance is still sufficient.
+  // Prisma's updateMany returns { count: number } — count > 0 means it worked.
+  const updateResult = await db.organization.updateMany({
+    where: {
+      id: organizationId,
+      credits_balance: { gte: amount }, // ← atomic guard
+    },
+    data: {
+      credits_balance: { decrement: amount },
+    },
+  });
+
+  if (updateResult.count === 0) {
+    // Either org doesn't exist, OR balance was insufficient (race condition lost)
+    // Re-check to give a useful error message
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { credits_balance: true },
+    });
+
+    if (!org) {
+      throw new Error(`Organization ${organizationId} not found`);
+    }
+
+    throw new Error(
+      `Insufficient credits for org ${organizationId}: needed ${amount}, had ${org.credits_balance}. ` +
+        `This was likely a race condition — another request consumed the credits first.`
+    );
+  }
+
+  // Fetch the new balance (post-decrement)
+  const updatedOrg = await db.organization.findUnique({
     where: { id: organizationId },
     select: { credits_balance: true },
   });
 
-  if (!org) {
-    throw new Error(`Organization ${organizationId} not found`);
-  }
+  const newBalance = updatedOrg?.credits_balance ?? 0;
 
-  const newBalance = org.credits_balance - amount;
-
-  // Update the organization's credit balance
-  await db.organization.update({
-    where: { id: organizationId },
-    data: { credits_balance: newBalance },
-  });
-
-  // Create a credit transaction record
+  // Create a credit transaction record (audit trail)
   await db.creditTransaction.create({
     data: {
       organization_id: organizationId,

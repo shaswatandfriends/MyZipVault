@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/layout/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PageTransition } from "@/components/motion";
+import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 import Link from "next/link";
 import { ArrowUpRight } from "@/lib/icons";
 
@@ -100,6 +101,7 @@ export default function CandidateLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        <EmailVerificationBanner />
         <header className="glass-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
           <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
           <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />

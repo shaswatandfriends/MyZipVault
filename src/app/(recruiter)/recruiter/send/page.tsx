@@ -46,6 +46,7 @@ import {
   Phone,
   Briefcase,
   Stethoscope,
+  Layers,
 } from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -56,6 +57,16 @@ interface ChecklistTemplate {
   specialty: string;
   name: string;
   skillCount: number;
+}
+
+interface Bundle {
+  id: number;
+  name: string;
+  description: string | null;
+  checklist_template_id: number;
+  documents: string; // JSON array
+  credit_cost: number;
+  checklist_template: { id: number; name: string; profession: string; specialty: string };
 }
 
 interface CandidateInfo {
@@ -117,6 +128,10 @@ export default function RecruiterSendPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [templatesLoading, setTemplatesLoading] = useState(false);
 
+  // Bundles
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [selectedBundleId, setSelectedBundleId] = useState<number | null>(null);
+
   // Step 3 — Document Selection
   const [selectedDocuments, setSelectedDocuments] = useState<DocumentOption[]>([]);
 
@@ -165,6 +180,7 @@ export default function RecruiterSendPage() {
   useEffect(() => {
     if (currentStep === 1 && templates.length === 0) {
       fetchTemplates();
+      fetchBundles();
     }
   }, [currentStep, templates.length]);
 
@@ -184,6 +200,51 @@ export default function RecruiterSendPage() {
     } finally {
       setTemplatesLoading(false);
     }
+  };
+
+  const fetchBundles = async () => {
+    try {
+      const res = await fetch("/api/recruiter/bundles");
+      if (res.ok) {
+        const data = await res.json();
+        setBundles(data.bundles || []);
+      }
+    } catch {
+      // Bundles are optional — silent fail
+    }
+  };
+
+  // ─── Bundle Selection Handler ─────────────────────────────────────────
+  // When a bundle is selected, auto-fill the checklist template + documents.
+  // When deselected (custom), clear selections so user can pick manually.
+  const handleBundleSelect = (bundleId: number | null) => {
+    setSelectedBundleId(bundleId);
+
+    if (bundleId === null) {
+      // Custom — don't change existing selections, just let user pick manually
+      return;
+    }
+
+    const bundle = bundles.find((b) => b.id === bundleId);
+    if (!bundle) return;
+
+    // Auto-select the checklist template
+    setSelectedTemplateId(bundle.checklist_template_id);
+
+    // Map bundle document types to frontend DocumentOption types
+    let docs: string[] = [];
+    try {
+      docs = JSON.parse(bundle.documents);
+    } catch {
+      docs = [];
+    }
+
+    const mappedDocs: DocumentOption[] = [];
+    if (docs.includes("resume")) mappedDocs.push("resume");
+    if (docs.includes("credential")) mappedDocs.push("other_credentials");
+    if (docs.includes("reference")) mappedDocs.push("references");
+
+    setSelectedDocuments(mappedDocs);
   };
 
   // ─── Validation ────────────────────────────────────────────────────────
@@ -429,6 +490,9 @@ export default function RecruiterSendPage() {
           selectedTemplateId={selectedTemplateId}
           setSelectedTemplateId={setSelectedTemplateId}
           loading={templatesLoading}
+          bundles={bundles}
+          selectedBundleId={selectedBundleId}
+          onSelectBundle={handleBundleSelect}
         />
       )}
 
@@ -714,11 +778,17 @@ function Step2ChecklistSelection({
   selectedTemplateId,
   setSelectedTemplateId,
   loading,
+  bundles,
+  selectedBundleId,
+  onSelectBundle,
 }: {
   templates: ChecklistTemplate[];
   selectedTemplateId: number | null;
   setSelectedTemplateId: (id: number | null) => void;
   loading: boolean;
+  bundles: Bundle[];
+  selectedBundleId: number | null;
+  onSelectBundle: (id: number | null) => void;
 }) {
   if (loading) {
     return (
@@ -766,17 +836,82 @@ function Step2ChecklistSelection({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ClipboardCheck className="size-5 text-emerald-600" />
-          Select Checklist Template
-        </CardTitle>
-        <CardDescription>
-          Choose the checklist template to send to the candidate. Only one checklist can be selected.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      {/* ─── Bundle Selector ─── */}
+      {bundles.length > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="size-5 text-primary" />
+              Use a Bundle (optional)
+            </CardTitle>
+            <CardDescription>
+              Select a pre-built bundle to auto-fill the checklist + documents. Or skip this and select manually below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onSelectBundle(null)}
+                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  selectedBundleId === null
+                    ? "border-primary bg-primary text-white"
+                    : "border-border text-text-secondary hover:bg-surface-2"
+                }`}
+              >
+                Custom
+              </button>
+              {bundles.map((bundle) => {
+                let docCount = 0;
+                try {
+                  docCount = JSON.parse(bundle.documents).length;
+                } catch {
+                  docCount = 0;
+                }
+                return (
+                  <button
+                    key={bundle.id}
+                    onClick={() => onSelectBundle(bundle.id)}
+                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+                      selectedBundleId === bundle.id
+                        ? "border-primary bg-primary text-white"
+                        : "border-border text-text-secondary hover:bg-surface-2"
+                    }`}
+                  >
+                    {bundle.name}
+                    <Badge
+                      variant="secondary"
+                      className={`text-xs ${selectedBundleId === bundle.id ? "bg-white/20 text-white" : ""}`}
+                    >
+                      {bundle.credit_cost} cr
+                    </Badge>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedBundleId !== null && (
+              <div className="mt-3 p-3 bg-background rounded-lg border border-border">
+                <p className="text-xs text-text-secondary">
+                  ✓ Bundle applied — checklist and documents auto-selected below. You can still modify your selections.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Checklist Template Selection ─── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="size-5 text-emerald-600" />
+            Select Checklist Template
+          </CardTitle>
+          <CardDescription>
+            Choose the checklist template to send to the candidate. Only one checklist can be selected.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
         <RadioGroup
           value={selectedTemplateId?.toString() ?? ""}
           onValueChange={(val) => setSelectedTemplateId(Number(val))}
@@ -821,7 +956,8 @@ function Step2ChecklistSelection({
           ))}
         </RadioGroup>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
 

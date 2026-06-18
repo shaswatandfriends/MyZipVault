@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyCronAuth } from "@/lib/cron-auth";
 import type { AuditTrailEntry } from "@/lib/vaultsign/types";
 
 // Cron job: Mark expired documents and send notifications
 export async function GET(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
 
+  try {
     const now = new Date();
 
     // Find documents that have passed their expiry date and are still sent/partially_signed

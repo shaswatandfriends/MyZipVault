@@ -39,6 +39,8 @@ model Organization {
   invite_tokens       InviteToken[]
   recruiter_leads     RecruiterLead[]
   vault_sign_documents VaultSignDocument[]
+  compliance_bundles   ComplianceBundle[]
+  candidate_pools      CandidatePool[]
 }
 
 // ─── 2. Users ────────────────────────────────────────────────────────
@@ -115,6 +117,13 @@ model User {
   // Email Campaign relations
   email_campaigns_created         EmailCampaign[]          @relation("EmailCampaignCreator")
   email_campaign_recipients       EmailCampaignRecipient[] @relation("EmailCampaignRecipientUser")
+
+  // Compliance Bundle relations
+  compliance_bundles_created      ComplianceBundle[]       @relation("ComplianceBundleCreator")
+
+  // Candidate Pool relations
+  candidate_pools                 CandidatePool[]          @relation("CandidatePoolRecruiter")
+  pool_memberships                CandidatePoolMember[]    @relation("CandidatePoolCandidate")
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -157,6 +166,7 @@ model ChecklistTemplate {
   skills        Skill[]
   checklist_requests ChecklistRequest[]
   candidate_checklist_responses CandidateChecklistResponse[]
+  compliance_bundles  ComplianceBundle[]
 }
 
 // ─── 6. Skills ───────────────────────────────────────────────────────
@@ -906,4 +916,71 @@ model EmailCampaignRecipient {
   @@index([status])
   @@index([recipient_user_id])
   @@index([recipient_email])
+}
+
+// ─── 47. Compliance Bundles ─────────────────────────────────────────
+// Agency-specific bundles that group checklist + document requests.
+// Each org gets 5 free bundle slots (controlled via platform_settings
+// key 'bundle_limit_<org_id>', default 5 if not set).
+// Super Admin can assign additional slots.
+model ComplianceBundle {
+  id                    Int       @id @default(autoincrement())
+  organization_id       Int
+  name                  String    @db.VarChar(255)
+  description           String?
+  profession            String?   @db.VarChar(100)
+  specialty             String?   @db.VarChar(100)
+  checklist_template_id Int
+  documents             String    @default("[]")
+    // JSON array: ["credential", "resume", "reference"]
+  credit_cost           Int       @default(1)
+    // Calculated: 1 (checklist request) + documents.length
+  is_active             Boolean   @default(true)
+  created_by            Int
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now())
+
+  organization          Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  checklist_template    ChecklistTemplate @relation(fields: [checklist_template_id], references: [id])
+  creator               User            @relation("ComplianceBundleCreator", fields: [created_by], references: [id])
+
+  @@index([organization_id, is_active])
+}
+
+// ─── 48. Candidate Pools (Saved candidate groups) ───────────────────
+// Recruiters organize candidates into named groups ("playlists").
+// Each pool belongs to a specific recruiter within an organization.
+model CandidatePool {
+  id                Int       @id @default(autoincrement())
+  name              String    @db.VarChar(255)
+  description       String?
+  recruiter_user_id Int
+  organization_id   Int
+  color             String    @default("#059669") @db.VarChar(20)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now())
+
+  recruiter         User          @relation("CandidatePoolRecruiter", fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  organization      Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  members           CandidatePoolMember[]
+
+  @@index([recruiter_user_id, organization_id])
+}
+
+// ─── 49. Candidate Pool Members ─────────────────────────────────────
+// Junction table: which candidates are in which pools.
+// A candidate can be in multiple pools simultaneously.
+model CandidatePoolMember {
+  id                Int       @id @default(autoincrement())
+  pool_id           Int
+  candidate_user_id Int
+  notes             String?
+  added_at          DateTime  @default(now())
+
+  pool              CandidatePool @relation(fields: [pool_id], references: [id], onDelete: Cascade)
+  candidate         User          @relation("CandidatePoolCandidate", fields: [candidate_user_id], references: [id], onDelete: Cascade)
+
+  @@unique([pool_id, candidate_user_id])
+  @@index([pool_id])
+  @@index([candidate_user_id])
 }

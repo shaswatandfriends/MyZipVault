@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { logCreditsDeducted } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
+import { sendRequestSchema, validateBody } from "@/lib/validation-schemas";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limiter";
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +27,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No organization found" }, { status: 400 });
     }
 
+    // ─── Rate limit: max 20 send requests per user per hour ───
+    const rateLimitKey = `user_${userId}`;
+    const rateLimit = await checkRateLimit("send_request", rateLimitKey, 20, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
+
+    // ─── Zod validation ───
+    const validation = validateBody(sendRequestSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
     const {
       firstName,
       lastName,
@@ -35,14 +53,7 @@ export async function POST(request: Request) {
       specialty,
       checklistTemplateId,
       documents,
-    } = body;
-
-    if (!email || !firstName || !lastName || !checklistTemplateId) {
-      return NextResponse.json(
-        { error: "Missing required fields: email, firstName, lastName, checklistTemplateId" },
-        { status: 400 }
-      );
-    }
+    } = validation.data;
 
     // Check if candidate already exists
     const existingUser = await db.user.findUnique({
@@ -117,6 +128,84 @@ export async function POST(request: Request) {
       select: { name: true },
     });
     const checklistTemplateName = checklistTemplate?.name || "Unknown";
+
+    // ─── Gap 2: Pipeline lock within company ───────────────────────
+    // If another recruiter in the same org already has an active checklist
+    // request for this candidate, BLOCK this request with a message
+    // identifying the recruiter who has the lock.
+    //
+    // Rule: A candidate is "locked" in a company's pipeline if they have
+    // a checklist_request from any recruiter in the org whose status is
+    // NOT 'declined' or 'cancelled'. (We don't use 'not_interested' because
+    // that's a recruiter-side lead stage, not a checklist request status.)
+    //
+    // Exception: Client Admin can override (per Gap 1 — they have full
+    // visibility). They can send requests on behalf of any recruiter.
+    if (organizationId) {
+      // Find all recruiters in this org
+      const orgRecruiters = await db.user.findMany({
+        where: {
+          organization_id: organizationId,
+          role: { in: ["client_admin", "client_recruiter"] },
+          account_status: "active",
+        },
+        select: { id: true, first_name: true, last_name: true },
+      });
+      const orgRecruiterIds = orgRecruiters.map((u) => u.id);
+      const orgRecruiterMap = new Map(orgRecruiters.map((u) => [u.id, u]));
+
+      // Find any existing checklist request for this candidate from any
+      // recruiter in the org (excluding the current recruiter)
+      const otherRecruiterIds = orgRecruiterIds.filter((id) => id !== userId);
+      if (otherRecruiterIds.length > 0) {
+        const existingRequest = await db.checklistRequest.findFirst({
+          where: {
+            candidate_user_id: candidateUserId,
+            client_user_id: { in: otherRecruiterIds },
+            // Exclude explicitly closed/cancelled requests
+            status: { notIn: ["declined", "cancelled"] },
+          },
+          select: {
+            id: true,
+            client_user_id: true,
+            status: true,
+            created_at: true,
+          },
+          orderBy: { created_at: "desc" },
+        });
+
+        if (existingRequest) {
+          const lockingRecruiter = orgRecruiterMap.get(existingRequest.client_user_id);
+          const lockingRecruiterName = lockingRecruiter
+            ? `${lockingRecruiter.first_name ?? ""} ${lockingRecruiter.last_name ?? ""}`.trim() ||
+              `Recruiter #${existingRequest.client_user_id}`
+            : `Recruiter #${existingRequest.client_user_id}`;
+
+          // Client admin override: allow the request but warn
+          if (userRole === "client_admin") {
+            console.warn(
+              `[PIPELINE_LOCK] Client admin ${userId} overriding pipeline lock held by ${lockingRecruiterName} for candidate ${candidateUserId}`
+            );
+            // Continue with the request — client admin has override power
+          } else {
+            // Regular recruiter — block the request
+            return NextResponse.json(
+              {
+                error: `This candidate is already in ${lockingRecruiterName}'s pipeline. Contact them or your admin.`,
+                code: "PIPELINE_LOCKED",
+                lockedBy: {
+                  userId: existingRequest.client_user_id,
+                  name: lockingRecruiterName,
+                  status: existingRequest.status,
+                  createdAt: existingRequest.created_at,
+                },
+              },
+              { status: 409 } // 409 Conflict
+            );
+          }
+        }
+      }
+    }
 
     // Check if there's an existing active checklist response for this candidate + template
     const existingResponse = await db.candidateChecklistResponse.findFirst({
@@ -204,22 +293,39 @@ export async function POST(request: Request) {
     }
 
     if (org && org.credits_balance >= totalCredits) {
-      await db.organization.update({
-        where: { id: organizationId },
-        data: { credits_balance: org.credits_balance - totalCredits },
-      });
-
-      await db.creditTransaction.create({
+      // ─── Gap 11 fix: atomic conditional update ───
+      // Only succeeds if credits_balance is still >= totalCredits at the
+      // moment of update. If two concurrent requests both passed the check
+      // above, only one will actually deduct — the other gets count=0.
+      const deductResult = await db.organization.updateMany({
+        where: {
+          id: organizationId,
+          credits_balance: { gte: totalCredits },
+        },
         data: {
-          organization_id: organizationId,
-          transaction_type: "deduction",
-          credit_amount: -totalCredits,
-          description: `Checklist request sent to ${firstName} ${lastName} (${docCount} documents)`,
+          credits_balance: { decrement: totalCredits },
         },
       });
 
-      // Audit log for credit deduction
-      await logCreditsDeducted(userId, organizationId, totalCredits);
+      if (deductResult.count > 0) {
+        // Deduction succeeded — create the audit transaction record
+        await db.creditTransaction.create({
+          data: {
+            organization_id: organizationId,
+            transaction_type: "deduction",
+            credit_amount: -totalCredits,
+            description: `Checklist request sent to ${firstName} ${lastName} (${docCount} documents)`,
+          },
+        });
+
+        // Audit log for credit deduction
+        await logCreditsDeducted(userId, organizationId, totalCredits);
+      } else {
+        // Race condition lost — another concurrent request consumed the credits first
+        console.warn(
+          `[SEND_REQUEST] Race condition — org ${organizationId} credits deducted by concurrent request. Skipping deduction for this request.`
+        );
+      }
     }
 
     // Update user last activity
