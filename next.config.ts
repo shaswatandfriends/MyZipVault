@@ -23,6 +23,34 @@ const securityHeaders = [
       },
     ],
   },
+  // ─── CORS: restrict API access to our own domain only ─────────────
+  // Prevents other websites from making cross-origin API requests.
+  // Auth-protected endpoints are also secured by session cookies.
+  {
+    source: "/api/(.*)",
+    headers: [
+      {
+        key: "Access-Control-Allow-Origin",
+        value: "https://my-zip-vault.vercel.app",
+      },
+      {
+        key: "Access-Control-Allow-Methods",
+        value: "GET, POST, PUT, DELETE, OPTIONS",
+      },
+      {
+        key: "Access-Control-Allow-Headers",
+        value: "Content-Type, Authorization, X-Cron-Secret, x-cron-secret",
+      },
+      {
+        key: "Access-Control-Allow-Credentials",
+        value: "true",
+      },
+      {
+        key: "Access-Control-Max-Age",
+        value: "86400",
+      },
+    ],
+  },
 ];
 
 const nextConfig: NextConfig = {
