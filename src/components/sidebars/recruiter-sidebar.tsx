@@ -15,6 +15,7 @@ import {
   Bell,
   UserCheck,
   Layers,
+  FolderOpen,
 } from "@/lib/icons";
 
 import {
@@ -41,6 +42,7 @@ const navItems = [
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "Bundles", href: "/recruiter/bundles", icon: Layers },
+  { title: "Pools", href: "/recruiter/pools", icon: FolderOpen },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileSignature },
   { title: "Team", href: "/recruiter/team", icon: Users, adminOnly: true },
