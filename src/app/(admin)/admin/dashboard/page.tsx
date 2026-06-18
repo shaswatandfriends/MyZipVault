@@ -92,7 +92,7 @@ function getRoleBadge(role: string) {
       );
     case "client_recruiter":
       return (
-        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
           Recruiter
         </Badge>
       );
@@ -287,8 +287,8 @@ export default function AdminDashboardPage() {
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Recruiters</CardTitle>
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <ShieldCheck className="size-4 text-emerald-600" />
+                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
+                  <ShieldCheck className="size-4 var(--editorial-cream)" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Document Verification Queue</CardTitle>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/admin/documents">
                   <ArrowUpRight className="size-3.5" />
                   Review All
@@ -437,7 +437,7 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Recent Signups</CardTitle>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/admin/users">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -506,7 +506,7 @@ export default function AdminDashboardPage() {
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/documents">
-                <FileText className="size-5 text-emerald-600" />
+                <FileText className="size-5 var(--editorial-cream)" />
                 <span className="text-sm">Verify Documents</span>
               </Link>
             </Button>
@@ -518,7 +518,7 @@ export default function AdminDashboardPage() {
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/reminders">
-                <Bell className="size-5 text-emerald-600" />
+                <Bell className="size-5 var(--editorial-cream)" />
                 <span className="text-sm">Approve Reminders</span>
               </Link>
             </Button>

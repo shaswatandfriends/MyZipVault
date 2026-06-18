@@ -124,7 +124,7 @@ function getRoleBadge(role: string) {
       );
     case "client_recruiter":
       return (
-        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
           Recruiter
         </Badge>
       );
@@ -423,7 +423,7 @@ export default function SuperadminDashboardPage() {
 
             {/* ── Card 2: Credits & Revenue ────────────────────────── */}
             <Card
-              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white"
+              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br var(--editorial-navy)  text-white"
               onClick={() => router.push("/superadmin/analytics")}
             >
               <CardContent className="pt-6">
@@ -434,10 +434,10 @@ export default function SuperadminDashboardPage() {
                   <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                 </div>
                 <div className="text-3xl font-bold tracking-tight">{data?.creditsPurchasedMonth ?? 0}</div>
-                <p className="text-sm text-emerald-100 font-medium mt-0.5">Credits Purchased (Month)</p>
+                <p className="text-sm var(--editorial-cream) font-medium mt-0.5">Credits Purchased (Month)</p>
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-emerald-100 flex items-center gap-1.5">
+                    <span className="var(--editorial-cream) flex items-center gap-1.5">
                       <CreditCard className="size-3.5" /> Spent This Month
                     </span>
                     <span className="font-semibold">{data?.creditsSpentMonth ?? 0}</span>
@@ -450,7 +450,7 @@ export default function SuperadminDashboardPage() {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-xs text-emerald-200">
+                  <div className="flex items-center justify-between text-xs var(--editorial-gold)">
                     <span>Today: {data?.creditsPurchasedToday ?? 0} purchased / {data?.creditsSpentToday ?? 0} spent</span>
                   </div>
                 </div>
@@ -578,7 +578,7 @@ export default function SuperadminDashboardPage() {
                     : "All clear"}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/superadmin/admins">
                   <ArrowUpRight className="size-3.5" />
                   Manage
@@ -591,8 +591,8 @@ export default function SuperadminDashboardPage() {
               <ListSkeleton />
             ) : (data?.pendingAdminList ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="size-14 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
-                  <CheckCircle2 className="size-7 text-emerald-500" />
+                <div className="size-14 rounded-full var(--editorial-navy)  flex items-center justify-center mb-3">
+                  <CheckCircle2 className="size-7 var(--editorial-gold)" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">No pending approvals</p>
                 <p className="text-xs text-muted-foreground mt-1">All admin accounts have been reviewed</p>
@@ -621,7 +621,7 @@ export default function SuperadminDashboardPage() {
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <Button
                           size="sm"
-                          className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="h-7 text-xs gap-1 var(--editorial-navy) var(--editorial-navy-light) text-white"
                           onClick={() => handleApprove(admin.id)}
                           disabled={processingId === admin.id}
                         >
@@ -664,7 +664,7 @@ export default function SuperadminDashboardPage() {
                     : "No errors today"}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/superadmin/errors">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -677,8 +677,8 @@ export default function SuperadminDashboardPage() {
               <ListSkeleton />
             ) : (data?.recentErrors ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="size-14 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
-                  <CheckCircle2 className="size-7 text-emerald-500" />
+                <div className="size-14 rounded-full var(--editorial-navy)  flex items-center justify-center mb-3">
+                  <CheckCircle2 className="size-7 var(--editorial-gold)" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">No recent errors</p>
                 <p className="text-xs text-muted-foreground mt-1">System is running smoothly</p>
@@ -726,7 +726,7 @@ export default function SuperadminDashboardPage() {
                 <CardTitle className="text-base">Recent Signups</CardTitle>
                 <CardDescription>Latest users who joined the platform</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
+              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
                 <Link href="/superadmin/users">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -793,9 +793,9 @@ export default function SuperadminDashboardPage() {
                 <span className="text-xs">Users</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-emerald-300 hover:bg-emerald-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-[var(--editorial-gold)] var(--editorial-gold)/50">
               <Link href="/superadmin/companies">
-                <Building2 className="size-5 text-emerald-600" />
+                <Building2 className="size-5 var(--editorial-cream)" />
                 <span className="text-xs">Companies</span>
               </Link>
             </Button>
