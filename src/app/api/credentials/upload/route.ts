@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/storage";
 import { requireEmailVerified } from "@/lib/email-verification";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limiter";
 
 /**
  * POST /api/credentials/upload
@@ -39,6 +40,17 @@ export async function POST(request: Request) {
     // Require email verification (Gap 5)
     const verificationCheck = await requireEmailVerified(userId);
     if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
+
+    // ─── Rate limit: max 10 uploads per user per hour ───
+    const rateLimitKey = `user_${userId}`;
+    const rateLimit = await checkRateLimit("credential_upload", rateLimitKey, 10, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many uploads. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
+        { status: 429 }
+      );
+    }
+    await recordRateLimitAttempt("credential_upload", rateLimitKey, 3600);
 
     // Parse FormData
     const formData = await request.formData();

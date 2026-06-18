@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { logCreditsDeducted } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
 import { sendRequestSchema, validateBody } from "@/lib/validation-schemas";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limiter";
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +25,16 @@ export async function POST(request: Request) {
 
     if (!organizationId) {
       return NextResponse.json({ error: "No organization found" }, { status: 400 });
+    }
+
+    // ─── Rate limit: max 20 send requests per user per hour ───
+    const rateLimitKey = `user_${userId}`;
+    const rateLimit = await checkRateLimit("send_request", rateLimitKey, 20, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

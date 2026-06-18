@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getSignedUrl, STORAGE_BUCKETS } from "@/lib/storage";
 import { logAudit } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * POST /api/storage/signed-url
@@ -38,6 +39,15 @@ export async function POST(request: Request) {
     const userRole = (session.user as Record<string, unknown>).role as string;
     const organizationId = (session.user as Record<string, unknown>)
       .organizationId as number | null;
+
+    // ─── Rate limit: max 50 signed URL requests per user per hour ───
+    const rateLimit = await checkRateLimit("signed_url", `user_${userId}`, 50, 3600);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many file requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
+        { status: 429 }
+      );
+    }
 
     const { fileUrl, bucket } = await request.json();
 
