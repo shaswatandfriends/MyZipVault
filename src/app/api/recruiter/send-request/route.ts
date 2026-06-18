@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { logCreditsDeducted } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
+import { sendRequestSchema, validateBody } from "@/lib/validation-schemas";
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +27,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
+    // ─── Zod validation ───
+    const validation = validateBody(sendRequestSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
     const {
       firstName,
       lastName,
@@ -35,14 +42,7 @@ export async function POST(request: Request) {
       specialty,
       checklistTemplateId,
       documents,
-    } = body;
-
-    if (!email || !firstName || !lastName || !checklistTemplateId) {
-      return NextResponse.json(
-        { error: "Missing required fields: email, firstName, lastName, checklistTemplateId" },
-        { status: 400 }
-      );
-    }
+    } = validation.data;
 
     // Check if candidate already exists
     const existingUser = await db.user.findUnique({

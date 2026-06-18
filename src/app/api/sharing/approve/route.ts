@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logCandidateShared } from "@/lib/audit";
 import { requireEmailVerified } from "@/lib/email-verification";
+import { shareApproveSchema, validateBody } from "@/lib/validation-schemas";
 
 export async function POST(request: Request) {
   try {
@@ -23,14 +24,13 @@ export async function POST(request: Request) {
     if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
 
     const body = await request.json();
-    const { shareRequestId, itemType, itemId, expiryDays } = body;
 
-    if (!shareRequestId || !itemType || !expiryDays) {
-      return NextResponse.json(
-        { error: "Share request ID, item type, and expiry days are required" },
-        { status: 400 }
-      );
+    // ─── Zod validation ───
+    const validation = validateBody(shareApproveSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    const { shareRequestId, itemType, itemId, expiryDays } = validation.data;
 
     const shareRequest = await db.shareRequest.findFirst({
       where: {

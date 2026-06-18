@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
+import { signupSchema, validateBody } from "@/lib/validation-schemas";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -23,42 +24,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, password, firstName, lastName } = body;
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
+    // ─── Zod validation ───
+    const validation = validateBody(signupSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one uppercase letter" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one lowercase letter" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[0-9]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one number" },
-        { status: 400 }
-      );
-    }
+    const { email, password, firstName, lastName } = validation.data;
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { bundleCreateSchema, validateBody } from "@/lib/validation-schemas";
 
 /**
  * Default number of free bundle slots per organization.
@@ -110,25 +111,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, profession, specialty, checklistTemplateId, documents } = body;
 
-    // Validate required fields
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Bundle name is required" }, { status: 400 });
+    // ─── Zod validation ───
+    const validation = validateBody(bundleCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    if (!checklistTemplateId || isNaN(Number(checklistTemplateId))) {
-      return NextResponse.json({ error: "Checklist template is required" }, { status: 400 });
-    }
-
-    // Validate documents array
-    const validDocTypes = ["checklist", "credential", "resume", "reference"];
-    const safeDocuments = Array.isArray(documents)
-      ? documents.filter((d: string) => validDocTypes.includes(d))
-      : [];
+    const { name, description, profession, specialty, checklistTemplateId, documents: safeDocuments } = validation.data;
 
     // Verify checklist template exists and is active
     const template = await db.checklistTemplate.findFirst({
-      where: { id: Number(checklistTemplateId), is_active: true },
+      where: { id: checklistTemplateId, is_active: true },
     });
     if (!template) {
       return NextResponse.json({ error: "Invalid checklist template" }, { status: 400 });

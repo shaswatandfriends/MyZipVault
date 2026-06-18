@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { requireEmailVerified } from "@/lib/email-verification";
+import { referenceRequestSchema, validateBody } from "@/lib/validation-schemas";
 
 export async function POST(request: Request) {
   try {
@@ -23,14 +24,13 @@ export async function POST(request: Request) {
     if (!verificationCheck.allowed) return verificationCheck.errorResponse!;
 
     const body = await request.json();
-    const { managerFirstName, managerLastName, managerEmail, managerPhone, facilityName, employmentStatus } = body;
 
-    if (!managerFirstName || !managerLastName || !managerEmail || !facilityName || !employmentStatus) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
+    // ─── Zod validation ───
+    const validation = validateBody(referenceRequestSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    const { managerFirstName, managerLastName, managerEmail, managerPhone, facilityName, employmentStatus } = validation.data;
 
     const reference = await db.candidateReference.create({
       data: {
