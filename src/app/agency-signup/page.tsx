@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Zap } from "@/lib/icons";
+import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Zap, Lock } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -139,7 +138,10 @@ export default function AgencySignupPage() {
   // ── Success state: pending approval ──
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex">
+      <div
+      className="min-h-screen flex"
+      style={{ background: "var(--editorial-cream)" }}
+    >
         {/* Left Panel - Slideshow */}
         <AuthSlideshowPanel
           tagline="For staffing agencies & healthcare recruiters"
@@ -156,34 +158,64 @@ export default function AgencySignupPage() {
         />
 
         {/* Right Panel - Success */}
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative">
-          {/* Subtle mesh background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
-          <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
+        <div
+        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
+        style={{ background: "var(--editorial-cream)" }}
+      >
 
-          <motion.div
-            className="max-w-[420px] w-full relative z-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div
+            className="max-w-[420px] w-full relative z-10">
             {/* Mobile branding */}
             <div className="lg:hidden text-center mb-8">
-              <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
-                <span className="text-white text-2xl font-bold font-heading">ZV</span>
-              </div>
-              <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
+              <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+                marginBottom: "1rem",
+              }}
+            >
+              M
+            </div>
+            <h2
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "var(--editorial-navy)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              MyZipVault
+            </h2>
             </div>
 
-            <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+            <div style={{ width: "100%" }}>
               <div className="flex justify-center mb-6">
                 <div className="inline-flex items-center justify-center size-16 bg-amber-100 rounded-2xl">
                   <Clock className="size-8 text-amber-600" />
                 </div>
               </div>
 
-              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight text-center">
+              <h1
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "2.5rem",
+                fontWeight: 700,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                color: "var(--editorial-navy)",
+                marginBottom: "0.75rem",
+              }}
+            >
                 Registration Submitted!
               </h1>
               <p className="text-text-secondary text-base mt-2 mb-8 text-center">
@@ -226,22 +258,37 @@ export default function AgencySignupPage() {
             </div>
 
             {/* Security badges */}
-            <div className="mt-6 flex items-center justify-center gap-5">
-              <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-                <ShieldCheck className="size-3" /> HIPAA
-              </div>
-              <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-                <Zap className="size-3" /> 256-bit
-              </div>
+            <div
+            style={{
+              marginTop: "2.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--editorial-rule-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
             </div>
-          </motion.div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
+            </div>
+          </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div
+      className="min-h-screen flex"
+      style={{ background: "var(--editorial-cream)" }}
+    >
       {/* Left Panel - Slideshow */}
       <AuthSlideshowPanel
         tagline="For staffing agencies & healthcare recruiters"
@@ -259,32 +306,66 @@ export default function AgencySignupPage() {
 
       {/* Right Panel - Form */}
       <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative overflow-y-auto">
-        {/* Subtle mesh background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-light/20 to-transparent" />
-        <div className="absolute top-20 right-10 size-40 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 left-10 size-48 rounded-full bg-accent-teal/5 blur-3xl" />
 
-        <motion.div
-          className="max-w-[420px] w-full relative z-10 my-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
+        <div
+          className="max-w-[420px] w-full relative z-10 my-8">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center size-14 rounded-2xl btn-gradient mb-3 shadow-glow">
-              <span className="text-white text-2xl font-bold font-heading">ZV</span>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                background: "var(--editorial-navy)",
+                color: "var(--editorial-cream)",
+                fontFamily: "var(--editorial-font-serif)",
+                fontWeight: 700,
+                fontSize: "1.5rem",
+                borderRadius: "2px",
+                marginBottom: "1rem",
+              }}
+            >
+              M
             </div>
-            <h2 className="text-2xl font-bold text-foreground font-heading tracking-tight">MyZipVault</h2>
+            <h2
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "var(--editorial-navy)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              MyZipVault
+            </h2>
           </div>
 
           {/* Glass card wrapping form */}
-          <div className="glass-card-static p-8 rounded-[var(--radius-xl)]">
+          <div style={{ width: "100%" }}>
             <div className="mb-8">
-              <h1 className="text-[32px] font-bold text-foreground font-heading tracking-tight leading-tight">
+              <h1
+              style={{
+                fontFamily: "var(--editorial-font-serif)",
+                fontSize: "2.5rem",
+                fontWeight: 700,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                color: "var(--editorial-navy)",
+                marginBottom: "0.75rem",
+              }}
+            >
                 Join MyZipVault
               </h1>
-              <p className="text-text-secondary text-base mt-2">
+              <p
+              style={{
+                fontSize: "1rem",
+                lineHeight: 1.6,
+                color: "var(--editorial-ink-soft)",
+                marginBottom: "2.5rem",
+              }}
+            >
                 For staffing agencies & healthcare recruiters
               </p>
             </div>
@@ -494,11 +575,11 @@ export default function AgencySignupPage() {
                   />
                   <Label htmlFor="tos" className="text-sm font-normal leading-snug text-text-secondary">
                     I agree to the{" "}
-                    <Link href="/terms" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                    <Link href="/terms" style={{ color: "var(--editorial-navy)", fontWeight: 500, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
                       Terms & Conditions
                     </Link>{" "}
                     and{" "}
-                    <Link href="/privacy" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                    <Link href="/privacy" style={{ color: "var(--editorial-navy)", fontWeight: 500, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
                       Privacy Policy
                     </Link>
                   </Label>
@@ -510,7 +591,7 @@ export default function AgencySignupPage() {
 
               <Button
                 type="submit"
-                className="btn-gradient w-full gap-2 py-3.5 rounded-xl font-semibold text-base"
+                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -528,22 +609,34 @@ export default function AgencySignupPage() {
 
             <p className="text-sm text-text-secondary text-center mt-6">
               Already have an account?{" "}
-              <Link href="/agency-login" className="text-primary hover:text-primary-hover font-semibold transition-colors">
+              <Link href="/agency-login" style={{ color: "var(--editorial-navy)", fontWeight: 600, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
                 Sign in
               </Link>
             </p>
           </div>
 
           {/* Security badges */}
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <ShieldCheck className="size-3" /> HIPAA
+          <div
+            style={{
+              marginTop: "2.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--editorial-rule-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
             </div>
-            <div className="flex items-center gap-1.5 text-text-muted text-[10px] font-medium">
-              <Zap className="size-3" /> 256-bit
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
+              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
