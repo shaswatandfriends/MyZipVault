@@ -219,8 +219,9 @@ export async function GET(
     });
   } catch (error) {
     console.error("Candidate detail GET error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Failed to fetch candidate details" },
+      { error: "Failed to fetch candidate details", detail: errorMessage },
       { status: 500 }
     );
   }
