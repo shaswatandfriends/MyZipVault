@@ -896,30 +896,30 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   return (
     <VaultSignErrorBoundary>
     <TooltipProvider>
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Bar */}
-      <div className="bg-white border-b border-border px-4 py-3 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-surface-2 flex flex-col">
+      {/* Top Bar — Clean, professional header */}
+      <div className="bg-white border-b-2 border-slate-200 px-4 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Mobile panel toggle buttons */}
           <div className="flex items-center gap-1 lg:hidden">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-text-secondary" onClick={() => setShowVariablesPanel(true)}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500" onClick={() => setShowVariablesPanel(true)}>
               <PanelLeftIcon className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-text-secondary" onClick={() => setShowSignersPanel(true)}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500" onClick={() => setShowSignersPanel(true)}>
               <PanelRightIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-text-secondary hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/recruiter/vaultsign")} className="text-slate-500 hover:text-slate-900 hover:bg-slate-100">
             <ArrowLeft className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Back</span>
           </Button>
           <Separator orientation="vertical" className="h-6" />
           <Input
             value={docName}
             onChange={(e) => setDocName(e.target.value)}
-            className="font-semibold text-foreground border-none shadow-none focus-visible:ring-0 p-0 h-auto text-lg max-w-xs min-w-0"
-            placeholder="Document Name"
+            className="font-semibold text-slate-900 border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto text-lg max-w-xs min-w-0 bg-transparent"
+            placeholder="Untitled Document"
           />
-          <Badge variant="outline" className="text-xs bg-background hidden sm:inline-flex">
+          <Badge variant="outline" className="text-xs bg-slate-50 text-slate-500 border-slate-200 hidden sm:inline-flex">
             Word Document
           </Badge>
         </div>
@@ -931,10 +931,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* View Mode Toggle */}
-          <div className="hidden sm:flex items-center bg-surface-2 rounded-lg p-0.5">
+          <div className="hidden sm:flex items-center bg-slate-100 rounded-lg p-0.5">
             <button
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === "edit" ? "bg-white text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+                viewMode === "edit" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
               }`}
               onClick={() => setViewMode("edit")}
             >
@@ -942,7 +942,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             </button>
             <button
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === "preview" ? "bg-white text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+                viewMode === "preview" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
               }`}
               onClick={() => {
                 if (viewMode !== "preview") {
@@ -959,16 +959,16 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             </button>
           </div>
 
-          <Button variant="outline" size="sm" onClick={handleSave} className="border-border text-primary">
+          <Button variant="outline" size="sm" onClick={handleSave} className="border-slate-200 text-slate-700 hover:bg-slate-50">
             <Save className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setTemplateName(docName); setShowSaveTemplateDialog(true); }} className="border-border text-primary">
-            <FileText className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Save as Template</span>
+          <Button variant="outline" size="sm" onClick={() => { setTemplateName(docName); setShowSaveTemplateDialog(true); }} className="border-slate-200 text-slate-700 hover:bg-slate-50">
+            <FileText className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Template</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-border text-foreground">
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-slate-200 text-slate-700 hover:bg-slate-50">
             <FileDown className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Export PDF</span>
           </Button>
-          <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" onClick={handleSendForSignature} disabled={sending || document?.status !== "draft"}>
+          <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white" onClick={handleSendForSignature} disabled={sending || document?.status !== "draft"}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
             <span className="hidden sm:inline">Send for Signature</span>
           </Button>
@@ -993,11 +993,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Toolbar — Only show in Edit mode, Desktop — Word-style ribbon */}
+      {/* Toolbar — Only show in Edit mode, Desktop — Clean professional ribbon */}
       {viewMode === "edit" && (
-        <div className="hidden lg:flex bg-toolbar-bg border-b border-border px-1 py-0.5 flex-wrap gap-y-0">
+        <div className="hidden lg:flex bg-slate-50 border-b border-slate-200 px-2 py-1 flex-wrap gap-y-0">
           {/* Clipboard Group */}
-          <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
+          <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <div className="flex items-center gap-0.5">
               <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)" isActive={false}>
                 <Undo2 className="h-4 w-4" />
@@ -1010,7 +1010,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Font Group */}
-          <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
+          <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <div className="flex items-center gap-0.5 flex-wrap">
               <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
                 if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
@@ -1107,7 +1107,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Paragraph Group */}
-          <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
+          <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <div className="flex items-center gap-0.5 flex-wrap">
               <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
                 <AlignLeft className="h-4 w-4" />
@@ -1151,7 +1151,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Insert Group */}
-          <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
+          <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <div className="flex items-center gap-0.5">
               <ToolbarButton onClick={() => {
                 const url = prompt("Enter image URL:");
@@ -1170,7 +1170,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Styles Group */}
-          <div className="flex flex-col bg-white rounded-md border border-border/60 mx-0.5 px-1.5 py-1">
+          <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <Select value={
               editor?.isActive("heading", { level: 1 }) ? "1"
               : editor?.isActive("heading", { level: 2 }) ? "2"
@@ -1421,30 +1421,30 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       {/* Main Content — Three Column Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel — Variables (desktop only) */}
-        <div className="hidden lg:flex w-64 border-r border-border bg-white flex-col">
-          <div className="p-3 border-b border-border">
-            <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
-              <Variable className="h-4 w-4 text-primary" /> Variables
+        <div className="hidden lg:flex w-64 border-r border-slate-200 bg-white flex-col">
+          <div className="p-3 border-b border-slate-200 bg-slate-50">
+            <h3 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+              <Variable className="h-4 w-4 text-slate-500" /> Variables
             </h3>
-            <p className="text-xs text-text-secondary mt-1">Click to insert at cursor</p>
+            <p className="text-xs text-slate-400 mt-1">Click to insert at cursor</p>
           </div>
           {variablesPanelContent}
         </div>
 
         {/* Center — Editor or PDF Preview */}
-        <div className="flex-1 overflow-y-auto bg-surface-2">
+        <div className="flex-1 overflow-y-auto bg-slate-100">
           {viewMode === "edit" ? (
             <>
               {/* Info banner for Word documents */}
-              <div className="bg-status-blue-bg border-b border-status-blue-border px-4 py-2 flex items-center gap-2">
-                <Eye className="h-4 w-4 text-status-blue flex-shrink-0" />
-                <p className="text-xs text-status-blue-dark">
+              <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
+                <Eye className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <p className="text-xs text-blue-700">
                   <strong>Tip:</strong> Use <strong>Preview</strong> mode to see the document with proper page breaks and formatting.
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-auto h-6 text-[10px] border-status-blue/30 text-status-blue hover:bg-badge-blue-bg flex-shrink-0"
+                  className="ml-auto h-6 text-[10px] border-blue-200 text-blue-600 hover:bg-blue-100 flex-shrink-0"
                   onClick={() => {
                     if (pdfUrl) {
                       setViewMode("preview");
@@ -1458,39 +1458,39 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   Preview
                 </Button>
               </div>
-              <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-border bg-white min-h-[800px]">
+              <div className="max-w-3xl mx-auto my-6 lg:my-8 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden">
                 {/* Live header preview — mirrors PDF header layout */}
                 {showHeaderFooter && organization && (
-                  <div className="px-10 pt-5 pb-2 border-b border-border/60">
+                  <div className="px-12 pt-6 pb-3 border-b border-slate-100">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-2 min-w-0">
+                      <div className="flex items-start gap-3 min-w-0">
                         {organization.company_logo_url && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={organization.company_logo_url}
                             alt={`${organization.name || "Company"} logo`}
-                            className="w-9 h-9 object-contain flex-shrink-0"
+                            className="w-10 h-10 object-contain flex-shrink-0 rounded"
                           />
                         )}
                         <div className="min-w-0">
                           {organization.name && (
-                            <p className="text-sm font-bold text-primary leading-tight">
+                            <p className="text-base font-bold text-slate-900 leading-tight">
                               {organization.name}
                             </p>
                           )}
-                          <div className="text-[8px] text-text-muted leading-snug mt-0.5">
+                          <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
                             {organization.company_phone && <span>{organization.company_phone}</span>}
-                            {organization.company_phone && organization.company_email && <span> | </span>}
+                            {organization.company_phone && organization.company_email && <span> · </span>}
                             {organization.company_email && <span>{organization.company_email}</span>}
                             {organization.company_website && (
                               <>
-                                {(organization.company_phone || organization.company_email) && <span> | </span>}
+                                {(organization.company_phone || organization.company_email) && <span> · </span>}
                                 <span>{organization.company_website}</span>
                               </>
                             )}
                           </div>
                           {organization.company_address && (
-                            <p className="text-[8px] text-text-muted leading-snug">
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
                               {organization.company_address}
                             </p>
                           )}
@@ -1510,15 +1510,15 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
                 {/* Live footer preview — mirrors PDF footer layout */}
                 {showHeaderFooter && (
-                  <div className="px-10 pt-2 pb-4 border-t border-border/60 mt-2">
-                    <p className="text-[7px] text-text-muted text-center leading-snug">
+                  <div className="px-12 pt-3 pb-5 border-t border-slate-100 mt-2">
+                    <p className="text-[9px] text-slate-400 text-center leading-relaxed">
                       © {new Date().getFullYear()} {organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.
                     </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-[6px] text-text-muted/70 text-center flex-1">
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-[8px] text-slate-300 text-center flex-1">
                         Powered by VaultSign
                       </p>
-                      <p className="text-[8px] text-text-muted italic flex-shrink-0">
+                      <p className="text-[9px] text-slate-400 italic flex-shrink-0">
                         Page 1
                       </p>
                     </div>
@@ -1561,9 +1561,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Right Panel — Signers & Fields (desktop only) */}
-        <div className="hidden lg:flex w-72 border-l border-border bg-white flex-col">
-          <div className="p-3 border-b border-border">
-            <h3 className="font-semibold text-sm text-foreground">Signers & Fields</h3>
+        <div className="hidden lg:flex w-72 border-l border-slate-200 bg-white flex-col">
+          <div className="p-3 border-b border-slate-200 bg-slate-50">
+            <h3 className="font-semibold text-sm text-slate-900">Signers & Fields</h3>
           </div>
           {signersPanelContent}
         </div>
@@ -1831,10 +1831,10 @@ function ToolbarButton({
           <Button
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 transition-all rounded ${
+            className={`h-7 w-7 p-0 transition-all rounded-md ${
               isActive
-                ? "bg-primary-light text-primary ring-1 ring-primary/30"
-                : "text-foreground hover:bg-surface-2 hover:text-foreground active:bg-surface-3"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200"
             }`}
             onClick={onClick}
             title={title}
