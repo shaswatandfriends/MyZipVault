@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface CallScheduleWithLead {
@@ -368,26 +369,10 @@ export async function runCallNotificationEngine(): Promise<CallNotificationResul
 // ─── HTTP Handler ───────────────────────────────────────────────────
 
 export async function GET(request: Request) {
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
+
   try {
-    // Security: Check CRON_SECRET or Vercel Cron header
-    const cronSecret = process.env.CRON_SECRET;
-    const isVercelCron = request.headers.get("vercel-cron") === "true";
-
-    if (cronSecret) {
-      const providedSecret =
-        request.headers.get("x-cron-secret") ||
-        request.headers.get("authorization")?.replace("Bearer ", "");
-      if (providedSecret !== cronSecret && !isVercelCron) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    } else if (!isVercelCron) {
-      // If no CRON_SECRET is set and not from Vercel Cron, deny access
-      return NextResponse.json(
-        { error: "Unauthorized — CRON_SECRET not configured" },
-        { status: 401 }
-      );
-    }
-
     const result = await runCallNotificationEngine();
 
     return NextResponse.json({

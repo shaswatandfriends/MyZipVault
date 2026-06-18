@@ -38,6 +38,7 @@ export default withAuth({
         pathname.startsWith("/vault") ||
         pathname.startsWith("/vaultsign") ||
         pathname.startsWith("/references") ||
+        pathname.startsWith("/recruiters") ||
         pathname.startsWith("/sharing") ||
         pathname.startsWith("/settings") ||
         pathname.startsWith("/profile-completion") ||

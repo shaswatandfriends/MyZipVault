@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 // GET: Cron endpoint for midnight tasks
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
+
   try {
     const now = new Date();
     const yesterday = new Date(now);

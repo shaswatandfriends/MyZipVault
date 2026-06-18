@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logDocumentApproved } from "@/lib/audit";
+import { recalcProfileCompletion } from "@/lib/profile-completion";
 
 export async function PUT(
   request: Request,
@@ -42,7 +43,7 @@ export async function PUT(
     });
 
     // Recalculate profile_completion_pct for the candidate
-    await recalculateProfileCompletion(credential.candidate_user_id);
+    await recalcProfileCompletion(credential.candidate_user_id);
 
     // Audit log
     await logDocumentApproved(adminUserId, userRole, credentialId);
@@ -57,49 +58,3 @@ export async function PUT(
   }
 }
 
-async function recalculateProfileCompletion(userId: number) {
-  const verifiedCredentials = await db.credential.count({
-    where: {
-      candidate_user_id: userId,
-      verification_status: "verified",
-    },
-  });
-
-  const profile = await db.candidateProfile.findUnique({
-    where: { user_id: userId },
-  });
-
-  const user = await db.user.findUnique({
-    where: { id: userId },
-  });
-
-  let pct = 0;
-
-  if (profile?.first_name) pct += 5;
-  if (profile?.last_name) pct += 5;
-  if (profile?.phone) pct += 5;
-  if (user?.email) pct += 5;
-
-  if (verifiedCredentials > 0) pct += 30;
-
-  if (profile?.resume_id) pct += 20;
-
-  const refCount = await db.candidateReference.count({
-    where: { candidate_user_id: userId, status: "completed" },
-  });
-  if (refCount > 0) pct += 15;
-
-  const checklistCount = await db.candidateChecklistResponse.count({
-    where: { candidate_user_id: userId, status: "active" },
-  });
-  if (checklistCount > 0) pct += 15;
-
-  pct = Math.min(pct, 100);
-
-  if (profile) {
-    await db.candidateProfile.update({
-      where: { user_id: userId },
-      data: { profile_completion_pct: pct },
-    });
-  }
-}

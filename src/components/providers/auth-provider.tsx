@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         platform_admin: ["/admin"],
         client_admin: ["/recruiter"],
         client_recruiter: ["/recruiter"],
-        candidate: ["/dashboard", "/checklists", "/calendar", "/vault", "/references", "/sharing", "/settings", "/profile-completion", "/notifications"],
+        candidate: ["/dashboard", "/checklists", "/calendar", "/vault", "/references", "/recruiters", "/sharing", "/settings", "/profile-completion", "/notifications"],
       };
 
       const allowedPaths = roleAccess[user.role] ?? [];

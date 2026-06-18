@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getScopedClientUserIds, canRecruiterAccessCandidate } from "@/lib/recruiter-scope";
 
 export async function GET(
   request: Request,
@@ -39,17 +40,32 @@ export async function GET(
       return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
     }
 
-    // Verify this recruiter has access (checklist request exists)
-    const orgUsers = await db.user.findMany({
-      where: { organization_id: organizationId, role: { in: ["client_recruiter", "client_admin"] } },
-      select: { id: true },
-    });
-    const orgUserIds = orgUsers.map((u) => u.id);
+    // ─── Gap 1 fix: scope by user, not org ───
+    // Individual recruiters see only their own candidates.
+    // Client admins see all recruiters' candidates in their org.
+    const scope = await getScopedClientUserIds(userRole, userId, organizationId);
+    if (!scope) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Verify this recruiter has access to this candidate
+    const hasAccess = await canRecruiterAccessCandidate(
+      userRole,
+      userId,
+      organizationId,
+      candidateId
+    );
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this candidate" },
+        { status: 403 }
+      );
+    }
 
     const checklistRequests = await db.checklistRequest.findMany({
       where: {
         candidate_user_id: candidateId,
-        client_user_id: { in: orgUserIds },
+        client_user_id: { in: scope.clientUserIds },
       },
       include: {
         checklist_template: {
@@ -72,11 +88,11 @@ export async function GET(
       return NextResponse.json({ error: "No access to this candidate" }, { status: 403 });
     }
 
-    // Get consent shares (shared documents)
+    // Get consent shares (shared documents) — scoped to this recruiter/admin's org
     const consentShares = await db.consentShare.findMany({
       where: {
         candidate_user_id: candidateId,
-        client_user_id: { in: orgUserIds },
+        client_user_id: { in: scope.clientUserIds },
         is_deleted: false,
       },
       include: {

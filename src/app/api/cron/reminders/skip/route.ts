@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export async function POST(request: Request) {
-  try {
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const providedSecret = request.headers.get("x-cron-secret");
-      if (providedSecret !== cronSecret) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
 
+  try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

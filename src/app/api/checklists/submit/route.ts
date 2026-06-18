@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { recalcProfileCompletion } from "@/lib/profile-completion";
 
 export async function POST(request: Request) {
   try {
@@ -89,17 +90,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Update candidate profile completion
-    const profile = await db.candidateProfile.findUnique({
-      where: { user_id: userId },
-    });
-    if (profile) {
-      const newPct = Math.min(profile.profile_completion_pct + 20, 100);
-      await db.candidateProfile.update({
-        where: { user_id: userId },
-        data: { profile_completion_pct: newPct },
-      });
-    }
+    // Update candidate profile completion (Gap 17: use shared utility)
+    await recalcProfileCompletion(userId);
 
     // Create notification
     await db.notification.create({
