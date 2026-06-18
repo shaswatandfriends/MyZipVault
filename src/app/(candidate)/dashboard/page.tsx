@@ -365,12 +365,12 @@ export default function CandidateDashboardPage() {
 
       {/* ── Quick Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
           <Link href="/vault/resume">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
+                  <FileText className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
                 </div>
                 <Badge variant={hasResume ? "default" : "secondary"} className="text-xs">
                   {hasResume ? "Uploaded" : "Not Added"}
@@ -384,12 +384,12 @@ export default function CandidateDashboardPage() {
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
           <Link href="/checklists">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <ClipboardCheck className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
+                  <ClipboardCheck className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
                 </div>
                 {data?.checklists?.pending > 0 && (
                   <Badge variant="destructive" className="text-xs">
@@ -405,12 +405,12 @@ export default function CandidateDashboardPage() {
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
           <Link href="/calendar">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <CalendarDays className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
+                  <CalendarDays className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   Schedule
@@ -424,12 +424,12 @@ export default function CandidateDashboardPage() {
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
           <Link href="/vault/credentials">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <ShieldCheck className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
+                  <ShieldCheck className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {data?.credentials?.active ?? 0} active
@@ -443,12 +443,12 @@ export default function CandidateDashboardPage() {
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
           <Link href="/references">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Users className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
+                  <Users className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {data?.references?.completed ?? 0} done
@@ -462,12 +462,12 @@ export default function CandidateDashboardPage() {
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow">
+        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
           <Link href="/vaultsign">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileSignature className="size-4 text-primary" />
+                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
+                  <FileSignature className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
                 </div>
                 {(data?.vaultsign?.pending ?? 0) > 0 ? (
                   <Badge variant="destructive" className="text-xs">
