@@ -310,8 +310,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const lastSaved = useRef<string>("");
 
-  // PDF preview state
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  // View mode: "edit" (TipTap editable) | "preview" (read-only rendered) | "pdf" (generated PDF)
+  const [viewMode, setViewMode] = useState<"edit" | "preview" | "pdf">("edit");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -442,6 +442,13 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   useEffect(() => { fetchDocument(); }, [fetchDocument]);
 
+  // Toggle editor editable state based on viewMode — Preview mode = read-only
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(viewMode === "edit");
+    }
+  }, [editor, viewMode]);
+
   // ─── Save handlers ─────────────────────────────────────────────────
   const handleAutoSave = async (content?: any) => {
     if (!docId || !editor) return;
@@ -476,9 +483,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     toast.success("Draft saved");
   };
 
-  // ─── PDF preview / export ──────────────────────────────────────────
-  const handleGeneratePreview = useCallback(async () => {
-    if (!docId) return;
+  // ─── PDF export (used by "Export PDF" button — separate from Preview) ───
+  const handleGeneratePdf = useCallback(async (): Promise<string | null> => {
+    if (!docId) return null;
     setPdfLoading(true);
     setPdfError(null);
     try {
@@ -496,11 +503,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         setPdfUrl(data.pdf_url);
         setPdfPage(1);
         setPdfTotalPages(0);
-        setViewMode("preview");
-        const method = data.conversion_method || "unknown";
-        toast.success(method === "libreoffice"
-          ? "PDF preview generated with exact formatting"
-          : "PDF preview generated (approximate formatting)");
+        return data.pdf_url;
       } else {
         throw new Error("No PDF URL returned");
       }
@@ -508,13 +511,24 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       if (err.name === "AbortError") {
         setPdfError("PDF generation timed out. Please try again.");
       } else {
-        setPdfError(err.message || "Failed to generate PDF preview");
+        setPdfError(err.message || "Failed to generate PDF");
       }
-      toast.error(err.message || "Failed to generate PDF preview");
+      return null;
     } finally {
       setPdfLoading(false);
     }
   }, [docId]);
+
+  // Kept for backwards compatibility (used by dropdown menu + old callers)
+  const handleGeneratePreview = useCallback(async () => {
+    const url = await handleGeneratePdf();
+    if (url) {
+      toast.success("PDF generated");
+      setViewMode("pdf");
+    } else {
+      toast.error(pdfError || "Failed to generate PDF");
+    }
+  }, [handleGeneratePdf, pdfError]);
 
   const handleExportPdf = async () => {
     const loadingToast = toast.loading("Generating PDF...");
@@ -585,7 +599,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   }, [pdfUrl, pdfPage, pdfZoom]);
 
   useEffect(() => {
-    if (viewMode === "preview" && pdfUrl) {
+    if (viewMode === "pdf" && pdfUrl) {
       pdfDocRef.current = null;
       renderPdfPage();
     }
@@ -1149,7 +1163,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </span>
               )}
 
-              {/* Edit/Preview toggle */}
+              {/* Edit/Preview toggle — Preview is instant, in-browser, no PDF conversion */}
               <div className="hidden sm:flex items-center rounded-md p-0.5" style={{ background: T.cream100 }}>
                 <button
                   onClick={() => setViewMode("edit")}
@@ -1163,21 +1177,16 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   <Edit3 size={14} /> Edit
                 </button>
                 <button
-                  onClick={() => {
-                    if (viewMode !== "preview") {
-                      if (pdfUrl) setViewMode("preview");
-                      else handleGeneratePreview();
-                    }
-                  }}
-                  disabled={pdfLoading}
+                  onClick={() => setViewMode("preview")}
                   className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5"
                   style={{
                     background: viewMode === "preview" ? "#fff" : "transparent",
                     color: viewMode === "preview" ? T.navy950 : T.ink600,
                     boxShadow: viewMode === "preview" ? "0 1px 2px rgba(11,31,58,0.08)" : "none",
                   }}
+                  title="See exactly what the signer will see — instant, no PDF conversion"
                 >
-                  {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye size={14} />} Preview
+                  <Eye size={14} /> Preview
                 </button>
               </div>
 
@@ -1214,7 +1223,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={handleGeneratePreview} disabled={pdfLoading}>
-                    <Eye className="h-4 w-4 mr-2" /> Generate PDF Preview
+                    <FileText className="h-4 w-4 mr-2" /> Generate PDF View
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-[#A0392E] focus:text-[#A0392E]" onClick={() => setShowDeleteDialog(true)}>
@@ -1509,8 +1518,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* ─── PDF Preview toolbar ─── */}
-          {viewMode === "preview" && pdfUrl && (
+          {/* ─── PDF viewer toolbar (only in PDF mode) ─── */}
+          {viewMode === "pdf" && pdfUrl && (
             <div className="bg-white border-b px-4 py-2 flex items-center justify-between" style={{ borderColor: T.borderSubtle }}>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (pdfPage > 1) setPdfPage(pdfPage - 1); }} disabled={pdfPage <= 1}>
@@ -1549,10 +1558,65 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               {variablesPanel}
             </aside>
 
-            {/* Center — Canvas */}
+            {/* Center — Canvas (edit / preview share the live editor; pdf mode renders the canvas) */}
             <main className="flex-1 overflow-y-auto" style={{ background: T.cream100 }}>
-              {viewMode === "edit" ? (
+              {viewMode === "pdf" ? (
+                <div className="flex flex-col items-center py-6">
+                  {pdfLoading ? (
+                    <div className="flex flex-col items-center gap-3 py-20">
+                      <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.gold600 }} />
+                      <p className="text-sm" style={{ color: T.ink600 }}>Generating PDF...</p>
+                      <p className="text-xs" style={{ color: T.ink400 }}>This may take a few seconds</p>
+                    </div>
+                  ) : pdfError ? (
+                    <div className="flex flex-col items-center gap-3 py-20 max-w-md text-center">
+                      <AlertTriangle className="h-8 w-8 text-status-amber" />
+                      <p className="text-sm font-medium" style={{ color: T.ink900 }}>PDF Generation Error</p>
+                      <p className="text-xs" style={{ color: T.ink600 }}>{pdfError}</p>
+                      <Button variant="outline" size="sm" onClick={handleGeneratePreview} className="mt-2">
+                        Try Again
+                      </Button>
+                    </div>
+                  ) : !pdfUrl ? (
+                    <div className="flex flex-col items-center gap-3 py-20">
+                      <FileText className="h-8 w-8" style={{ color: T.ink400 }} />
+                      <p className="text-sm" style={{ color: T.ink600 }}>No PDF generated yet. Use "Export PDF" to generate one.</p>
+                      <Button variant="outline" size="sm" onClick={handleGeneratePreview}>
+                        Generate PDF
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="shadow-lg rounded-lg overflow-hidden" style={{ border: `1px solid ${T.borderSubtle}`, background: T.cream100 }}>
+                      <canvas ref={pdfCanvasRef} className="block" />
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <div className="py-8 px-6">
+                  {/* Preview-mode banner */}
+                  {viewMode === "preview" && (
+                    <div
+                      className="mx-auto mb-4 flex items-center justify-between px-4 py-2 rounded-md text-xs"
+                      style={{
+                        maxWidth: 780,
+                        background: T.gold50,
+                        border: `1px solid ${T.gold500}`,
+                        color: T.gold600,
+                      }}
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        <Eye size={14} />
+                        Preview — this is exactly what the signer will see. Placeholders are replaced with their values.
+                      </span>
+                      <button
+                        onClick={() => setViewMode("edit")}
+                        className="font-medium underline hover:no-underline"
+                      >
+                        Back to edit
+                      </button>
+                    </div>
+                  )}
+
                   <div
                     className="mx-auto rounded-sm"
                     style={{
@@ -1575,11 +1639,11 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                             <img
                               src={organization.company_logo_url}
                               alt={`${organization.name || "Company"} logo`}
-                              className="w-8 h-8 object-contain flex-shrink-0 rounded"
+                              className="h-10 w-auto max-w-[60px] object-contain flex-shrink-0 rounded"
                             />
                           ) : (
                             <div
-                              className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                              className="h-10 w-10 rounded flex items-center justify-center shrink-0"
                               style={{ background: T.navy950 }}
                             >
                               <span className="text-xs font-semibold" style={{ color: T.gold500 }}>
@@ -1600,12 +1664,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                           className="text-[11px] font-mono px-2 py-1 rounded shrink-0 ml-2"
                           style={{ background: T.cream100, color: T.ink600 }}
                         >
-                          {"{{current_date}}"}
+                          {placeholderValues.current_date || new Date().toLocaleDateString()}
                         </span>
                       </div>
                     )}
 
-                    {/* Editor content */}
+                    {/* Editor content — editable in edit mode, read-only in preview mode */}
                     <EditorContent editor={editor} className="tiptap-editor" />
 
                     {/* Footer preview */}
@@ -1628,37 +1692,6 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       </div>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center py-6">
-                  {pdfLoading ? (
-                    <div className="flex flex-col items-center gap-3 py-20">
-                      <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.gold600 }} />
-                      <p className="text-sm" style={{ color: T.ink600 }}>Generating PDF preview...</p>
-                      <p className="text-xs" style={{ color: T.ink400 }}>This may take a few seconds</p>
-                    </div>
-                  ) : pdfError ? (
-                    <div className="flex flex-col items-center gap-3 py-20 max-w-md text-center">
-                      <AlertTriangle className="h-8 w-8 text-status-amber" />
-                      <p className="text-sm font-medium" style={{ color: T.ink900 }}>PDF Preview Error</p>
-                      <p className="text-xs" style={{ color: T.ink600 }}>{pdfError}</p>
-                      <Button variant="outline" size="sm" onClick={handleGeneratePreview} className="mt-2">
-                        Try Again
-                      </Button>
-                    </div>
-                  ) : !pdfUrl ? (
-                    <div className="flex flex-col items-center gap-3 py-20">
-                      <Eye className="h-8 w-8" style={{ color: T.ink400 }} />
-                      <p className="text-sm" style={{ color: T.ink600 }}>Click "Preview" to generate an exact-format PDF view</p>
-                      <Button variant="outline" size="sm" onClick={handleGeneratePreview}>
-                        Generate Preview
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="shadow-lg rounded-lg overflow-hidden" style={{ border: `1px solid ${T.borderSubtle}`, background: T.cream100 }}>
-                      <canvas ref={pdfCanvasRef} className="block" />
-                    </div>
-                  )}
                 </div>
               )}
             </main>

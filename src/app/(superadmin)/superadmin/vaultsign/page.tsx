@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { VaultSignErrorBoundary } from "@/components/vaultsign/vaultsign-error-boundary";
+import { LogoUploader } from "@/components/vaultsign/logo-uploader";
 import {
   LayoutTemplate, Activity, Building2, Plus, Loader2, Edit3,
   Trash2, Search, FileText, Eye, X, Save, FileSignature,
@@ -950,38 +951,23 @@ export default function SuperAdminVaultSignPage() {
 
                 {orgSettings && (
                   <div className="space-y-6 max-w-2xl mt-4">
-                    {/* Company Logo Section */}
-                    <div>
-                      <Label className="text-sm font-medium flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Company Logo</Label>
-                      <div className="mt-2 flex items-center gap-4">
-                        {orgSettings.company_logo_url ? (
-                          <div className="w-20 h-20 rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center">
-                            <img src={orgSettings.company_logo_url} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
-                          </div>
-                        ) : (
-                          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-background">
-                            <Building2 className="h-8 w-8 text-text-muted" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <Input
-                            value={orgSettings.company_logo_url || ""}
-                            onChange={(e) => setOrgSettings({ ...orgSettings, company_logo_url: e.target.value })}
-                            placeholder="https://example.com/logo.png"
-                            className="h-8 text-xs"
-                          />
-                          <div className="flex items-center gap-2 mt-2">
-                            <label className="cursor-pointer">
-                              <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={logoUploading} />
-                              <Button variant="outline" size="sm" className="h-7 text-xs" asChild disabled={logoUploading}>
-                                <span>{logoUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />} Upload</span>
-                              </Button>
-                            </label>
-                            <span className="text-[10px] text-text-muted">PNG, JPG, SVG recommended</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Company Logo — upload only, no URL input */}
+                    <LogoUploader
+                      value={orgSettings.company_logo_url}
+                      onChange={(url) => setOrgSettings({ ...orgSettings, company_logo_url: url })}
+                      onUpload={async (file) => {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const res = await fetch("/api/vaultsign/documents/upload", { method: "POST", body: formData });
+                        if (!res.ok) {
+                          const data = await res.json().catch(() => ({}));
+                          throw new Error(data.error || "Upload failed");
+                        }
+                        const data = await res.json();
+                        toast.success("Logo uploaded");
+                        return data.document_url;
+                      }}
+                    />
 
                     <Separator />
 

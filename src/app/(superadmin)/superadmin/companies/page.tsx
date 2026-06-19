@@ -36,6 +36,7 @@ import {
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { LogoUploader } from "@/components/vaultsign/logo-uploader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1447,15 +1448,28 @@ export default function SuperadminCompaniesPage() {
               <p className="text-xs text-muted-foreground">These fields appear in the header/footer of VaultSign PDF documents.</p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Company Logo URL</Label>
-              <Input
-                value={editCompanyLogoUrl}
-                onChange={(e) => setEditCompanyLogoUrl(e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-              <p className="text-xs text-muted-foreground">URL to the company logo image (displayed in document headers).</p>
-            </div>
+            <LogoUploader
+              value={editCompanyLogoUrl || null}
+              onChange={(url) => setEditCompanyLogoUrl(url || "")}
+              onUpload={async (file) => {
+                const formData = new FormData();
+                formData.append("file", file);
+                if (selectedCompany?.id) {
+                  formData.append("organizationId", String(selectedCompany.id));
+                }
+                const res = await fetch("/api/vaultsign/documents/upload", {
+                  method: "POST",
+                  body: formData,
+                });
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  throw new Error(data.error || "Upload failed");
+                }
+                const data = await res.json();
+                toast.success("Logo uploaded");
+                return data.document_url;
+              }}
+            />
             <div className="space-y-2">
               <Label>Company Address</Label>
               <Input
