@@ -190,6 +190,7 @@ import {
   Pin,
   MapPin,
   Flame,
+  Camera,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -374,6 +375,7 @@ export {
   Pin,
   MapPin,
   Flame,
+  Camera,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────

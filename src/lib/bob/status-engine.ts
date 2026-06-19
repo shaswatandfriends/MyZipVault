@@ -490,6 +490,53 @@ export async function onDocUploaded(params: {
   await touchLeadActivity(params.leadId, "doc_uploaded");
 }
 
+// ─── Domain Events: Doc Denied (candidate declined to share) ────────
+export async function onDocDenied(params: {
+  leadId: number;
+  docType: string;
+}): Promise<void> {
+  await logActivity({
+    leadId: params.leadId,
+    activityType: "doc_denied",
+    description: `Document denied: ${params.docType} — candidate declined to share`,
+    actorType: "candidate",
+    metadata: { document_type: params.docType },
+  });
+
+  // Notify the owning recruiter
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: "Document denied ❌",
+    message: `Candidate declined to share their ${params.docType}. You can request again later.`,
+  });
+
+  await touchLeadActivity(params.leadId, "doc_denied");
+}
+
+// ─── Domain Events: Doc Shared (candidate shared an existing doc) ───
+export async function onDocShared(params: {
+  leadId: number;
+  docType: string;
+  docName: string;
+}): Promise<void> {
+  await logActivity({
+    leadId: params.leadId,
+    activityType: "doc_shared",
+    description: `Document shared: ${params.docType} — "${params.docName}"`,
+    actorType: "candidate",
+    metadata: { document_type: params.docType, document_name: params.docName },
+  });
+
+  // Notify the owning recruiter
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: "Document shared ✅",
+    message: `Candidate shared their ${params.docType}: "${params.docName}". Check the Documents tab.`,
+  });
+
+  await touchLeadActivity(params.leadId, "doc_shared");
+}
+
 // ─── Domain Events: Interview Scheduled ─────────────────────────────
 export async function onInterviewScheduled(params: {
   leadId: number;

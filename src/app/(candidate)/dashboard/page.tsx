@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
+import { RequestedDocuments } from "@/components/candidate/requested-documents";
 
 // ─── Dashboard Data Interface ─────────────────────────────────────
 interface DashboardData {
@@ -221,6 +222,12 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Requested Documents (from recruiters) ── */}
+      <div>
+        <h2 className="text-sm font-semibold text-foreground mb-2 px-1">Document Requests</h2>
+        <RequestedDocuments />
+      </div>
 
       {/* ── Thank You State ── */}
       {thankYouState?.show && (
