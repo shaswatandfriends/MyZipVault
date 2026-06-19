@@ -705,45 +705,100 @@ function BannerFormDialog({
             />
           </div>
 
-          {/* Image Upload */}
-          <div className="space-y-1.5">
+          {/* Image Upload — with live preview at actual banner aspect ratio */}
+          <div className="space-y-2">
             <Label>Banner Image</Label>
-            <div className="flex items-center gap-3">
-              {imageUrl ? (
-                <div className="relative size-20 rounded-lg overflow-hidden border border-border">
-                  <img src={imageUrl} alt="Preview" className="size-full object-cover" />
+
+            {imageUrl ? (
+              <div className="space-y-3">
+                {/* Live preview at the ACTUAL banner aspect ratio (3.5:1) */}
+                <div className="relative w-full overflow-hidden rounded-lg border border-border bg-gray-100" style={{ aspectRatio: "3.5 / 1" }}>
+                  <img
+                    src={imageUrl}
+                    alt="Banner preview"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  {/* Gradient overlay matching the dashboard display */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  {/* Title overlay preview */}
+                  {title && (
+                    <div className="absolute inset-0 flex items-center p-4">
+                      <div className="max-w-xl">
+                        <h3 className="text-lg font-semibold text-white drop-shadow-sm line-clamp-1">{title}</h3>
+                        {description && (
+                          <p className="text-sm text-white/80 line-clamp-1 mt-0.5">{description}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Remove button */}
                   <button
                     onClick={() => setImageUrl("")}
-                    className="absolute -top-1 -right-1 size-5 rounded-full bg-red-500 text-white flex items-center justify-center"
+                    className="absolute top-2 right-2 size-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                    title="Remove image"
                   >
-                    <X className="size-3" />
+                    <X className="size-3.5" />
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="flex size-20 items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary transition-colors"
-                >
-                  {isUploading ? (
-                    <Loader2 className="size-5 text-text-muted animate-spin" />
-                  ) : (
-                    <Upload className="size-5 text-text-muted" />
-                  )}
-                </button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <div className="text-xs text-text-secondary">
-                <p>Recommended: 800x400px</p>
-                <p>Max 5MB. PNG, JPG, WebP</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Upload className="size-3.5 mr-1.5" />}
+                    Replace image
+                  </Button>
+                  <span className="text-xs text-text-muted">
+                    Preview shows actual banner dimensions. Image is cropped to fill (object-cover).
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-primary", "bg-primary/5"); }}
+                onDragLeave={(e) => { e.currentTarget.classList.remove("border-primary", "bg-primary/5"); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("border-primary", "bg-primary/5");
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    // Simulate the input change event
+                    const input = fileInputRef.current;
+                    if (input) {
+                      const dt = new DataTransfer();
+                      dt.items.add(file);
+                      input.files = dt.files;
+                      input.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
+                  }
+                }}
+                className="flex flex-col items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors py-8 px-4"
+              >
+                {isUploading ? (
+                  <Loader2 className="size-6 text-text-muted animate-spin" />
+                ) : (
+                  <Upload className="size-6 text-text-muted" />
+                )}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
+                  </p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Recommended: <strong>1200×340px</strong> (3.5:1 ratio) · Max 5MB · PNG, JPG, WebP
+                  </p>
+                </div>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
 
           {/* CTA */}
