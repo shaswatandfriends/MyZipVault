@@ -30,13 +30,23 @@ export async function POST() {
     }
 
     // Verify the superadmin user exists in the database (case-insensitive)
+    console.log("[OTP SEND] Looking for superadmin with email:", SUPERADMIN_EMAIL);
     const user = await db.user.findFirst({
       where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
     });
 
-    if (!user || user.role !== "super_admin") {
+    if (!user) {
+      console.error("[OTP SEND] No user found with email:", SUPERADMIN_EMAIL);
       return NextResponse.json(
-        { error: "Unable to send verification code" },
+        { error: "Unable to send verification code — user not found. Check SUPERADMIN_EMAIL env var." },
+        { status: 400 }
+      );
+    }
+
+    if (user.role !== "super_admin") {
+      console.error("[OTP SEND] User found but role is:", user.role, "(expected super_admin)");
+      return NextResponse.json(
+        { error: "Unable to send verification code — user is not a super admin." },
         { status: 400 }
       );
     }
