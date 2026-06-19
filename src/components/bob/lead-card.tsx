@@ -59,7 +59,15 @@ function timeAgo(iso: string): string {
   return `${months}mo ago`;
 }
 
-export function LeadCard({ lead }: { lead: LeadCardData }) {
+export function LeadCard({
+  lead,
+  draggable = false,
+  onDragStart,
+}: {
+  lead: LeadCardData;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent, leadId: number) => void;
+}) {
   const router = useRouter();
   const [claiming, setClaiming] = useState(false);
 
@@ -97,7 +105,17 @@ export function LeadCard({ lead }: { lead: LeadCardData }) {
   return (
     <Link
       href={`/recruiter/candidates/${lead.id}`}
-      className="block bg-white border rounded-lg p-3 hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
+      className="block bg-white border rounded-lg p-3 hover:shadow-md hover:border-primary/30 transition-all duration-200 group cursor-grab active:cursor-grabbing"
+      draggable={draggable}
+      onDragStart={(e) => {
+        if (draggable && onDragStart) {
+          onDragStart(e, lead.id);
+          e.currentTarget.style.opacity = "0.5";
+        }
+      }}
+      onDragEnd={(e) => {
+        e.currentTarget.style.opacity = "1";
+      }}
     >
       {/* Top row: name + status */}
       <div className="flex items-start justify-between gap-2 mb-1.5">

@@ -174,6 +174,7 @@ export default function CandidateProfilePage() {
   const [showBlacklist, setShowBlacklist] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState("");
   const [showReactivate, setShowReactivate] = useState(false);
+  const [showLogCall, setShowLogCall] = useState(false);
 
   const fetchLead = useCallback(async () => {
     setLoading(true);
@@ -402,8 +403,14 @@ export default function CandidateProfilePage() {
                 <DropdownMenuItem onClick={() => setShowEdit(true)}>
                   <Edit3 className="h-4 w-4 mr-2" /> Edit details
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowLogCall(true)}>
+                  <Phone className="h-4 w-4 mr-2" /> Log a call
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push(`/recruiter/vaultsign/new?lead=${lead.id}`)}>
                   <FileSignature className="h-4 w-4 mr-2" /> Send VaultSign doc
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/recruiter/send?lead=${lead.id}`)}>
+                  <Send className="h-4 w-4 mr-2" /> Request documents
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isCompanyPool ? (
@@ -577,6 +584,20 @@ export default function CandidateProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Log Call dialog ─── */}
+      {showLogCall && (
+        <LogCallDialog
+          leadName={`${lead.first_name} ${lead.last_name}`}
+          leadId={lead.id}
+          open={showLogCall}
+          onOpenChange={setShowLogCall}
+          onLogged={() => {
+            fetchLead();
+            setShowLogCall(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1214,6 +1235,98 @@ function AccessTab({ lead }: { lead: Lead }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Log Call Dialog ────────────────────────────────────────────────
+function LogCallDialog({
+  leadName, leadId, open, onOpenChange, onLogged,
+}: {
+  leadName: string;
+  leadId: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onLogged: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [outcome, setOutcome] = useState("Reached — had a good conversation");
+  const [notes, setNotes] = useState("");
+
+  async function handleLog() {
+    if (!outcome.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/recruiter/bob/${leadId}/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activity_type: "call_logged",
+          outcome: outcome.trim(),
+          notes: notes.trim() || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to log call");
+      toast.success("Call logged — activity timeline updated");
+      setOutcome("Reached — had a good conversation");
+      setNotes("");
+      onLogged();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Phone className="h-5 w-5" /> Log a call with {leadName}
+          </DialogTitle>
+          <DialogDescription>
+            Logging a call updates the candidate&apos;s last activity and keeps them
+            from going inactive (30-day rule).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs font-medium">Call outcome *</Label>
+            <Select value={outcome} onValueChange={setOutcome}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Reached — had a good conversation">Reached — good conversation</SelectItem>
+                <SelectItem value="Reached — left voicemail">Reached — left voicemail</SelectItem>
+                <SelectItem value="Reached — not interested">Reached — not interested</SelectItem>
+                <SelectItem value="Reached — call back later">Reached — call back later</SelectItem>
+                <SelectItem value="No answer">No answer</SelectItem>
+                <SelectItem value="Wrong number">Wrong number</SelectItem>
+                <SelectItem value="Number disconnected">Number disconnected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs font-medium">Notes (optional)</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What was discussed? Any follow-ups needed?"
+              rows={3}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleLog} disabled={saving || !outcome.trim()}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            Log call
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

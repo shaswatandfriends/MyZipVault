@@ -82,22 +82,29 @@ export async function logActivity(params: {
 }
 
 // ─── Core: Notify the owning recruiter (non-blocking) ───────────────
-// Sends an in-app notification to the recruiter who owns this lead.
+// Sends an in-app notification AND an email for critical events.
 // Used by domain events (RTR signed, doc uploaded, offer signed, etc.)
-// so recruiters see real-time updates in their notification bell.
+// so recruiters see real-time updates in their notification bell + inbox.
 async function notifyRecruiter(params: {
   leadId: number;
   title: string;
   message: string;
   type?: string;
+  sendEmail?: boolean; // If true, also send an email via Brevo
 }): Promise<void> {
   try {
     const lead = await db.recruiterLead.findUnique({
       where: { id: params.leadId },
-      select: { recruiter_user_id: true, first_name: true, last_name: true },
+      select: {
+        recruiter_user_id: true,
+        first_name: true,
+        last_name: true,
+        recruiter_user: { select: { email: true, first_name: true, last_name: true } },
+      },
     });
     if (!lead) return;
 
+    // 1. In-app notification
     await db.notification.create({
       data: {
         user_id: lead.recruiter_user_id,
@@ -108,6 +115,57 @@ async function notifyRecruiter(params: {
         related_entity_type: "lead",
       },
     });
+
+    // 2. Email notification (for critical events only)
+    if (params.sendEmail && lead.recruiter_user?.email) {
+      const brevoApiKey = process.env.BREVO_API_KEY;
+      const brevoSender = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
+      const appUrl = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
+
+      if (brevoApiKey) {
+        const recruiterName = `${lead.recruiter_user.first_name ?? ""} ${lead.recruiter_user.last_name ?? ""}`.trim() || "there";
+        const leadUrl = `${appUrl}/recruiter/candidates/${lead.id}`;
+
+        const htmlContent = `
+          <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <div style="background: #0B1F3A; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+              <span style="color: #C9A961; font-weight: 600;">MyZipVault</span>
+              <span style="color: #fff; margin-left: 8px;">BOB Update</span>
+            </div>
+            <div style="background: #FAF7F0; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid #E8E2D4;">
+              <h2 style="color: #0B1F3A; margin: 0 0 12px;">${params.title}</h2>
+              <p style="color: #1A1A1A; font-size: 15px; line-height: 1.6;">Hi ${recruiterName},</p>
+              <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">${params.message}</p>
+              <p style="margin: 24px 0;">
+                <a href="${leadUrl}" style="background: #0B1F3A; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+                  View candidate profile
+                </a>
+              </p>
+              <p style="color: #8C8A83; font-size: 12px; margin-top: 24px;">
+                Candidate: ${lead.first_name} ${lead.last_name}
+              </p>
+            </div>
+          </div>
+        `;
+
+        // Fire-and-forget — don't block on email
+        fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "api-key": brevoApiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sender: { email: brevoSender, name: "MyZipVault BOB" },
+            to: [{ email: lead.recruiter_user.email }],
+            subject: params.title,
+            htmlContent,
+          }),
+        }).catch((err) => {
+          console.error("[BOB] Failed to send email notification:", err);
+        });
+      }
+    }
   } catch (err) {
     console.error("[BOB] Failed to send notification:", err);
     // Non-blocking
@@ -307,6 +365,7 @@ export async function onRtrSigned(params: {
 
   // Notify the owning recruiter
   await notifyRecruiter({
+    sendEmail: true,
     leadId: params.leadId,
     title: "RTR signed! 🎉",
     message: `Candidate signed the RTR: "${params.documentName}". Status moved to Interested.`,
@@ -370,6 +429,7 @@ export async function onRtrDenied(params: {
 
   // Notify the owning recruiter about the denial
   await notifyRecruiter({
+    sendEmail: true,
     leadId: params.leadId,
     title: `RTR declined (${newDenialCount}/${RTR_DENIAL_THRESHOLD})`,
     message: `Candidate declined the RTR: "${params.documentName}"${params.reason ? ` — ${params.reason}` : ""}.${newDenialCount >= RTR_DENIAL_THRESHOLD ? " Auto-moved to Not Interested (5 denials reached)." : ""}`,
@@ -421,6 +481,7 @@ export async function onDocUploaded(params: {
 
   // Notify the owning recruiter
   await notifyRecruiter({
+    sendEmail: true,
     leadId: params.leadId,
     title: "Document uploaded 📄",
     message: `Candidate uploaded: ${params.docType} — "${params.docName}". Check the Documents tab.`,
@@ -555,6 +616,7 @@ export async function onOfferSigned(params: {
 
   // Notify the owning recruiter — offer accepted is a big deal!
   await notifyRecruiter({
+    sendEmail: true,
     leadId: params.leadId,
     title: "Offer accepted! 🎉",
     message: `Candidate signed the offer letter: "${params.documentName}". Status moved to Onboarding. Next: send compliance checklist.`,

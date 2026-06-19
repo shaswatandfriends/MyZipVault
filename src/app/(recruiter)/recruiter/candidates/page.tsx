@@ -60,6 +60,11 @@ export default function BOBPage() {
   // Add lead dialog
   const [showAddLead, setShowAddLead] = useState(false);
 
+  // Drag-and-drop state
+  const [draggedLeadId, setDraggedLeadId] = useState<number | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [dragChanging, setDragChanging] = useState(false);
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -91,6 +96,39 @@ export default function BOBPage() {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  // ─── Drag-and-drop: change lead status when dropped on a new column ───
+  async function handleDrop(newStatus: CandidateStatus) {
+    if (!draggedLeadId || dragChanging) {
+      setDragOverStatus(null);
+      return;
+    }
+
+    const lead = leads.find((l) => l.id === draggedLeadId);
+    setDragOverStatus(null);
+    setDraggedLeadId(null);
+
+    if (!lead || lead.pipeline_stage === newStatus) return;
+
+    setDragChanging(true);
+    try {
+      const res = await fetch(`/api/recruiter/bob/${draggedLeadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pipeline_stage: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to change status");
+      }
+      toast.success(`${lead.first_name} ${lead.last_name} → ${STATUS_META[newStatus].label}`);
+      fetchLeads(); // Refresh to show updated positions
+    } catch (err: any) {
+      toast.error(err.message || "Failed to change status");
+    } finally {
+      setDragChanging(false);
+    }
+  }
 
   // ─── Kanban columns ─────────────────────────────────────────────
   const kanbanStatuses = view === "company_pool"
@@ -281,8 +319,15 @@ export default function BOBPage() {
           {kanbanStatuses.map((status) => {
             const meta = STATUS_META[status];
             const columnLeads = leadsByStatus(status);
+            const isDragOver = dragOverStatus === status;
             return (
-              <div key={status} className="shrink-0 w-72">
+              <div
+                key={status}
+                className={`shrink-0 w-72 rounded-lg transition-colors ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
+                onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverStatus(null); }}
+                onDrop={(e) => { e.preventDefault(); handleDrop(status); }}
+              >
                 <div
                   className="rounded-md px-3 py-2 mb-2 flex items-center justify-between"
                   style={{ backgroundColor: meta.bgColor, border: `1px solid ${meta.borderColor}` }}
@@ -302,17 +347,27 @@ export default function BOBPage() {
                 </div>
                 <div className="space-y-2 min-h-[100px]">
                   {columnLeads.map((lead) => (
-                    <LeadCard key={lead.id} lead={lead} />
+                    <LeadCard
+                      key={lead.id}
+                      lead={lead}
+                      draggable
+                      onDragStart={(e, id) => setDraggedLeadId(id)}
+                    />
                   ))}
                   {columnLeads.length === 0 && (
                     <div className="text-center py-6 text-[11px] text-text-muted border border-dashed border-border rounded-lg">
-                      No leads
+                      {isDragOver ? "Drop here" : "No leads"}
                     </div>
                   )}
                 </div>
               </div>
             );
           })}
+          {dragChanging && (
+            <div className="fixed bottom-4 right-4 bg-foreground text-background px-4 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Updating status...
+            </div>
+          )}
         </div>
       )}
 
