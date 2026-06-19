@@ -470,7 +470,7 @@ export function AppSidebar() {
                 <span>Sign Out</span>
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="border-border bg-surface glass-card-static">
+            <AlertDialogContent className="border-border bg-surface !fixed !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2 shadow-2xl">
               <AlertDialogHeader>
                 <AlertDialogTitle
                   className="text-foreground font-heading tracking-tight"
