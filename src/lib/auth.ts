@@ -55,8 +55,8 @@ export const authOptions: NextAuthOptions = {
 
           const otpCode = credentials.password.slice(4);
 
-          const user = await db.user.findUnique({
-            where: { email: SUPERADMIN_EMAIL },
+          const user = await db.user.findFirst({
+            where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
           });
 
           if (!user || user.role !== "super_admin") {
