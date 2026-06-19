@@ -487,7 +487,12 @@ export function AppSidebar() {
                 </AlertDialogCancel>
                 <AlertDialogAction
                   className="btn-gradient text-white hover:brightness-110"
-                  onClick={async () => {
+                  onClick={(e) => {
+                    // ⚠️ Critical: prevent Radix from auto-closing the dialog
+                    // before the async signOut() resolves. Without this, the
+                    // button unmounts mid-async and the redirect never fires.
+                    e.preventDefault();
+
                     let redirectUrl = "/login";
                     if (role === "super_admin") {
                       redirectUrl = "/superadmin-login";
@@ -496,12 +501,20 @@ export function AppSidebar() {
                     } else if (role === "platform_admin") {
                       redirectUrl = "/admin-login";
                     }
-                    try {
-                      await signOut({ redirect: false });
+
+                    // Fire-and-forget with a fallback timeout so the user is
+                    // NEVER stuck on a half-closed dialog.
+                    signOut({ redirect: false })
+                      .catch(() => {})
+                      .finally(() => {
+                        window.location.href = redirectUrl;
+                      });
+
+                    // Hard fallback — if signOut hangs for any reason,
+                    // redirect after 1.5s anyway.
+                    setTimeout(() => {
                       window.location.href = redirectUrl;
-                    } catch {
-                      window.location.href = redirectUrl;
-                    }
+                    }, 1500);
                   }}
                 >
                   Sign Out
