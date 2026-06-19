@@ -1,243 +1,372 @@
 "use client";
 
+/**
+ * BOB (Book of Business) — Recruiter landing page
+ *
+ * This is the recruiter's command center. Three views:
+ *   1. Kanban — candidates grouped by status (drag to change status)
+ *   2. List — sortable/filterable table of all leads
+ *   3. Company Pool — claimable candidates (inactive/not_interested/blacklisted)
+ *
+ * Top metrics: total active, in company pool, hot leads, pending next actions
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, UserCheck, ArrowRight, Loader2 } from "@/lib/icons";
+import { toast } from "sonner";
+import {
+  Plus, Search, LayoutGrid, List as ListIcon, Users, Building2,
+  Flame, Clock, Loader2, AlertCircle, ChevronRight,
+} from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LeadCard, type LeadCardData } from "@/components/bob/lead-card";
+import { AddLeadDialog } from "@/components/bob/add-lead-dialog";
+import {
+  ALL_STATUSES, STATUS_META, TAG_META, SOURCE_OPTIONS,
+  type CandidateStatus,
+} from "@/lib/bob/types";
 
-interface Candidate {
-  id: number;
-  firstName: string | null;
-  lastName: string | null;
-  email: string;
-  phone: string | null;
-  specialty: string;
-  checklistRequests: Array<{
-    id: number;
-    status: string;
-    completionPct: number;
-    checklistTemplate: { name: string; specialty: string };
-  }>;
-  sharedDocuments: Array<{
-    id: number;
-    isUnlocked: boolean;
-    entityType: string;
-  }>;
+type ViewMode = "kanban" | "list" | "company_pool";
+
+interface Stats {
+  total: number;
+  by_status: Record<string, number>;
+  by_tag: { hot: number; warm: number; cold: number; inactive: number };
+  active: number;
+  in_pool: number;
 }
 
-export default function RecruiterCandidatesPage() {
+export default function BOBPage() {
   const router = useRouter();
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [leads, setLeads] = useState<LeadCardData[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchCandidates = useCallback(async () => {
+  // View + filters
+  const [view, setView] = useState<ViewMode>("kanban");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sort, setSort] = useState<string>("last_activity");
+
+  // Add lead dialog
+  const [showAddLead, setShowAddLead] = useState(false);
+
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      const res = await fetch("/api/recruiter/dashboard?period=all");
-      if (!res.ok) throw new Error("Failed to fetch");
+      const params = new URLSearchParams();
+      params.set("view", view === "company_pool" ? "company_pool" : view === "list" ? "my_bob" : "my_bob");
+      if (search) params.set("search", search);
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (tagFilter !== "all") params.set("tag", tagFilter);
+      if (sourceFilter !== "all") params.set("source", sourceFilter);
+      params.set("sort", sort);
+
+      const res = await fetch(`/api/recruiter/bob?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to fetch leads");
+      }
       const data = await res.json();
-      setCandidates(data.candidates || []);
-    } catch (error) {
-      console.error("[CANDIDATES_PAGE]", error);
+      setLeads(data.leads || []);
+      setStats(data.stats || null);
+    } catch (err: any) {
+      console.error("[BOB PAGE]", err);
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, []);
+  }, [view, search, statusFilter, tagFilter, sourceFilter, sort]);
 
   useEffect(() => {
-    fetchCandidates();
-  }, [fetchCandidates]);
+    fetchLeads();
+  }, [fetchLeads]);
 
-  // Filter candidates by search query and status
-  const filteredCandidates = candidates.filter((c) => {
-    // Search filter
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const fullName = `${c.firstName ?? ""} ${c.lastName ?? ""}`.toLowerCase();
-      const email = c.email.toLowerCase();
-      if (!fullName.includes(q) && !email.includes(q)) return false;
-    }
+  // ─── Kanban columns ─────────────────────────────────────────────
+  const kanbanStatuses = view === "company_pool"
+    ? (["inactive", "not_interested", "blacklisted"] as CandidateStatus[])
+    : (ALL_STATUSES.filter((s) => !["inactive", "not_interested", "blacklisted"].includes(s)) as CandidateStatus[]);
 
-    // Status filter
-    if (statusFilter !== "all") {
-      const hasCompleted = c.checklistRequests.some((cr) => cr.status === "completed");
-      const hasPending = c.checklistRequests.some(
-        (cr) => cr.status === "sent" || cr.status === "opened" || cr.status === "in_progress"
-      );
-      const hasShared = c.sharedDocuments.length > 0;
+  const leadsByStatus = (status: string) => leads.filter((l) => l.pipeline_stage === status);
 
-      if (statusFilter === "completed" && !hasCompleted) return false;
-      if (statusFilter === "pending" && !hasPending) return false;
-      if (statusFilter === "shared" && !hasShared) return false;
-    }
-
-    return true;
-  });
-
-  // Helper: get compliance status badge
-  const getComplianceStatus = (candidate: Candidate) => {
-    const hasCompleted = candidate.checklistRequests.some((cr) => cr.status === "completed");
-    const hasPending = candidate.checklistRequests.some(
-      (cr) => cr.status === "sent" || cr.status === "opened" || cr.status === "in_progress"
-    );
-    const hasShared = candidate.sharedDocuments.length > 0;
-
-    if (hasCompleted && hasShared) return { label: "Complete", color: "text-green-700 bg-green-50 border-green-200" };
-    if (hasPending) return { label: "Pending", color: "text-amber-700 bg-amber-50 border-amber-200" };
-    if (hasShared) return { label: "Shared", color: "text-blue-700 bg-blue-50 border-blue-200" };
-    return { label: "New", color: "text-gray-700 bg-gray-50 border-gray-200" };
-  };
-
+  // ─── Render ─────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Candidates"
-        description="All candidates you've engaged with. Click any candidate to view their details."
+        title="Book of Business"
+        description="Your candidate pipeline — from cold lead to active assignment."
       />
 
-      {/* Search + Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted" />
-          <Input
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      {/* Top action bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={() => setShowAddLead(true)}>
+          <Plus className="h-4 w-4 mr-1.5" /> Add Lead
+        </Button>
+
+        {/* View toggle */}
+        <div className="flex items-center bg-surface-2 rounded-md p-0.5">
+          <button
+            onClick={() => setView("kanban")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              view === "kanban" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Kanban
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              view === "list" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+            }`}
+          >
+            <ListIcon className="h-3.5 w-3.5" /> List
+          </button>
+          <button
+            onClick={() => setView("company_pool")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              view === "company_pool" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+            }`}
+          >
+            <Building2 className="h-3.5 w-3.5" /> Company Pool
+          </button>
         </div>
-        <div className="flex gap-2">
-          {[
-            { value: "all", label: "All" },
-            { value: "pending", label: "Pending" },
-            { value: "completed", label: "Completed" },
-            { value: "shared", label: "Shared" },
-          ].map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setStatusFilter(filter.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === filter.value
-                  ? "bg-primary text-white"
-                  : "bg-surface-2 text-text-secondary hover:bg-surface-3"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
+
+        {/* Search */}
+        <div className="flex-1 min-w-[200px] max-w-xs relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, email, phone..."
+            className="pl-9"
+          />
         </div>
       </div>
 
-      {/* Candidates List */}
-      {isLoading ? (
+      {/* Metrics */}
+      {stats && !loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MetricCard
+            label="Active in BOB"
+            value={stats.active}
+            icon={<Users className="h-4 w-4" />}
+            color="text-primary"
+          />
+          <MetricCard
+            label={view === "company_pool" ? "In Company Pool" : "In Company Pool"}
+            value={stats.in_pool}
+            icon={<Building2 className="h-4 w-4" />}
+            color="text-text-muted"
+          />
+          <MetricCard
+            label="Hot leads (7d)"
+            value={stats.by_tag.hot}
+            icon={<Flame className="h-4 w-4" />}
+            color="text-red-500"
+          />
+          <MetricCard
+            label="Cold (15-30d)"
+            value={stats.by_tag.cold}
+            icon={<Clock className="h-4 w-4" />}
+            color="text-blue-500"
+          />
+        </div>
+      )}
+
+      {/* Filters (only in list view) */}
+      {view === "list" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {ALL_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_META[s].icon} {STATUS_META[s].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-[110px] h-8 text-xs">
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {Object.entries(TAG_META).map(([key, t]) => (
+                <SelectItem key={key} value={key}>{t.emoji} {t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[130px] h-8 text-xs">
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              {SOURCE_OPTIONS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sort} onValueChange={setSort}>
+            <SelectTrigger className="w-[150px] h-8 text-xs">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="last_activity">Last activity</SelectItem>
+              <SelectItem value="created_at">Date added</SelectItem>
+              <SelectItem value="name">Name (A-Z)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="flex items-center gap-2 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="text-sm">{error}</span>
+          <Button variant="ghost" size="sm" onClick={fetchLeads} className="ml-auto">Retry</Button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
         <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-lg" />
           ))}
         </div>
-      ) : filteredCandidates.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <UserCheck className="size-10 text-text-muted mx-auto mb-3" />
-            <p className="text-sm font-medium text-foreground">
-              {searchQuery || statusFilter !== "all"
-                ? "No candidates match your filters"
-                : "No candidates yet"}
-            </p>
-            <p className="text-xs text-text-secondary mt-1">
-              {searchQuery || statusFilter !== "all"
-                ? "Try adjusting your search or filters."
-                : "Send a checklist request to get started."}
-            </p>
-            {!searchQuery && statusFilter === "all" && (
-              <Link
-                href="/recruiter/send"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
-              >
-                Send Request
-                <ArrowRight className="size-4" />
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filteredCandidates.map((candidate) => {
-            const status = getComplianceStatus(candidate);
-            const fullName =
-              `${candidate.firstName ?? ""} ${candidate.lastName ?? ""}`.trim() ||
-              candidate.email;
+      )}
 
+      {/* Empty state */}
+      {!loading && !error && leads.length === 0 && (
+        <div className="text-center py-16 px-4">
+          <Users className="h-12 w-12 text-text-muted mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-foreground mb-1">
+            {view === "company_pool" ? "Company Pool is empty" : "Your BOB is empty"}
+          </h3>
+          <p className="text-sm text-text-muted mb-4">
+            {view === "company_pool"
+              ? "When candidates go inactive or are marked not interested, they'll appear here for any recruiter to claim."
+              : "Start building your pipeline by adding your first candidate lead."}
+          </p>
+          {view !== "company_pool" && (
+            <Button onClick={() => setShowAddLead(true)}>
+              <Plus className="h-4 w-4 mr-1.5" /> Add your first lead
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Kanban view */}
+      {!loading && !error && leads.length > 0 && view === "kanban" && (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {kanbanStatuses.map((status) => {
+            const meta = STATUS_META[status];
+            const columnLeads = leadsByStatus(status);
             return (
-              <Card
-                key={candidate.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => router.push(`/recruiter/candidates/${candidate.id}`)}
-              >
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    {/* Avatar */}
-                    <div className="size-12 rounded-full bg-primary-light flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                      {(candidate.firstName?.[0] ?? "?").toUpperCase()}
-                      {(candidate.lastName?.[0] ?? "").toUpperCase()}
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground truncate">{fullName}</h3>
-                        <Badge variant="outline" className={`text-xs shrink-0 ${status.color}`}>
-                          {status.label}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-text-secondary">
-                        <span className="truncate">{candidate.email}</span>
-                        {candidate.specialty && (
-                          <>
-                            <span>•</span>
-                            <span className="shrink-0">{candidate.specialty}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+              <div key={status} className="shrink-0 w-72">
+                <div
+                  className="rounded-md px-3 py-2 mb-2 flex items-center justify-between"
+                  style={{ backgroundColor: meta.bgColor, border: `1px solid ${meta.borderColor}` }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>{meta.icon}</span>
+                    <span className="text-xs font-semibold" style={{ color: meta.color }}>
+                      {meta.label}
+                    </span>
                   </div>
-
-                  {/* Right side: counts */}
-                  <div className="flex items-center gap-6 shrink-0">
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-foreground">
-                        {candidate.checklistRequests.length}
-                      </p>
-                      <p className="text-[10px] text-text-muted uppercase tracking-wide">Requests</p>
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ backgroundColor: "#fff", color: meta.color, border: `1px solid ${meta.borderColor}` }}
+                  >
+                    {columnLeads.length}
+                  </span>
+                </div>
+                <div className="space-y-2 min-h-[100px]">
+                  {columnLeads.map((lead) => (
+                    <LeadCard key={lead.id} lead={lead} />
+                  ))}
+                  {columnLeads.length === 0 && (
+                    <div className="text-center py-6 text-[11px] text-text-muted border border-dashed border-border rounded-lg">
+                      No leads
                     </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-foreground">
-                        {candidate.sharedDocuments.length}
-                      </p>
-                      <p className="text-[10px] text-text-muted uppercase tracking-wide">Shared</p>
-                    </div>
-                    <ArrowRight className="size-5 text-text-muted shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Results count */}
-      {!isLoading && filteredCandidates.length > 0 && (
-        <p className="text-xs text-text-muted text-center">
-          Showing {filteredCandidates.length} of {candidates.length} candidates
-        </p>
+      {/* List view */}
+      {!loading && !error && leads.length > 0 && view === "list" && (
+        <div className="space-y-2">
+          {leads.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} />
+          ))}
+        </div>
       )}
+
+      {/* Company Pool view */}
+      {!loading && !error && leads.length > 0 && view === "company_pool" && (
+        <div className="space-y-4">
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+            <strong>Company Pool:</strong> These candidates are not actively being worked by any recruiter.
+            Click a card to claim them — they'll move to your BOB automatically.
+          </div>
+          <div className="space-y-2">
+            {leads.map((lead) => (
+              <LeadCard key={lead.id} lead={lead} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <AddLeadDialog
+        open={showAddLead}
+        onOpenChange={setShowAddLead}
+        onCreated={(leadId) => {
+          fetchLeads();
+          router.push(`/recruiter/candidates/${leadId}`);
+        }}
+      />
+    </div>
+  );
+}
+
+function MetricCard({
+  label, value, icon, color,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  return (
+    <div className="bg-background border rounded-lg p-3">
+      <div className="flex items-center gap-2 mb-1">
+        <span className={color}>{icon}</span>
+        <span className="text-[11px] font-medium text-text-muted uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="text-2xl font-bold text-foreground">{value}</p>
     </div>
   );
 }

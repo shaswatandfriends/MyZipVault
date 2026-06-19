@@ -188,6 +188,8 @@ import {
   PanelRight as PanelRightIcon,
   MoreVertical,
   Pin,
+  MapPin,
+  Flame,
 } from "lucide-react";
 
 // ─── Re-export everything ──────────────────────────────────────────────
@@ -370,6 +372,8 @@ export {
   PanelRightIcon,
   MoreVertical,
   Pin,
+  MapPin,
+  Flame,
 };
 
 // ─── Aliases used by shadcn/ui components ──────────────────────────────
