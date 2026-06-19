@@ -149,6 +149,67 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ─── AUTO-CREATE A LEAD if no lead is linked but there's a Candidate signer ───
+    // This is the fix for the bug where recruiters go straight to VaultSign →
+    // type a signer name/email → send. Without this, no RecruiterLead is created,
+    // so the RTR doesn't appear in BOB and the status engine never fires.
+    if (!validatedLeadId && signers.length > 0) {
+      const candidateSigner = signers.find((s: any) => s.role === "Candidate" && (s.name || s.email));
+      if (candidateSigner) {
+        // Check if a lead already exists for this email + recruiter
+        let existingLead = null;
+        if (candidateSigner.email) {
+          existingLead = await db.recruiterLead.findFirst({
+            where: {
+              email: { equals: candidateSigner.email, mode: "insensitive" },
+              recruiter_user_id: userId,
+            },
+            select: { id: true },
+          });
+        }
+
+        if (existingLead) {
+          validatedLeadId = existingLead.id;
+        } else {
+          // Parse first/last name from the signer name
+          const fullName = (candidateSigner.name || "").trim();
+          const nameParts = fullName.split(/\s+/);
+          const firstName = nameParts[0] || "Unknown";
+          const lastName = nameParts.slice(1).join(" ") || "";
+
+          const newLead = await db.recruiterLead.create({
+            data: {
+              recruiter_user_id: userId,
+              organization_id: orgId,
+              first_name: firstName,
+              last_name: lastName,
+              email: candidateSigner.email || null,
+              source: "other:VaultSign",
+              pipeline_stage: "new_lead",
+              tag: "hot",
+              last_activity_at: new Date(),
+              last_activity_type: "lead_created",
+              reached_for: document_name,
+            },
+          });
+          validatedLeadId = newLead.id;
+          console.log(`[VAULTSIGN] Auto-created lead #${newLead.id} for signer "${fullName}" <${candidateSigner.email || "no email"}>`);
+
+          // Log the lead creation activity
+          try {
+            const { onLeadCreated } = await import("@/lib/bob/status-engine");
+            await onLeadCreated({
+              leadId: newLead.id,
+              actorUserId: userId,
+              source: "VaultSign",
+            });
+          } catch (err) {
+            console.error("[VAULTSIGN] Failed to log lead creation:", err);
+          }
+        }
+      }
+    }
+
     // If creating from template, load template data
     let templateTiptapContent = tiptap_content;
     let templateSignFields = sign_fields;
