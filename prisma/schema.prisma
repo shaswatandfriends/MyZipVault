@@ -124,6 +124,11 @@ model User {
   // Candidate Pool relations
   candidate_pools                 CandidatePool[]          @relation("CandidatePoolRecruiter")
   pool_memberships                CandidatePoolMember[]    @relation("CandidatePoolCandidate")
+
+  // BOB (Book of Business) relations — Phase 1 (added 2026-06-20)
+  recruiter_leads_as_candidate    RecruiterLead[]          @relation("RecruiterLeadCandidate")
+  recruiter_leads_blacklisted_by  RecruiterLead[]          @relation("RecruiterLeadBlacklistedBy")
+  lead_activities                 RecruiterLeadActivity[]  @relation("RecruiterLeadActivityActor")
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -630,17 +635,61 @@ model RecruiterLead {
   reached_for       String?   // What position/role they were contacted for
   remark            String?   // How the call went, what was discussed
   source            String    @default("cold_call") // cold_call, referral, job_board, walk_in, linkedin, other
-  pipeline_stage    String    @default("new_lead") // new_lead, doc_pending, submitted, interested_no_job, interview_scheduled, offer_sent, onboarding, started, not_interested
+  pipeline_stage    String    @default("new_lead") // new_lead, doc_pending, interested, submitted, interview_stage, offer_sent, offer_accepted, onboarding, on_assignment, inactive, not_interested, blacklisted
   star_rating       Int?      // 1-5, optional
   is_active         Boolean   @default(true)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @default(now())
 
-  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
-  organization      Organization @relation(fields: [organization_id], references: [id])
-  call_schedules    CallSchedule[]
-  call_logs         CallLog[]
+  // ─── BOB Phase 1 fields (added 2026-06-20) ───
+  candidate_user_id      Int?      // Links to a platform User once they sign up
+  tag                    String    @default("cold") // hot | warm | cold | inactive (auto-updated)
+  last_activity_at       DateTime  @default(now())
+  last_activity_type     String?
+  blacklist_reason       String?
+  blacklisted_at         DateTime?
+  blacklisted_by_user_id Int?
+  rtr_denial_count       Int       @default(0) // 5 denials → auto not_interested
+  next_action            String?
+  next_action_at         DateTime?
+  notes                  String?
+
+  // Relations
+  recruiter_user         User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  organization           Organization @relation(fields: [organization_id], references: [id])
+  candidate_user         User?     @relation("RecruiterLeadCandidate", fields: [candidate_user_id], references: [id], onDelete: SetNull)
+  blacklisted_by         User?     @relation("RecruiterLeadBlacklistedBy", fields: [blacklisted_by_user_id], references: [id], onDelete: SetNull)
+  call_schedules         CallSchedule[]
+  call_logs              CallLog[]
+  activities             RecruiterLeadActivity[]
+  vault_sign_documents   VaultSignDocument[] @relation("VaultSignDocumentCandidateLead")
+
+  @@index([recruiter_user_id, pipeline_stage])
+  @@index([organization_id, pipeline_stage])
+  @@index([last_activity_at])
+  @@index([tag])
+  @@index([candidate_user_id])
 }
+
+// ─── 34b. Recruiter Lead Activity (audit trail for BOB) ─────────────
+// One row per interaction. Powers the Activity Timeline tab in candidate profile.
+model RecruiterLeadActivity {
+  id            Int      @id @default(autoincrement())
+  lead_id       Int
+  activity_type String   // lead_created, rtr_sent, rtr_signed, rtr_denied, doc_requested, doc_uploaded, status_changed, etc.
+  description   String   // Human-readable summary
+  actor_user_id Int?
+  actor_type    String   @default("recruiter") // recruiter | admin | candidate | system
+  metadata      Json     @default("{}") // structured data
+  created_at    DateTime @default(now())
+
+  lead          RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  actor         User?         @relation("RecruiterLeadActivityActor", fields: [actor_user_id], references: [id], onDelete: SetNull)
+
+  @@index([lead_id, created_at])
+  @@index([actor_user_id])
+}
+
 
 // ─── 35. Call Schedules ─────────────────────────────────────────────
 model CallSchedule {
@@ -782,6 +831,10 @@ model VaultSignDocument {
   revised_from_document_id Int?
   created_at               DateTime  @default(now())
   updated_at               DateTime  @default(now())
+
+  // BOB Phase 1 (added 2026-06-20) — links document to a recruiter lead
+  candidate_lead_id        Int?
+  candidate_lead           RecruiterLead? @relation("VaultSignDocumentCandidateLead", fields: [candidate_lead_id], references: [id], onDelete: SetNull)
 
   organization             Organization      @relation(fields: [organization_id], references: [id])
   creator                  User              @relation("VaultSignDocumentCreator", fields: [created_by_user_id], references: [id])
