@@ -127,10 +127,26 @@ export async function POST(request: NextRequest) {
       placeholder_values = {},
       sign_fields = [],
       signers = [],
+      candidate_lead_id,
     } = body;
 
     if (!document_name) {
       return NextResponse.json({ error: "Document name is required" }, { status: 400 });
+    }
+
+    // Validate candidate_lead_id if provided (must be a lead owned by current user or in their org)
+    let validatedLeadId: number | null = null;
+    if (candidate_lead_id) {
+      const leadId = parseInt(candidate_lead_id);
+      if (!isNaN(leadId)) {
+        const lead = await db.recruiterLead.findUnique({
+          where: { id: leadId },
+          select: { id: true, organization_id: true, recruiter_user_id: true, pipeline_stage: true },
+        });
+        if (lead && (lead.organization_id === orgId || role === "super_admin")) {
+          validatedLeadId = lead.id;
+        }
+      }
     }
 
     // If creating from template, load template data
@@ -189,6 +205,7 @@ export async function POST(request: NextRequest) {
         sign_fields: JSON.stringify(templateSignFields),
         header_config: defaultHeaderConfig,
         footer_config: defaultFooterConfig,
+        candidate_lead_id: validatedLeadId,
         audit_trail: JSON.stringify([
           {
             event: "document_created",

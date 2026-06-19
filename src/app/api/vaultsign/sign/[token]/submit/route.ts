@@ -4,6 +4,7 @@ import { generateSignedPdf, addAuditTrailPage, addHeaderFooterToPdf, computeDocu
 import { uploadGeneratedPdf, getDocumentSignedUrl } from "@/lib/vaultsign/supabase-storage";
 import { sendDocumentCompletedEmail, generateSigningLink, sendDocumentSentEmail } from "@/lib/vaultsign/email";
 import type { SignField, AuditTrailEntry, SignerSignatureStore } from "@/lib/vaultsign/types";
+import { onRtrSigned, onOfferSigned } from "@/lib/bob/status-engine";
 
 // POST: Accept signature data, field values, IP address, device info
 export async function POST(
@@ -395,6 +396,42 @@ export async function POST(
           updated_at: new Date(),
         },
       });
+    }
+
+    // ─── BOB status engine hook (non-blocking) ────────────────────
+    // If this signer is a candidate and the document is linked to a lead,
+    // fire the appropriate event: RTR signed → onRtrSigned,
+    // Offer signed → onOfferSigned (auto-flips to Offer Accepted → Onboarding)
+    if (signer.role === "Candidate" && signer.document.candidate_lead_id) {
+      try {
+        const docNameLower = refreshedDocument.document_name.toLowerCase();
+        const docType = refreshedDocument.document_type;
+        const isRtr = docType === "right_to_represent" ||
+                      docNameLower.includes("right to represent") ||
+                      docNameLower.includes("rtr");
+        const isOffer = docType === "offer_letter" ||
+                        docNameLower.includes("offer letter") ||
+                        docNameLower.includes("offer");
+
+        if (isRtr) {
+          await onRtrSigned({
+            leadId: signer.document.candidate_lead_id,
+            documentId: refreshedDocument.id,
+            documentName: refreshedDocument.document_name,
+          });
+          console.log(`[BOB HOOK] onRtrSigned fired for lead ${signer.document.candidate_lead_id}, doc ${refreshedDocument.id}`);
+        } else if (isOffer) {
+          await onOfferSigned({
+            leadId: signer.document.candidate_lead_id,
+            documentId: refreshedDocument.id,
+            documentName: refreshedDocument.document_name,
+          });
+          console.log(`[BOB HOOK] onOfferSigned fired for lead ${signer.document.candidate_lead_id}, doc ${refreshedDocument.id}`);
+        }
+      } catch (bobErr) {
+        console.error("[BOB HOOK] Failed to fire sign hook:", bobErr);
+        // Non-blocking — signature was already recorded successfully
+      }
     }
 
     return NextResponse.json({

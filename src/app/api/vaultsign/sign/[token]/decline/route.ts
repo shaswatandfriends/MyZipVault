@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendDocumentDeclinedEmail } from "@/lib/vaultsign/email";
 import type { AuditTrailEntry } from "@/lib/vaultsign/types";
+import { onRtrDenied } from "@/lib/bob/status-engine";
 
 // POST: Mark signer as declined with reason
 export async function POST(
@@ -82,6 +83,31 @@ export async function POST(
         signerName: signer.name,
         declineReason: reason || undefined,
       });
+    }
+
+    // ─── BOB status engine hook (non-blocking) ────────────────────
+    // If this is a candidate declining an RTR linked to a lead,
+    // increment the denial count (5 denials → auto Not Interested)
+    if (signer.role === "Candidate" && signer.document.candidate_lead_id) {
+      try {
+        const docNameLower = signer.document.document_name.toLowerCase();
+        const isRtr = signer.document.document_type === "right_to_represent" ||
+                      docNameLower.includes("right to represent") ||
+                      docNameLower.includes("rtr");
+
+        if (isRtr) {
+          await onRtrDenied({
+            leadId: signer.document.candidate_lead_id,
+            documentId: signer.document.id,
+            documentName: signer.document.document_name,
+            reason: reason || undefined,
+          });
+          console.log(`[BOB HOOK] onRtrDenied fired for lead ${signer.document.candidate_lead_id}, doc ${signer.document.id}`);
+        }
+      } catch (bobErr) {
+        console.error("[BOB HOOK] Failed to fire deny hook:", bobErr);
+        // Non-blocking — decline was already recorded
+      }
     }
 
     return NextResponse.json({ success: true, status: "declined" });

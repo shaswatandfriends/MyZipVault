@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, Upload, FileSignature,
-  LayoutTemplate, Loader2, Plus, Trash2, X, Check
+  LayoutTemplate, Loader2, Plus, Trash2, X, Check, Users
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ function NewDocumentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateIdParam = searchParams.get("template_id");
+  const leadIdParam = searchParams.get("lead");
 
   const [step, setStep] = useState(1);
   const [source, setSource] = useState<"template" | "upload_pdf" | "blank" | null>(null);
@@ -65,6 +66,15 @@ function NewDocumentContent() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadedSourceType, setUploadedSourceType] = useState<"pdf" | null>(null);
 
+  // ─── BOB: Lead selection ──────────────────────────────────────
+  // When the recruiter arrives via ?lead=X (from the BOB candidate
+  // profile "Send VaultSign doc" button), we pre-select that lead
+  // and auto-fill the first signer's name + email from the lead.
+  const [leads, setLeads] = useState<Array<{ id: number; first_name: string; last_name: string; email: string | null; specialty: string | null; pipeline_stage: string }>>([]);
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(
+    leadIdParam ? parseInt(leadIdParam) : null
+  );
+
   // Fetch templates
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -80,6 +90,41 @@ function NewDocumentContent() {
     };
     fetchTemplates();
   }, []);
+
+  // ─── Fetch BOB leads for the lead selector ────────────────────
+  // Shows the recruiter's own BOB + company pool (so they can send to
+  // any claimable candidate too — sending auto-claims them).
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await fetch("/api/recruiter/bob?view=my_bob&limit=500");
+        if (res.ok) {
+          const data = await res.json();
+          setLeads(data.leads || []);
+        }
+      } catch (err) {
+        console.error("Leads fetch error:", err);
+      }
+    };
+    fetchLeads();
+  }, []);
+
+  // ─── Auto-fill first signer from selected lead ────────────────
+  useEffect(() => {
+    if (selectedLeadId) {
+      const lead = leads.find((l) => l.id === selectedLeadId);
+      if (lead) {
+        const updatedSigners = [...signers];
+        updatedSigners[0] = {
+          name: `${lead.first_name} ${lead.last_name}`.trim(),
+          email: lead.email || "",
+          role: "Candidate",
+        };
+        setSigners(updatedSigners);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeadId, leads]);
 
   // Auto-fill from template selection
   useEffect(() => {
@@ -169,6 +214,7 @@ function NewDocumentContent() {
         signing_order: signingOrder,
         expiry_date: new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString(),
         personal_message: personalMessage || undefined,
+        candidate_lead_id: selectedLeadId,
         signers: signers
           .filter((s) => s.name && s.email)
           .map((s, i) => ({
@@ -432,6 +478,39 @@ function NewDocumentContent() {
                 ? "Signers will sign in order. Each signer must sign before the next."
                 : "All signers can sign at the same time."}
             </p>
+
+            {/* BOB Lead selector — links this document to a candidate lead
+                so the status engine can auto-update the lead when sent/signed/declined */}
+            {leads.length > 0 && (
+              <div className="p-3 rounded-xl border border-primary/30 bg-primary/5">
+                <Label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
+                  <Users className="h-3.5 w-3.5" /> Link to BOB candidate (recommended)
+                </Label>
+                <Select
+                  value={selectedLeadId?.toString() ?? ""}
+                  onValueChange={(val) => setSelectedLeadId(val ? parseInt(val) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a candidate from your BOB to auto-fill their details..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— None (manual entry) —</SelectItem>
+                    {leads.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id.toString()}>
+                        {lead.first_name} {lead.last_name}
+                        {lead.email ? ` · ${lead.email}` : ""}
+                        {lead.specialty ? ` · ${lead.specialty}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-text-muted mt-1.5">
+                  Linking to a BOB candidate enables automatic status updates —
+                  sending an RTR moves them to "Interested", signing moves them through
+                  the pipeline, declining counts toward the 5-denial auto-not-interested rule.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3">
               {signers.map((signer, index) => (

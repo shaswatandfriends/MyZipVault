@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendDocumentSentEmail, generateSigningLink } from "@/lib/vaultsign/email";
 import type { AuditTrailEntry } from "@/lib/vaultsign/types";
+import { onRtrSent, onOfferSent } from "@/lib/bob/status-engine";
 
 // POST: Validate document has signers and sign fields, change status to "sent", send emails
 export async function POST(
@@ -118,9 +119,64 @@ export async function POST(
       });
     }
 
+    // ─── Fire BOB status engine hook (non-blocking) ──────────────
+    // If this document is linked to a recruiter lead, update the lead's
+    // status: RTR → onRtrSent, Offer letter → onOfferSent
+    await fireBobStatusHook({
+      documentId: docId,
+      documentName: document.document_name,
+      documentType: document.document_type,
+      candidateLeadId: document.candidate_lead_id,
+      actorUserId: Number((session.user as Record<string, unknown>).id),
+    });
+
     return NextResponse.json({ success: true, status: "sent" });
   } catch (error) {
     console.error("[VAULTSIGN] Send document error:", error);
     return NextResponse.json({ error: "Failed to send document" }, { status: 500 });
+  }
+}
+
+// ─── BOB status engine hook ────────────────────────────────────────
+// After the document is successfully sent, fire the appropriate BOB
+// status engine event (onRtrSent for RTRs, onOfferSent for offer letters).
+// This is non-blocking — if the hook fails, the document is still sent.
+async function fireBobStatusHook(params: {
+  documentId: number;
+  documentName: string;
+  documentType: string;
+  candidateLeadId: number | null;
+  actorUserId: number;
+}) {
+  if (!params.candidateLeadId) return; // No lead linked — nothing to update
+
+  try {
+    // Determine which event to fire based on document type
+    const isRtr = params.documentType === "right_to_represent" ||
+                  params.documentName.toLowerCase().includes("right to represent") ||
+                  params.documentName.toLowerCase().includes("rtr");
+    const isOffer = params.documentType === "offer_letter" ||
+                    params.documentName.toLowerCase().includes("offer");
+
+    if (isRtr) {
+      await onRtrSent({
+        leadId: params.candidateLeadId,
+        documentId: params.documentId,
+        documentName: params.documentName,
+        actorUserId: params.actorUserId,
+      });
+      console.log(`[BOB HOOK] onRtrSent fired for lead ${params.candidateLeadId}, doc ${params.documentId}`);
+    } else if (isOffer) {
+      await onOfferSent({
+        leadId: params.candidateLeadId,
+        documentId: params.documentId,
+        documentName: params.documentName,
+        actorUserId: params.actorUserId,
+      });
+      console.log(`[BOB HOOK] onOfferSent fired for lead ${params.candidateLeadId}, doc ${params.documentId}`);
+    }
+  } catch (err) {
+    console.error("[BOB HOOK] Failed to fire status hook:", err);
+    // Non-blocking — document was already sent successfully
   }
 }
