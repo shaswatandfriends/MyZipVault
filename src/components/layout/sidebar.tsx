@@ -101,6 +101,9 @@ const candidateNav: NavItem[] = [
 // ─── Recruiter Nav Items ─────────────────────────────────────────────
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
+  { title: "Candidates", href: "/recruiter/candidates", icon: Users },
+  { title: "Candidate Pools", href: "/recruiter/pools", icon: Users },
+  { title: "Compliance Bundles", href: "/recruiter/bundles", icon: ClipboardCheck },
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
