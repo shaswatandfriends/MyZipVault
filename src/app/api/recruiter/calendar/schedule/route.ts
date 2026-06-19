@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { onInterviewScheduled } from "@/lib/bob/status-engine";
 
 export async function GET(request: Request) {
   try {
@@ -186,6 +187,24 @@ export async function POST(request: Request) {
           related_entity_id: schedule.id,
         },
       });
+    }
+
+    // ─── BOB status engine hook (non-blocking) ────────────────────
+    // If a specific date was scheduled (not just a month range), treat
+    // this as an interview-stage event and flip the lead status.
+    // Month-range scheduling is more of a "tentative" so we don't flip.
+    if (scheduledDate) {
+      try {
+        await onInterviewScheduled({
+          leadId: lead.id,
+          scheduledAt: new Date(scheduledDate),
+          actorUserId: userId,
+        });
+        console.log(`[BOB HOOK] onInterviewScheduled fired for lead ${lead.id}, scheduled: ${scheduledDate}`);
+      } catch (bobErr) {
+        console.error("[BOB HOOK] Failed to fire interview-scheduled hook:", bobErr);
+        // Non-blocking — schedule was already created
+      }
     }
 
     return NextResponse.json({ schedule }, { status: 201 });

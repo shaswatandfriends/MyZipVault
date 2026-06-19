@@ -7,6 +7,8 @@ import { logCreditsDeducted } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
 import { sendRequestSchema, validateBody } from "@/lib/validation-schemas";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limiter";
+import { onDocRequested } from "@/lib/bob/status-engine";
+import { findLeadInRecruiterBob } from "@/lib/bob/lead-finder";
 
 export async function POST(request: Request) {
   try {
@@ -372,6 +374,30 @@ export async function POST(request: Request) {
       }).catch((err) => {
         console.error("[EMAIL] Failed to send checklist request email:", err);
       });
+    }
+
+    // ─── BOB status engine hook (non-blocking) ────────────────────
+    // If the recruiter has a lead in their BOB matching this candidate's
+    // email, fire onDocRequested to flip the lead to "Doc Pending".
+    // This makes the Send Request flow correlate with the BOB system.
+    if (documents && Array.isArray(documents) && documents.length > 0) {
+      try {
+        const lead = await findLeadInRecruiterBob(email, userId);
+        if (lead) {
+          // Fire onDocRequested for each requested document type
+          for (const docType of documents) {
+            await onDocRequested({
+              leadId: lead.id,
+              docType,
+              actorUserId: userId,
+            });
+          }
+          console.log(`[BOB HOOK] onDocRequested fired for lead ${lead.id}, docs: ${documents.join(", ")}`);
+        }
+      } catch (bobErr) {
+        console.error("[BOB HOOK] Failed to fire doc-requested hook:", bobErr);
+        // Non-blocking — request was already created
+      }
     }
 
     return NextResponse.json({

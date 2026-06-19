@@ -131,6 +131,26 @@ export async function POST(request: Request) {
       },
     });
 
+    // ─── BOB status engine hook (non-blocking) ────────────────────
+    // If this candidate is linked to a recruiter lead, log a "doc_uploaded"
+    // activity so the recruiter's timeline shows the upload.
+    try {
+      const { findLeadByCandidateUserId } = await import("@/lib/bob/lead-finder");
+      const { onDocUploaded } = await import("@/lib/bob/status-engine");
+      const lead = await findLeadByCandidateUserId(userId);
+      if (lead) {
+        await onDocUploaded({
+          leadId: lead.id,
+          docType: document_name,
+          docName: document_name,
+        });
+        console.log(`[BOB HOOK] onDocUploaded fired for lead ${lead.id}, doc: ${document_name}`);
+      }
+    } catch (bobErr) {
+      console.error("[BOB HOOK] Failed to fire doc-uploaded hook:", bobErr);
+      // Non-blocking — credential was already saved
+    }
+
     return NextResponse.json({ credential }, { status: 201 });
   } catch (error) {
     console.error("[CANDIDATE_CREDENTIALS_POST]", error);

@@ -51,6 +51,7 @@ import {
   computeTagFromActivity,
   RTR_DENIAL_THRESHOLD,
   INACTIVITY_THRESHOLD_DAYS,
+  INACTIVITY_WARNING_DAYS,
   STATUS_META,
 } from "./types";
 
@@ -452,7 +453,7 @@ export async function onOfferSigned(params: {
     metadata: { document_id: params.documentId, document_name: params.documentName },
   });
 
-  // Auto-transition to onboarding (compliance checklist auto-created elsewhere)
+  // Auto-transition to onboarding
   await changeStatus({
     leadId: params.leadId,
     newStatus: "onboarding",
@@ -464,10 +465,39 @@ export async function onOfferSigned(params: {
   await logActivity({
     leadId: params.leadId,
     activityType: "onboarding_started",
-    description: "Onboarding started — compliance checklist created",
+    description: "Onboarding started — compliance checklist should be created",
     actorType: "system",
     metadata: { trigger: "offer_signed" },
   });
+
+  // ─── Set next action: create compliance checklist ─────────────
+  // We don't auto-create the checklist because:
+  //   1. The lead may not have a candidate_user_id yet (candidate hasn't signed up)
+  //   2. We'd need to match a checklist template by profession/specialty
+  // Instead, we set a next_action reminding the recruiter to send a checklist
+  // once the candidate has a platform account.
+  try {
+    const lead = await db.recruiterLead.findUnique({
+      where: { id: params.leadId },
+      select: { id: true, candidate_user_id: true, first_name: true, last_name: true, specialty: true },
+    });
+
+    if (lead) {
+      const checklistAction = lead.candidate_user_id
+        ? `Send compliance checklist to ${lead.first_name} ${lead.last_name}${lead.specialty ? ` (${lead.specialty})` : ""}`
+        : `Wait for ${lead.first_name} ${lead.last_name} to set up their account, then send compliance checklist`;
+
+      await db.recruiterLead.update({
+        where: { id: params.leadId },
+        data: {
+          next_action: checklistAction,
+          next_action_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due tomorrow
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[BOB] Failed to set next_action after offer signed:", err);
+  }
 
   await touchLeadActivity(params.leadId, "offer_accepted");
 }
@@ -635,7 +665,7 @@ export async function checkInactiveLeads(): Promise<{
     now.getTime() - INACTIVITY_THRESHOLD_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  // Find leads that should be flipped to inactive
+  // ─── 1. Flip leads to inactive (30+ days no activity) ─────────
   const toInactive = await db.recruiterLead.findMany({
     where: {
       is_active: true,
@@ -691,9 +721,80 @@ export async function checkInactiveLeads(): Promise<{
     }
   }
 
-  // TODO: Send 5/3/1-day warnings via Notification model (needs warning-state tracking)
+  // ─── 2. Send 5/3/1-day warnings BEFORE inactivity ─────────────
+  // For each warning day (5, 3, 1), find leads that are exactly N days
+  // away from the 30-day cutoff and send a warning notification.
+  // We avoid duplicate warnings by checking if a notification with the
+  // same message was already sent recently.
+  let warnedCount = 0;
+  for (const daysBefore of INACTIVITY_WARNING_DAYS) {
+    // Lead is "daysBefore" days from going inactive:
+    //   last_activity was (30 - daysBefore) days ago
+    const targetAgeDays = INACTIVITY_THRESHOLD_DAYS - daysBefore;
+    const windowStart = new Date(
+      now.getTime() - (targetAgeDays + 0.5) * 24 * 60 * 60 * 1000,
+    );
+    const windowEnd = new Date(
+      now.getTime() - (targetAgeDays - 0.5) * 24 * 60 * 60 * 1000,
+    );
 
-  return { warned: 0, inactivated: toInactive.length };
+    const leadsToWarn = await db.recruiterLead.findMany({
+      where: {
+        is_active: true,
+        pipeline_stage: {
+          notIn: ["inactive", "not_interested", "blacklisted", "on_assignment"],
+        },
+        last_activity_at: {
+          gte: windowStart,
+          lt: windowEnd,
+        },
+      },
+      select: {
+        id: true,
+        recruiter_user_id: true,
+        first_name: true,
+        last_name: true,
+      },
+    });
+
+    for (const lead of leadsToWarn) {
+      // Check if we already sent this exact warning (avoid duplicates
+      // if cron runs multiple times in a day)
+      const existingWarning = await db.notification.findFirst({
+        where: {
+          user_id: lead.recruiter_user_id,
+          related_entity_id: lead.id,
+          related_entity_type: "lead",
+          type: "call_reminder", // reuse existing type
+          message: {
+            contains: `${daysBefore} day`,
+          },
+          created_at: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+        },
+        select: { id: true },
+      });
+
+      if (existingWarning) continue; // Already warned today
+
+      try {
+        await db.notification.create({
+          data: {
+            user_id: lead.recruiter_user_id,
+            title: `Candidate going inactive in ${daysBefore} day${daysBefore > 1 ? "s" : ""}`,
+            message: `${lead.first_name} ${lead.last_name} will be moved to the Company Pool in ${daysBefore} day${daysBefore > 1 ? "s" : ""} due to inactivity. Log an activity to keep them in your BOB.`,
+            type: "call_reminder",
+            related_entity_id: lead.id,
+            related_entity_type: "lead",
+          },
+        });
+        warnedCount++;
+      } catch (err) {
+        console.error(`[BOB] Failed to send ${daysBefore}-day warning:`, err);
+      }
+    }
+  }
+
+  return { warned: warnedCount, inactivated: toInactive.length };
 }
 
 // ─── Helper: Check if action is blocked (blacklist prompt) ──────────
@@ -737,4 +838,5 @@ export {
   computeTagFromActivity,
   RTR_DENIAL_THRESHOLD,
   INACTIVITY_THRESHOLD_DAYS,
+  INACTIVITY_WARNING_DAYS,
 } from "./types";
