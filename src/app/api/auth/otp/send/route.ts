@@ -29,9 +29,9 @@ export async function POST() {
       );
     }
 
-    // Verify the superadmin user exists in the database
-    const user = await db.user.findUnique({
-      where: { email: SUPERADMIN_EMAIL },
+    // Verify the superadmin user exists in the database (case-insensitive)
+    const user = await db.user.findFirst({
+      where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
     });
 
     if (!user || user.role !== "super_admin") {
