@@ -427,6 +427,9 @@ export default function RecruiterDashboardPage() {
         )}
       </div>
 
+      {/* ── BOB Summary Widget ────────────────────────────────────── */}
+      <BobSummaryWidget />
+
       {/* ── Filter Bar + Candidate Table ───────────────────────────── */}
       <Card id="candidate-table-section">
         <CardHeader>
@@ -650,5 +653,104 @@ export default function RecruiterDashboardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ─── BOB Summary Widget ─────────────────────────────────────────────
+function BobSummaryWidget() {
+  const [bobStats, setBobStats] = useState<{
+    total: number;
+    by_status: Record<string, number>;
+    by_tag: { hot: number; warm: number; cold: number; inactive: number };
+    active: number;
+    in_pool: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBob() {
+      try {
+        const res = await fetch("/api/recruiter/bob?view=my_bob&limit=500");
+        if (res.ok) {
+          const data = await res.json();
+          setBobStats(data.stats);
+        }
+      } catch (err) {
+        console.error("[BOB WIDGET]", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBob();
+  }, []);
+
+  if (loading) {
+    return <Skeleton className="h-24 w-full rounded-lg" />;
+  }
+
+  if (!bobStats || bobStats.total === 0) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Your Book of Business is empty</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Add your first candidate lead to start tracking them through the pipeline.
+            </p>
+          </div>
+          <Button size="sm" asChild>
+            <Link href="/recruiter/candidates">
+              <Users className="size-3.5 mr-1.5" />
+              Add a lead
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="py-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-emerald-600" />
+            <h3 className="text-sm font-semibold text-foreground">Book of Business</h3>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/recruiter/candidates">
+              View all
+              <ArrowUpRight className="size-3.5 ml-1" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Active in BOB */}
+          <Link href="/recruiter/candidates" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
+            <p className="text-2xl font-bold text-foreground">{bobStats.active}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</p>
+          </Link>
+
+          {/* Hot leads */}
+          <Link href="/recruiter/candidates?tag=hot" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
+            <p className="text-2xl font-bold text-red-500">{bobStats.by_tag.hot}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">🔥 Hot (7d)</p>
+          </Link>
+
+          {/* Cold leads */}
+          <Link href="/recruiter/candidates?tag=cold" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
+            <p className="text-2xl font-bold text-blue-500">{bobStats.by_tag.cold}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">❄️ Cold (15-30d)</p>
+          </Link>
+
+          {/* Company Pool */}
+          <Link href="/recruiter/candidates?view=company_pool" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
+            <p className="text-2xl font-bold text-muted-foreground">{bobStats.in_pool}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Company Pool</p>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
