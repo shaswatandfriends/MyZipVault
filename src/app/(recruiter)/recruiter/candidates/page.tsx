@@ -65,6 +65,11 @@ export default function BOBPage() {
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [dragChanging, setDragChanging] = useState(false);
 
+  // Bulk selection state (list view only)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<number>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string>("");
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -127,6 +132,57 @@ export default function BOBPage() {
       toast.error(err.message || "Failed to change status");
     } finally {
       setDragChanging(false);
+    }
+  }
+
+  // ─── Bulk action: change status for all selected leads ────────────
+  async function handleBulkAction() {
+    if (!bulkAction || selectedLeadIds.size === 0 || bulkProcessing) return;
+
+    setBulkProcessing(true);
+    const leadIds = Array.from(selectedLeadIds);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const leadId of leadIds) {
+      try {
+        const res = await fetch(`/api/recruiter/bob/${leadId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pipeline_stage: bulkAction }),
+        });
+        if (res.ok) successCount++;
+        else failCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    setBulkProcessing(false);
+    setBulkAction("");
+    setSelectedLeadIds(new Set());
+
+    if (successCount > 0) {
+      toast.success(`Updated ${successCount} lead${successCount > 1 ? "s" : ""} to ${STATUS_META[bulkAction as CandidateStatus]?.label || bulkAction}`);
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} lead${failCount > 1 ? "s" : ""} failed to update`);
+    }
+    fetchLeads();
+  }
+
+  function toggleLeadSelection(leadId: number) {
+    const next = new Set(selectedLeadIds);
+    if (next.has(leadId)) next.delete(leadId);
+    else next.add(leadId);
+    setSelectedLeadIds(next);
+  }
+
+  function toggleSelectAll() {
+    if (selectedLeadIds.size === leads.length) {
+      setSelectedLeadIds(new Set());
+    } else {
+      setSelectedLeadIds(new Set(leads.map((l) => l.id)));
     }
   }
 
@@ -374,8 +430,71 @@ export default function BOBPage() {
       {/* List view */}
       {!loading && !error && leads.length > 0 && view === "list" && (
         <div className="space-y-2">
+          {/* Select-all + bulk action bar */}
+          <div className="flex items-center gap-3 p-2 bg-surface-2 rounded-lg">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedLeadIds.size === leads.length && leads.length > 0}
+                onChange={toggleSelectAll}
+                className="size-4 rounded border-border"
+              />
+              <span className="text-text-secondary">
+                {selectedLeadIds.size > 0
+                  ? `${selectedLeadIds.size} selected`
+                  : "Select all"}
+              </span>
+            </label>
+            {selectedLeadIds.size > 0 && (
+              <>
+                <div className="h-4 w-px bg-border" />
+                <Select value={bulkAction} onValueChange={setBulkAction}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue placeholder="Bulk action..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="" disabled>Select an action...</SelectItem>
+                    {ALL_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_META[s].icon} Move to {STATUS_META[s].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8"
+                  disabled={!bulkAction || bulkProcessing}
+                  onClick={handleBulkAction}
+                >
+                  {bulkProcessing ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : null}
+                  Apply to {selectedLeadIds.size}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setSelectedLeadIds(new Set())}
+                >
+                  Clear
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Lead cards with checkboxes */}
           {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
+            <div key={lead.id} className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={selectedLeadIds.has(lead.id)}
+                onChange={() => toggleLeadSelection(lead.id)}
+                className="size-4 rounded border-border mt-3 shrink-0"
+              />
+              <div className="flex-1">
+                <LeadCard lead={lead} />
+              </div>
+            </div>
           ))}
         </div>
       )}

@@ -117,6 +117,27 @@ export async function POST(
         personalMessage: document.personal_message || undefined,
         expiryDate: document.expiry_date.toISOString().split("T")[0],
       });
+
+      // ─── In-app notification to candidate (if they have a platform account) ───
+      // This makes the RTR appear in the candidate's notification bell so they
+      // can act on it immediately after logging in, not just via email.
+      if (signer.user_id) {
+        try {
+          await db.notification.create({
+            data: {
+              user_id: signer.user_id,
+              title: `New document to sign: ${document.document_name}`,
+              message: `${orgName} sent you "${document.document_name}" for signature. Click to review and sign.`,
+              type: "lead_stage_change",
+              related_entity_id: document.id,
+              related_entity_type: "vaultsign_document",
+            },
+          });
+        } catch (notifErr) {
+          console.error("[VAULTSIGN SEND] Failed to create candidate notification:", notifErr);
+          // Non-blocking
+        }
+      }
     }
 
     // ─── Fire BOB status engine hook (non-blocking) ──────────────
