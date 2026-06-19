@@ -17,7 +17,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   Plus, Search, LayoutGrid, List as ListIcon, Users, Building2,
-  Flame, Clock, Loader2, AlertCircle, ChevronRight,
+  Flame, Clock, Loader2, AlertCircle, ChevronRight, Download,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -245,6 +245,24 @@ export default function BOBPage() {
             className="pl-9"
           />
         </div>
+
+        {/* Export CSV */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const params = new URLSearchParams();
+            params.set("view", view === "company_pool" ? "company_pool" : "my_bob");
+            if (search) params.set("search", search);
+            if (statusFilter !== "all") params.set("status", statusFilter);
+            if (tagFilter !== "all") params.set("tag", tagFilter);
+            if (sourceFilter !== "all") params.set("source", sourceFilter);
+            window.open(`/api/recruiter/bob/export?${params.toString()}`, "_blank");
+          }}
+          disabled={loading || leads.length === 0}
+        >
+          <Download className="h-4 w-4 mr-1.5" /> Export CSV
+        </Button>
       </div>
 
       {/* Metrics */}

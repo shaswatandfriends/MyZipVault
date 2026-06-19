@@ -104,6 +104,7 @@ const recruiterNav: NavItem[] = [
   { title: "Book of Business", href: "/recruiter/candidates", icon: Users },
   { title: "Candidate Pools", href: "/recruiter/pools", icon: Users },
   { title: "Compliance Bundles", href: "/recruiter/bundles", icon: ClipboardCheck },
+  { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
