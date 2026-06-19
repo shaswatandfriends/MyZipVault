@@ -654,6 +654,12 @@ model RecruiterLead {
   next_action_at         DateTime?
   notes                  String?
 
+  // ─── BOB Phase 2 fields (added 2026-06-20) ───
+  contract_start_date    DateTime?  // When the contract starts → cron auto-flips to on_assignment
+  requested_email_at     DateTime?  // When recruiter last requested candidate's email
+  requested_phone_at     DateTime?  // When recruiter last requested candidate's phone
+  requested_calendar_at  DateTime?  // When recruiter last requested calendar access
+
   // Relations
   recruiter_user         User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
   organization           Organization @relation(fields: [organization_id], references: [id])

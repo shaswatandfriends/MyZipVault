@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { verifyCronAuth } from "@/lib/cron-auth";
-import { checkInactiveLeads } from "@/lib/bob/status-engine";
+import { checkInactiveLeads, checkAssignmentStarts } from "@/lib/bob/status-engine";
 
 /**
  * GET /api/cron/bob-inactivity
  *
- * Daily cron job that:
- *   1. Finds leads with no activity in 30+ days (status not already inactive)
- *   2. Flips their status → "inactive" (moves them to Company Pool)
- *   3. Logs a "status_changed" activity (auto: inactivity threshold reached)
- *   4. Sends a notification to the owning recruiter
+ * Daily cron job that runs TWO checks:
+ *
+ * 1. ASSIGNMENT START CHECK
+ *    Finds leads in 'onboarding' status whose contract_start_date has
+ *    arrived (today or past). Auto-flips them to 'on_assignment'.
+ *
+ * 2. INACTIVITY CHECK
+ *    - Sends 5/3/1-day warning notifications before inactivity
+ *    - Flips leads with 30+ days no activity to 'inactive' (Company Pool)
+ *    - Notifies the owning recruiter
  *
  * Schedule: Daily at 4:00 AM UTC (recommended)
  *   → Set up external cron to hit this endpoint:
@@ -23,28 +28,34 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   try {
-    console.log("[BOB INACTIVITY CRON] Starting daily inactivity check...");
-
+    console.log("[BOB CRON] Starting daily checks...");
     const startTime = Date.now();
-    const result = await checkInactiveLeads();
-    const elapsed = Date.now() - startTime;
 
+    // 1. Check assignment starts
+    const assignmentResult = await checkAssignmentStarts();
+    console.log(`[BOB CRON] Assignment starts: ${assignmentResult.started} lead(s) flipped to On Assignment`);
+
+    // 2. Check inactivity
+    const inactivityResult = await checkInactiveLeads();
     console.log(
-      `[BOB INACTIVITY CRON] Done in ${elapsed}ms — ` +
-      `inactivated: ${result.inactivated}, warned: ${result.warned}`
+      `[BOB CRON] Inactivity: warned=${inactivityResult.warned}, inactivated=${inactivityResult.inactivated}`
     );
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[BOB CRON] Done in ${elapsed}ms`);
 
     return NextResponse.json({
       success: true,
-      inactivated: result.inactivated,
-      warned: result.warned,
+      assignment_started: assignmentResult.started,
+      inactivated: inactivityResult.inactivated,
+      warned: inactivityResult.warned,
       duration_ms: elapsed,
       checked_at: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("[BOB INACTIVITY CRON] Error:", error);
+    console.error("[BOB CRON] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Inactivity check failed" },
+      { error: error.message || "BOB cron check failed" },
       { status: 500 },
     );
   }

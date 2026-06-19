@@ -326,12 +326,17 @@ export async function PATCH(
     const updateData: any = { updated_at: new Date() };
     const allowedFields = [
       "first_name", "last_name", "email", "phone", "job_title", "specialty",
-      "reached_for", "remark", "source", "notes", "star_rating",
+      "reached_for", "remark", "source", "notes", "star_rating", "contract_start_date",
     ];
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        updateData[field] = body[field];
+        if (field === "contract_start_date") {
+          // Convert date string to Date object (or null to clear)
+          updateData[field] = body[field] ? new Date(body[field]) : null;
+        } else {
+          updateData[field] = body[field];
+        }
       }
     }
 

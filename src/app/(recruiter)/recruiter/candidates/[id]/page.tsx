@@ -31,6 +31,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -87,6 +88,10 @@ interface Lead {
   next_action: string | null;
   next_action_at: string | null;
   notes: string | null;
+  contract_start_date: string | null;
+  requested_email_at: string | null;
+  requested_phone_at: string | null;
+  requested_calendar_at: string | null;
   blacklist_reason: string | null;
   blacklisted_at: string | null;
   created_at: string;
@@ -1188,10 +1193,43 @@ function RequestsTab({ lead, candidateData }: { lead: Lead; candidateData: Candi
 
 // ─── Tab: Access ────────────────────────────────────────────────────
 function AccessTab({ lead }: { lead: Lead }) {
+  const [requesting, setRequesting] = useState<string | null>(null);
+
+  async function handleRequest(type: "email" | "phone" | "calendar") {
+    setRequesting(type);
+    try {
+      const res = await fetch(`/api/recruiter/bob/${lead.id}/request-contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send request");
+      }
+      const data = await res.json();
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setRequesting(null);
+    }
+  }
+
+  function timeAgo(iso: string | null): string {
+    if (!iso) return "";
+    const diff = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return "Requested today";
+    if (days === 1) return "Requested 1 day ago";
+    return `Requested ${days} days ago`;
+  }
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-text-muted">What contact info and access you have for this candidate.</p>
+      <p className="text-sm text-text-muted">Contact info and access you have for this candidate.</p>
       <div className="grid md:grid-cols-2 gap-3">
+        {/* Email */}
         <div className="bg-background border rounded-lg p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Email address</span>
@@ -1200,8 +1238,26 @@ function AccessTab({ lead }: { lead: Lead }) {
             </Badge>
           </div>
           {lead.email && <p className="text-xs text-text-muted mt-1">{lead.email}</p>}
+          {!lead.email && (
+            <div className="mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={requesting === "email"}
+                onClick={() => handleRequest("email")}
+              >
+                {requesting === "email" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Mail className="h-3 w-3 mr-1" />}
+                Request email
+              </Button>
+              {lead.requested_email_at && (
+                <p className="text-[10px] text-text-muted mt-1">{timeAgo(lead.requested_email_at)}</p>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Phone */}
         <div className="bg-background border rounded-lg p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Phone number</span>
@@ -1210,8 +1266,26 @@ function AccessTab({ lead }: { lead: Lead }) {
             </Badge>
           </div>
           {lead.phone && <p className="text-xs text-text-muted mt-1">{lead.phone}</p>}
+          {!lead.phone && (
+            <div className="mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={requesting === "phone"}
+                onClick={() => handleRequest("phone")}
+              >
+                {requesting === "phone" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Phone className="h-3 w-3 mr-1" />}
+                Request phone
+              </Button>
+              {lead.requested_phone_at && (
+                <p className="text-[10px] text-text-muted mt-1">{timeAgo(lead.requested_phone_at)}</p>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Platform account */}
         <div className="bg-background border rounded-lg p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Platform account</span>
@@ -1224,14 +1298,39 @@ function AccessTab({ lead }: { lead: Lead }) {
               {lead.candidate_user.email_verified_at ? "Email verified" : "Email not verified"}
             </p>
           )}
+          {!lead.candidate_user && (
+            <p className="text-xs text-text-muted mt-1">
+              Send a request (checklist, RTR) to invite them to the platform.
+            </p>
+          )}
         </div>
 
+        {/* Calendar access */}
         <div className="bg-background border rounded-lg p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Calendar access</span>
             <Badge variant="secondary">Not shared</Badge>
           </div>
-          <p className="text-xs text-text-muted mt-1">Request calendar access to see their availability.</p>
+          <div className="mt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={requesting === "calendar" || !lead.candidate_user}
+              onClick={() => handleRequest("calendar")}
+            >
+              {requesting === "calendar" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Calendar className="h-3 w-3 mr-1" />}
+              Request calendar access
+            </Button>
+            {lead.requested_calendar_at && (
+              <p className="text-[10px] text-text-muted mt-1">{timeAgo(lead.requested_calendar_at)}</p>
+            )}
+            {!lead.candidate_user && (
+              <p className="text-[10px] text-text-muted mt-1">
+                Candidate needs a platform account first.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -1348,6 +1447,9 @@ function EditLeadDialog({
   const [specialty, setSpecialty] = useState(lead.specialty || "");
   const [reachedFor, setReachedFor] = useState(lead.reached_for || "");
   const [notes, setNotes] = useState(lead.notes || "");
+  const [contractStartDate, setContractStartDate] = useState(
+    lead.contract_start_date ? new Date(lead.contract_start_date).toISOString().split("T")[0] : ""
+  );
 
   async function handleSave() {
     setSaving(true);
@@ -1360,6 +1462,7 @@ function EditLeadDialog({
           email: email || null, phone: phone || null,
           job_title: jobTitle || null, specialty: specialty || null,
           reached_for: reachedFor || null, notes: notes || null,
+          contract_start_date: contractStartDate || null,
         }),
       });
       if (!res.ok) {
@@ -1415,6 +1518,18 @@ function EditLeadDialog({
           <div>
             <label className="text-xs font-medium">Reaching for</label>
             <Input value={reachedFor} onChange={(e) => setReachedFor(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-xs font-medium">Contract start date (auto-flips to On Assignment)</label>
+            <Input
+              type="date"
+              value={contractStartDate}
+              onChange={(e) => setContractStartDate(e.target.value)}
+              className="mt-1"
+            />
+            <p className="text-[10px] text-text-muted mt-0.5">
+              When this date arrives, the lead automatically moves to &quot;On Assignment&quot; status.
+            </p>
           </div>
           <div>
             <label className="text-xs font-medium">Notes</label>

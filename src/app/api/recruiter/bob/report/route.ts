@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const where = role === "super_admin" ? {} : { organization_id: orgId };
+    const where: any = role === "super_admin" ? {} : { organization_id: orgId };
 
     // ─── By status ────────────────────────────────────────────────
     const byStatusRaw = await db.recruiterLead.groupBy({
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       byStatus[s] = 0;
     }
     for (const row of byStatusRaw) {
-      byStatus[row.pipeline_stage] = row._count.id;
+      byStatus[row.pipeline_stage] = row._count?.id ?? 0;
     }
 
     // ─── By tag ───────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     const byTag: Record<string, number> = { hot: 0, warm: 0, cold: 0, inactive: 0 };
     for (const row of byTagRaw) {
-      byTag[row.tag] = row._count.id;
+      byTag[row.tag] = row._count?.id ?? 0;
     }
 
     // ─── By recruiter ─────────────────────────────────────────────

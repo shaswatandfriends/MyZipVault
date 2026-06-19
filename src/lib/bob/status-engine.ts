@@ -96,6 +96,7 @@ async function notifyRecruiter(params: {
     const lead = await db.recruiterLead.findUnique({
       where: { id: params.leadId },
       select: {
+        id: true,
         recruiter_user_id: true,
         first_name: true,
         last_name: true,
@@ -632,33 +633,121 @@ export async function onOfferSigned(params: {
     metadata: { trigger: "offer_signed" },
   });
 
-  // ─── Set next action: create compliance checklist ─────────────
-  // We don't auto-create the checklist because:
-  //   1. The lead may not have a candidate_user_id yet (candidate hasn't signed up)
-  //   2. We'd need to match a checklist template by profession/specialty
-  // Instead, we set a next_action reminding the recruiter to send a checklist
-  // once the candidate has a platform account.
+  // ─── Auto-create compliance checklist (if candidate has a platform account) ───
+  // When the offer is accepted, we try to find a matching checklist template
+  // by the lead's specialty and auto-create a ChecklistRequest. If no template
+  // matches or the candidate doesn't have a platform account, we set a
+  // next_action reminder instead.
   try {
     const lead = await db.recruiterLead.findUnique({
       where: { id: params.leadId },
-      select: { id: true, candidate_user_id: true, first_name: true, last_name: true, specialty: true },
+      select: {
+        id: true,
+        candidate_user_id: true,
+        first_name: true,
+        last_name: true,
+        specialty: true,
+        job_title: true,
+        recruiter_user_id: true,
+      },
     });
 
     if (lead) {
-      const checklistAction = lead.candidate_user_id
-        ? `Send compliance checklist to ${lead.first_name} ${lead.last_name}${lead.specialty ? ` (${lead.specialty})` : ""}`
-        : `Wait for ${lead.first_name} ${lead.last_name} to set up their account, then send compliance checklist`;
+      if (lead.candidate_user_id) {
+        // Try to find a matching checklist template by specialty
+        let template: any = null;
+        if (lead.specialty) {
+          template = await db.checklistTemplate.findFirst({
+            where: {
+              specialty: { equals: lead.specialty, mode: "insensitive" },
+              is_active: true,
+            },
+          });
+        }
+        // Fallback: any active template
+        if (!template) {
+          template = await db.checklistTemplate.findFirst({
+            where: { is_active: true },
+          });
+        }
 
-      await db.recruiterLead.update({
-        where: { id: params.leadId },
-        data: {
-          next_action: checklistAction,
-          next_action_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due tomorrow
-        },
-      });
+        if (template) {
+          // Check if there's already an active checklist request for this candidate + template
+          const existingRequest = await db.checklistRequest.findFirst({
+            where: {
+              candidate_user_id: lead.candidate_user_id,
+              checklist_template_id: template.id,
+              status: { notIn: ["declined", "cancelled"] },
+            },
+          });
+
+          if (!existingRequest) {
+            // Auto-create the checklist request
+            await db.checklistRequest.create({
+              data: {
+                client_user_id: lead.recruiter_user_id,
+                candidate_user_id: lead.candidate_user_id,
+                checklist_template_id: template.id,
+                status: "sent",
+                completion_pct: 0,
+              },
+            });
+
+            await logActivity({
+              leadId: params.leadId,
+              activityType: "onboarding_started",
+              description: `Compliance checklist auto-created: "${template.name}" (template matched by specialty: ${lead.specialty || "default"})`,
+              actorType: "system",
+              metadata: {
+                trigger: "offer_signed",
+                template_id: template.id,
+                template_name: template.name,
+              },
+            });
+
+            console.log(`[BOB] Auto-created checklist (template: ${template.name}) for lead ${lead.id}`);
+          } else {
+            // Checklist already exists — just log it
+            await logActivity({
+              leadId: params.leadId,
+              activityType: "onboarding_started",
+              description: `Onboarding started — compliance checklist already exists (status: ${existingRequest.status})`,
+              actorType: "system",
+              metadata: { trigger: "offer_signed", existing_request_id: existingRequest.id },
+            });
+          }
+
+          // Set next action to monitor checklist completion
+          await db.recruiterLead.update({
+            where: { id: params.leadId },
+            data: {
+              next_action: `Monitor compliance checklist completion for ${lead.first_name} ${lead.last_name}`,
+              next_action_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Check in 3 days
+            },
+          });
+        } else {
+          // No template found — set next_action to manually send
+          await db.recruiterLead.update({
+            where: { id: params.leadId },
+            data: {
+              next_action: `No matching checklist template found for ${lead.specialty || "this specialty"}. Create one or send manually.`,
+              next_action_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            },
+          });
+        }
+      } else {
+        // No platform account — set next_action to wait
+        await db.recruiterLead.update({
+          where: { id: params.leadId },
+          data: {
+            next_action: `Wait for ${lead.first_name} ${lead.last_name} to set up their account, then send compliance checklist`,
+            next_action_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      }
     }
   } catch (err) {
-    console.error("[BOB] Failed to set next_action after offer signed:", err);
+    console.error("[BOB] Failed to auto-create checklist after offer signed:", err);
   }
 
   // Notify the owning recruiter — offer accepted is a big deal!
@@ -824,6 +913,43 @@ export async function setNextAction(params: {
   });
 }
 
+// ─── Cron: Check for leads whose contract start date has arrived ───
+// Run daily. Finds leads in 'onboarding' status with a contract_start_date
+// that is today or in the past, and auto-flips them to 'on_assignment'.
+export async function checkAssignmentStarts(): Promise<{ started: number }> {
+  const now = new Date();
+
+  const toStart = await db.recruiterLead.findMany({
+    where: {
+      pipeline_stage: "onboarding",
+      contract_start_date: { lte: now },
+      is_active: true,
+    },
+    select: {
+      id: true,
+      first_name: true,
+      last_name: true,
+      contract_start_date: true,
+      recruiter_user_id: true,
+    },
+  });
+
+  for (const lead of toStart) {
+    await onAssignmentStarted({
+      leadId: lead.id,
+      startDate: lead.contract_start_date!,
+    });
+
+    // Clear the contract_start_date so the cron doesn't re-trigger
+    await db.recruiterLead.update({
+      where: { id: lead.id },
+      data: { contract_start_date: null },
+    });
+  }
+
+  return { started: toStart.length };
+}
+
 // ─── Cron: Check for inactive leads (run daily) ─────────────────────
 // Sends notifications 5/3/1 days before inactivity, then flips to inactive
 export async function checkInactiveLeads(): Promise<{
@@ -947,16 +1073,83 @@ export async function checkInactiveLeads(): Promise<{
       if (existingWarning) continue; // Already warned today
 
       try {
+        const warningTitle = `Candidate going inactive in ${daysBefore} day${daysBefore > 1 ? "s" : ""}`;
+        const warningMessage = `${lead.first_name} ${lead.last_name} will be moved to the Company Pool in ${daysBefore} day${daysBefore > 1 ? "s" : ""} due to inactivity. Log an activity to keep them in your BOB.`;
+
         await db.notification.create({
           data: {
             user_id: lead.recruiter_user_id,
-            title: `Candidate going inactive in ${daysBefore} day${daysBefore > 1 ? "s" : ""}`,
-            message: `${lead.first_name} ${lead.last_name} will be moved to the Company Pool in ${daysBefore} day${daysBefore > 1 ? "s" : ""} due to inactivity. Log an activity to keep them in your BOB.`,
+            title: warningTitle,
+            message: warningMessage,
             type: "call_reminder",
             related_entity_id: lead.id,
             related_entity_type: "lead",
           },
         });
+
+        // ─── Also send an email for the 1-day warning (most urgent) ───
+        // We only email for 1-day warnings to avoid spamming for 5/3-day.
+        if (daysBefore === 1) {
+          try {
+            const recruiter = await db.user.findUnique({
+              where: { id: lead.recruiter_user_id },
+              select: { email: true, first_name: true, last_name: true },
+            });
+
+            if (recruiter?.email) {
+              const brevoApiKey = process.env.BREVO_API_KEY;
+              const brevoSender = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
+              const appUrl = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
+              const leadUrl = `${appUrl}/recruiter/candidates/${lead.id}`;
+              const recruiterName = `${recruiter.first_name ?? ""} ${recruiter.last_name ?? ""}`.trim() || "there";
+
+              if (brevoApiKey) {
+                fetch("https://api.brevo.com/v3/smtp/email", {
+                  method: "POST",
+                  headers: {
+                    "api-key": brevoApiKey,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    sender: { email: brevoSender, name: "MyZipVault BOB" },
+                    to: [{ email: recruiter.email }],
+                    subject: `⚠️ ${lead.first_name} ${lead.last_name} goes inactive tomorrow`,
+                    htmlContent: `
+                      <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+                        <div style="background: #B91C1C; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+                          <span style="color: #FECACA; font-weight: 600;">MyZipVault</span>
+                          <span style="color: #fff; margin-left: 8px;">Inactivity Warning</span>
+                        </div>
+                        <div style="background: #FEF2F2; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid #FECACA;">
+                          <h2 style="color: #991B1B; margin: 0 0 12px;">⚠️ Action needed: ${lead.first_name} ${lead.last_name}</h2>
+                          <p style="color: #1A1A1A; font-size: 15px; line-height: 1.6;">Hi ${recruiterName},</p>
+                          <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">
+                            <strong>${lead.first_name} ${lead.last_name}</strong> will be moved to the Company Pool
+                            <strong>tomorrow</strong> due to 30 days of inactivity. Once in the Company Pool,
+                            any recruiter in your organization can claim them.
+                          </p>
+                          <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">
+                            To keep them in your BOB, log any activity (a call, a note, a status change) today.
+                          </p>
+                          <p style="margin: 24px 0;">
+                            <a href="${leadUrl}" style="background: #B91C1C; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+                              View candidate profile
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+                    `,
+                  }),
+                }).catch((err) => {
+                  console.error("[BOB] Failed to send inactivity warning email:", err);
+                });
+              }
+            }
+          } catch (emailErr) {
+            console.error("[BOB] Failed to send inactivity warning email:", emailErr);
+          }
+        }
+
         warnedCount++;
       } catch (err) {
         console.error(`[BOB] Failed to send ${daysBefore}-day warning:`, err);
