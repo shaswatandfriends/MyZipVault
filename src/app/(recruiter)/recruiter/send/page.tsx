@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   Card,
@@ -101,7 +102,18 @@ const STEPS = ["Candidate Info", "Checklist", "Documents", "Review"];
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function RecruiterSendPage() {
+export default function SendRequestPage() {
+  return (
+    <React.Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <RecruiterSendPage />
+    </React.Suspense>
+  );
+}
+
+function RecruiterSendPage() {
+  const searchParams = useSearchParams();
+  const leadIdParam = searchParams.get("lead");
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -116,6 +128,48 @@ export default function RecruiterSendPage() {
     jobTitle: "",
     specialty: "",
   });
+
+  // ─── BOB: Lead selection ──────────────────────────────────────
+  // Lets the recruiter pick a lead from their BOB to auto-fill the
+  // candidate info. Also auto-links the Send Request to the lead so
+  // the status engine fires onDocRequested.
+  const [leads, setLeads] = useState<Array<{ id: number; first_name: string; last_name: string; email: string | null; phone: string | null; job_title: string | null; specialty: string | null }>>([]);
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(
+    leadIdParam ? parseInt(leadIdParam) : null
+  );
+
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await fetch("/api/recruiter/bob?view=my_bob&limit=500");
+        if (res.ok) {
+          const data = await res.json();
+          setLeads(data.leads || []);
+        }
+      } catch (err) {
+        console.error("Leads fetch error:", err);
+      }
+    };
+    fetchLeads();
+  }, []);
+
+  // Auto-fill candidate info when a lead is selected
+  useEffect(() => {
+    if (selectedLeadId) {
+      const lead = leads.find((l) => l.id === selectedLeadId);
+      if (lead) {
+        setCandidateInfo({
+          firstName: lead.first_name,
+          lastName: lead.last_name,
+          email: lead.email || "",
+          phone: lead.phone || "",
+          jobTitle: lead.job_title || "",
+          specialty: lead.specialty || "",
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeadId, leads]);
 
   // Email check state
   const [emailCheckStatus, setEmailCheckStatus] = useState<
@@ -481,6 +535,9 @@ export default function RecruiterSendPage() {
           emailCheckStatus={emailCheckStatus}
           existingCandidateName={existingCandidateName}
           specialtyOptions={specialtyOptions}
+          leads={leads}
+          selectedLeadId={selectedLeadId}
+          onSelectLead={(id) => setSelectedLeadId(id)}
         />
       )}
 
@@ -568,12 +625,18 @@ function Step1CandidateInfo({
   emailCheckStatus,
   existingCandidateName,
   specialtyOptions,
+  leads,
+  selectedLeadId,
+  onSelectLead,
 }: {
   candidateInfo: CandidateInfo;
   setCandidateInfo: React.Dispatch<React.SetStateAction<CandidateInfo>>;
   emailCheckStatus: "idle" | "checking" | "exists_candidate" | "exists_non_candidate" | "available";
   existingCandidateName: string;
   specialtyOptions: string[];
+  leads: Array<{ id: number; first_name: string; last_name: string; email: string | null; phone: string | null; job_title: string | null; specialty: string | null }>;
+  selectedLeadId: number | null;
+  onSelectLead: (id: number | null) => void;
 }) {
   const updateField = (field: keyof CandidateInfo, value: string) => {
     setCandidateInfo((prev) => ({ ...prev, [field]: value }));
@@ -596,6 +659,37 @@ function Step1CandidateInfo({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* BOB Lead Selector — auto-fills candidate info from the recruiter's BOB */}
+        {leads.length > 0 && (
+          <div className="p-3 rounded-lg border border-primary/30 bg-primary/5">
+            <Label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
+              <User className="size-3.5" /> Select from Book of Business (recommended)
+            </Label>
+            <Select
+              value={selectedLeadId?.toString() ?? ""}
+              onValueChange={(val) => onSelectLead(val ? parseInt(val) : null)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Pick a candidate from your BOB to auto-fill..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">— None (manual entry) —</SelectItem>
+                {leads.map((lead) => (
+                  <SelectItem key={lead.id} value={lead.id.toString()}>
+                    {lead.first_name} {lead.last_name}
+                    {lead.email ? ` · ${lead.email}` : ""}
+                    {lead.specialty ? ` · ${lead.specialty}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-text-muted mt-1.5">
+              Linking to a BOB candidate enables automatic status tracking — the lead moves to
+              &quot;Doc Pending&quot; when you send this request.
+            </p>
+          </div>
+        )}
+
         {/* Name Row */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">

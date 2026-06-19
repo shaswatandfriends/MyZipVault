@@ -5,10 +5,18 @@
  *
  * Shows: name, status badge, tag emoji, last activity, next action, specialty.
  * Clicking opens the candidate profile page.
+ *
+ * If the lead is in a Company Pool status (inactive/not_interested/blacklisted),
+ * a "Claim" button is shown that lets the recruiter claim the lead directly
+ * without navigating to the profile first.
  */
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { STATUS_META, TAG_META, type CandidateStatus, type CandidateTag } from "@/lib/bob/types";
+import { toast } from "sonner";
+import { Loader2, UserPlus } from "@/lib/icons";
+import { STATUS_META, TAG_META, isCompanyPoolStatus, type CandidateStatus, type CandidateTag } from "@/lib/bob/types";
 
 export interface LeadCardData {
   id: number;
@@ -25,6 +33,7 @@ export interface LeadCardData {
   next_action_at: string | null;
   source: string;
   reached_for: string | null;
+  blacklist_reason?: string | null;
   _count?: {
     activities: number;
     vault_sign_documents: number;
@@ -51,8 +60,39 @@ function timeAgo(iso: string): string {
 }
 
 export function LeadCard({ lead }: { lead: LeadCardData }) {
+  const router = useRouter();
+  const [claiming, setClaiming] = useState(false);
+
   const status = STATUS_META[lead.pipeline_stage as CandidateStatus];
   const tag = TAG_META[lead.tag as CandidateTag];
+  const isPoolLead = isCompanyPoolStatus(lead.pipeline_stage);
+
+  async function handleClaim(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // If blacklisted, show a warning
+    if (lead.pipeline_stage === "blacklisted") {
+      const confirm = window.confirm(
+        `This candidate was blacklisted${lead.blacklist_reason ? `: ${lead.blacklist_reason}` : ""}.\n\nDo you want to reactivate them?`
+      );
+      if (!confirm) return;
+    }
+
+    setClaiming(true);
+    try {
+      const res = await fetch(`/api/recruiter/bob/${lead.id}/reactivate`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to claim");
+      }
+      toast.success(`Claimed ${lead.first_name} ${lead.last_name} — moved to your BOB`);
+      router.push(`/recruiter/candidates/${lead.id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to claim lead");
+      setClaiming(false);
+    }
+  }
 
   return (
     <Link
@@ -81,6 +121,13 @@ export function LeadCard({ lead }: { lead: LeadCardData }) {
           {status.icon} {status.label}
         </span>
       </div>
+
+      {/* Blacklist reason (if blacklisted) */}
+      {lead.pipeline_stage === "blacklisted" && lead.blacklist_reason && (
+        <p className="text-[10px] text-red-600 italic mb-1 truncate" title={lead.blacklist_reason}>
+          🚫 {lead.blacklist_reason}
+        </p>
+      )}
 
       {/* Tag + last activity */}
       <div className="flex items-center gap-2 text-[11px] text-text-muted">
@@ -125,6 +172,18 @@ export function LeadCard({ lead }: { lead: LeadCardData }) {
           </span>
         )}
       </div>
+
+      {/* Claim button (only for Company Pool leads) */}
+      {isPoolLead && (
+        <button
+          onClick={handleClaim}
+          disabled={claiming}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50"
+        >
+          {claiming ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3 w-3" />}
+          {claiming ? "Claiming..." : "Claim this candidate"}
+        </button>
+      )}
     </Link>
   );
 }

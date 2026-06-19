@@ -81,6 +81,39 @@ export async function logActivity(params: {
   }
 }
 
+// ─── Core: Notify the owning recruiter (non-blocking) ───────────────
+// Sends an in-app notification to the recruiter who owns this lead.
+// Used by domain events (RTR signed, doc uploaded, offer signed, etc.)
+// so recruiters see real-time updates in their notification bell.
+async function notifyRecruiter(params: {
+  leadId: number;
+  title: string;
+  message: string;
+  type?: string;
+}): Promise<void> {
+  try {
+    const lead = await db.recruiterLead.findUnique({
+      where: { id: params.leadId },
+      select: { recruiter_user_id: true, first_name: true, last_name: true },
+    });
+    if (!lead) return;
+
+    await db.notification.create({
+      data: {
+        user_id: lead.recruiter_user_id,
+        title: params.title,
+        message: params.message,
+        type: params.type || "lead_stage_change",
+        related_entity_id: lead.id,
+        related_entity_type: "lead",
+      },
+    });
+  } catch (err) {
+    console.error("[BOB] Failed to send notification:", err);
+    // Non-blocking
+  }
+}
+
 // ─── Core: Update last_activity_at + recompute tag ──────────────────
 async function touchLeadActivity(
   leadId: number,
@@ -272,6 +305,13 @@ export async function onRtrSigned(params: {
     metadata: { document_id: params.documentId, document_name: params.documentName },
   });
 
+  // Notify the owning recruiter
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: "RTR signed! 🎉",
+    message: `Candidate signed the RTR: "${params.documentName}". Status moved to Interested.`,
+  });
+
   await touchLeadActivity(params.leadId, "rtr_signed");
 }
 
@@ -328,6 +368,13 @@ export async function onRtrDenied(params: {
     });
   }
 
+  // Notify the owning recruiter about the denial
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: `RTR declined (${newDenialCount}/${RTR_DENIAL_THRESHOLD})`,
+    message: `Candidate declined the RTR: "${params.documentName}"${params.reason ? ` — ${params.reason}` : ""}.${newDenialCount >= RTR_DENIAL_THRESHOLD ? " Auto-moved to Not Interested (5 denials reached)." : ""}`,
+  });
+
   await touchLeadActivity(params.leadId, "rtr_denied");
 }
 
@@ -370,6 +417,13 @@ export async function onDocUploaded(params: {
     description: `Document uploaded: ${params.docType} — "${params.docName}"`,
     actorType: "candidate",
     metadata: { document_type: params.docType, document_name: params.docName },
+  });
+
+  // Notify the owning recruiter
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: "Document uploaded 📄",
+    message: `Candidate uploaded: ${params.docType} — "${params.docName}". Check the Documents tab.`,
   });
 
   await touchLeadActivity(params.leadId, "doc_uploaded");
@@ -498,6 +552,13 @@ export async function onOfferSigned(params: {
   } catch (err) {
     console.error("[BOB] Failed to set next_action after offer signed:", err);
   }
+
+  // Notify the owning recruiter — offer accepted is a big deal!
+  await notifyRecruiter({
+    leadId: params.leadId,
+    title: "Offer accepted! 🎉",
+    message: `Candidate signed the offer letter: "${params.documentName}". Status moved to Onboarding. Next: send compliance checklist.`,
+  });
 
   await touchLeadActivity(params.leadId, "offer_accepted");
 }
