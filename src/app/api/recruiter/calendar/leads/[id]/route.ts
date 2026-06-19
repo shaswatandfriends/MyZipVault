@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { changeStatus } from "@/lib/bob/status-engine";
+import { ALL_STATUSES, type CandidateStatus } from "@/lib/bob/types";
 
 export async function GET(
   request: Request,
@@ -108,8 +110,30 @@ export async function PUT(
     if (reachedFor !== undefined) data.reached_for = reachedFor || null;
     if (remark !== undefined) data.remark = remark || null;
     if (source !== undefined) data.source = source;
-    if (pipelineStage !== undefined) data.pipeline_stage = pipelineStage;
     if (starRating !== undefined) data.star_rating = starRating || null;
+
+    // ─── Route status changes through the BOB status engine ───────
+    // This ensures the Calendar uses the SAME status system as BOB:
+    //   - Logs activity to the timeline
+    //   - Recomputes the tag (hot/warm/cold/inactive)
+    //   - Handles Company Pool movement (inactive/not_interested/blacklisted)
+    //   - Fires notifications
+    // Without this, Calendar status changes would bypass all automation.
+    if (pipelineStage !== undefined && pipelineStage !== existing.pipeline_stage) {
+      if (!ALL_STATUSES.includes(pipelineStage as CandidateStatus)) {
+        return NextResponse.json(
+          { error: `Invalid status: ${pipelineStage}. Must be one of: ${ALL_STATUSES.join(", ")}` },
+          { status: 400 },
+        );
+      }
+      await changeStatus({
+        leadId,
+        newStatus: pipelineStage as CandidateStatus,
+        actorUserId: userId,
+        actorType: "recruiter",
+        reason: "Status changed from Calendar",
+      });
+    }
 
     const lead = await db.recruiterLead.update({
       where: { id: leadId },

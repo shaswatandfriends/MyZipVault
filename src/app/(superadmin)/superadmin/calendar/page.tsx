@@ -124,13 +124,16 @@ function formatShortDate(dateStr: string): string {
 const PIPELINE_COLORS: Record<string, string> = {
   new_lead: "var(--pipeline-new-lead)",
   doc_pending: "var(--pipeline-doc-pending)",
+  interested: "var(--pipeline-interested-no-job)", // reuse closest CSS var
   submitted: "var(--pipeline-submitted)",
-  interested_no_job: "var(--pipeline-interested-no-job)",
-  interview_scheduled: "var(--pipeline-interview-scheduled)",
+  interview_stage: "var(--pipeline-interview-scheduled)", // reuse closest CSS var
   offer_sent: "var(--pipeline-offer-sent)",
+  offer_accepted: "var(--pipeline-offer-sent)", // reuse
   onboarding: "var(--pipeline-onboarding)",
-  started: "var(--pipeline-started)",
+  on_assignment: "var(--pipeline-started)", // reuse
+  inactive: "var(--pipeline-not-interested)", // reuse
   not_interested: "var(--pipeline-not-interested)",
+  blacklisted: "var(--pipeline-not-interested)", // reuse
 };
 
 // ─── Skeletons ──────────────────────────────────────────────────────

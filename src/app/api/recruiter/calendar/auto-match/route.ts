@@ -4,16 +4,20 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 // Pipeline stage weights for scoring (higher = closer to interview/hire)
+// Uses the unified BOB status taxonomy
 const STAGE_WEIGHTS: Record<string, number> = {
   new_lead: 10,
   doc_pending: 20,
-  submitted: 30,
   interested: 50,
-  interview_scheduled: 70,
+  submitted: 30,
+  interview_stage: 70,
   offer_sent: 80,
+  offer_accepted: 85,
   onboarding: 90,
-  started: 100,
+  on_assignment: 100,
+  inactive: 0,
   not_interested: 0,
+  blacklisted: 0,
 };
 
 export async function GET(request: Request) {
@@ -40,12 +44,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ matches: [] });
     }
 
-    // 1. Get all active leads (not in "not_interested" or "started" stage)
+    // 1. Get all active leads (not in company pool or on assignment)
     const activeLeads = await db.recruiterLead.findMany({
       where: {
         recruiter_user_id: userId,
         is_active: true,
-        pipeline_stage: { notIn: ["not_interested", "started"] },
+        pipeline_stage: { notIn: ["not_interested", "inactive", "blacklisted", "on_assignment"] },
       },
       select: {
         id: true,

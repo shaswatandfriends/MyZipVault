@@ -132,24 +132,33 @@ export async function POST(request: Request) {
       });
     }
 
-    // Update lead's pipeline_stage
+    // Update lead's pipeline_stage via the BOB status engine
+    // (routes through changeStatus so it logs activity + recomputes tag
+    //  + handles Company Pool movement + fires notifications)
     let updatedLead = null;
     if (outcome === "not_interested") {
-      updatedLead = await db.recruiterLead.update({
-        where: { id: Number(leadId) },
-        data: {
-          pipeline_stage: "not_interested",
-          updated_at: new Date(),
-        },
+      const { changeStatus } = await import("@/lib/bob/status-engine");
+      await changeStatus({
+        leadId: Number(leadId),
+        newStatus: "not_interested",
+        actorUserId: userId,
+        actorType: "recruiter",
+        reason: "Marked Not Interested after call",
       });
+      updatedLead = await db.recruiterLead.findUnique({ where: { id: Number(leadId) } });
     } else if (pipelineStage) {
-      updatedLead = await db.recruiterLead.update({
-        where: { id: Number(leadId) },
-        data: {
-          pipeline_stage: pipelineStage,
-          updated_at: new Date(),
-        },
-      });
+      const { changeStatus } = await import("@/lib/bob/status-engine");
+      const { ALL_STATUSES } = await import("@/lib/bob/types");
+      if (ALL_STATUSES.includes(pipelineStage as any)) {
+        await changeStatus({
+          leadId: Number(leadId),
+          newStatus: pipelineStage as any,
+          actorUserId: userId,
+          actorType: "recruiter",
+          reason: "Status changed after call",
+        });
+      }
+      updatedLead = await db.recruiterLead.findUnique({ where: { id: Number(leadId) } });
     }
 
     return NextResponse.json({

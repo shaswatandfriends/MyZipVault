@@ -166,28 +166,35 @@ export async function GET(request: Request) {
     recruiterStats.sort((a, b) => b.callsWeek - a.callsWeek);
 
     // ── 3. Pipeline Overview ──────────────────────────────────────────
+    // Uses the unified BOB status taxonomy (same as Book of Business + Calendar)
     const pipelineStages = [
       "new_lead",
       "doc_pending",
+      "interested",
       "submitted",
-      "interested_no_job",
-      "interview_scheduled",
+      "interview_stage",
       "offer_sent",
+      "offer_accepted",
       "onboarding",
-      "started",
+      "on_assignment",
+      "inactive",
       "not_interested",
+      "blacklisted",
     ];
 
     const stageLabels: Record<string, string> = {
       new_lead: "New Lead",
       doc_pending: "Doc Pending",
+      interested: "Interested",
       submitted: "Submitted",
-      interested_no_job: "Interested",
-      interview_scheduled: "Interview Scheduled",
+      interview_stage: "Interview Stage",
       offer_sent: "Offer Sent",
+      offer_accepted: "Offer Accepted",
       onboarding: "Onboarding",
-      started: "Started",
+      on_assignment: "On Assignment",
+      inactive: "Inactive",
       not_interested: "Not Interested",
+      blacklisted: "Blacklisted",
     };
 
     const pipelineOverview = await Promise.all(

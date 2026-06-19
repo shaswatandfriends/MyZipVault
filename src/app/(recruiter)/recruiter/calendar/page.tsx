@@ -40,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ALL_STATUSES, STATUS_META, type CandidateStatus } from "@/lib/bob/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -213,17 +214,15 @@ interface AutoMatchResult {
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
-const PIPELINE_STAGES = [
-  { value: "new_lead", label: "New Lead", color: "bg-gray-200 text-gray-800", headerBg: "bg-gray-100" },
-  { value: "doc_pending", label: "Doc Pending", color: "bg-amber-100 text-amber-800", headerBg: "bg-amber-50" },
-  { value: "submitted", label: "Submitted", color: "bg-blue-100 text-blue-800", headerBg: "bg-blue-50" },
-  { value: "interested", label: "Interested", color: "bg-green-100 text-green-800", headerBg: "bg-green-50" },
-  { value: "interview_scheduled", label: "Interview Scheduled", color: "bg-teal-100 text-teal-800", headerBg: "bg-teal-50" },
-  { value: "offer_sent", label: "Offer Sent", color: "bg-purple-100 text-purple-800", headerBg: "bg-purple-50" },
-  { value: "onboarding", label: "Onboarding", color: "bg-indigo-100 text-indigo-800", headerBg: "bg-indigo-50" },
-  { value: "started", label: "Started", color: "bg-emerald-100 text-emerald-800", headerBg: "bg-emerald-50" },
-  { value: "not_interested", label: "Not Interested", color: "bg-red-100 text-red-800", headerBg: "bg-red-50" },
-] as const;
+// ─── Unified pipeline stages (sourced from BOB STATUS_META) ─────────
+// Single source of truth — same statuses as Book of Business.
+// If you change a status here, it changes everywhere.
+// We use STATUS_META directly for colors (inline styles) because Tailwind
+// JIT can't see dynamic class names.
+const PIPELINE_STAGES = ALL_STATUSES.map((status) => ({
+  value: status,
+  label: STATUS_META[status].label,
+}));
 
 const SOURCE_OPTIONS = [
   { value: "cold_call", label: "Cold Call" },
@@ -255,13 +254,24 @@ function formatTime(dateStr: string | null | undefined): string {
 }
 
 function getStageLabel(stage: string): string {
-  return PIPELINE_STAGES.find((s) => s.value === stage)?.label ?? stage;
+  return STATUS_META[stage as CandidateStatus]?.label ?? PIPELINE_STAGES.find((s) => s.value === stage)?.label ?? stage;
 }
 
 function getStageBadge(stage: string) {
-  const found = PIPELINE_STAGES.find((s) => s.value === stage);
-  if (!found) return <Badge variant="outline">{stage}</Badge>;
-  return <Badge className={`${found.color} border-0 hover:${found.color}`}>{found.label}</Badge>;
+  const meta = STATUS_META[stage as CandidateStatus];
+  if (!meta) return <Badge variant="outline">{stage}</Badge>;
+  return (
+    <Badge
+      style={{
+        backgroundColor: meta.bgColor,
+        color: meta.color,
+        border: `1px solid ${meta.borderColor}`,
+      }}
+      className="border hover:opacity-80"
+    >
+      {meta.icon} {meta.label}
+    </Badge>
+  );
 }
 
 function getSourceLabel(source: string): string {
@@ -279,7 +289,7 @@ function getCalendarBlockColor(schedule: CallSchedule, leads: Lead[]): string {
       const hasLog = lead?.call_logs?.some((cl) => cl.call_schedule_id === schedule.id);
       if (!hasLog) return "bg-red-100 border-red-300 text-red-900";
     }
-    if (lead?.pipeline_stage === "interview_scheduled") return "bg-teal-100 border-teal-300 text-teal-900";
+    if (lead?.pipeline_stage === "interview_stage") return "bg-teal-100 border-teal-300 text-teal-900";
     return "bg-blue-100 border-blue-300 text-blue-900";
   }
   return "bg-blue-100 border-blue-300 text-blue-900";
@@ -2428,9 +2438,14 @@ function PipelineTab({
               onDrop={(e) => handleDrop(e, stage.value)}
             >
               {/* Column header */}
-              <div className={`rounded-t-lg px-3 py-2 ${stage.headerBg}`}>
+              <div
+                className="rounded-t-lg px-3 py-2"
+                style={{ backgroundColor: STATUS_META[stage.value as CandidateStatus]?.bgColor }}
+              >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-gray-700">{stage.label}</h4>
+                  <h4 className="text-xs font-semibold" style={{ color: STATUS_META[stage.value as CandidateStatus]?.color }}>
+                    {STATUS_META[stage.value as CandidateStatus]?.icon} {stage.label}
+                  </h4>
                   <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                     {leadsByStage[stage.value]?.length ?? 0}
                   </Badge>
