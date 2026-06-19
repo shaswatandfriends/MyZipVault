@@ -995,205 +995,189 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
       </header>
 
-      {/* Toolbar — Only show in Edit mode, Desktop — Clean professional ribbon */}
+      {/* Toolbar — Clean flat ribbon matching reference design */}
       {viewMode === "edit" && (
-        <div className="hidden lg:flex bg-toolbar-bg border-b border-[#E8E2D4] px-1 py-0.5 flex-wrap gap-y-0">
-          {/* Clipboard Group */}
-          <div className="flex flex-col bg-white rounded-md border border-[#E8E2D4]/60 mx-0.5 px-1.5 py-1">
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)" isActive={false}>
-                <Undo2 className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)" isActive={false}>
-                <Redo2 className="h-4 w-4" />
-              </ToolbarButton>
-            </div>
-            <span className="text-[9px] text-[#5B5A56] mt-0.5 select-none text-center font-medium">Undo</span>
-          </div>
+        <div className="hidden lg:flex items-center gap-0.5 px-6 py-2 shrink-0 overflow-x-auto" style={{ background: "#fff", borderBottom: "1px solid #E8E2D4" }}>
+          {/* Undo/Redo */}
+          <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} title="Undo" isActive={false}>
+            <Undo2 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} title="Redo" isActive={false}>
+            <Redo2 className="h-4 w-4" />
+          </ToolbarButton>
+          <div className="w-px h-5 mx-1" style={{ background: "#E8E2D4" }} />
 
-          {/* Font Group */}
-          <div className="flex flex-col bg-white rounded-md border border-[#E8E2D4]/60 mx-0.5 px-1.5 py-1">
-            <div className="flex items-center gap-0.5 flex-wrap">
-              <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
-                if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
-                else editor?.chain().focus().setFontFamily(val).run();
-              }}>
-                <SelectTrigger className="w-[110px] h-7 text-[11px]">
-                  <SelectValue placeholder="Font" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Default">Default</SelectItem>
-                  <SelectItem value="Arial">Arial</SelectItem>
-                  <SelectItem value="Georgia">Georgia</SelectItem>
-                  <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                  <SelectItem value="Courier New">Courier New</SelectItem>
-                  <SelectItem value="Verdana">Verdana</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Style selector */}
+          <Select value={
+            editor?.isActive("heading", { level: 1 }) ? "1"
+            : editor?.isActive("heading", { level: 2 }) ? "2"
+            : editor?.isActive("heading", { level: 3 }) ? "3"
+            : "0"
+          } onValueChange={(val) => {
+            if (val === "0") editor?.chain().focus().setParagraph().run();
+            else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
+          }}>
+            <SelectTrigger className="w-[100px] h-7 text-[11px] border-[#E8E2D4]">
+              <SelectValue placeholder="Style" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Normal Text</SelectItem>
+              <SelectItem value="1">Heading 1</SelectItem>
+              <SelectItem value="2">Heading 2</SelectItem>
+              <SelectItem value="3">Heading 3</SelectItem>
+            </SelectContent>
+          </Select>
 
-              <Select value={((): string => {
-                const fs = editor?.getAttributes("textStyle").fontSize;
-                if (!fs) return "11";
-                const num = parseInt(String(fs));
-                return isNaN(num) ? "11" : String(num);
-              })()} onValueChange={(val) => {
-                editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
-              }}>
-                <SelectTrigger className="w-[60px] h-7 text-[11px]">
-                  <SelectValue placeholder="Size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
-                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Font family */}
+          <Select value={editor?.getAttributes("textStyle").fontFamily || "Default"} onValueChange={(val) => {
+            if (val === "Default") editor?.chain().focus().unsetFontFamily().run();
+            else editor?.chain().focus().setFontFamily(val).run();
+          }}>
+            <SelectTrigger className="w-[90px] h-7 text-[11px] border-[#E8E2D4]">
+              <SelectValue placeholder="Font" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Default">Default</SelectItem>
+              <SelectItem value="Arial">Arial</SelectItem>
+              <SelectItem value="Georgia">Georgia</SelectItem>
+              <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+              <SelectItem value="Courier New">Courier New</SelectItem>
+              <SelectItem value="Verdana">Verdana</SelectItem>
+            </SelectContent>
+          </Select>
 
-              <Separator orientation="vertical" className="h-5 mx-0.5" />
+          {/* Font size */}
+          <Select value={((): string => {
+            const fs = editor?.getAttributes("textStyle").fontSize;
+            if (!fs) return "11";
+            const num = parseInt(String(fs));
+            return isNaN(num) ? "11" : String(num);
+          })()} onValueChange={(val) => {
+            editor?.chain().focus().setMark("textStyle", { fontSize: val + "pt" }).run();
+          }}>
+            <SelectTrigger className="w-[55px] h-7 text-[11px] border-[#E8E2D4]">
+              <SelectValue placeholder="Size" />
+            </SelectTrigger>
+            <SelectContent>
+              {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((s) => (
+                <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold (Ctrl+B)">
-                <Bold className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic (Ctrl+I)">
-                <Italic className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline (Ctrl+U)">
-                <UnderlineIcon className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
-                <Strikethrough className="h-4 w-4" />
-              </ToolbarButton>
+          <div className="w-px h-5 mx-1" style={{ background: "#E8E2D4" }} />
 
-              <Separator orientation="vertical" className="h-5 mx-0.5" />
+          {/* Text formatting */}
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={editor?.isActive("bold")} title="Bold (Ctrl+B)">
+            <Bold className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={editor?.isActive("italic")} title="Italic (Ctrl+I)">
+            <Italic className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} isActive={editor?.isActive("underline")} title="Underline (Ctrl+U)">
+            <UnderlineIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} isActive={editor?.isActive("strike")} title="Strikethrough">
+            <Strikethrough className="h-4 w-4" />
+          </ToolbarButton>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "bg-[#F8F2E4] text-[#B8924A]" : "text-[#5B5A56]"}`} title="Font Color">
-                    <Palette className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" align="start">
-                  <div className="grid grid-cols-6 gap-1">
-                    {["#000000", "#374151", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
-                      <button key={color} className="w-6 h-6 rounded border border-[#E8E2D4] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+          {/* Color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: editor?.isActive("textStyle") && editor?.getAttributes("textStyle").color ? "#B8924A" : "#5B5A56" }} title="Font Color">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="grid grid-cols-6 gap-1">
+                {["#000000", "#374151", "#5B5A56", "#DC2626", "#0B1F3A", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB", "#C9A961", "#8C8A83"].map((color) => (
+                  <button key={color} className="w-6 h-6 rounded border border-[#E8E2D4] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 ${editor?.isActive("highlight") ? "bg-[#F8F2E4] text-[#B8924A]" : "text-[#5B5A56]"}`} title="Highlight">
-                    <Highlighter className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" align="start">
-                  <div className="grid grid-cols-5 gap-1">
-                    {[
-                      { color: "#FEF08A", label: "Yellow" },
-                      { color: "#BBF7D0", label: "Green" },
-                      { color: "#BFDBFE", label: "Blue" },
-                      { color: "#FECACA", label: "Red" },
-                      { color: "#E9D5FF", label: "Purple" },
-                    ].map(({ color, label }) => (
-                      <button key={color} className="w-6 h-6 rounded border border-[#E8E2D4] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
-                    ))}
-                    <button className="w-6 h-6 rounded border border-[#E8E2D4] text-xs flex items-center justify-center hover:scale-110 transition-transform" onClick={() => editor?.chain().focus().unsetHighlight().run()} title="Remove highlight">
-                      <Minus className="h-3 w-3" />
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <span className="text-[9px] text-[#5B5A56] mt-0.5 select-none text-center font-medium">Font</span>
-          </div>
+          {/* Highlight */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: editor?.isActive("highlight") ? "#B8924A" : "#5B5A56" }} title="Highlight">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { color: "#FEF08A", label: "Yellow" },
+                  { color: "#BBF7D0", label: "Green" },
+                  { color: "#BFDBFE", label: "Blue" },
+                  { color: "#FECACA", label: "Red" },
+                  { color: "#E9D5FF", label: "Purple" },
+                ].map(({ color, label }) => (
+                  <button key={color} className="w-6 h-6 rounded border border-[#E8E2D4] hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
+                ))}
+                <button className="w-6 h-6 rounded border border-[#E8E2D4] text-xs flex items-center justify-center hover:scale-110 transition-transform" onClick={() => editor?.chain().focus().unsetHighlight().run()} title="Remove highlight">
+                  <Minus className="h-3 w-3" />
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          {/* Paragraph Group */}
-          <div className="flex flex-col bg-white rounded-md border border-[#E8E2D4]/60 mx-0.5 px-1.5 py-1">
-            <div className="flex items-center gap-0.5 flex-wrap">
-              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
-                <AlignLeft className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
-                <AlignCenter className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
-                <AlignRight className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
-                <AlignJustify className="h-4 w-4" />
-              </ToolbarButton>
+          <div className="w-px h-5 mx-1" style={{ background: "#E8E2D4" }} />
 
-              <Separator orientation="vertical" className="h-5 mx-0.5" />
+          {/* Alignment */}
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("left").run()} isActive={editor?.isActive({ textAlign: "left" })} title="Align Left">
+            <AlignLeft className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("center").run()} isActive={editor?.isActive({ textAlign: "center" })} title="Align Center">
+            <AlignCenter className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("right").run()} isActive={editor?.isActive({ textAlign: "right" })} title="Align Right">
+            <AlignRight className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().setTextAlign("justify").run()} isActive={editor?.isActive({ textAlign: "justify" })} title="Justify">
+            <AlignJustify className="h-4 w-4" />
+          </ToolbarButton>
 
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
-                <List className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
-                <ListOrdered className="h-4 w-4" />
-              </ToolbarButton>
+          <div className="w-px h-5 mx-1" style={{ background: "#E8E2D4" }} />
 
-              <Separator orientation="vertical" className="h-5 mx-0.5" />
+          {/* Lists */}
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={editor?.isActive("bulletList")} title="Bullet List">
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} isActive={editor?.isActive("orderedList")} title="Numbered List">
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#5B5A56]" title="Line Spacing">
-                    <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-32">
-                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <span className="text-[9px] text-[#5B5A56] mt-0.5 select-none text-center font-medium">Paragraph</span>
-          </div>
+          {/* Line spacing */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: "#5B5A56" }} title="Line Spacing">
+                <ArrowUpDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-32">
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.0 }).run()}>1.0</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.15 }).run()}>1.15</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 1.5 }).run()}>1.5</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor?.chain().focus().setNode("paragraph", { lineHeight: 2.0 }).run()}>2.0</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Insert Group */}
-          <div className="flex flex-col bg-white rounded-md border border-[#E8E2D4]/60 mx-0.5 px-1.5 py-1">
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton onClick={() => {
-                const url = prompt("Enter image URL:");
-                if (url) editor?.chain().focus().setImage({ src: url }).run();
-              }} title="Insert Image">
-                <ImagePlus className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
-                <TableIcon className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Insert Page Break (Ctrl+Enter)">
-                <FileText className="h-4 w-4" />
-              </ToolbarButton>
-            </div>
-            <span className="text-[9px] text-[#5B5A56] mt-0.5 select-none text-center font-medium">Insert</span>
-          </div>
+          <div className="w-px h-5 mx-1" style={{ background: "#E8E2D4" }} />
 
-          {/* Styles Group */}
-          <div className="flex flex-col bg-white rounded-md border border-[#E8E2D4]/60 mx-0.5 px-1.5 py-1">
-            <Select value={
-              editor?.isActive("heading", { level: 1 }) ? "1"
-              : editor?.isActive("heading", { level: 2 }) ? "2"
-              : editor?.isActive("heading", { level: 3 }) ? "3"
-              : "0"
-            } onValueChange={(val) => {
-              if (val === "0") editor?.chain().focus().setParagraph().run();
-              else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
-            }}>
-              <SelectTrigger className="w-[110px] h-7 text-[11px]">
-                <SelectValue placeholder="Style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Normal Text</SelectItem>
-                <SelectItem value="1">Heading 1</SelectItem>
-                <SelectItem value="2">Heading 2</SelectItem>
-                <SelectItem value="3">Heading 3</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-[9px] text-[#5B5A56] mt-0.5 select-none text-center font-medium">Styles</span>
-          </div>
+          {/* Insert */}
+          <ToolbarButton onClick={() => {
+            const url = prompt("Enter image URL:");
+            if (url) editor?.chain().focus().setImage({ src: url }).run();
+          }} title="Insert Image" isActive={false}>
+            <ImagePlus className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table" isActive={false}>
+            <TableIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor?.chain().focus().insertPageBreak().run()} title="Page Break" isActive={false}>
+            <FileText className="h-4 w-4" />
+          </ToolbarButton>
         </div>
       )}
 
