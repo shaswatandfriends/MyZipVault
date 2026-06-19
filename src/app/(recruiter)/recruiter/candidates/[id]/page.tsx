@@ -105,6 +105,46 @@ interface Lead {
   _count: { activities: number; vault_sign_documents: number };
 }
 
+interface Credential {
+  id: number;
+  document_name: string;
+  file_url: string;
+  expiration_date: string | null;
+  status: string;
+  verification_status: string;
+  uploaded_at: string;
+  review_notes: string | null;
+}
+
+interface ChecklistRequestItem {
+  id: number;
+  status: string;
+  completion_pct: number;
+  opened_at: string | null;
+  created_at: string;
+  checklist_template: { id: number; name: string; profession: string; specialty: string };
+  client_user: { id: number; first_name: string | null; last_name: string | null; email: string };
+}
+
+interface ShareRequestItem {
+  id: number;
+  status: string;
+  request_checklists: boolean;
+  request_credentials: boolean;
+  request_resume: boolean;
+  request_references: boolean;
+  message: string | null;
+  created_at: string;
+  client_user: { id: number; first_name: string | null; last_name: string | null; email: string };
+}
+
+interface CandidateData {
+  credentials: Credential[];
+  checklistRequests: ChecklistRequestItem[];
+  shareRequests: ShareRequestItem[];
+  resume: { id: number; file_url: string; parsed_data: any; created_at: string } | null;
+}
+
 type Tab = "overview" | "timeline" | "documents" | "vaultsign" | "checklist" | "calendar" | "requests" | "access";
 
 const TABS: Array<{ id: Tab; label: string; icon: any }> = [
@@ -124,6 +164,7 @@ export default function CandidateProfilePage() {
   const leadId = params.id as string;
 
   const [lead, setLead] = useState<Lead | null>(null);
+  const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -145,6 +186,7 @@ export default function CandidateProfilePage() {
       }
       const data = await res.json();
       setLead(data.lead);
+      setCandidateData(data.candidateData || null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -360,7 +402,7 @@ export default function CandidateProfilePage() {
                 <DropdownMenuItem onClick={() => setShowEdit(true)}>
                   <Edit3 className="h-4 w-4 mr-2" /> Edit details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push(`/recruiter/vaultsign?lead=${lead.id}`)}>
+                <DropdownMenuItem onClick={() => router.push(`/recruiter/vaultsign/new?lead=${lead.id}`)}>
                   <FileSignature className="h-4 w-4 mr-2" /> Send VaultSign doc
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -458,11 +500,11 @@ export default function CandidateProfilePage() {
       <div className="bg-background border rounded-lg p-5 min-h-[300px]">
         {activeTab === "overview" && <OverviewTab lead={lead} />}
         {activeTab === "timeline" && <TimelineTab activities={lead.activities} onAddNote={handleAddNote} />}
-        {activeTab === "documents" && <DocumentsTab lead={lead} />}
+        {activeTab === "documents" && <DocumentsTab lead={lead} candidateData={candidateData} />}
         {activeTab === "vaultsign" && <VaultSignTab docs={lead.vault_sign_documents} leadId={lead.id} />}
-        {activeTab === "checklist" && <ChecklistTab lead={lead} />}
+        {activeTab === "checklist" && <ChecklistTab lead={lead} candidateData={candidateData} />}
         {activeTab === "calendar" && <CalendarTab lead={lead} />}
-        {activeTab === "requests" && <RequestsTab lead={lead} />}
+        {activeTab === "requests" && <RequestsTab lead={lead} candidateData={candidateData} />}
         {activeTab === "access" && <AccessTab lead={lead} />}
       </div>
 
@@ -726,16 +768,21 @@ function TimelineTab({ activities, onAddNote }: { activities: Activity[]; onAddN
 }
 
 // ─── Tab: Documents ─────────────────────────────────────────────────
-function DocumentsTab({ lead }: { lead: Lead }) {
+function DocumentsTab({ lead, candidateData }: { lead: Lead; candidateData: CandidateData | null }) {
+  const credentials = candidateData?.credentials || [];
+  const resume = candidateData?.resume || null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-text-muted">
-          Compliance documents for this candidate. Click "Request" to ask the candidate for a document.
+          Compliance documents and credentials uploaded by the candidate.
         </p>
-        <Button size="sm" variant="outline">
-          <Send className="h-4 w-4 mr-1.5" /> Request document
-        </Button>
+        <Link href="/recruiter/send">
+          <Button size="sm" variant="outline">
+            <Send className="h-4 w-4 mr-1.5" /> Request documents
+          </Button>
+        </Link>
       </div>
 
       {!lead.candidate_user ? (
@@ -743,16 +790,108 @@ function DocumentsTab({ lead }: { lead: Lead }) {
           <FileText className="h-10 w-10 text-text-muted mx-auto mb-2" />
           <p className="text-sm font-medium text-foreground">No platform account yet</p>
           <p className="text-xs text-text-muted mt-1 max-w-sm mx-auto">
-            This candidate hasn't signed up on MyZipVault yet. Once they do (e.g. after signing an RTR),
-            their uploaded documents will appear here.
+            This candidate hasn't signed up on MyZipVault yet. Once they do (e.g. after signing an RTR
+            or receiving a Send Request), their uploaded documents will appear here automatically.
+          </p>
+        </div>
+      ) : credentials.length === 0 && !resume ? (
+        <div className="text-center py-12">
+          <FileText className="h-10 w-10 text-text-muted mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground">No documents uploaded yet</p>
+          <p className="text-xs text-text-muted mt-1">
+            The candidate has a platform account but hasn't uploaded any credentials or resume yet.
+            Send a document request to prompt them.
           </p>
         </div>
       ) : (
-        <div className="text-center py-12">
-          <FileText className="h-10 w-10 text-text-muted mx-auto mb-2" />
-          <p className="text-sm text-text-muted">
-            Document list will populate once the candidate uploads compliance docs to their vault.
-          </p>
+        <div className="space-y-3">
+          {/* Resume (if exists) */}
+          {resume && (
+            <div className="bg-background border rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Resume</p>
+                    <p className="text-xs text-text-muted">
+                      Uploaded {new Date(resume.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={resume.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline"
+                >
+                  View
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Credentials */}
+          {credentials.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold uppercase text-text-muted mb-2">
+                Credentials ({credentials.length})
+              </h4>
+              <div className="space-y-2">
+                {credentials.map((cred) => {
+                  const statusColor =
+                    cred.status === "expired" ? "text-red-600 bg-red-50 border-red-200" :
+                    cred.status === "expiring_soon" ? "text-amber-600 bg-amber-50 border-amber-200" :
+                    "text-green-600 bg-green-50 border-green-200";
+
+                  const verifyColor =
+                    cred.verification_status === "verified" ? "text-green-600" :
+                    cred.verification_status === "rejected" ? "text-red-600" :
+                    "text-amber-600";
+
+                  return (
+                    <div key={cred.id} className="bg-background border rounded-lg p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {cred.document_name}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
+                            <span>Uploaded {new Date(cred.uploaded_at).toLocaleDateString()}</span>
+                            {cred.expiration_date && (
+                              <span className={cred.status === "expired" ? "text-red-600" : ""}>
+                                Expires {new Date(cred.expiration_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            <span className={verifyColor}>
+                              {cred.verification_status.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          {cred.review_notes && (
+                            <p className="text-xs text-text-muted mt-1 italic">
+                              "{cred.review_notes}"
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${statusColor}`}>
+                            {cred.status.replace(/_/g, " ")}
+                          </span>
+                          <a
+                            href={cred.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline"
+                          >
+                            View
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -769,7 +908,7 @@ function VaultSignTab({ docs, leadId }: { docs: VaultSignDoc[]; leadId: number }
         <p className="text-xs text-text-muted mt-1 mb-4">
           Send an RTR or offer letter — it'll appear here automatically.
         </p>
-        <Link href={`/recruiter/vaultsign?lead=${leadId}`}>
+        <Link href={`/recruiter/vaultsign/new?lead=${leadId}`}>
           <Button size="sm">
             <FileSignature className="h-4 w-4 mr-1.5" /> Send VaultSign document
           </Button>
@@ -827,14 +966,18 @@ function VaultSignTab({ docs, leadId }: { docs: VaultSignDoc[]; leadId: number }
 }
 
 // ─── Tab: Checklist ─────────────────────────────────────────────────
-function ChecklistTab({ lead }: { lead: Lead }) {
+function ChecklistTab({ lead, candidateData }: { lead: Lead; candidateData: CandidateData | null }) {
+  const checklistRequests = candidateData?.checklistRequests || [];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-text-muted">Compliance checklist progress for this candidate.</p>
-        <Button size="sm" variant="outline">
-          <ClipboardCheck className="h-4 w-4 mr-1.5" /> Send checklist
-        </Button>
+        <Link href="/recruiter/send">
+          <Button size="sm" variant="outline">
+            <ClipboardCheck className="h-4 w-4 mr-1.5" /> Send checklist
+          </Button>
+        </Link>
       </div>
       {!lead.candidate_user ? (
         <div className="text-center py-12 bg-surface-2 rounded-lg">
@@ -842,12 +985,65 @@ function ChecklistTab({ lead }: { lead: Lead }) {
           <p className="text-sm font-medium text-foreground">No platform account yet</p>
           <p className="text-xs text-text-muted mt-1">
             Compliance checklists require the candidate to have a MyZipVault account.
+            Send a request to invite them.
+          </p>
+        </div>
+      ) : checklistRequests.length === 0 ? (
+        <div className="text-center py-12">
+          <ClipboardCheck className="h-10 w-10 text-text-muted mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground">No checklists sent yet</p>
+          <p className="text-xs text-text-muted mt-1">
+            Send a compliance checklist to start tracking this candidate's qualifications.
           </p>
         </div>
       ) : (
-        <div className="text-center py-12">
-          <ClipboardCheck className="h-10 w-10 text-text-muted mx-auto mb-2" />
-          <p className="text-sm text-text-muted">No compliance checklists sent yet.</p>
+        <div className="space-y-2">
+          {checklistRequests.map((req) => {
+            const statusColor =
+              req.status === "completed" ? "text-green-600 bg-green-50 border-green-200" :
+              req.status === "declined" || req.status === "cancelled" ? "text-red-600 bg-red-50 border-red-200" :
+              req.status === "sent" || req.status === "opened" ? "text-blue-600 bg-blue-50 border-blue-200" :
+              "text-text-muted bg-surface-2 border-border";
+
+            return (
+              <div key={req.id} className="bg-background border rounded-lg p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {req.checklist_template.name}
+                    </p>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      {req.checklist_template.profession} · {req.checklist_template.specialty}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
+                      <span>Sent {new Date(req.created_at).toLocaleDateString()}</span>
+                      {req.opened_at && (
+                        <span>Opened {new Date(req.opened_at).toLocaleDateString()}</span>
+                      )}
+                      <span>by {req.client_user.first_name ?? ""} {req.client_user.last_name ?? ""}</span>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${statusColor}`}>
+                    {req.status}
+                  </span>
+                </div>
+                {req.completion_pct > 0 && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-text-muted mb-1">
+                      <span>Progress</span>
+                      <span>{req.completion_pct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${req.completion_pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -893,14 +1089,78 @@ function CalendarTab({ lead }: { lead: Lead }) {
 }
 
 // ─── Tab: Requests ──────────────────────────────────────────────────
-function RequestsTab({ lead }: { lead: Lead }) {
+function RequestsTab({ lead, candidateData }: { lead: Lead; candidateData: CandidateData | null }) {
+  const shareRequests = candidateData?.shareRequests || [];
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-text-muted">Pending requests sent to this candidate.</p>
-      <div className="text-center py-12">
-        <Send className="h-10 w-10 text-text-muted mx-auto mb-2" />
-        <p className="text-sm text-text-muted">No pending requests</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-muted">
+          Document share requests sent to this candidate.
+        </p>
+        <Link href="/recruiter/send">
+          <Button size="sm" variant="outline">
+            <Send className="h-4 w-4 mr-1.5" /> New request
+          </Button>
+        </Link>
       </div>
+
+      {!lead.candidate_user ? (
+        <div className="text-center py-12 bg-surface-2 rounded-lg">
+          <Send className="h-10 w-10 text-text-muted mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground">No platform account yet</p>
+          <p className="text-xs text-text-muted mt-1">
+            Document share requests require the candidate to have a MyZipVault account.
+          </p>
+        </div>
+      ) : shareRequests.length === 0 ? (
+        <div className="text-center py-12">
+          <Send className="h-10 w-10 text-text-muted mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground">No share requests sent</p>
+          <p className="text-xs text-text-muted mt-1">
+            Send a request to ask the candidate to share their checklist, credentials, resume, or references.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {shareRequests.map((req) => {
+            const requestedTypes = [
+              req.request_checklists && "Checklist",
+              req.request_credentials && "Credentials",
+              req.request_resume && "Resume",
+              req.request_references && "References",
+            ].filter(Boolean) as string[];
+
+            const statusColor =
+              req.status === "completed" || req.status === "shared" ? "text-green-600 bg-green-50 border-green-200" :
+              req.status === "declined" ? "text-red-600 bg-red-50 border-red-200" :
+              req.status === "pending" ? "text-amber-600 bg-amber-50 border-amber-200" :
+              "text-text-muted bg-surface-2 border-border";
+
+            return (
+              <div key={req.id} className="bg-background border rounded-lg p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Requesting: {requestedTypes.join(", ")}
+                    </p>
+                    {req.message && (
+                      <p className="text-xs text-text-muted mt-1 italic">"{req.message}"</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
+                      <span>Sent {new Date(req.created_at).toLocaleDateString()}</span>
+                      <span>by {req.client_user.first_name ?? ""} {req.client_user.last_name ?? ""}</span>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${statusColor}`}>
+                    {req.status}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

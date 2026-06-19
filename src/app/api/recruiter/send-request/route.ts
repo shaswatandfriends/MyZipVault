@@ -124,6 +124,35 @@ export async function POST(request: Request) {
       });
     }
 
+    // ─── BOB: Link candidate_user_id to matching recruiter lead ────
+    // If the recruiter has a lead in their BOB with this email, link the
+    // candidate's User account to it. This makes all future hooks work:
+    //   - onDocUploaded (candidate uploads credential → finds lead → logs activity)
+    //   - onRtrSigned (candidate signs RTR → finds lead → updates status)
+    //   - etc.
+    // We link BOTH new and existing users (existing users might have been
+    // created by another recruiter's request, but this lead still matches).
+    try {
+      const lead = await db.recruiterLead.findFirst({
+        where: {
+          email: { equals: email, mode: "insensitive" },
+          recruiter_user_id: userId,
+          candidate_user_id: null, // Only link if not already linked
+        },
+        select: { id: true },
+      });
+      if (lead) {
+        await db.recruiterLead.update({
+          where: { id: lead.id },
+          data: { candidate_user_id: candidateUserId },
+        });
+        console.log(`[BOB LINK] Linked candidate_user_id ${candidateUserId} to lead ${lead.id}`);
+      }
+    } catch (linkErr) {
+      console.error("[BOB LINK] Failed to link candidate to lead:", linkErr);
+      // Non-blocking — request still proceeds
+    }
+
     // Fetch checklist template name for reuse message
     const checklistTemplate = await db.checklistTemplate.findUnique({
       where: { id: Number(checklistTemplateId) },

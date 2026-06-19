@@ -127,7 +127,92 @@ export async function GET(
       // client_admin can see all leads in their org — no extra check needed
     }
 
-    return NextResponse.json({ lead });
+    // ─── Fetch candidate's real data (if linked to a platform account) ───
+    // These power the Documents, Checklist, and Requests tabs in the profile.
+    let candidateCredentials: any[] = [];
+    let candidateChecklistRequests: any[] = [];
+    let candidateShareRequests: any[] = [];
+    let candidateResume: any = null;
+
+    if (lead.candidate_user_id) {
+      const candidateUserId = lead.candidate_user_id;
+
+      [candidateCredentials, candidateChecklistRequests, candidateShareRequests, candidateResume] = await Promise.all([
+        // Credentials (BLS, ACLS, etc.)
+        db.credential.findMany({
+          where: { candidate_user_id: candidateUserId },
+          orderBy: { uploaded_at: "desc" },
+          select: {
+            id: true,
+            document_name: true,
+            file_url: true,
+            expiration_date: true,
+            status: true,
+            verification_status: true,
+            uploaded_at: true,
+            review_notes: true,
+          },
+        }),
+        // Checklist requests (compliance checklists sent to this candidate)
+        db.checklistRequest.findMany({
+          where: { candidate_user_id: candidateUserId },
+          orderBy: { created_at: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            status: true,
+            completion_pct: true,
+            opened_at: true,
+            created_at: true,
+            checklist_template: {
+              select: { id: true, name: true, profession: true, specialty: true },
+            },
+            client_user: {
+              select: { id: true, first_name: true, last_name: true, email: true },
+            },
+          },
+        }),
+        // Share requests (document share requests from recruiters)
+        db.shareRequest.findMany({
+          where: { candidate_user_id: candidateUserId },
+          orderBy: { created_at: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            status: true,
+            request_checklists: true,
+            request_credentials: true,
+            request_resume: true,
+            request_references: true,
+            message: true,
+            created_at: true,
+            client_user: {
+              select: { id: true, first_name: true, last_name: true, email: true },
+            },
+          },
+        }),
+        // Resume
+        db.resume.findFirst({
+          where: { candidate_user_id: candidateUserId },
+          select: {
+            id: true,
+            file_url: true,
+            parsed_data: true,
+            created_at: true,
+          },
+        }),
+      ]);
+    }
+
+    return NextResponse.json({
+      lead,
+      candidateData: {
+        credentials: candidateCredentials,
+        checklistRequests: candidateChecklistRequests,
+        shareRequests: candidateShareRequests,
+        resume: candidateResume,
+      },
+    });
   } catch (error: any) {
     console.error("[BOB GET] Error:", error);
     return NextResponse.json(
