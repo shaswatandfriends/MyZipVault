@@ -931,19 +931,34 @@ function Step2ChecklistSelection({
 
   return (
     <div className="space-y-4">
-      {/* ─── Bundle Selector ─── */}
-      {bundles.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Layers className="size-5 text-primary" />
-              Use a Bundle (optional)
-            </CardTitle>
-            <CardDescription>
-              Select a pre-built bundle to auto-fill the checklist + documents. Or skip this and select manually below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* ─── Bundle Selector (always visible — shows empty state if no bundles) ─── */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layers className="size-5 text-primary" />
+            Use a Bundle (optional)
+          </CardTitle>
+          <CardDescription>
+            Select a pre-built bundle to auto-fill the checklist + documents. Or skip this and select manually below.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {bundles.length === 0 ? (
+            <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-dashed border-border">
+              <div>
+                <p className="text-sm font-medium text-foreground">No bundles created yet</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Create compliance bundles (e.g. "RN Bundle", "Physician Bundle") to pre-fill checklists + documents in one click.
+                </p>
+              </div>
+              <a href="/recruiter/bundles">
+                <Button size="sm" variant="outline">
+                  <Plus className="size-3.5 mr-1" /> Create Bundle
+                </Button>
+              </a>
+            </div>
+          ) : (
+            <>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => onSelectBundle(null)}
@@ -990,9 +1005,10 @@ function Step2ChecklistSelection({
                 </p>
               </div>
             )}
+            </>
+          )}
           </CardContent>
         </Card>
-      )}
 
       {/* ─── Checklist Template Selection ─── */}
       <Card>

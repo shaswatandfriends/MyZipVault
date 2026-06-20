@@ -207,33 +207,36 @@ export default function BOBPage() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Lead
         </Button>
 
-        {/* View toggle */}
-        <div className="flex items-center bg-surface-2 rounded-md p-0.5">
-          <button
-            onClick={() => setView("kanban")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "kanban" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-            }`}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Kanban
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "list" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-            }`}
-          >
-            <ListIcon className="h-3.5 w-3.5" /> List
-          </button>
-          <button
-            onClick={() => setView("company_pool")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "company_pool" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-            }`}
-          >
-            <Building2 className="h-3.5 w-3.5" /> Company Pool
-          </button>
-        </div>
+        {/* Company Pool — separate button (not part of view toggle) */}
+        <Button
+          variant={view === "company_pool" ? "default" : "outline"}
+          onClick={() => setView(view === "company_pool" ? "kanban" : "company_pool")}
+        >
+          <Building2 className="h-4 w-4 mr-1.5" />
+          {view === "company_pool" ? "Back to My BOB" : "Company Pool"}
+        </Button>
+
+        {/* View toggle (Kanban / List only — Company Pool is now a separate button) */}
+        {view !== "company_pool" && (
+          <div className="flex items-center bg-surface-2 rounded-md p-0.5">
+            <button
+              onClick={() => setView("kanban")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === "kanban" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" /> Kanban
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === "list" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
+              }`}
+            >
+              <ListIcon className="h-3.5 w-3.5" /> List
+            </button>
+          </div>
+        )}
 
         {/* Search */}
         <div className="flex-1 min-w-[200px] max-w-xs relative">
