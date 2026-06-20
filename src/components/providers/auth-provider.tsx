@@ -129,12 +129,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const allowedPrefix = getRolePrefix(user.role);
 
       // Define which prefixes each role can access
+      // /notifications is shared across ALL roles
       const roleAccess: Record<UserRole, string[]> = {
-        super_admin: ["/superadmin"],
-        platform_admin: ["/admin"],
-        client_admin: ["/recruiter"],
-        client_recruiter: ["/recruiter"],
-        candidate: ["/dashboard", "/checklists", "/calendar", "/vault", "/references", "/recruiters", "/sharing", "/settings", "/profile-completion", "/notifications"],
+        super_admin: ["/superadmin", "/notifications"],
+        platform_admin: ["/admin", "/notifications"],
+        client_admin: ["/recruiter", "/notifications"],
+        client_recruiter: ["/recruiter", "/notifications"],
+        candidate: ["/dashboard", "/checklists", "/calendar", "/vault", "/references", "/recruiters", "/sharing", "/settings", "/profile-completion", "/notifications", "/vaultsign"],
       };
 
       const allowedPaths = roleAccess[user.role] ?? [];

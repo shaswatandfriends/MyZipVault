@@ -287,26 +287,42 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
             ) : (
               <div>
                 {recentNotifications.map((notification, idx) => {
-                  // Determine if this notification has an actionable link
                   const actionLink = getNotificationActionLink(notification, role);
                   const isActionable = !!actionLink;
+
+                  // Priority + category metadata
+                  const priority = (notification as any).priority || "info";
+                  const category = (notification as any).category || "system";
+                  const priorityColor = priority === "urgent" ? "#DC2626" : priority === "important" ? "#D97706" : "#2563EB";
+                  const priorityBg = priority === "urgent" ? "#FEE2E2" : priority === "important" ? "#FEF3C7" : "#DBEAFE";
+                  const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
 
                   return (
                   <div key={notification.id}>
                     <div
                       className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors ${isActionable ? "cursor-pointer" : ""} ${
-                        !notification.is_read ? "bg-[var(--primary-light)]/30" : ""
+                        !notification.is_read ? "" : ""
                       }`}
+                      style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg + "40" } : { borderLeft: "3px solid transparent" }}
                       onClick={() => {
                         if (actionLink) {
                           window.location.href = actionLink;
                         }
                       }}
                     >
+                      {/* Category icon */}
+                      <span className="text-base shrink-0 mt-0.5">{catIcon}</span>
+
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--foreground)] truncate">
-                          {notification.title || notification.message}
-                        </p>
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                            {notification.title || notification.message}
+                          </p>
+                          {/* Priority dot */}
+                          {!notification.is_read && (
+                            <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: priorityColor }} />
+                          )}
+                        </div>
                         {notification.title && (
                           <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                             {notification.message}
@@ -323,9 +339,6 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                           )}
                         </div>
                       </div>
-                      {!notification.is_read && (
-                        <span className="size-2 rounded-full bg-[var(--primary)] shrink-0 mt-1.5" />
-                      )}
                     </div>
                     {idx < recentNotifications.length - 1 && (
                       <Separator className="bg-[var(--border)]" />
@@ -406,17 +419,35 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
             </div>
           ) : (
             <div>
-              {recentNotifications.map((notification, idx) => (
+              {recentNotifications.map((notification, idx) => {
+                const actionLink = getNotificationActionLink(notification, role);
+                const priority = (notification as any).priority || "info";
+                const category = (notification as any).category || "system";
+                const priorityColor = priority === "urgent" ? "#DC2626" : priority === "important" ? "#D97706" : "#2563EB";
+                const priorityBg = priority === "urgent" ? "#FEE2E2" : priority === "important" ? "#FEF3C7" : "#DBEAFE";
+                const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
+
+                return (
                 <div key={notification.id}>
                   <div
-                    className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors cursor-pointer ${
-                      !notification.is_read ? "bg-[var(--primary-light)]/30" : ""
-                    }`}
+                    className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors ${actionLink ? "cursor-pointer" : ""}`}
+                    style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg + "40" } : { borderLeft: "3px solid transparent" }}
+                    onClick={() => {
+                      if (actionLink) {
+                        window.location.href = actionLink;
+                      }
+                    }}
                   >
+                    <span className="text-base shrink-0 mt-0.5">{catIcon}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[var(--foreground)] truncate">
-                        {notification.title || notification.message}
-                      </p>
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                          {notification.title || notification.message}
+                        </p>
+                        {!notification.is_read && (
+                          <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: priorityColor }} />
+                        )}
+                      </div>
                       {notification.title && (
                         <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                           {notification.message}
@@ -426,15 +457,13 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                         {formatRelativeTime(notification.created_at)}
                       </p>
                     </div>
-                    {!notification.is_read && (
-                      <span className="size-2 rounded-full bg-[var(--primary)] shrink-0 mt-1.5" />
-                    )}
                   </div>
                   {idx < recentNotifications.length - 1 && (
                     <Separator className="bg-[var(--border)]" />
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>
