@@ -419,7 +419,7 @@ export default function NotificationCenterPage() {
 
           {/* ─── RIGHT PANEL (hidden below 1440px) ─── */}
           <div className="hidden 2xl:block w-[240px] shrink-0 space-y-4">
-            <RightPanel notifications={notifications} unreadCount={unreadCount} />
+            <RightPanel notifications={notifications} unreadCount={unreadCount} onMarkAllRead={handleMarkAllRead} />
           </div>
 
         </div>
@@ -511,7 +511,7 @@ function StatCard({ icon, label, count, color }: { icon: string; label: string; 
 }
 
 // ─── Right Panel: "All Caught Up" + Recent Activity ─────────────────
-function RightPanel({ notifications, unreadCount }: { notifications: NotificationItem[]; unreadCount: number }) {
+function RightPanel({ notifications, unreadCount, onMarkAllRead }: { notifications: NotificationItem[]; unreadCount: number; onMarkAllRead: () => void }) {
   const recent = notifications.slice(0, 5);
 
   return (
@@ -582,18 +582,21 @@ function RightPanel({ notifications, unreadCount }: { notifications: Notificatio
           Quick Actions
         </h4>
         <div className="space-y-1">
-          <QuickAction icon={<CheckCheck className="h-3.5 w-3.5" />} label="Mark all read" />
-          <QuickAction icon={<Sparkles className="h-3.5 w-3.5" />} label="Notification settings" />
+          <QuickAction icon={<CheckCheck className="h-3.5 w-3.5" />} label="Mark all read" onClick={onMarkAllRead} />
+          <QuickAction icon={<Sparkles className="h-3.5 w-3.5" />} label="Notification settings" onClick={() => window.location.href = "/settings"} />
         </div>
       </div>
     </div>
   );
 }
 
-function QuickAction({ icon, label }: { icon: React.ReactNode; label: string }) {
+function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button className="w-full flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-colors hover:bg-white/60"
-      style={{ color: "#475569" }}>
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-colors hover:bg-white/60"
+      style={{ color: "#475569" }}
+    >
       <span style={{ color: "#0F766E" }}>{icon}</span>
       {label}
     </button>
