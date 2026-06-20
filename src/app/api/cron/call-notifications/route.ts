@@ -111,22 +111,21 @@ async function createNotification(params: {
   const exists = await notificationExistsToday(params.callScheduleId, params.type);
   if (exists) return false;
 
-  await db.notification.create({
-    data: {
-      user_id: params.userId,
-      title: params.title,
-      message: params.message,
-      type: params.type,
-      related_entity_id: params.callScheduleId,
-      related_entity_type: "call_schedule",
-      metadata: JSON.stringify({
-        callScheduleId: params.callScheduleId,
-        leadId: params.leadId,
-        leadName: params.leadName,
-        scheduledDate: params.scheduledDate ? params.scheduledDate.toISOString() : null,
-        scheduledMonth: params.scheduledMonth,
-      }),
-      is_read: false,
+  const { createNotification: createCentralNotification } = await import("@/lib/notifications/create");
+  await createCentralNotification({
+    userId: params.userId,
+    category: "calendar",
+    priority: "important",
+    title: params.title,
+    message: params.message,
+    relatedEntityId: params.callScheduleId,
+    relatedEntityType: "call_schedule",
+    metadata: {
+      callScheduleId: params.callScheduleId,
+      leadId: params.leadId,
+      leadName: params.leadName,
+      scheduledDate: params.scheduledDate ? params.scheduledDate.toISOString() : null,
+      scheduledMonth: params.scheduledMonth,
     },
   });
 

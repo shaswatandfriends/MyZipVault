@@ -969,15 +969,17 @@ export async function checkInactiveLeads(): Promise<{
 
     // Send notification to the owning recruiter
     try {
-      await db.notification.create({
-        data: {
-          user_id: lead.recruiter_user_id,
-          title: "Candidate moved to Company Pool",
-          message: `${lead.first_name} ${lead.last_name} has been inactive for 30 days and was moved to the Company Pool. Any recruiter can now claim them.`,
-          type: "lead_stage_change",
-          related_entity_id: lead.id,
-          related_entity_type: "lead",
-        },
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: lead.recruiter_user_id,
+        category: "status",
+        priority: "important",
+        title: "Candidate moved to Company Pool",
+        message: `${lead.first_name} ${lead.last_name} has been inactive for 30 days and was moved to the Company Pool. Any recruiter can now claim them.`,
+        actionUrl: `/recruiter/candidates/${lead.id}`,
+        actionLabel: "View candidate",
+        relatedEntityId: lead.id,
+        relatedEntityType: "lead",
       });
     } catch (err) {
       console.error("[BOB] Failed to send inactivity notification:", err);
@@ -1043,78 +1045,28 @@ export async function checkInactiveLeads(): Promise<{
         const warningTitle = `Candidate going inactive in ${daysBefore} day${daysBefore > 1 ? "s" : ""}`;
         const warningMessage = `${lead.first_name} ${lead.last_name} will be moved to the Company Pool in ${daysBefore} day${daysBefore > 1 ? "s" : ""} due to inactivity. Log an activity to keep them in your BOB.`;
 
-        await db.notification.create({
-          data: {
-            user_id: lead.recruiter_user_id,
-            title: warningTitle,
-            message: warningMessage,
-            type: "call_reminder",
-            related_entity_id: lead.id,
-            related_entity_type: "lead",
-          },
+        const { createNotification } = await import("@/lib/notifications/create");
+        await createNotification({
+          userId: lead.recruiter_user_id,
+          category: "status",
+          priority: daysBefore === 1 ? "urgent" : "important",
+          title: warningTitle,
+          message: warningMessage,
+          actionUrl: `/recruiter/candidates/${lead.id}`,
+          actionLabel: "View candidate",
+          relatedEntityId: lead.id,
+          relatedEntityType: "lead",
+          // 1-day warning should email (urgent priority auto-emails)
+          // 5/3-day warnings are in-app only (important priority, status category defaults to no email)
         });
 
         // ─── Also send an email for the 1-day warning (most urgent) ───
-        // We only email for 1-day warnings to avoid spamming for 5/3-day.
+        // createNotification already emails for urgent priority, so this
+        // block is now handled by the centralized system. The custom Brevo
+        // email below was kept as a redundant fallback but is no longer needed.
+        // Left intentionally empty — the helper handles it.
         if (daysBefore === 1) {
-          try {
-            const recruiter = await db.user.findUnique({
-              where: { id: lead.recruiter_user_id },
-              select: { email: true, first_name: true, last_name: true },
-            });
-
-            if (recruiter?.email) {
-              const brevoApiKey = process.env.BREVO_API_KEY;
-              const brevoSender = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
-              const appUrl = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
-              const leadUrl = `${appUrl}/recruiter/candidates/${lead.id}`;
-              const recruiterName = `${recruiter.first_name ?? ""} ${recruiter.last_name ?? ""}`.trim() || "there";
-
-              if (brevoApiKey) {
-                fetch("https://api.brevo.com/v3/smtp/email", {
-                  method: "POST",
-                  headers: {
-                    "api-key": brevoApiKey,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    sender: { email: brevoSender, name: "MyZipVault BOB" },
-                    to: [{ email: recruiter.email }],
-                    subject: `⚠️ ${lead.first_name} ${lead.last_name} goes inactive tomorrow`,
-                    htmlContent: `
-                      <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-                        <div style="background: #B91C1C; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-                          <span style="color: #FECACA; font-weight: 600;">MyZipVault</span>
-                          <span style="color: #fff; margin-left: 8px;">Inactivity Warning</span>
-                        </div>
-                        <div style="background: #FEF2F2; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid #FECACA;">
-                          <h2 style="color: #991B1B; margin: 0 0 12px;">⚠️ Action needed: ${lead.first_name} ${lead.last_name}</h2>
-                          <p style="color: #1A1A1A; font-size: 15px; line-height: 1.6;">Hi ${recruiterName},</p>
-                          <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">
-                            <strong>${lead.first_name} ${lead.last_name}</strong> will be moved to the Company Pool
-                            <strong>tomorrow</strong> due to 30 days of inactivity. Once in the Company Pool,
-                            any recruiter in your organization can claim them.
-                          </p>
-                          <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">
-                            To keep them in your BOB, log any activity (a call, a note, a status change) today.
-                          </p>
-                          <p style="margin: 24px 0;">
-                            <a href="${leadUrl}" style="background: #B91C1C; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
-                              View candidate profile
-                            </a>
-                          </p>
-                        </div>
-                      </div>
-                    `,
-                  }),
-                }).catch((err) => {
-                  console.error("[BOB] Failed to send inactivity warning email:", err);
-                });
-              }
-            }
-          } catch (emailErr) {
-            console.error("[BOB] Failed to send inactivity warning email:", emailErr);
-          }
+          // Email handled by createNotification (urgent priority auto-emails)
         }
 
         warnedCount++;

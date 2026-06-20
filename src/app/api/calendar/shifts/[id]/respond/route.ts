@@ -52,6 +52,7 @@ export async function PUT(
     }
 
     const now = new Date();
+    const { createNotification } = await import("@/lib/notifications/create");
 
     if (action === "accept") {
       await db.shiftRequest.update({
@@ -63,14 +64,15 @@ export async function PUT(
       });
 
       // Notify recruiter
-      await db.notification.create({
-        data: {
-          user_id: shiftRequest.recruiter_user_id,
-          message: `A candidate has accepted your shift request for ${shiftRequest.facility_name}.`,
-          type: "shift_accepted",
-          related_entity_id: shiftRequestId,
-          action_data: JSON.stringify({ shift_request_id: shiftRequestId, candidate_user_id: userId }),
-        },
+      await createNotification({
+        userId: shiftRequest.recruiter_user_id,
+        category: "calendar",
+        priority: "important",
+        title: "Shift request accepted",
+        message: `A candidate has accepted your shift request for ${shiftRequest.facility_name}.`,
+        relatedEntityId: shiftRequestId,
+        relatedEntityType: "shift_request",
+        metadata: { shift_request_id: shiftRequestId, candidate_user_id: userId },
       });
     } else {
       await db.shiftRequest.update({
@@ -83,17 +85,18 @@ export async function PUT(
       });
 
       // Notify recruiter
-      await db.notification.create({
-        data: {
-          user_id: shiftRequest.recruiter_user_id,
-          message: `A candidate has declined your shift request for ${shiftRequest.facility_name}.`,
-          type: "shift_declined",
-          related_entity_id: shiftRequestId,
-          action_data: JSON.stringify({
-            shift_request_id: shiftRequestId,
-            candidate_user_id: userId,
-            decline_reason: decline_reason || null,
-          }),
+      await createNotification({
+        userId: shiftRequest.recruiter_user_id,
+        category: "calendar",
+        priority: "important",
+        title: "Shift request declined",
+        message: `A candidate has declined your shift request for ${shiftRequest.facility_name}.`,
+        relatedEntityId: shiftRequestId,
+        relatedEntityType: "shift_request",
+        metadata: {
+          shift_request_id: shiftRequestId,
+          candidate_user_id: userId,
+          decline_reason: decline_reason || null,
         },
       });
     }

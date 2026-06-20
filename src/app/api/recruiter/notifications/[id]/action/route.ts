@@ -160,15 +160,15 @@ export async function POST(
                 ? `Call rescheduled with ${lead.first_name} ${lead.last_name} for ${rescheduleMonth}`
                 : `Call rescheduled with ${lead.first_name} ${lead.last_name}`;
 
-            await db.notification.create({
-              data: {
-                user_id: userId,
-                title: `Rescheduled Call: ${lead.first_name} ${lead.last_name}`,
-                message: newMessage,
-                type: "call_scheduled",
-                related_entity_id: leadId,
-                related_entity_type: "lead",
-              },
+            const { createNotification } = await import("@/lib/notifications/create");
+            await createNotification({
+              userId,
+              category: "calendar",
+              priority: "important",
+              title: `Rescheduled Call: ${lead.first_name} ${lead.last_name}`,
+              message: newMessage,
+              relatedEntityId: leadId,
+              relatedEntityType: "lead",
             });
           }
         }

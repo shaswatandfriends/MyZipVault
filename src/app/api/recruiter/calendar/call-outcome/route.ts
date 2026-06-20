@@ -122,13 +122,15 @@ export async function POST(request: Request) {
       });
 
       // Create notification for reschedule
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Call rescheduled with ${lead.first_name} ${lead.last_name}${rescheduleDate ? ` for ${new Date(rescheduleDate).toLocaleDateString()}` : ` for ${rescheduleMonth}`}`,
-          type: "call_rescheduled",
-          related_entity_id: newSchedule.id,
-        },
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "important",
+        title: "Call rescheduled",
+        message: `Call rescheduled with ${lead.first_name} ${lead.last_name}${rescheduleDate ? ` for ${new Date(rescheduleDate).toLocaleDateString()}` : ` for ${rescheduleMonth}`}`,
+        relatedEntityId: newSchedule.id,
+        relatedEntityType: "call_schedule",
       });
     }
 

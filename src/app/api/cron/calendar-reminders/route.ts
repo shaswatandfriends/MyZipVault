@@ -58,18 +58,20 @@ export async function GET(request: Request) {
           message = `Reminder: Follow up with ${leadName}.`;
       }
 
-      await db.notification.create({
-        data: {
-          user_id: reminder.recruiter_user_id,
-          message,
-          type: "follow_up_reminder",
-          related_entity_id: reminder.lead_id,
-          action_data: JSON.stringify({
-            reminder_id: reminder.id,
-            lead_id: reminder.lead_id,
-            call_schedule_id: reminder.call_schedule_id,
-            reminder_type: reminder.reminder_type,
-          }),
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: reminder.recruiter_user_id,
+        category: "calendar",
+        priority: "important",
+        title: "Follow-up reminder",
+        message,
+        relatedEntityId: reminder.lead_id,
+        relatedEntityType: "lead",
+        metadata: {
+          reminder_id: reminder.id,
+          lead_id: reminder.lead_id,
+          call_schedule_id: reminder.call_schedule_id,
+          reminder_type: reminder.reminder_type,
         },
       });
 

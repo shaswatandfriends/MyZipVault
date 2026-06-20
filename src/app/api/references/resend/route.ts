@@ -58,13 +58,15 @@ export async function POST(request: Request) {
     });
 
     // Create notification about the resend
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `Reference request resent to ${reference.manager_email} at ${reference.facility_name}`,
-        type: "reference_resent",
-        related_entity_id: referenceId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "compliance",
+      priority: "important",
+      title: "Reference request resent",
+      message: `Reference request resent to ${reference.manager_email} at ${reference.facility_name}`,
+      relatedEntityId: referenceId,
+      relatedEntityType: "reference",
     });
 
     return NextResponse.json({

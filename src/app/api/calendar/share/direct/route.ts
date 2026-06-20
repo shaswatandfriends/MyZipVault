@@ -83,14 +83,16 @@ export async function POST(request: Request) {
     });
 
     // Send notification to recipient
-    await db.notification.create({
-      data: {
-        user_id: Number(shared_with_user_id),
-        message: `A candidate has shared their calendar availability with you.`,
-        type: "calendar_share",
-        related_entity_id: share.id,
-        action_data: JSON.stringify({ share_id: share.id, owner_user_id: userId }),
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: Number(shared_with_user_id),
+      category: "calendar",
+      priority: "info",
+      title: "Calendar shared with you",
+      message: `A candidate has shared their calendar availability with you.`,
+      relatedEntityId: share.id,
+      relatedEntityType: "calendar_share",
+      metadata: { share_id: share.id, owner_user_id: userId },
     });
 
     return NextResponse.json({ share }, { status: 201 });

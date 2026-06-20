@@ -76,14 +76,16 @@ export async function POST(request: Request) {
       },
     });
 
-    await db.notification.create({
-      data: {
-        user_id: Number(candidate_user_id),
-        message: `You have a new shift request from ${facility_name}.`,
-        type: "shift_request",
-        related_entity_id: shiftRequest.id,
-        action_data: JSON.stringify({ shift_request_id: shiftRequest.id }),
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: Number(candidate_user_id),
+      category: "calendar",
+      priority: "important",
+      title: "New shift request",
+      message: `You have a new shift request from ${facility_name}.`,
+      relatedEntityId: shiftRequest.id,
+      relatedEntityType: "shift_request",
+      metadata: { shift_request_id: shiftRequest.id },
     });
 
     return NextResponse.json({ shiftRequest }, { status: 201 });

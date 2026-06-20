@@ -63,13 +63,15 @@ export async function POST(request: Request) {
       },
     });
 
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `You denied sharing your ${itemType || "document"} with a recruiter`,
-        type: "share_denied",
-        related_entity_id: shareRequestId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "document",
+      priority: "important",
+      title: "Sharing denied",
+      message: `You denied sharing your ${itemType || "document"} with a recruiter`,
+      relatedEntityId: shareRequestId,
+      relatedEntityType: "share_request",
     });
 
     return NextResponse.json({

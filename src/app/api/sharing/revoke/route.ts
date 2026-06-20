@@ -46,13 +46,15 @@ export async function POST(request: Request) {
       data: { is_deleted: true },
     });
 
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: "You revoked a consent share",
-        type: "share_revoked",
-        related_entity_id: consentShareId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "document",
+      priority: "important",
+      title: "Sharing revoked",
+      message: "You revoked a consent share",
+      relatedEntityId: consentShareId,
+      relatedEntityType: "consent_share",
     });
 
     return NextResponse.json({

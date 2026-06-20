@@ -74,13 +74,15 @@ export async function POST(request: Request) {
     await logCandidateShared(userId, consentShare.id);
 
     // Check if all items in the request have been actioned
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `You approved sharing your ${itemType} with a recruiter`,
-        type: "share_approved",
-        related_entity_id: shareRequestId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "document",
+      priority: "important",
+      title: "Sharing approved",
+      message: `You approved sharing your ${itemType} with a recruiter`,
+      relatedEntityId: shareRequestId,
+      relatedEntityType: "share_request",
     });
 
     return NextResponse.json({

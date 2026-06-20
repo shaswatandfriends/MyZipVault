@@ -110,30 +110,26 @@ export async function POST(request: Request) {
       : checklistRequest.candidate_user.email;
 
     // Create the in-app notification for the candidate
-    const notification = await db.notification.create({
-      data: {
-        user_id: candidateId,
-        title: "Reminder: Complete Your Checklist",
-        message: `${senderName} sent you a reminder to complete your "${checklistName}" checklist. Please log in to complete it at your earliest convenience.`,
-        type: "checklist_reminder",
-        related_entity_id: checklistRequest.id,
-        related_entity_type: "checklist_request",
-        metadata: JSON.stringify({
-          checklistRequestId: checklistRequest.id,
-          checklistName,
-          senderId: userId,
-          senderName,
-        }),
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: candidateId,
+      category: "compliance",
+      priority: "info",
+      title: "Reminder: Complete Your Checklist",
+      message: `${senderName} sent you a reminder to complete your "${checklistName}" checklist. Please log in to complete it at your earliest convenience.`,
+      relatedEntityId: checklistRequest.id,
+      relatedEntityType: "checklist_request",
+      metadata: {
+        checklistRequestId: checklistRequest.id,
+        checklistName,
+        senderId: userId,
+        senderName,
       },
     });
 
     return NextResponse.json({
       success: true,
-      notification: {
-        id: notification.id,
-        message: notification.message,
-        createdAt: notification.created_at,
-      },
+      message: "Reminder sent to candidate",
     });
   } catch (error) {
     console.error("[RECRUITER_SEND_REMINDER]", error);

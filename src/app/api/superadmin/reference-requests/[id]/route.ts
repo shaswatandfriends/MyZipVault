@@ -88,17 +88,17 @@ export async function PUT(
     }
 
     // Notify the candidate
-    await db.notification.create({
-      data: {
-        user_id: deletionRequest.candidate_user_id,
-        title: action === "approve" ? "Reference Deleted" : "Deletion Request Rejected",
-        message: action === "approve"
-          ? `Your request to delete the reference from ${deletionRequest.reference.facility_name} has been approved. The reference has been permanently removed.`
-          : `Your request to delete the reference from ${deletionRequest.reference.facility_name} has been rejected.${reviewNotes ? ` Reason: ${reviewNotes.trim().substring(0, 150)}` : ""}`,
-        type: action === "approve" ? "reference_deleted" : "reference_deletion_rejected",
-        related_entity_id: requestId,
-        related_entity_type: "reference_deletion_request",
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: deletionRequest.candidate_user_id,
+      category: "compliance",
+      priority: "important",
+      title: action === "approve" ? "Reference Deleted" : "Deletion Request Rejected",
+      message: action === "approve"
+        ? `Your request to delete the reference from ${deletionRequest.reference.facility_name} has been approved. The reference has been permanently removed.`
+        : `Your request to delete the reference from ${deletionRequest.reference.facility_name} has been rejected.${reviewNotes ? ` Reason: ${reviewNotes.trim().substring(0, 150)}` : ""}`,
+      relatedEntityId: requestId,
+      relatedEntityType: "reference_deletion_request",
     });
 
     return NextResponse.json({

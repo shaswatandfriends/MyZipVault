@@ -38,13 +38,15 @@ export async function DELETE(
 
     // Send notification to recipient if it was a direct share
     if (share.shared_with_user_id) {
-      await db.notification.create({
-        data: {
-          user_id: share.shared_with_user_id,
-          message: `A calendar share has been revoked by the owner.`,
-          type: "calendar_share_revoked",
-          related_entity_id: shareId,
-        },
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: share.shared_with_user_id,
+        category: "calendar",
+        priority: "info",
+        title: "Calendar share revoked",
+        message: `A calendar share has been revoked by the owner.`,
+        relatedEntityId: shareId,
+        relatedEntityType: "calendar_share",
       });
     }
 

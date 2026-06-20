@@ -38,6 +38,7 @@ export async function GET(request: Request) {
     });
 
     let expiredCount = 0;
+    const { createNotification } = await import("@/lib/notifications/create");
 
     for (const shift of expiredShifts) {
       // Update status to expired
@@ -47,24 +48,26 @@ export async function GET(request: Request) {
       });
 
       // Notify recruiter
-      await db.notification.create({
-        data: {
-          user_id: shift.recruiter_user_id,
-          message: `Shift request for ${shift.facility_name} sent to ${shift.candidate_user.first_name || ""} ${shift.candidate_user.last_name || ""} has expired without a response.`,
-          type: "shift_expired",
-          related_entity_id: shift.id,
-          action_data: JSON.stringify({ shift_request_id: shift.id }),
-        },
+      await createNotification({
+        userId: shift.recruiter_user_id,
+        category: "calendar",
+        priority: "important",
+        title: "Shift request expired",
+        message: `Shift request for ${shift.facility_name} sent to ${shift.candidate_user.first_name || ""} ${shift.candidate_user.last_name || ""} has expired without a response.`,
+        relatedEntityId: shift.id,
+        relatedEntityType: "shift_request",
+        metadata: { shift_request_id: shift.id },
       });
 
       // Notify candidate
-      await db.notification.create({
-        data: {
-          user_id: shift.candidate_user_id,
-          message: `A shift request from ${shift.facility_name} has expired.`,
-          type: "shift_expired",
-          related_entity_id: shift.id,
-        },
+      await createNotification({
+        userId: shift.candidate_user_id,
+        category: "calendar",
+        priority: "important",
+        title: "Shift request expired",
+        message: `A shift request from ${shift.facility_name} has expired.`,
+        relatedEntityId: shift.id,
+        relatedEntityType: "shift_request",
       });
 
       expiredCount++;

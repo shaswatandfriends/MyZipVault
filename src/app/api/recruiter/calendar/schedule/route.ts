@@ -131,61 +131,71 @@ export async function POST(request: Request) {
     });
 
     // Create notification reminders based on schedule type
+    const { createNotification } = await import("@/lib/notifications/create");
     if (scheduledDate) {
-      const callDate = new Date(scheduledDate);
-
       // Day before reminder
-      const dayBefore = new Date(callDate);
-      dayBefore.setDate(dayBefore.getDate() - 1);
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Reminder: Call with ${lead.first_name} ${lead.last_name} is tomorrow`,
-          type: "call_reminder",
-          related_entity_id: schedule.id,
-        },
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "important",
+        title: "Call reminder — tomorrow",
+        message: `Call with ${lead.first_name} ${lead.last_name} is tomorrow`,
+        actionUrl: "/recruiter/calendar",
+        actionLabel: "View calendar",
+        relatedEntityId: schedule.id,
+        relatedEntityType: "call_schedule",
       });
 
       // Day of reminder
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Reminder: Call with ${lead.first_name} ${lead.last_name} is today`,
-          type: "call_reminder",
-          related_entity_id: schedule.id,
-        },
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "important",
+        title: "Call reminder — today",
+        message: `Call with ${lead.first_name} ${lead.last_name} is today`,
+        actionUrl: "/recruiter/calendar",
+        actionLabel: "View calendar",
+        relatedEntityId: schedule.id,
+        relatedEntityType: "call_schedule",
       });
 
       // 30 min after (follow-up if no answer)
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Follow-up: Did you reach ${lead.first_name} ${lead.last_name}? Log the call outcome.`,
-          type: "call_follow_up",
-          related_entity_id: schedule.id,
-        },
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "info",
+        title: "Call follow-up",
+        message: `Did you reach ${lead.first_name} ${lead.last_name}? Log the call outcome.`,
+        actionUrl: "/recruiter/calendar",
+        actionLabel: "Log call",
+        relatedEntityId: schedule.id,
+        relatedEntityType: "call_schedule",
       });
 
       // Day after reminder
-      const dayAfter = new Date(callDate);
-      dayAfter.setDate(dayAfter.getDate() + 1);
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Follow-up: Check if ${lead.first_name} ${lead.last_name} needs any additional info after yesterday's call`,
-          type: "call_follow_up",
-          related_entity_id: schedule.id,
-        },
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "info",
+        title: "Post-call follow-up",
+        message: `Check if ${lead.first_name} ${lead.last_name} needs any additional info after yesterday's call`,
+        actionUrl: "/recruiter/calendar",
+        actionLabel: "View calendar",
+        relatedEntityId: schedule.id,
+        relatedEntityType: "call_schedule",
       });
     } else if (scheduledMonth) {
       // Month range: create notification for 1st of that month
-      await db.notification.create({
-        data: {
-          user_id: userId,
-          message: `Reminder: You have calls scheduled for ${lead.first_name} ${lead.last_name} this month (${scheduledMonth})`,
-          type: "call_reminder",
-          related_entity_id: schedule.id,
-        },
+      await createNotification({
+        userId,
+        category: "calendar",
+        priority: "info",
+        title: "Calls scheduled this month",
+        message: `You have calls scheduled for ${lead.first_name} ${lead.last_name} this month (${scheduledMonth})`,
+        actionUrl: "/recruiter/calendar",
+        actionLabel: "View calendar",
+        relatedEntityId: schedule.id,
+        relatedEntityType: "call_schedule",
       });
     }
 

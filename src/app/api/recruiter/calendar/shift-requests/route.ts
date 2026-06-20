@@ -140,13 +140,15 @@ export async function POST(request: Request) {
     const facilityLabel = facilityName ? ` at ${facilityName}` : "";
     const positionLabel = position ? ` for ${position}` : "";
 
-    await db.notification.create({
-      data: {
-        user_id: Number(candidateUserId),
-        message: `New shift request${positionLabel}${facilityLabel} on ${new Date(shiftDate).toLocaleDateString()}${responseDeadline ? ` — please respond by ${new Date(responseDeadline).toLocaleDateString()}` : ""}`,
-        type: "shift_request",
-        related_entity_id: shiftRequest.id,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: Number(candidateUserId),
+      category: "calendar",
+      priority: "important",
+      title: "New shift request",
+      message: `New shift request${positionLabel}${facilityLabel} on ${new Date(shiftDate).toLocaleDateString()}${responseDeadline ? ` — please respond by ${new Date(responseDeadline).toLocaleDateString()}` : ""}`,
+      relatedEntityId: shiftRequest.id,
+      relatedEntityType: "shift_request",
     });
 
     return NextResponse.json({ shiftRequest }, { status: 201 });

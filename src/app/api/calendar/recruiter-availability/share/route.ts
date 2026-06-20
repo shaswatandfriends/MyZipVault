@@ -55,13 +55,15 @@ export async function POST(request: Request) {
     });
 
     // Send notification to candidate
-    await db.notification.create({
-      data: {
-        user_id: Number(shared_with_user_id),
-        message: `A recruiter has shared their availability with you.`,
-        type: "recruiter_availability_share",
-        related_entity_id: share.id,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId: Number(shared_with_user_id),
+      category: "calendar",
+      priority: "info",
+      title: "Recruiter shared availability",
+      message: `A recruiter has shared their availability with you.`,
+      relatedEntityId: share.id,
+      relatedEntityType: "recruiter_availability_share",
     });
 
     return NextResponse.json({ share }, { status: 201 });

@@ -94,13 +94,15 @@ export async function POST(request: Request) {
     await recalcProfileCompletion(userId);
 
     // Create notification
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `Checklist "${checklistRequest.checklist_template.name}" submitted successfully!`,
-        type: "checklist_submitted",
-        related_entity_id: checklistRequestId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "compliance",
+      priority: "info",
+      title: "Checklist submitted",
+      message: `Checklist "${checklistRequest.checklist_template.name}" submitted successfully!`,
+      relatedEntityId: checklistRequestId,
+      relatedEntityType: "checklist_request",
     });
 
     return NextResponse.json({

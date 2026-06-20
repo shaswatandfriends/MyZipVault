@@ -58,16 +58,16 @@ export async function POST(request: Request) {
       select: { id: true },
     });
 
+    const { createNotification } = await import("@/lib/notifications/create");
     for (const admin of superAdmins) {
-      await db.notification.create({
-        data: {
-          user_id: admin.id,
-          title: "Reference Deletion Request",
-          message: `A candidate has requested deletion of a reference (ID: ${referenceId}). Reason: ${reason.trim().substring(0, 100)}`,
-          type: "reference_deletion",
-          related_entity_id: deletionRequest.id,
-          related_entity_type: "reference_deletion_request",
-        },
+      await createNotification({
+        userId: admin.id,
+        category: "compliance",
+        priority: "important",
+        title: "Reference Deletion Request",
+        message: `A candidate has requested deletion of a reference (ID: ${referenceId}). Reason: ${reason.trim().substring(0, 100)}`,
+        relatedEntityId: deletionRequest.id,
+        relatedEntityType: "reference_deletion_request",
       });
     }
 

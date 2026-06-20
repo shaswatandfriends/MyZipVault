@@ -55,13 +55,15 @@ export async function POST(request: Request) {
     });
 
     // Create notification about the cancellation
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `Reference request to ${reference.manager_email} at ${reference.facility_name} has been cancelled`,
-        type: "reference_cancelled",
-        related_entity_id: referenceId,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "compliance",
+      priority: "important",
+      title: "Reference request cancelled",
+      message: `Reference request to ${reference.manager_email} at ${reference.facility_name} has been cancelled`,
+      relatedEntityId: referenceId,
+      relatedEntityType: "reference",
     });
 
     return NextResponse.json({

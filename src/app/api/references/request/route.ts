@@ -46,13 +46,15 @@ export async function POST(request: Request) {
     });
 
     // Create notification
-    await db.notification.create({
-      data: {
-        user_id: userId,
-        message: `Reference request sent to ${managerFirstName} ${managerLastName} at ${facilityName}`,
-        type: "reference_requested",
-        related_entity_id: reference.id,
-      },
+    const { createNotification } = await import("@/lib/notifications/create");
+    await createNotification({
+      userId,
+      category: "compliance",
+      priority: "important",
+      title: "Reference request sent",
+      message: `Reference request sent to ${managerFirstName} ${managerLastName} at ${facilityName}`,
+      relatedEntityId: reference.id,
+      relatedEntityType: "reference",
     });
 
     // Send email notification to manager (non-blocking)
