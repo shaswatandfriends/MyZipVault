@@ -1030,7 +1030,7 @@ export async function checkInactiveLeads(): Promise<{
           user_id: lead.recruiter_user_id,
           related_entity_id: lead.id,
           related_entity_type: "lead",
-          type: "call_reminder", // reuse existing type
+          category: "status",
           message: {
             contains: `${daysBefore} day`,
           },
