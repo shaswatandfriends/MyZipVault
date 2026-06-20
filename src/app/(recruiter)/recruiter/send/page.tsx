@@ -48,6 +48,7 @@ import {
   Briefcase,
   Stethoscope,
   Layers,
+  Plus,
 } from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
