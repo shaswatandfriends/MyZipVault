@@ -25,6 +25,8 @@ interface QuickNotification {
   type: string;
   is_read: boolean;
   created_at: string;
+  related_entity_id?: number | null;
+  related_entity_type?: string | null;
 }
 
 // ─── Role → API endpoint mapping ────────────────────────────────────
@@ -67,6 +69,40 @@ function getViewAllHref(role: UserRole): string {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
+
+function getNotificationActionLink(notification: QuickNotification, role: UserRole | null): string | null {
+  if (!role) return null;
+
+  // Candidate notifications — actionable
+  if (role === "candidate") {
+    if (notification.related_entity_type === "vaultsign_document") {
+      // Pending RTR/offer to sign → link to VaultSign page
+      return "/vaultsign";
+    }
+    if (notification.related_entity_type === "checklist_request") {
+      // Document/checklist request → link to dashboard (where RequestedDocuments is)
+      return "/dashboard";
+    }
+    if (notification.related_entity_type === "lead") {
+      // Contact request (email/phone/calendar) → link to settings
+      return "/settings";
+    }
+  }
+
+  // Recruiter notifications — actionable
+  if (role === "client_recruiter" || role === "client_admin") {
+    if (notification.related_entity_type === "lead") {
+      // Lead status change → link to candidate profile
+      return `/recruiter/candidates/${notification.related_entity_id}`;
+    }
+    if (notification.related_entity_type === "vaultsign_document") {
+      // Document status change → link to document
+      return `/recruiter/vaultsign/${notification.related_entity_id}`;
+    }
+  }
+
+  return null;
+}
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -208,12 +244,22 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
               </div>
             ) : (
               <div>
-                {recentNotifications.map((notification, idx) => (
+                {recentNotifications.map((notification, idx) => {
+                  // Determine if this notification has an actionable link
+                  const actionLink = getNotificationActionLink(notification, role);
+                  const isActionable = !!actionLink;
+
+                  return (
                   <div key={notification.id}>
                     <div
-                      className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors cursor-pointer ${
+                      className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors ${isActionable ? "cursor-pointer" : ""} ${
                         !notification.is_read ? "bg-[var(--primary-light)]/30" : ""
                       }`}
+                      onClick={() => {
+                        if (actionLink) {
+                          window.location.href = actionLink;
+                        }
+                      }}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[var(--foreground)] truncate">
@@ -224,9 +270,16 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                             {notification.message}
                           </p>
                         )}
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                          {formatRelativeTime(notification.created_at)}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-[10px] text-[var(--text-muted)]">
+                            {formatRelativeTime(notification.created_at)}
+                          </p>
+                          {isActionable && (
+                            <span className="text-[10px] font-medium text-[var(--primary)] flex items-center gap-0.5">
+                              {notification.related_entity_type === "vaultsign_document" ? "Sign now →" : "View →"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {!notification.is_read && (
                         <span className="size-2 rounded-full bg-[var(--primary)] shrink-0 mt-1.5" />
@@ -236,7 +289,8 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                       <Separator className="bg-[var(--border)]" />
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
