@@ -1,17 +1,30 @@
 "use client";
 
 /**
- * Notification Center — shared page for ALL roles.
- * Shows all notifications with filters, priority colors, category icons.
+ * Notification Center — Premium SaaS redesign
+ *
+ * 3-column layout on desktop (>1440px):
+ *   Left (20%):  Illustration + useful stats (expiring creds, pending verifications)
+ *   Center (60%): Notification list with filters, tabs, cards
+ *   Right (20%): "You're all caught up" + recent activity + quick actions
+ *
+ * Bottom: Glassmorphism trust/security banner
+ *
+ * Responsive:
+ *   Desktop (>1440px): 3 columns
+ *   Tablet (768-1440px): 2 columns (hide right panel)
+ *   Mobile (<768px): Single column
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bell, CheckCheck, Loader2, Trash2,
+  Bell, CheckCheck, Loader2, Trash2, Shield, Lock,
   FileSignature, FileText, TrendingUp, Calendar as CalIcon,
   CreditCard, ShieldCheck, Settings as SettingsIcon,
+  AlertCircle, Clock, FileCheck, Send, Users, Sparkles,
 } from "@/lib/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// ─── Types ──────────────────────────────────────────────────────────
 interface NotificationItem {
   id: number;
   title: string | null;
@@ -36,6 +50,7 @@ interface NotificationItem {
 
 type FilterTab = "all" | "unread" | "urgent";
 
+// ─── Constants ──────────────────────────────────────────────────────
 const CATEGORY_META: Record<string, { icon: string; label: string; color: string }> = {
   rtr:        { icon: "✍️", label: "RTR & Signatures", color: "#8B5CF6" },
   document:   { icon: "📄", label: "Documents",        color: "#0EA5E9" },
@@ -63,6 +78,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+// ─── Main Component ─────────────────────────────────────────────────
 export default function NotificationCenterPage() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -163,157 +179,423 @@ export default function NotificationCenterPage() {
 
   const hasMore = notifications.length < totalCount;
 
+  // Stats for left panel
+  const urgentCount = categories["rtr"] || 0;
+  const docCount = categories["document"] || 0;
+  const complianceCount = categories["compliance"] || 0;
+
   return (
-    <div className="p-4 md:p-6 space-y-4" style={{ maxWidth: "900px", margin: "0 auto" }}>
-      {/* Title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Notifications</h1>
-          <p className="text-sm text-text-muted mt-0.5">
-            {unreadCount > 0 ? `${unreadCount} unread of ${totalCount} total` : `${totalCount} total`}
-          </p>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "linear-gradient(135deg, #F4FAF9 0%, #EEF7F6 50%, #E8F4F3 100%)",
+      }}
+    >
+      <div className="mx-auto" style={{ maxWidth: "1440px" }}>
+        {/* 3-column layout */}
+        <div className="flex gap-6 p-4 md:p-6">
+
+          {/* ─── LEFT PANEL (hidden below 1440px) ─── */}
+          <div className="hidden 2xl:block w-[240px] shrink-0 space-y-4">
+            <LeftPanel
+              unreadCount={unreadCount}
+              urgentCount={urgentCount}
+              docCount={docCount}
+              complianceCount={complianceCount}
+            />
+          </div>
+
+          {/* ─── CENTER: Notifications List ─── */}
+          <div className="flex-1 min-w-0 space-y-4" style={{ maxWidth: "700px" }}>
+
+            {/* Title */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold" style={{ color: "#0F172A" }}>Notifications</h1>
+                <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>
+                  {unreadCount > 0 ? `${unreadCount} unread of ${totalCount} total` : `${totalCount} total`}
+                </p>
+              </div>
+              {unreadCount > 0 && (
+                <Button size="sm" variant="outline" onClick={handleMarkAllRead} disabled={markingRead}
+                  style={{ borderColor: "#CBD5E1", color: "#0F766E" }}>
+                  {markingRead ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5 mr-1" />}
+                  Mark all read
+                </Button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center rounded-lg p-0.5" style={{ background: "#E8F4F3" }}>
+                {(["all", "unread", "urgent"] as FilterTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize ${
+                      activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {tab}
+                    {tab === "unread" && unreadCount > 0 && (
+                      <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full text-white"
+                        style={{ background: "#0F766E" }}>{unreadCount}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[170px] h-8 text-xs" style={{ borderColor: "#CBD5E1" }}>
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {Object.entries(CATEGORY_META).map(([key, meta]) => (
+                    <SelectItem key={key} value={key}>
+                      {meta.icon} {meta.label} {categories[key] ? `(${categories[key]})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Notification cards */}
+            {loading && notifications.length === 0 ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+                ))}
+              </div>
+            ) : notifications.length === 0 ? (
+              <Card className="border-dashed" style={{ borderColor: "#CBD5E1", background: "transparent" }}>
+                <CardContent className="py-16 text-center">
+                  <motion.div
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    className="inline-block mb-3"
+                  >
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+                      style={{ background: "linear-gradient(135deg, #E8F4F3, #D1F2EF)" }}>
+                      <Bell className="h-8 w-8" style={{ color: "#0F766E" }} />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm font-semibold" style={{ color: "#0F172A" }}>
+                    {activeTab === "unread" ? "You're all caught up!" : "No notifications yet"}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "#64748B" }}>
+                    {activeTab === "unread"
+                      ? "We'll notify you here when something new arrives."
+                      : "Document shares, credential expirations, and team activities will appear here."}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                <AnimatePresence>
+                  {notifications.map((notification) => {
+                    const catMeta = CATEGORY_META[notification.category] || CATEGORY_META.system;
+                    const priMeta = PRIORITY_META[notification.priority] || PRIORITY_META.info;
+
+                    return (
+                      <motion.div
+                        key={notification.id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(0,0,0,0.08)" }}
+                        onClick={() => handleClick(notification)}
+                        className="flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all w-full box-border"
+                        style={{
+                          background: "#FFFFFF",
+                          borderColor: "#E2E8F0",
+                          borderLeftWidth: "4px",
+                          borderLeftColor: notification.is_read ? "#E2E8F0" : priMeta.color,
+                        }}
+                      >
+                        {/* Category icon */}
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: catMeta.color + "15" }}>
+                          <span className="text-base">{catMeta.icon}</span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className={`text-sm truncate ${notification.is_read ? "font-normal" : "font-semibold"}`}
+                              style={{ color: notification.is_read ? "#64748B" : "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {notification.title || notification.message}
+                            </p>
+                            <span className="text-[10px] shrink-0" style={{ color: "#94A3B8" }}>{timeAgo(notification.created_at)}</span>
+                          </div>
+                          {notification.title && (
+                            <p className="text-xs mt-0.5" style={{ color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {notification.message}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                              style={{ background: priMeta.bg, color: priMeta.color }}>
+                              {priMeta.label}
+                            </span>
+                            <span className="text-[10px]" style={{ color: "#94A3B8" }}>{catMeta.label}</span>
+                            {notification.action_url && notification.action_label && (
+                              <span className="text-[10px] font-medium" style={{ color: "#0F766E" }}>
+                                {notification.action_label} →
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Unread dot + delete */}
+                        <div className="flex flex-col items-center gap-2 shrink-0">
+                          {!notification.is_read && (
+                            <motion.span
+                              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: priMeta.color }}
+                            />
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
+                            className="p-1 rounded transition-colors"
+                            style={{ color: "#CBD5E1" }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = "#EF4444"}
+                            onMouseLeave={(e) => e.currentTarget.style.color = "#CBD5E1"}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+
+                {/* Load more */}
+                {hasMore && !loading && (
+                  <div className="text-center py-4">
+                    <Button variant="outline" size="sm" onClick={() => fetchNotifications(false)}
+                      style={{ borderColor: "#CBD5E1", color: "#0F766E" }}>
+                      Load more
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─── Bottom Trust Banner ─── */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ y: -2 }}
+              className="mt-8 rounded-2xl p-5 flex items-center gap-4"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.8)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+              }}
+            >
+              <motion.div
+                animate={{ boxShadow: ["0 0 0 0 rgba(15,118,110,0)", "0 0 0 8px rgba(15,118,110,0.1)", "0 0 0 0 rgba(15,118,110,0)"] }}
+                transition={{ duration: 8, repeat: Infinity }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, #0F766E, #14B8A6)" }}
+              >
+                <Lock className="h-5 w-5 text-white" />
+              </motion.div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "#0F172A" }}>Your data is safe and secure</p>
+                <p className="text-xs" style={{ color: "#64748B" }}>Protected by enterprise-grade encryption and secure document storage.</p>
+              </div>
+              <Shield className="h-5 w-5 ml-auto shrink-0" style={{ color: "#14B8A6" }} />
+            </motion.div>
+          </div>
+
+          {/* ─── RIGHT PANEL (hidden below 1440px) ─── */}
+          <div className="hidden 2xl:block w-[240px] shrink-0 space-y-4">
+            <RightPanel notifications={notifications} unreadCount={unreadCount} />
+          </div>
+
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Left Panel: Illustration + Stats ───────────────────────────────
+function LeftPanel({
+  unreadCount, urgentCount, docCount, complianceCount,
+}: {
+  unreadCount: number;
+  urgentCount: number;
+  docCount: number;
+  complianceCount: number;
+}) {
+  return (
+    <div className="space-y-4 sticky top-6">
+      {/* Illustration card */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="rounded-2xl p-5 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(232,244,243,0.8), rgba(209,242,239,0.4))",
+          border: "1px solid rgba(15,118,110,0.1)",
+        }}
+      >
+        {/* Floating dots */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="relative z-10"
+        >
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+            style={{ background: "linear-gradient(135deg, #0F766E, #14B8A6)" }}>
+            <Bell className="h-6 w-6 text-white" />
+          </div>
+        </motion.div>
+
+        {/* Unread badge pulse */}
         {unreadCount > 0 && (
-          <Button size="sm" variant="outline" onClick={handleMarkAllRead} disabled={markingRead}>
-            {markingRead ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5 mr-1" />}
-            Mark all read
-          </Button>
+          <motion.div
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 5, repeat: Infinity }}
+            className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white z-20"
+            style={{ background: "#EF4444" }}
+          >
+            {unreadCount}
+          </motion.div>
+        )}
+
+        <h3 className="text-sm font-bold relative z-10" style={{ color: "#0F172A" }}>
+          Stay updated, never miss what matters
+        </h3>
+        <p className="text-xs mt-1.5 relative z-10" style={{ color: "#64748B" }}>
+          Document shares, credential expirations, verification updates and team activities appear here.
+        </p>
+
+        {/* Decorative shapes */}
+        <div className="absolute bottom-0 right-0 w-20 h-20 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #14B8A6, transparent)" }} />
+        <div className="absolute top-8 right-8 w-3 h-3 rounded-full" style={{ background: "#14B8A6", opacity: 0.3 }} />
+        <div className="absolute bottom-8 left-4 w-2 h-2 rounded-full" style={{ background: "#0F766E", opacity: 0.2 }} />
+      </motion.div>
+
+      {/* Quick stats */}
+      <div className="space-y-2">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider px-1" style={{ color: "#94A3B8" }}>Quick Stats</h4>
+
+        <StatCard icon="✍️" label="RTR & Signature" count={urgentCount} color="#8B5CF6" />
+        <StatCard icon="📄" label="Documents" count={docCount} color="#0EA5E9" />
+        <StatCard icon="🛡️" label="Compliance" count={complianceCount} color="#6366F1" />
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, count, color }: { icon: string; label: string; count: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2.5 p-2.5 rounded-xl transition-colors hover:bg-white/60">
+      <span className="text-base shrink-0">{icon}</span>
+      <span className="text-xs flex-1" style={{ color: "#475569" }}>{label}</span>
+      <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: color + "15", color }}>{count}</span>
+    </div>
+  );
+}
+
+// ─── Right Panel: "All Caught Up" + Recent Activity ─────────────────
+function RightPanel({ notifications, unreadCount }: { notifications: NotificationItem[]; unreadCount: number }) {
+  const recent = notifications.slice(0, 5);
+
+  return (
+    <div className="space-y-4 sticky top-6">
+      {/* "You're all caught up" illustration */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="rounded-2xl p-5 relative overflow-hidden text-center"
+        style={{
+          background: "linear-gradient(135deg, rgba(232,244,243,0.6), rgba(244,250,249,0.8))",
+          border: "1px solid rgba(15,118,110,0.08)",
+        }}
+      >
+        <motion.div
+          animate={{ y: [0, -10, 0], rotate: [-3, 3, -3] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="inline-block mb-2"
+        >
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
+            style={{ background: "linear-gradient(135deg, #14B8A6, #0F766E)" }}>
+            <Send className="h-5 w-5 text-white" />
+          </div>
+        </motion.div>
+
+        <h3 className="text-sm font-bold" style={{ color: "#0F172A" }}>You're all caught up</h3>
+        <p className="text-xs mt-1" style={{ color: "#64748B" }}>
+          We'll notify you here when something new arrives.
+        </p>
+
+        {/* Dotted flight path */}
+        <svg className="absolute bottom-0 left-0 w-full h-8 opacity-20" viewBox="0 0 200 30">
+          <path d="M0,15 Q50,5 100,15 T200,15" fill="none" stroke="#0F766E" strokeWidth="1" strokeDasharray="3,3" />
+        </svg>
+      </motion.div>
+
+      {/* Recent activity */}
+      <div>
+        <h4 className="text-[10px] font-bold uppercase tracking-wider px-1 mb-2" style={{ color: "#94A3B8" }}>
+          Recent Activity
+        </h4>
+        {recent.length === 0 ? (
+          <p className="text-xs px-1" style={{ color: "#94A3B8" }}>No recent activity.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {recent.map((n) => {
+              const catMeta = CATEGORY_META[n.category] || CATEGORY_META.system;
+              return (
+                <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-white/60 transition-colors">
+                  <span className="text-xs shrink-0 mt-0.5">{catMeta.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate" style={{ color: "#475569" }}>
+                      {n.title || n.message}
+                    </p>
+                    <p className="text-[10px]" style={{ color: "#94A3B8" }}>{timeAgo(n.created_at)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Filters row */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Filter tabs */}
-        <div className="flex items-center bg-surface-2 rounded-md p-0.5">
-          {(["all", "unread", "urgent"] as FilterTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors capitalize ${
-                activeTab === tab ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-              }`}
-            >
-              {tab}
-              {tab === "unread" && unreadCount > 0 && (
-                <span className="ml-1.5 text-xs bg-primary text-white px-1.5 py-0.5 rounded-full">{unreadCount}</span>
-              )}
-            </button>
-          ))}
+      {/* Quick actions */}
+      <div>
+        <h4 className="text-[10px] font-bold uppercase tracking-wider px-1 mb-2" style={{ color: "#94A3B8" }}>
+          Quick Actions
+        </h4>
+        <div className="space-y-1">
+          <QuickAction icon={<CheckCheck className="h-3.5 w-3.5" />} label="Mark all read" />
+          <QuickAction icon={<Sparkles className="h-3.5 w-3.5" />} label="Notification settings" />
         </div>
-
-        {/* Category filter */}
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[170px] h-8 text-xs">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {Object.entries(CATEGORY_META).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>
-                {meta.label} {categories[key] ? `(${categories[key]})` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
-
-      {/* Notifications list */}
-      {loading && notifications.length === 0 ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
-          ))}
-        </div>
-      ) : notifications.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <Bell className="h-10 w-10 text-text-muted mx-auto mb-2" />
-            <p className="text-sm font-medium text-foreground">
-              {activeTab === "unread" ? "No unread notifications" : "No notifications yet"}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              {activeTab === "unread"
-                ? "You're all caught up!"
-                : "Notifications about RTRs, documents, status changes, and more will appear here."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {notifications.map((notification) => {
-            const catMeta = CATEGORY_META[notification.category] || CATEGORY_META.system;
-            const priMeta = PRIORITY_META[notification.priority] || PRIORITY_META.info;
-
-            return (
-              <div
-                key={notification.id}
-                onClick={() => handleClick(notification)}
-                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm w-full box-border ${
-                  notification.action_url ? "" : "cursor-default"
-                }`}
-                style={{
-                  borderLeftWidth: "4px",
-                  borderLeftColor: notification.is_read ? "transparent" : priMeta.color,
-                  backgroundColor: notification.is_read ? "transparent" : priMeta.bg + "30",
-                }}
-              >
-                {/* Category icon */}
-                <span className="text-lg shrink-0" style={{ lineHeight: 1 }}>{catMeta.icon}</span>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0" style={{ minWidth: 0 }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={`text-sm truncate ${notification.is_read ? "font-normal text-text-secondary" : "font-semibold text-foreground"}`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {notification.title || notification.message}
-                    </p>
-                    <span className="text-[10px] text-text-muted shrink-0">{timeAgo(notification.created_at)}</span>
-                  </div>
-                  {notification.title && (
-                    <p className="text-xs text-text-secondary mt-0.5" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {notification.message}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: priMeta.bg, color: priMeta.color }}>
-                      {priMeta.label}
-                    </span>
-                    <span className="text-[10px] text-text-muted">{catMeta.label}</span>
-                    {notification.action_url && notification.action_label && (
-                      <span className="text-[10px] font-medium text-primary">{notification.action_label} →</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Unread dot + delete button */}
-                <div className="flex flex-col items-center gap-2 shrink-0">
-                  {!notification.is_read && (
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: priMeta.color }} />
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(notification.id);
-                    }}
-                    className="text-text-muted hover:text-red-500 transition-colors p-1"
-                    title="Delete notification"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Load more */}
-          {hasMore && !loading && (
-            <div className="text-center py-4">
-              <Button variant="outline" size="sm" onClick={() => fetchNotifications(false)}>
-                Load more
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
+  );
+}
+
+function QuickAction({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <button className="w-full flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-colors hover:bg-white/60"
+      style={{ color: "#475569" }}>
+      <span style={{ color: "#0F766E" }}>{icon}</span>
+      {label}
+    </button>
   );
 }
