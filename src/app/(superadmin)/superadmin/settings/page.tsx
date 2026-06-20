@@ -10,6 +10,7 @@ import {
   Link2,
   CreditCard,
   Phone,
+  Bell,
   BellRing,
   Loader2,
 } from "@/lib/icons";
