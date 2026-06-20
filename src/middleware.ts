@@ -31,21 +31,22 @@ export default withAuth({
       if (pathname.startsWith("/superadmin") && role !== "super_admin") return false;
       if (pathname.startsWith("/admin") && !["super_admin", "platform_admin"].includes(role)) return false;
       if (pathname.startsWith("/recruiter") && !["client_admin", "client_recruiter"].includes(role)) return false;
+      // Candidate-only routes (NOT including /notifications — that's shared)
       if (
         pathname.startsWith("/dashboard") ||
         pathname.startsWith("/checklists") ||
         pathname.startsWith("/calendar") ||
-        pathname.startsWith("/vault") ||
+        pathname.startsWith("/vault/") ||
         pathname.startsWith("/vaultsign") ||
         pathname.startsWith("/references") ||
         pathname.startsWith("/recruiters") ||
         pathname.startsWith("/sharing") ||
         pathname.startsWith("/settings") ||
-        pathname.startsWith("/profile-completion") ||
-        pathname.startsWith("/notifications")
+        pathname.startsWith("/profile-completion")
       ) {
         if (role !== "candidate") return false;
       }
+      // /notifications is shared across ALL roles — no role restriction here
 
       // API routes - check role for protected APIs
       if (pathname.startsWith("/api/superadmin") && role !== "super_admin") return false;
