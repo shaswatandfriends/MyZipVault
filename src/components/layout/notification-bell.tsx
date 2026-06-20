@@ -255,7 +255,8 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <PopoverContent
           side="right"
           align="start"
-          className="w-80 p-0 rounded-xl shadow-lg border-[var(--border)]"
+          className="w-96 p-0 rounded-xl shadow-lg border-[var(--border)]"
+          style={{ maxWidth: " calc(100vw - 32px)" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
@@ -268,7 +269,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-[var(--primary)] hover:underline font-medium"
+                className="text-xs text-[var(--primary)] hover:underline font-medium whitespace-nowrap shrink-0"
               >
                 Mark all read
               </button>
@@ -355,7 +356,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
             <Button
               variant="ghost"
               size="sm"
-              className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium"
+              className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium whitespace-nowrap"
               asChild
               onClick={() => setIsOpen(false)}
             >
@@ -388,7 +389,8 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-80 p-0 rounded-xl shadow-lg border-[var(--border)]"
+        className="w-96 p-0 rounded-xl shadow-lg border-[var(--border)]"
+        style={{ maxWidth: "calc(100vw - 32px)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
@@ -401,7 +403,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-xs text-[var(--primary)] hover:underline font-medium"
+              className="text-xs text-[var(--primary)] hover:underline font-medium whitespace-nowrap shrink-0"
             >
               Mark all read
             </button>
@@ -430,7 +432,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                 return (
                 <div key={notification.id}>
                   <div
-                    className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors ${actionLink ? "cursor-pointer" : ""}`}
+                    className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors overflow-hidden ${actionLink ? "cursor-pointer" : ""}`}
                     style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg + "40" } : { borderLeft: "3px solid transparent" }}
                     onClick={() => {
                       if (actionLink) {
@@ -473,7 +475,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium"
+            className="w-full text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs font-medium whitespace-nowrap"
             asChild
             onClick={() => setIsOpen(false)}
           >
