@@ -102,15 +102,13 @@ const candidateNav: NavItem[] = [
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
   { title: "Book of Business", href: "/recruiter/candidates", icon: Users },
-  { title: "Candidate Pools", href: "/recruiter/pools", icon: Users },
-  { title: "Compliance Bundles", href: "/recruiter/bundles", icon: ClipboardCheck },
   { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
   { title: "Org Settings", href: "/recruiter/settings", icon: Settings },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
-  { title: "BAA", href: "/recruiter/baa", icon: FileCheck },
+  { title: "BAA", href: "/recruiter/baa", icon: FileCheck, adminOnly: true },
   { title: "Team", href: "/recruiter/team", icon: Users, adminOnly: true },
 ];
 

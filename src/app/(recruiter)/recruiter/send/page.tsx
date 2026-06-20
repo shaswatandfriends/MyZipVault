@@ -935,13 +935,23 @@ function Step2ChecklistSelection({
       {/* ─── Bundle Selector (always visible — shows empty state if no bundles) ─── */}
       <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Layers className="size-5 text-primary" />
-            Use a Bundle (optional)
-          </CardTitle>
-          <CardDescription>
-            Select a pre-built bundle to auto-fill the checklist + documents. Or skip this and select manually below.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Layers className="size-5 text-primary" />
+                Use a Bundle (optional)
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Select a pre-built bundle to auto-fill the checklist + documents. Or skip this and select manually below.
+              </CardDescription>
+            </div>
+            {/* Manage Bundles link — moved from sidebar to here */}
+            <a href="/recruiter/bundles" className="shrink-0">
+              <Button size="sm" variant="ghost" className="text-xs">
+                <Layers className="size-3.5 mr-1" /> Manage Bundles
+              </Button>
+            </a>
+          </div>
         </CardHeader>
         <CardContent>
           {bundles.length === 0 ? (

@@ -643,7 +643,7 @@ export default function RecruiterDashboardPage() {
                 candidate{(data?.candidates.length ?? 0) !== 1 ? "s" : ""}
               </p>
               <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
-                <Link href="/recruiter/send">
+                <Link href="/recruiter/requests">
                   <ArrowUpRight className="size-3.5" />
                   View All Requests
                 </Link>

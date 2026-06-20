@@ -207,13 +207,20 @@ export default function BOBPage() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Lead
         </Button>
 
-        {/* Company Pool — separate button (not part of view toggle) */}
+        {/* Company Pool — separate button */}
         <Button
           variant={view === "company_pool" ? "default" : "outline"}
           onClick={() => setView(view === "company_pool" ? "kanban" : "company_pool")}
         >
           <Building2 className="h-4 w-4 mr-1.5" />
           {view === "company_pool" ? "Back to My BOB" : "Company Pool"}
+        </Button>
+
+        {/* Candidate Pools — moved from sidebar to here */}
+        <Button variant="outline" asChild>
+          <Link href="/recruiter/pools">
+            <Users className="h-4 w-4 mr-1.5" /> Pools
+          </Link>
         </Button>
 
         {/* View toggle (Kanban / List only — Company Pool is now a separate button) */}
@@ -527,7 +534,7 @@ export default function BOBPage() {
             <strong>Company Pool:</strong> These candidates are not actively being worked by any recruiter.
             Click a card to claim them — they'll move to your BOB automatically.
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             {leads.map((lead) => (
               <LeadCard key={lead.id} lead={lead} />
             ))}
