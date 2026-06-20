@@ -31,6 +31,10 @@ export async function GET() {
         company_phone: true,
         company_email: true,
         company_website: true,
+        date_format: true,
+        show_billing_to_recruiters: true,
+        allow_credit_requests: true,
+        allow_recruiter_csv_export: true,
       },
     });
 
@@ -70,6 +74,10 @@ export async function PATCH(request: NextRequest) {
       "company_phone",
       "company_email",
       "company_website",
+      "date_format",
+      "show_billing_to_recruiters",
+      "allow_credit_requests",
+      "allow_recruiter_csv_export",
     ];
 
     const updateData: any = {};
@@ -90,6 +98,10 @@ export async function PATCH(request: NextRequest) {
         company_phone: true,
         company_email: true,
         company_website: true,
+        date_format: true,
+        show_billing_to_recruiters: true,
+        allow_credit_requests: true,
+        allow_recruiter_csv_export: true,
       },
     });
 

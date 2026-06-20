@@ -33,6 +33,12 @@ model Organization {
   company_email       String?              // Email for document headers
   company_website     String?              // Website for document headers
 
+  // Org settings (Phase 3 — added 2026-06-21)
+  date_format              String?  @default("MM/DD/YYYY") // mm/dd/yyyy | dd/mm/yyyy | yyyy-mm-dd
+  show_billing_to_recruiters Boolean @default(false) // Admin toggle — show Billing in recruiter sidebar
+  allow_credit_requests    Boolean  @default(false) // Admin toggle — recruiters can request more credits
+  allow_recruiter_csv_export Boolean @default(true)  // Admin toggle — recruiters can export BOB CSV
+
   users               User[]
   credit_transactions CreditTransaction[]
   invoices            Invoice[]

@@ -321,11 +321,28 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
 export function AppSidebar() {
   const { user, role } = useAuth();
   const pathname = usePathname();
+  const [orgSettings, setOrgSettings] = useState<{ show_billing_to_recruiters?: boolean } | null>(null);
+
+  // Fetch org settings to conditionally show/hide Billing for recruiters
+  useEffect(() => {
+    if (role === "client_recruiter" || role === "client_admin") {
+      fetch("/api/vaultsign/organization")
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => { if (data) setOrgSettings(data); })
+        .catch(() => {});
+    }
+  }, [role]);
 
   if (!role) return null;
 
   const isSuperAdmin = role === "super_admin";
-  const navItems = isSuperAdmin ? superAdminFlatNav : getNavItems(role);
+  let navItems = isSuperAdmin ? superAdminFlatNav : getNavItems(role);
+
+  // Filter out Billing for recruiters if org setting is off
+  if (role === "client_recruiter" && orgSettings && !orgSettings.show_billing_to_recruiters) {
+    navItems = navItems.filter((item) => item.href !== "/recruiter/billing");
+  }
+
   const label = roleLabels[role];
 
   const initials =

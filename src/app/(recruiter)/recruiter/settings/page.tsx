@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Building2, Save, Loader2, Globe, Phone, Mail, MapPin } from "@/lib/icons";
+import { Building2, Save, Loader2, Globe, Phone, Mail, MapPin, Calendar } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogoUploader } from "@/components/vaultsign/logo-uploader";
+import { useAuth } from "@/components/providers/auth-provider";
 
 interface OrgSettings {
   id: number;
@@ -31,6 +33,10 @@ interface OrgSettings {
   company_phone: string | null;
   company_email: string | null;
   company_website: string | null;
+  date_format: string | null;
+  show_billing_to_recruiters: boolean;
+  allow_credit_requests: boolean;
+  allow_recruiter_csv_export: boolean;
 }
 
 export default function OrgSettingsPage() {
@@ -68,6 +74,10 @@ export default function OrgSettingsPage() {
           company_phone: settings.company_phone,
           company_email: settings.company_email,
           company_website: settings.company_website,
+          date_format: settings.date_format,
+          show_billing_to_recruiters: settings.show_billing_to_recruiters,
+          allow_credit_requests: settings.allow_credit_requests,
+          allow_recruiter_csv_export: settings.allow_recruiter_csv_export,
         }),
       });
       if (!res.ok) {
@@ -190,6 +200,80 @@ export default function OrgSettingsPage() {
               placeholder="https://yourcompany.com"
               className="mt-1"
             />
+          </div>
+
+          {/* Date Format */}
+          <div>
+            <Label htmlFor="date_format" className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" /> Date Format
+            </Label>
+            <p className="text-xs text-text-muted mt-0.5 mb-1">
+              Controls how dates appear throughout the platform for your organization.
+            </p>
+            <Select
+              value={settings.date_format || "MM/DD/YYYY"}
+              onValueChange={(val) => setSettings({ ...settings, date_format: val })}
+            >
+              <SelectTrigger id="date_format" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (US default)</SelectItem>
+                <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (European)</SelectItem>
+                <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (ISO)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Permission Toggles (admin only) */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Recruiter Permissions</h3>
+            <p className="text-xs text-text-muted">Control what recruiters in your organization can see and do.</p>
+
+            {/* Billing visibility */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+              <div>
+                <p className="text-sm font-medium">Show Billing to recruiters</p>
+                <p className="text-xs text-text-muted">When off, recruiters won't see the Billing page in their sidebar.</p>
+              </div>
+              <button
+                onClick={() => setSettings({ ...settings, show_billing_to_recruiters: !settings.show_billing_to_recruiters })}
+                className="w-9 h-5 rounded-full transition-colors shrink-0"
+                style={{ background: settings.show_billing_to_recruiters ? "var(--primary)" : "var(--border)" }}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${settings.show_billing_to_recruiters ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            {/* Credit requests */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+              <div>
+                <p className="text-sm font-medium">Allow credit requests</p>
+                <p className="text-xs text-text-muted">When on, recruiters can request more credits from you.</p>
+              </div>
+              <button
+                onClick={() => setSettings({ ...settings, allow_credit_requests: !settings.allow_credit_requests })}
+                className="w-9 h-5 rounded-full transition-colors shrink-0"
+                style={{ background: settings.allow_credit_requests ? "var(--primary)" : "var(--border)" }}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${settings.allow_credit_requests ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            {/* CSV export */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+              <div>
+                <p className="text-sm font-medium">Allow CSV export</p>
+                <p className="text-xs text-text-muted">When on, recruiters can export their BOB leads as CSV.</p>
+              </div>
+              <button
+                onClick={() => setSettings({ ...settings, allow_recruiter_csv_export: !settings.allow_recruiter_csv_export })}
+                className="w-9 h-5 rounded-full transition-colors shrink-0"
+                style={{ background: settings.allow_recruiter_csv_export ? "var(--primary)" : "var(--border)" }}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${settings.allow_recruiter_csv_export ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
           </div>
 
           {/* Save button */}
