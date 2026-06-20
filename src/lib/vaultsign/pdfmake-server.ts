@@ -41,28 +41,54 @@ function getVirtualfs(): any {
 /**
  * Register Liberation Sans fonts in virtualfs.
  * These are metrically identical to Helvetica.
+ *
+ * Fonts are bundled in the project at src/lib/vaultsign/fonts/ to ensure
+ * they're available on Vercel's serverless environment (which doesn't have
+ * system fonts installed). Falls back to system path if bundled fonts
+ * aren't found (local dev).
  */
 function registerFonts(): void {
   if (_fontsRegistered) return;
 
   const vfs = getVirtualfs();
 
+  // Try bundled fonts first (works on Vercel), fall back to system fonts (local dev)
+  const bundledPath = path.join(__dirname, "fonts");
+  const systemPath = "/usr/share/fonts/truetype/liberation";
+
   const fontFiles: Record<string, string> = {
-    "LiberationSans-Regular.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    "LiberationSans-Bold.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-    "LiberationSans-Italic.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf",
-    "LiberationSans-BoldItalic.ttf": "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf",
+    "LiberationSans-Regular.ttf": "LiberationSans-Regular.ttf",
+    "LiberationSans-Bold.ttf": "LiberationSans-Bold.ttf",
+    "LiberationSans-Italic.ttf": "LiberationSans-Italic.ttf",
+    "LiberationSans-BoldItalic.ttf": "LiberationSans-BoldItalic.ttf",
   };
 
-  for (const [name, fsPath] of Object.entries(fontFiles)) {
+  let fontsLoaded = 0;
+  for (const [name, fileName] of Object.entries(fontFiles)) {
+    // Try bundled path first
+    const bundledFontPath = path.join(bundledPath, fileName);
+    const systemFontPath = path.join(systemPath, fileName);
+    const fontPath = fs.existsSync(bundledFontPath) ? bundledFontPath : systemFontPath;
+
     try {
-      if (fs.existsSync(fsPath)) {
-        const data = fs.readFileSync(fsPath);
+      if (fs.existsSync(fontPath)) {
+        const data = fs.readFileSync(fontPath);
         vfs.writeFileSync(`${FONT_VFS_PREFIX}/${name}`, data);
+        fontsLoaded++;
+      } else {
+        console.error(`[VAULTSIGN] Font not found at: ${fontPath}`);
       }
     } catch (err) {
       console.error(`[VAULTSIGN] Failed to register font ${name}:`, err);
     }
+  }
+
+  if (fontsLoaded === 0) {
+    console.error("[VAULTSIGN] CRITICAL: No fonts loaded! PDF generation will fail.");
+    console.error(`[VAULTSIGN] Tried bundled: ${bundledPath}`);
+    console.error(`[VAULTSIGN] Tried system: ${systemPath}`);
+  } else {
+    console.log(`[VAULTSIGN] Loaded ${fontsLoaded}/4 Liberation Sans fonts`);
   }
 
   _fontsRegistered = true;

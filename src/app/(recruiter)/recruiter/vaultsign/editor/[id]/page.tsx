@@ -821,7 +821,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // ─── Variables panel (shared between desktop + mobile sheet) ───────
   const variablesPanel = (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1 h-full">
       <div className="p-4">
         <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: T.ink400 }}>
           Insert variable
@@ -947,8 +947,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // ─── Signers panel (shared) ────────────────────────────────────────
   const signersPanel = (
-    <ScrollArea className="flex-1">
-      <div className="p-4">
+    <ScrollArea className="flex-1 h-full">
+      <div className="p-4 space-y-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.ink400 }}>
             Signers

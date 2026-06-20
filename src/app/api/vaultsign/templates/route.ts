@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
-    const userId = (session.user as Record<string, unknown>).id as number;
+    const userId = Number((session.user as Record<string, unknown>).id);
     const orgId = (session.user as Record<string, unknown>).organizationId as number;
 
     const body = await request.json();
@@ -142,8 +142,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ template }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[VAULTSIGN] Create template error:", error);
-    return NextResponse.json({ error: "Failed to create template" }, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to create template: ${error.message || "Unknown error"}` },
+      { status: 500 },
+    );
   }
 }
