@@ -137,15 +137,17 @@ export async function POST(
           ? `${recruiterName} from ${orgName} would like your phone number. Please update your profile to include it.`
           : `${recruiterName} from ${orgName} would like to see your calendar availability. Please share your calendar from your settings.`;
 
-        await db.notification.create({
-          data: {
-            user_id: lead.candidate_user_id,
-            title: notifTitle,
-            message: notifMessage,
-            type: "lead_stage_change",
-            related_entity_id: leadId,
-            related_entity_type: "lead",
-          },
+        const { createNotification } = await import("@/lib/notifications/create");
+        await createNotification({
+          userId: lead.candidate_user_id,
+          category: type === "calendar" ? "calendar" : "system",
+          priority: "important",
+          title: notifTitle,
+          message: notifMessage,
+          actionUrl: "/settings",
+          actionLabel: "Update profile",
+          relatedEntityId: leadId,
+          relatedEntityType: "lead",
         });
       } catch (err) {
         console.error("[BOB] Failed to send candidate notification:", err);

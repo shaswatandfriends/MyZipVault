@@ -406,23 +406,23 @@ export async function POST(request: Request) {
     }
 
     // ─── In-app notification to candidate ──────────────────────────
-    // Creates a notification so the candidate sees it in their bell when
-    // they log in (in addition to the email).
     try {
       const orgName = (await db.organization.findUnique({
         where: { id: organizationId },
         select: { name: true },
       }))?.name || "MyZipVault";
 
-      await db.notification.create({
-        data: {
-          user_id: candidateUserId,
-          title: `New request from ${orgName}`,
-          message: `${orgName} sent you a ${checklistTemplateName} checklist${documents?.length ? ` and requested ${documents.join(", ")}` : ""}. Log in to complete it.`,
-          type: "lead_stage_change",
-          related_entity_id: checklistRequest.id,
-          related_entity_type: "checklist_request",
-        },
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: candidateUserId,
+        category: "compliance",
+        priority: "urgent",
+        title: `New request from ${orgName}`,
+        message: `${orgName} sent you a ${checklistTemplateName} checklist${documents?.length ? ` and requested ${documents.join(", ")}` : ""}. Log in to complete it.`,
+        actionUrl: "/dashboard",
+        actionLabel: "View request",
+        relatedEntityId: checklistRequest.id,
+        relatedEntityType: "checklist_request",
       });
     } catch (notifErr) {
       console.error("[SEND_REQUEST] Failed to create candidate notification:", notifErr);

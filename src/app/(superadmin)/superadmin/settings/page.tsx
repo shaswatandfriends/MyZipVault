@@ -502,6 +502,139 @@ export default function SuperadminSettingsPage() {
           </Card>
         </div>
       )}
+
+      {/* ─── Notification Defaults Panel ─── */}
+      <NotificationDefaultsPanel />
     </div>
+  );
+}
+
+// ─── Notification Defaults Panel ─────────────────────────────────────
+function NotificationDefaultsPanel() {
+  const [defaults, setDefaults] = useState<Array<{
+    id: number;
+    category: string;
+    email_enabled: boolean;
+    in_app_enabled: boolean;
+    sms_enabled: boolean;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDefaults();
+  }, []);
+
+  async function fetchDefaults() {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/superadmin/notification-defaults");
+      if (res.ok) {
+        const data = await res.json();
+        setDefaults(data.defaults || []);
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateDefault(category: string, field: "email_enabled" | "in_app_enabled" | "sms_enabled", value: boolean) {
+    setSaving(category + field);
+    try {
+      const res = await fetch("/api/superadmin/notification-defaults", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, [field]: value }),
+      });
+      if (res.ok) {
+        setDefaults((prev) =>
+          prev.map((d) => (d.category === category ? { ...d, [field]: value } : d))
+        );
+        toast.success(`${category} ${field.replace("_enabled", "")} ${value ? "enabled" : "disabled"}`);
+      }
+    } catch {
+      toast.error("Failed to update");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    rtr: "RTR & Signatures",
+    document: "Documents",
+    status: "Status Changes",
+    calendar: "Calendar",
+    credit: "Credits",
+    compliance: "Compliance",
+    system: "System",
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Bell className="h-5 w-5" /> Notification Defaults
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Control which notification categories send email, in-app, and SMS for ALL users platform-wide.
+          Urgent priority always sends email regardless of these settings.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="py-2 px-3 font-medium text-muted-foreground">Category</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">Email</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">In-App</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">SMS (future)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {defaults.map((d) => (
+                  <tr key={d.id} className="border-b border-border/60">
+                    <td className="py-3 px-3 font-medium">{CATEGORY_LABELS[d.category] || d.category}</td>
+                    <td className="py-3 px-3 text-center">
+                      <Switch
+                        checked={d.email_enabled}
+                        onCheckedChange={(checked) => updateDefault(d.category, "email_enabled", checked)}
+                        disabled={saving === d.category + "email_enabled"}
+                      />
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <Switch
+                        checked={d.in_app_enabled}
+                        onCheckedChange={(checked) => updateDefault(d.category, "in_app_enabled", checked)}
+                        disabled={saving === d.category + "in_app_enabled"}
+                      />
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <Switch
+                        checked={d.sms_enabled}
+                        onCheckedChange={(checked) => updateDefault(d.category, "sms_enabled", checked)}
+                        disabled={saving === d.category + "sms_enabled"}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-muted-foreground mt-3">
+              Note: SMS is architecture-only and not currently wired to any provider. Toggling SMS will have no effect until a provider (e.g. Twilio) is configured.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
