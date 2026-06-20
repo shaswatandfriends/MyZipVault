@@ -141,3 +141,38 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+/**
+ * DELETE /api/notifications?id={id}
+ *
+ * Delete a single notification.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = Number((session.user as Record<string, unknown>).id);
+    const { searchParams } = new URL(request.url);
+    const id = parseInt(searchParams.get("id") ?? "");
+
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 });
+    }
+
+    // Delete the notification (only if it belongs to this user)
+    await db.notification.deleteMany({
+      where: { id, user_id: userId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("[NOTIFICATIONS DELETE] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to delete notification" },
+      { status: 500 },
+    );
+  }
+}

@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Bell, CheckCheck, Loader2,
+  Bell, CheckCheck, Loader2, Trash2,
   FileSignature, FileText, TrendingUp, Calendar as CalIcon,
   CreditCard, ShieldCheck, Settings as SettingsIcon,
 } from "@/lib/icons";
@@ -142,6 +142,20 @@ export default function NotificationCenterPage() {
     } catch {}
   }
 
+  async function handleDelete(id: number) {
+    try {
+      const res = await fetch(`/api/notifications?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      const wasUnread = notifications.find((n) => n.id === id)?.is_read === false;
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setTotalCount((prev) => Math.max(0, prev - 1));
+      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
+      toast.success("Notification deleted");
+    } catch {
+      toast.error("Failed to delete notification");
+    }
+  }
+
   function handleClick(notification: NotificationItem) {
     if (!notification.is_read) handleMarkRead(notification.id);
     if (notification.action_url) router.push(notification.action_url);
@@ -270,10 +284,22 @@ export default function NotificationCenterPage() {
                   </div>
                 </div>
 
-                {/* Unread dot */}
-                {!notification.is_read && (
-                  <span className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: priMeta.color }} />
-                )}
+                {/* Unread dot + delete button */}
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  {!notification.is_read && (
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: priMeta.color }} />
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(notification.id);
+                    }}
+                    className="text-text-muted hover:text-red-500 transition-colors p-1"
+                    title="Delete notification"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             );
           })}
