@@ -668,13 +668,13 @@ function Step1CandidateInfo({
             </Label>
             <Select
               value={selectedLeadId?.toString() ?? ""}
-              onValueChange={(val) => onSelectLead(val ? parseInt(val) : null)}
+              onValueChange={(val) => onSelectLead(val && val !== "__none__" ? parseInt(val) : null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pick a candidate from your BOB to auto-fill..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">— None (manual entry) —</SelectItem>
+                <SelectItem value="__none__">— None (manual entry) —</SelectItem>
                 {leads.map((lead) => (
                   <SelectItem key={lead.id} value={lead.id.toString()}>
                     {lead.first_name} {lead.last_name}

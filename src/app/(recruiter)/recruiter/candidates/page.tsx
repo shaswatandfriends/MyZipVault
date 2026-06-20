@@ -137,7 +137,7 @@ export default function BOBPage() {
 
   // ─── Bulk action: change status for all selected leads ────────────
   async function handleBulkAction() {
-    if (!bulkAction || selectedLeadIds.size === 0 || bulkProcessing) return;
+    if (!bulkAction || bulkAction === "__none__" || selectedLeadIds.size === 0 || bulkProcessing) return;
 
     setBulkProcessing(true);
     const leadIds = Array.from(selectedLeadIds);
@@ -485,7 +485,7 @@ export default function BOBPage() {
                 <Button
                   size="sm"
                   className="h-8"
-                  disabled={!bulkAction || bulkProcessing}
+                  disabled={!bulkAction || bulkAction === "__none__" || bulkProcessing}
                   onClick={handleBulkAction}
                 >
                   {bulkProcessing ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : null}

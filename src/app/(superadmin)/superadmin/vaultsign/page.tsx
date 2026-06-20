@@ -90,7 +90,7 @@ export default function SuperAdminVaultSignPage() {
 
   // === Analytics State ===
   const [analytics, setAnalytics] = useState<any>(null);
-  const [analyticsOrgFilter, setAnalyticsOrgFilter] = useState("");
+  const [analyticsOrgFilter, setAnalyticsOrgFilter] = useState("__none__");
 
   // === Audit Logs State ===
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -175,7 +175,7 @@ export default function SuperAdminVaultSignPage() {
   const fetchAnalytics = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (analyticsOrgFilter) params.set("organization_id", analyticsOrgFilter);
+      if (analyticsOrgFilter && analyticsOrgFilter !== "__none__") params.set("organization_id", analyticsOrgFilter);
       const res = await fetch(`/api/superadmin/vaultsign/analytics?${params}`);
       if (res.ok) { const d = await res.json(); setAnalytics(d); }
     } catch (err) { console.error("Analytics fetch error:", err); }
@@ -674,7 +674,7 @@ export default function SuperAdminVaultSignPage() {
               <Select value={analyticsOrgFilter} onValueChange={setAnalyticsOrgFilter}>
                 <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="All Organizations" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Organizations</SelectItem>
+                  <SelectItem value="__none__">All Organizations</SelectItem>
                   {organizations.map((org: any) => (
                     <SelectItem key={org.id} value={org.id.toString()}>{org.name}</SelectItem>
                   ))}
@@ -859,7 +859,7 @@ export default function SuperAdminVaultSignPage() {
                 <Select value={auditOrgFilter} onValueChange={setAuditOrgFilter}>
                   <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="All Orgs" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Organizations</SelectItem>
+                    <SelectItem value="__none__">All Organizations</SelectItem>
                     {organizations.map((org: any) => (
                       <SelectItem key={org.id} value={org.id.toString()}>{org.name}</SelectItem>
                     ))}

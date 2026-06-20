@@ -488,13 +488,13 @@ function NewDocumentContent() {
                 </Label>
                 <Select
                   value={selectedLeadId?.toString() ?? ""}
-                  onValueChange={(val) => setSelectedLeadId(val ? parseInt(val) : null)}
+                  onValueChange={(val) => setSelectedLeadId(val && val !== "__none__" ? parseInt(val) : null)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a candidate from your BOB to auto-fill their details..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— None (manual entry) —</SelectItem>
+                    <SelectItem value="__none__">— None (manual entry) —</SelectItem>
                     {leads.map((lead) => (
                       <SelectItem key={lead.id} value={lead.id.toString()}>
                         {lead.first_name} {lead.last_name}
