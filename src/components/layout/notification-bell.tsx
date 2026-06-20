@@ -277,7 +277,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           </div>
 
           {/* Notification List */}
-          <ScrollArea className="max-h-80">
+          <ScrollArea className="max-h-[28rem]">
             {recentNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="size-10 rounded-full bg-[var(--primary-light)] flex items-center justify-center mb-2">
@@ -411,7 +411,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         </div>
 
         {/* Notification List */}
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="max-h-[28rem]">
           {recentNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="size-10 rounded-full bg-[var(--primary-light)] flex items-center justify-center mb-2">
