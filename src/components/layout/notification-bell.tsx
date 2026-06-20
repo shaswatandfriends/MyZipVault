@@ -30,42 +30,69 @@ interface QuickNotification {
 }
 
 // ─── Role → API endpoint mapping ────────────────────────────────────
+// Now uses the UNIFIED /api/notifications endpoint for ALL roles.
 
 function getApiEndpoint(role: UserRole): string {
-  switch (role) {
-    case "candidate":
-      return "/api/candidate/notifications";
-    case "client_recruiter":
-    case "client_admin":
-      return "/api/recruiter/notifications?type=all&limit=5";
-    default:
-      // platform_admin, super_admin — use generic endpoint
-      return "/api/notifications?limit=5";
-  }
+  // All roles use the same unified endpoint
+  return "/api/notifications?limit=5";
 }
 
 function getMarkReadEndpoint(role: UserRole): string {
-  switch (role) {
-    case "candidate":
-      return "/api/candidate/notifications";
-    case "client_recruiter":
-    case "client_admin":
-      return "/api/recruiter/notifications";
-    default:
-      return "/api/notifications";
-  }
+  // All roles use the same unified endpoint
+  return "/api/notifications";
 }
 
 function getViewAllHref(role: UserRole): string {
-  switch (role) {
-    case "candidate":
-      return "/notifications";
-    case "client_recruiter":
-    case "client_admin":
-      return "/recruiter/notifications";
-    default:
-      return "#";
-  }
+  // All roles use the same notification center page
+  return "/notifications";
+}
+
+// ─── SSE: Real-time notification push ────────────────────────────────
+// Opens an EventSource connection to /api/notifications/stream.
+// When new notifications arrive, the bell updates instantly (no polling).
+
+function useNotificationStream(
+  onNewNotification: (data: any) => void,
+  enabled: boolean,
+) {
+  useEffect(() => {
+    if (!enabled) return;
+
+    let es: EventSource | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
+    function connect() {
+      try {
+        es = new EventSource("/api/notifications/stream");
+
+        es.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            onNewNotification(data);
+          } catch {
+            // Ignore parse errors
+          }
+        };
+
+        es.onerror = () => {
+          es?.close();
+          // Auto-reconnect after 3 seconds (EventSource does this natively,
+          // but we handle it explicitly to avoid duplicate connections)
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connect, 3000);
+        };
+      } catch {
+        // EventSource not available (older browsers) — fall back to polling
+      }
+    }
+
+    connect();
+
+    return () => {
+      es?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
+  }, [enabled, onNewNotification]);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -137,6 +164,21 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
   const apiEndpoint = role ? getApiEndpoint(role) : "";
   const markReadEndpoint = role ? getMarkReadEndpoint(role) : "";
   const viewAllHref = role ? getViewAllHref(role) : "#";
+
+  // SSE: real-time notification push
+  const handleSSEEvent = useCallback((data: any) => {
+    if (data.type === "connected" || data.type === "read_update" || data.type === "notification") {
+      if (typeof data.unreadCount === "number") {
+        setUnreadCount(data.unreadCount);
+      }
+      if (data.type === "notification") {
+        // Refresh the notification list when a new one arrives
+        poll();
+      }
+    }
+  }, []);
+
+  useNotificationStream(handleSSEEvent, !!role);
 
   const poll = useCallback(async () => {
     if (!apiEndpoint) return;

@@ -1,95 +1,143 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET(request: Request) {
+/**
+ * GET /api/notifications
+ *
+ * Unified notifications API for ALL roles.
+ * Returns paginated notifications with filters.
+ *
+ * Query params:
+ *   - filter: "all" | "unread" | "urgent" (default: all)
+ *   - category: "rtr" | "document" | "status" | "calendar" | "credit" | "compliance" | "system"
+ *   - limit: max results (default: 50, max: 200)
+ *   - offset: pagination offset (default: 0)
+ *
+ * Returns:
+ *   - notifications: Notification[]
+ *   - unreadCount: number
+ *   - totalCount: number
+ *   - categories: array of categories with unread counts
+ */
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
+    if (!userId) {
+      return NextResponse.json({ error: "Invalid user" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type");
-    const unreadOnly = searchParams.get("unread") === "true";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const filter = searchParams.get("filter") ?? "all";
+    const categoryFilter = searchParams.get("category");
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50") || 50, 200);
+    const offset = parseInt(searchParams.get("offset") ?? "0") || 0;
 
-    const where: Record<string, unknown> = { user_id: userId };
-    if (type) where.type = type;
-    if (unreadOnly) where.is_read = false;
+    // Build where clause
+    const where: any = { user_id: userId };
 
-    const notifications = await db.notification.findMany({
-      where,
-      orderBy: { created_at: "desc" },
-      take: limit,
+    if (filter === "unread") {
+      where.is_read = false;
+    } else if (filter === "urgent") {
+      where.is_read = false;
+      where.priority = "urgent";
+    }
+
+    if (categoryFilter && categoryFilter !== "all") {
+      where.category = categoryFilter;
+    }
+
+    // Fetch notifications + counts in parallel
+    const [notifications, unreadCount, totalCount, categoryCounts] = await Promise.all([
+      db.notification.findMany({
+        where,
+        orderBy: { created_at: "desc" },
+        take: limit,
+        skip: offset,
+      }),
+      db.notification.count({
+        where: { user_id: userId, is_read: false },
+      }),
+      db.notification.count({ where }),
+      db.notification.groupBy({
+        by: ["category"],
+        where: { user_id: userId, is_read: false },
+        _count: { id: true },
+      }),
+    ]);
+
+    // Format category counts
+    const categories: Record<string, number> = {};
+    for (const row of categoryCounts) {
+      categories[row.category] = row._count?.id ?? 0;
+    }
+
+    return NextResponse.json({
+      notifications,
+      unreadCount,
+      totalCount,
+      categories,
+      limit,
+      offset,
     });
-
-    // Parse action_data JSON for each notification
-    const parsed = notifications.map((n) => ({
-      ...n,
-      action_data: n.action_data ? JSON.parse(n.action_data) : null,
-    }));
-
-    return NextResponse.json({ notifications: parsed });
-  } catch (error) {
-    console.error("[NOTIFICATIONS_GET]", error);
-    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[NOTIFICATIONS GET] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch notifications" },
+      { status: 500 },
+    );
   }
 }
 
-export async function PUT(request: Request) {
+/**
+ * PUT /api/notifications
+ *
+ * Mark notifications as read.
+ * Body:
+ *   - markAllRead: boolean — mark ALL as read
+ *   - notificationIds: number[] — mark specific ones as read
+ *   - markAsUnread: boolean — mark as unread instead (default: false)
+ */
+export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const body = await request.json();
+    const { markAllRead, notificationIds, markAsUnread } = body;
 
-    if (body.markAllRead) {
+    const isRead = !markAsUnread;
+
+    if (markAllRead) {
       await db.notification.updateMany({
-        where: { user_id: userId, is_read: false },
-        data: { is_read: true },
+        where: { user_id: userId, is_read: !isRead },
+        data: { is_read: isRead },
       });
-    } else if (body.notificationIds && Array.isArray(body.notificationIds)) {
+    } else if (notificationIds && Array.isArray(notificationIds)) {
       await db.notification.updateMany({
-        where: { user_id: userId, id: { in: body.notificationIds } },
-        data: { is_read: true },
+        where: {
+          id: { in: notificationIds },
+          user_id: userId,
+        },
+        data: { is_read: isRead },
       });
-    } else if (body.notificationId && body.actionTaken) {
-      // Mark action as taken on a notification
-      await db.notification.update({
-        where: { id: body.notificationId, user_id: userId },
-        data: { action_taken: true, action_taken_at: new Date(), is_read: true },
-      });
-    } else if (body.notificationId && body.snoozeUntil) {
-      // Snooze a notification's related reminder
-      const notification = await db.notification.findUnique({
-        where: { id: body.notificationId, user_id: userId },
-      });
-      if (notification?.action_data) {
-        const actionData = JSON.parse(notification.action_data);
-        if (actionData.reminder_id) {
-          await db.followUpReminder.update({
-            where: { id: actionData.reminder_id },
-            data: { status: "snoozed", snoozed_until: new Date(body.snoozeUntil) },
-          });
-        }
-      }
-      await db.notification.update({
-        where: { id: body.notificationId },
-        data: { is_read: true },
-      });
-    } else {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[NOTIFICATIONS_PUT]", error);
-    return NextResponse.json({ error: "Failed to update notifications" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[NOTIFICATIONS PUT] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to update notifications" },
+      { status: 500 },
+    );
   }
 }

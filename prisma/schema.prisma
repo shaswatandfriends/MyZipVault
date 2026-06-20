@@ -401,15 +401,37 @@ model Notification {
   user_id             Int
   title               String?
   message             String
-  type                String    // call_scheduled, call_reminder, call_follow_up, shift_accepted, shift_declined, lead_stage_change, share_request
+  type                String    // legacy type field (kept for backwards compat)
   is_read             Boolean   @default(false)
   related_entity_id   Int?
-  related_entity_type String?   // lead, call_schedule, shift_request, share_request
-  metadata            String?   // JSON string for extra data (lead name, schedule date, etc.)
+  related_entity_type String?   // lead, call_schedule, shift_request, share_request, vaultsign_document, checklist_request
+  metadata            String?   // JSON string for extra data
   snoozed_until       DateTime?
   created_at          DateTime  @default(now())
 
+  // ─── Phase 6 notification fields (added 2026-06-21) ───
+  priority            String    @default("info")  // urgent | important | info
+  category            String    @default("system") // rtr | document | status | calendar | credit | compliance | system
+  is_emailed          Boolean   @default(false)
+  action_url          String?   // clickable link (e.g. /recruiter/candidates/5)
+  action_label        String?   // button text (e.g. "View profile", "Sign now")
+
   user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read, priority])
+  @@index([user_id, category])
+}
+
+// ─── 19b. Notification Defaults (super admin controlled) ────────────
+// Controls which categories get email/SMS/in-app by default for ALL users.
+// Urgent priority always emails regardless of these settings.
+model NotificationDefault {
+  id              Int      @id @default(autoincrement())
+  category        String   @unique // rtr | document | status | calendar | credit | compliance | system
+  email_enabled   Boolean  @default(true)
+  in_app_enabled  Boolean  @default(true)
+  sms_enabled     Boolean  @default(false)
+  updated_at      DateTime @default(now())
 }
 
 // ─── 20. Pending Reminders ──────────────────────────────────────────
