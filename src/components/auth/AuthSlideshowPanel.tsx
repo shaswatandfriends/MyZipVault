@@ -25,6 +25,9 @@ interface AuthSlideshowPanelProps {
 }
 
 // ─── Component ───────────────────────────────────────────────────────
+// Spatial UI Slideshow Panel — Dark material with depth-4 shadows,
+// terracotta accent line, vibrant forest-green + terracotta orbs.
+// Auth pages use this as their left half.
 export default function AuthSlideshowPanel({
   tagline,
   trustPoints,
@@ -49,7 +52,6 @@ export default function AuthSlideshowPanel({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
-  // Preload all slideshow images immediately
   useEffect(() => {
     images.forEach((src) => {
       const img = new Image();
@@ -57,7 +59,6 @@ export default function AuthSlideshowPanel({
     });
   }, [images]);
 
-  // Auto-rotate slideshow every 6 seconds (slower for editorial feel)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % images.length);
@@ -65,7 +66,6 @@ export default function AuthSlideshowPanel({
     return () => clearInterval(interval);
   }, [images.length]);
 
-  // Handle image load failure — fall back to solid navy
   const handleImageError = useCallback((index: number) => {
     setFailedImages((prev) => new Set(prev).add(index));
   }, []);
@@ -73,7 +73,7 @@ export default function AuthSlideshowPanel({
   return (
     <div
       className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden"
-      style={{ background: "var(--editorial-navy)" }}
+      style={{ background: "linear-gradient(135deg, #1E3A26 0%, #2D5A3D 50%, #1E3A26 100%)" }}
     >
       {/* Slideshow Images — full-bleed, with subtle crossfade */}
       {images.map((src, i) =>
@@ -85,7 +85,7 @@ export default function AuthSlideshowPanel({
             className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000"
             style={{
               opacity: i === currentSlide ? 1 : 0,
-              filter: "grayscale(20%) contrast(1.05)",
+              filter: "grayscale(15%) contrast(1.05) saturate(0.9)",
             }}
             loading="eager"
             fetchPriority={i === 0 ? "high" : "auto"}
@@ -94,27 +94,42 @@ export default function AuthSlideshowPanel({
         ) : null
       )}
 
-      {/* Navy gradient overlay — keeps text readable while preserving image */}
+      {/* Forest-green gradient overlay — keeps text readable while preserving image */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgba(11, 31, 58, 0.92) 0%, rgba(11, 31, 58, 0.78) 50%, rgba(6, 18, 36, 0.85) 100%)",
+            "linear-gradient(135deg, rgba(30,58,38,0.92) 0%, rgba(45,90,61,0.78) 50%, rgba(20,40,28,0.88) 100%)",
         }}
       />
 
-      {/* Subtle paper-grain texture overlay (very low opacity) */}
+      {/* Spatial orbs — vibrant bleed */}
       <div
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        className="absolute rounded-full pointer-events-none"
         style={{
-          backgroundImage: `
-            radial-gradient(circle at 25% 25%, rgba(245, 240, 230, 0.4) 0%, transparent 50%),
-            radial-gradient(circle at 75% 75%, rgba(201, 169, 97, 0.3) 0%, transparent 50%)
-          `,
+          width: 380,
+          height: 380,
+          top: -100,
+          right: -80,
+          background: "radial-gradient(circle, rgba(74,124,89,0.5) 0%, rgba(74,124,89,0) 70%)",
+          filter: "blur(60px)",
+          opacity: 0.7,
+        }}
+      />
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: 320,
+          height: 320,
+          bottom: -100,
+          left: -60,
+          background: "radial-gradient(circle, rgba(201,123,84,0.45) 0%, rgba(201,123,84,0) 70%)",
+          filter: "blur(60px)",
+          opacity: 0.6,
         }}
       />
 
-      {/* Content */}
+      {/* Content — z-10 with relative positioning */}
       <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
         {/* Top: Logo + brand */}
         <div className="flex items-center gap-3">
@@ -128,31 +143,19 @@ export default function AuthSlideshowPanel({
             />
           ) : (
             <div
+              className="flex items-center justify-center size-10 rounded-[10px] text-white text-xl font-bold"
               style={{
-                width: 40,
-                height: 40,
-                background: "var(--editorial-gold)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--editorial-navy)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.5rem",
-                borderRadius: "2px",
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
               }}
             >
               {logoText}
             </div>
           )}
           <span
-            style={{
-              fontFamily: "var(--editorial-font-serif)",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "var(--editorial-cream)",
-              letterSpacing: "-0.02em",
-            }}
+            className="text-2xl font-bold text-white"
+            style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
           >
             {platformName}
           </span>
@@ -160,24 +163,15 @@ export default function AuthSlideshowPanel({
 
         {/* Middle: Tagline + trust points */}
         <div className="max-w-md">
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+          {/* Eyebrow — spatial pill */}
+          <div className="flex items-center gap-3 mb-6">
+            <div
+              className="h-0.5 w-8 rounded-full"
+              style={{ background: "linear-gradient(90deg, #E8A882, transparent)" }}
+            />
             <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold)",
-              }}
+              className="text-xs font-bold uppercase"
+              style={{ color: "#E8A882", letterSpacing: "0.2em" }}
             >
               Welcome
             </span>
@@ -185,52 +179,35 @@ export default function AuthSlideshowPanel({
 
           {/* Tagline — large serif */}
           <h2
+            className="text-white mb-8"
             style={{
-              fontFamily: "var(--editorial-font-serif)",
+              fontFamily: "'Lora', serif",
               fontSize: "clamp(2rem, 4vw, 3rem)",
               fontWeight: 700,
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
-              color: "var(--editorial-cream)",
-              marginBottom: "2rem",
             }}
           >
             {tagline}
           </h2>
 
-          {/* Trust points — minimal, with gold checkmarks */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {trustPoints.map((point, idx) => (
-              <div
-                key={point}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.875rem",
-                }}
-              >
+          {/* Trust points — with terra checkmark pills */}
+          <div className="flex flex-col gap-4">
+            {trustPoints.map((point) => (
+              <div key={point} className="flex items-center gap-3.5">
                 <div
+                  className="flex items-center justify-center size-5 shrink-0 rounded-full"
                   style={{
-                    width: 20,
-                    height: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                    background: "rgba(232,168,130,0.18)",
+                    border: "0.5px solid rgba(232,168,130,0.4)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
                   }}
                 >
-                  <Check
-                    className="size-4"
-                    style={{ color: "var(--editorial-gold)" }}
-                  />
+                  <Check className="size-3" style={{ color: "#E8A882" }} />
                 </div>
                 <span
-                  style={{
-                    color: "var(--editorial-cream)",
-                    fontSize: "0.9375rem",
-                    lineHeight: 1.5,
-                    opacity: 0.9,
-                  }}
+                  className="text-white/85"
+                  style={{ fontSize: "0.9375rem", lineHeight: 1.5 }}
                 >
                   {point}
                 </span>
@@ -241,45 +218,37 @@ export default function AuthSlideshowPanel({
 
         {/* Bottom: Quote + Stats + security badges */}
         <div className="space-y-6">
-          {/* Quote card — editorial style, no glass */}
+          {/* Quote card — terra accent bar */}
           {quoteCard && (
             <div
+              className="relative pl-6 py-1.5"
               style={{
-                borderLeft: "2px solid var(--editorial-gold)",
-                paddingLeft: "1.5rem",
-                paddingTop: "0.5rem",
-                paddingBottom: "0.5rem",
+                borderLeft: "2px solid #C97B54",
               }}
             >
               <div
-                style={{
-                  color: "var(--editorial-gold)",
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.2em",
-                  marginBottom: "0.75rem",
-                }}
+                className="mb-3"
+                style={{ color: "#E8A882", fontSize: "0.75rem", letterSpacing: "0.2em" }}
               >
                 ★★★★★
               </div>
               <p
+                className="text-white mb-3"
                 style={{
-                  fontFamily: "var(--editorial-font-serif)",
+                  fontFamily: "'Lora', serif",
                   fontStyle: "italic",
                   fontSize: "1.0625rem",
                   lineHeight: 1.6,
-                  color: "var(--editorial-cream)",
-                  marginBottom: "0.75rem",
                 }}
               >
                 &ldquo;{quoteCard.text}&rdquo;
               </p>
               <p
+                className="text-white/60"
                 style={{
                   fontSize: "0.75rem",
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: "var(--editorial-cream)",
-                  opacity: 0.6,
                 }}
               >
                 — {quoteCard.attribution}
@@ -287,49 +256,42 @@ export default function AuthSlideshowPanel({
             </div>
           )}
 
-          {/* Stats card — editorial, divider-based */}
+          {/* Stats card — divider-based */}
           {statsCard && (
             <div
-              style={{
-                display: "flex",
-                borderTop: "1px solid rgba(245, 240, 230, 0.15)",
-                paddingTop: "1.5rem",
-              }}
+              className="flex pt-6"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}
             >
               {statsCard.map((stat, i) => (
                 <div
                   key={i}
+                  className="flex-1 text-left"
                   style={{
-                    flex: 1,
-                    textAlign: "left",
                     borderRight:
-                      i < statsCard.length - 1
-                        ? "1px solid rgba(245, 240, 230, 0.15)"
-                        : "none",
+                      i < statsCard.length - 1 ? "1px solid rgba(255,255,255,0.15)" : "none",
                     paddingRight: "1rem",
                     paddingLeft: i === 0 ? "0" : "1rem",
                   }}
                 >
                   <p
+                    className="mb-1.5"
                     style={{
-                      fontFamily: "var(--editorial-font-serif)",
+                      fontFamily: "'Lora', serif",
                       fontSize: "1.875rem",
                       fontWeight: 700,
-                      color: "var(--editorial-gold)",
+                      color: "#E8A882",
                       lineHeight: 1,
-                      marginBottom: "0.375rem",
                       letterSpacing: "-0.02em",
                     }}
                   >
                     {stat.value}
                   </p>
                   <p
+                    className="text-white/60"
                     style={{
                       fontSize: "0.6875rem",
                       letterSpacing: "0.1em",
                       textTransform: "uppercase",
-                      color: "var(--editorial-cream)",
-                      opacity: 0.6,
                     }}
                   >
                     {stat.label}
@@ -339,40 +301,21 @@ export default function AuthSlideshowPanel({
             </div>
           )}
 
-          {/* Security badges — minimal row */}
+          {/* Security badges */}
           <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "1.5rem",
-              paddingTop: "1rem",
-              borderTop: "1px solid rgba(245, 240, 230, 0.1)",
-            }}
+            className="flex items-center gap-6 pt-4"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}
           >
             {[
               { icon: ShieldCheck, label: "HIPAA Aligned" },
               { icon: Lock, label: "256-bit Encryption" },
               { icon: BadgeCheck, label: "SOC 2 Type II" },
             ].map(({ icon: Icon, label }, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.375rem",
-                }}
-              >
-                <Icon
-                  className="size-3.5"
-                  style={{ color: "var(--editorial-gold)" }}
-                />
+              <div key={i} className="flex items-center gap-1.5">
+                <Icon className="size-3.5" style={{ color: "#E8A882" }} />
                 <span
-                  style={{
-                    fontSize: "0.6875rem",
-                    letterSpacing: "0.05em",
-                    color: "var(--editorial-cream)",
-                    opacity: 0.7,
-                  }}
+                  className="text-white/70"
+                  style={{ fontSize: "0.6875rem", letterSpacing: "0.05em" }}
                 >
                   {label}
                 </span>
@@ -381,27 +324,22 @@ export default function AuthSlideshowPanel({
           </div>
         </div>
 
-        {/* Slide indicators — minimal dots at bottom */}
+        {/* Slide indicators — spatial pill dots at bottom */}
         <div
-          style={{
-            position: "absolute",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            display: "flex",
-            gap: "0.5rem",
-          }}
+          className="absolute flex gap-1.5"
+          style={{ bottom: "1.5rem", right: "1.5rem" }}
         >
           {images.map((_, i) => (
             <div
               key={i}
+              className="rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
               style={{
                 width: i === currentSlide ? "24px" : "6px",
                 height: "2px",
                 background:
                   i === currentSlide
-                    ? "var(--editorial-gold)"
-                    : "rgba(245, 240, 230, 0.3)",
-                transition: "width 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    ? "#E8A882"
+                    : "rgba(255,255,255,0.3)",
               }}
             />
           ))}

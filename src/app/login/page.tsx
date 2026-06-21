@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 function getRoleDashboard(role: string): string {
@@ -62,7 +61,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Sign out any existing session first to allow role switching
       await signOut({ redirect: false });
 
       const result = await signIn("credentials", {
@@ -76,7 +74,6 @@ export default function LoginPage() {
           description: result.error || "Invalid email or password",
         });
       } else {
-        // Fetch session to get role for redirect
         const sessionRes = await fetch("/api/auth/session");
         const sessionData = await sessionRes.json();
         const role = sessionData?.user?.role || "candidate";
@@ -95,10 +92,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "var(--editorial-cream)" }}
-    >
+    <div className="min-h-screen flex relative">
+      {/* Animated background — same as dashboard */}
+      <div className="mesh-background" />
+
       {/* Left Panel - Slideshow */}
       <AuthSlideshowPanel
         tagline="Your credentials. Your terms."
@@ -114,108 +111,64 @@ export default function LoginPage() {
         ]}
       />
 
-      {/* Right Panel - Form */}
-      <div
-        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
-        style={{ background: "var(--editorial-cream)" }}
-      >
-        <div className="max-w-[440px] w-full relative">
+      {/* Right Panel - Spatial Form */}
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative z-10">
+        <div className="max-w-[460px] w-full relative">
           {/* Mobile branding — only shown on small screens */}
           <div className="lg:hidden text-center mb-10">
             <div
+              className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.5rem",
-                borderRadius: "2px",
-                marginBottom: "1rem",
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
               }}
             >
               M
             </div>
             <h2
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "var(--editorial-navy)",
-                letterSpacing: "-0.02em",
-              }}
+              className="text-2xl font-bold text-foreground"
+              style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
             >
               MyZipVault
             </h2>
           </div>
 
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+          {/* Eyebrow — spatial pill style */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }} />
             <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold-dark)",
-              }}
+              className="text-xs font-bold uppercase"
+              style={{ color: "var(--terra)", letterSpacing: "0.2em" }}
             >
               Sign In
             </span>
           </div>
 
-          {/* Heading */}
+          {/* Heading — serif Lora */}
           <h1
-            style={{
-              fontFamily: "var(--editorial-font-serif)",
-              fontSize: "2.5rem",
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              color: "var(--editorial-navy)",
-              marginBottom: "0.75rem",
-            }}
+            className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-foreground"
+            style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
           >
             Welcome back.
           </h1>
           <p
-            style={{
-              fontSize: "1rem",
-              lineHeight: 1.6,
-              color: "var(--editorial-ink-soft)",
-              marginBottom: "2.5rem",
-            }}
+            className="text-base leading-relaxed mb-8"
+            style={{ color: "var(--text-secondary)" }}
           >
             Sign in to your healthcare credential vault.
           </p>
 
-          {/* Form */}
+          {/* Form — Spatial UI */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label
+              <label
                 htmlFor="email"
-                style={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-ink-soft)",
-                }}
+                className="block text-xs font-bold uppercase"
+                style={{ color: "var(--text-secondary)", letterSpacing: "0.15em" }}
               >
                 Email Address
-              </Label>
+              </label>
               <Input
                 id="email"
                 type="email"
@@ -226,48 +179,29 @@ export default function LoginPage() {
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
                 disabled={isLoading}
-                style={{
-                  background: "var(--editorial-paper)",
-                  border: `1px solid ${errors.email ? "var(--editorial-danger)" : "var(--editorial-rule)"}`,
-                  borderRadius: "2px",
-                  height: "48px",
-                  color: "var(--editorial-ink)",
-                  fontSize: "0.9375rem",
-                }}
+                aria-invalid={!!errors.email}
                 autoComplete="email"
               />
               {errors.email && (
-                <p style={{ fontSize: "0.75rem", color: "var(--editorial-danger)", marginTop: "0.25rem" }}>
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>
                   {errors.email}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Label
+              <div className="flex items-center justify-between">
+                <label
                   htmlFor="password"
-                  style={{
-                    fontSize: "0.6875rem",
-                    fontWeight: 600,
-                    letterSpacing: "0.15em",
-                    textTransform: "uppercase",
-                    color: "var(--editorial-ink-soft)",
-                  }}
+                  className="block text-xs font-bold uppercase"
+                  style={{ color: "var(--text-secondary)", letterSpacing: "0.15em" }}
                 >
                   Password
-                </Label>
+                </label>
                 <Link
                   href="/forgot-password"
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--editorial-navy)",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                    borderBottom: "1px solid var(--editorial-gold)",
-                    paddingBottom: "1px",
-                    transition: "color 150ms",
-                  }}
+                  className="text-xs font-semibold transition-colors"
+                  style={{ color: "var(--primary)" }}
                 >
                   Forgot password?
                 </Link>
@@ -282,51 +216,21 @@ export default function LoginPage() {
                   if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
                 disabled={isLoading}
-                style={{
-                  background: "var(--editorial-paper)",
-                  border: `1px solid ${errors.password ? "var(--editorial-danger)" : "var(--editorial-rule)"}`,
-                  borderRadius: "2px",
-                  height: "48px",
-                  color: "var(--editorial-ink)",
-                  fontSize: "0.9375rem",
-                }}
+                aria-invalid={!!errors.password}
                 autoComplete="current-password"
               />
               {errors.password && (
-                <p style={{ fontSize: "0.75rem", color: "var(--editorial-danger)", marginTop: "0.25rem" }}>
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>
                   {errors.password}
                 </p>
               )}
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              style={{
-                width: "100%",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                padding: "1rem 1.5rem",
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                border: "1px solid var(--editorial-navy)",
-                borderRadius: "2px",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                opacity: isLoading ? 0.7 : 1,
-                transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy-light)";
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) e.currentTarget.style.background = "var(--editorial-navy)";
-              }}
+              size="lg"
+              className="w-full"
             >
               {isLoading ? (
                 <>
@@ -339,112 +243,61 @@ export default function LoginPage() {
                   <ArrowRight className="size-4" />
                 </>
               )}
-            </button>
+            </Button>
           </form>
 
           {/* Divider */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              margin: "2rem 0",
-            }}
-          >
-            <div style={{ flex: 1, height: "1px", background: "var(--editorial-rule)" }} />
+          <div className="flex items-center gap-4 my-8">
+            <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--border-strong), transparent)" }} />
             <span
-              style={{
-                fontSize: "0.6875rem",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "var(--editorial-ink-muted)",
-              }}
+              className="text-[0.6875rem] uppercase font-semibold"
+              style={{ color: "var(--text-muted)", letterSpacing: "0.15em" }}
             >
               or
             </span>
-            <div style={{ flex: 1, height: "1px", background: "var(--editorial-rule)" }} />
+            <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--border-strong), transparent)" }} />
           </div>
 
-          {/* Sign up link */}
+          {/* Sign up links */}
           <p
-            style={{
-              fontSize: "0.9375rem",
-              color: "var(--editorial-ink-soft)",
-              textAlign: "center",
-              marginBottom: "0.75rem",
-            }}
+            className="text-[0.9375rem] text-center mb-3"
+            style={{ color: "var(--text-secondary)" }}
           >
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              style={{
-                color: "var(--editorial-navy)",
-                fontWeight: 600,
-                textDecoration: "none",
-                borderBottom: "1px solid var(--editorial-gold)",
-                paddingBottom: "1px",
-              }}
+              className="font-semibold transition-colors"
+              style={{ color: "var(--primary)" }}
             >
               Sign up free
             </Link>
           </p>
 
           <p
-            style={{
-              fontSize: "0.9375rem",
-              color: "var(--editorial-ink-soft)",
-              textAlign: "center",
-            }}
+            className="text-[0.9375rem] text-center"
+            style={{ color: "var(--text-secondary)" }}
           >
             Staffing agency or recruiter?{" "}
             <Link
               href="/agency-login"
-              style={{
-                color: "var(--editorial-navy)",
-                fontWeight: 600,
-                textDecoration: "none",
-                borderBottom: "1px solid var(--editorial-gold)",
-                paddingBottom: "1px",
-              }}
+              className="font-semibold transition-colors"
+              style={{ color: "var(--primary)" }}
             >
               Agency Login
             </Link>
           </p>
 
-          {/* Security badges */}
-          <div
-            style={{
-              marginTop: "2.5rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "1.5rem",
-            }}
-          >
+          {/* Security badges — spatial pill */}
+          <div className="mt-10 pt-6 flex items-center justify-center gap-6 border-t" style={{ borderColor: "var(--border)" }}>
             {[
               { icon: ShieldCheck, label: "HIPAA Aligned" },
               { icon: Lock, label: "256-bit Encryption" },
             ].map(({ icon: Icon, label }, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.375rem",
-                }}
-              >
-                <Icon
-                  className="size-3.5"
-                  style={{ color: "var(--editorial-gold-dark)" }}
-                />
+              <div key={i} className="flex items-center gap-1.5">
+                <Icon className="size-3.5" style={{ color: "var(--terra)" }} />
                 <span
-                  style={{
-                    fontSize: "0.6875rem",
-                    letterSpacing: "0.05em",
-                    color: "var(--editorial-ink-muted)",
-                  }}
+                  className="text-[0.6875rem] font-medium"
+                  style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}
                 >
                   {label}
                 </span>

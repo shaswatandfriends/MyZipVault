@@ -3,12 +3,11 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Check, Mail, ArrowLeft, ArrowRight, AlertCircle, ShieldCheck, Zap } from "@/lib/icons";
+import { Loader2, Check, Mail, ArrowLeft, ArrowRight, AlertCircle, ShieldCheck, Lock } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 const trustPoints = [
@@ -18,6 +17,36 @@ const trustPoints = [
 ];
 
 type VerifyState = "idle" | "verifying" | "success" | "error" | "resend" | "resend_success" | "signup_success";
+
+// Reusable spatial icon container
+function SpatialIcon({ children, variant = "primary" }: { children: React.ReactNode; variant?: "primary" | "error" | "amber" }) {
+  const styles =
+    variant === "error"
+      ? {
+          background: "rgba(184,64,64,0.1)",
+          border: "0.5px solid rgba(184,64,64,0.3)",
+        }
+      : variant === "amber"
+        ? {
+            background: "var(--status-amber-bg)",
+            border: "0.5px solid rgba(217,119,6,0.2)",
+          }
+        : {
+            background: "var(--primary-light)",
+            border: "0.5px solid var(--status-green-border)",
+          };
+  return (
+    <div
+      className="flex items-center justify-center size-16 mb-6 rounded-[20px]"
+      style={{
+        ...styles,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -33,7 +62,6 @@ function VerifyEmailContent() {
   const [emailError, setEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
 
-  // Auto-submit verification if token is present
   useEffect(() => {
     if (!token) return;
 
@@ -100,34 +128,22 @@ function VerifyEmailContent() {
   };
 
   const renderRightContent = () => {
+    const headingClass = "text-[2.5rem] font-bold leading-[1.1] mb-3 text-foreground";
+    const headingStyle = { fontFamily: "'Lora', serif", letterSpacing: "-0.02em" } as const;
+    const subTextClass = "text-base leading-relaxed mb-8";
+    const subTextStyle = { color: "var(--text-secondary)" } as const;
+
     switch (state) {
       case "verifying":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Loader2 className="size-8 text-primary animate-spin" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <SpatialIcon>
+              <Loader2 className="size-8 animate-spin" style={{ color: "var(--primary)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
               Verifying your email
             </h1>
-            <p
-              style={{
-                fontSize: "1rem",
-                lineHeight: 1.6,
-                color: "var(--editorial-ink-soft)",
-                marginBottom: "2.5rem",
-              }}
-            >
+            <p className={subTextClass} style={subTextStyle}>
               Please wait while we verify your email address...
             </p>
           </>
@@ -136,107 +152,77 @@ function VerifyEmailContent() {
       case "success":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Check className="size-8 text-primary" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <SpatialIcon>
+              <Check className="size-8" style={{ color: "var(--primary)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
               Email verified!
             </h1>
-            <p className="text-text-secondary text-base mt-2 mb-8">
+            <p className={subTextClass} style={subTextStyle}>
               Your email address has been successfully verified. You can now
               sign in to your account.
             </p>
-            <Link href="/login">
-              <Button style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}>
+            <Button asChild size="lg" className="w-full">
+              <Link href="/login">
                 Sign In
                 <ArrowRight className="size-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </>
         );
 
       case "error":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-red-50 rounded-2xl mb-6">
-              <AlertCircle className="size-8 text-red-600" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <SpatialIcon variant="error">
+              <AlertCircle className="size-8" style={{ color: "var(--status-red)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
               Verification failed
             </h1>
-            <p className="text-text-secondary text-base mt-2 mb-8">
+            <p className={subTextClass} style={subTextStyle}>
               {errorMessage || "The verification link is invalid or has expired."}
             </p>
             <div className="space-y-3">
               <Button
                 onClick={() => setState("resend")}
-                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
+                size="lg"
+                className="w-full"
               >
                 Resend Verification Email
               </Button>
-              <Link href="/login" className="block">
-                <Button
-                  variant="outline"
-                  className="w-full py-3.5 rounded-xl font-medium border-border transition-all"
-                >
+              <Button asChild variant="outline" size="lg" className="w-full">
+                <Link href="/login">
                   Back to Sign In
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </>
         );
 
       case "resend":
+      case "idle":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Mail className="size-8 text-primary" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
-              Resend verification
+            <SpatialIcon>
+              <Mail className="size-8" style={{ color: "var(--primary)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
+              {state === "resend" ? "Resend verification" : "Verify your email"}
             </h1>
-            <p className="text-text-secondary text-base mt-2 mb-8">
+            <p className={subTextClass} style={subTextStyle}>
               Enter your email address and we&apos;ll send you a new verification link.
             </p>
 
             <form onSubmit={handleResendSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label
+                <label
                   htmlFor="email"
-                  className="text-xs font-semibold text-text-secondary uppercase tracking-wider"
+                  className="block text-xs font-bold uppercase"
+                  style={{ color: "var(--text-secondary)", letterSpacing: "0.15em" }}
                 >
                   Email
-                </Label>
+                </label>
                 <Input
                   id="email"
                   type="email"
@@ -247,20 +233,19 @@ function VerifyEmailContent() {
                     if (emailError) setEmailError("");
                   }}
                   disabled={isResending}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${
-                    emailError ? "border-destructive" : ""
-                  }`}
+                  aria-invalid={!!emailError}
                   autoComplete="email"
                 />
                 {emailError && (
-                  <p className="text-xs text-destructive">{emailError}</p>
+                  <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{emailError}</p>
                 )}
               </div>
 
               <Button
                 type="submit"
-                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
                 disabled={isResending}
+                size="lg"
+                className="w-full"
               >
                 {isResending ? (
                   <>
@@ -279,7 +264,8 @@ function VerifyEmailContent() {
             <div className="mt-6 text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+                style={{ color: "var(--primary)" }}
               >
                 <ArrowLeft className="size-4" />
                 Back to Sign In
@@ -291,60 +277,50 @@ function VerifyEmailContent() {
       case "resend_success":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Mail className="size-8 text-primary" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <SpatialIcon>
+              <Mail className="size-8" style={{ color: "var(--primary)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
               Check your email
             </h1>
-            <p className="text-text-secondary text-base mt-2 mb-8">
+            <p className={subTextClass} style={subTextStyle}>
               If an account with that email exists and is not yet verified,
               we&apos;ve sent a new verification link. Please check your inbox
               and spam folder.
             </p>
-            <Link href="/login">
-              <Button style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}>
+            <Button asChild size="lg" className="w-full">
+              <Link href="/login">
                 Back to Sign In
                 <ArrowRight className="size-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </>
         );
 
       case "signup_success":
         return (
           <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Mail className="size-8 text-primary" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <SpatialIcon>
+              <Mail className="size-8" style={{ color: "var(--primary)" }} />
+            </SpatialIcon>
+            <h1 className={headingClass} style={headingStyle}>
               Check your email
             </h1>
-            <p className="text-text-secondary text-base mt-2 mb-4">
+            <p className="text-base mb-4 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               We&apos;ve sent a verification link to{emailParam ? <strong className="text-foreground"> {emailParam}</strong> : " your email address"}. Please check your inbox and spam folder.
             </p>
-            <div className="rounded-xl bg-surface border border-border p-4 mb-8">
-              <p className="text-sm text-text-secondary leading-relaxed">
+            {/* Alert callout — spatial */}
+            <div
+              className="rounded-[16px] p-4 mb-8"
+              style={{
+                background: "var(--material-thin-bg)",
+                backdropFilter: "blur(20px) saturate(1.5)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                border: "0.5px solid var(--material-thin-border)",
+                boxShadow: "var(--specular-top), var(--depth-1)",
+              }}
+            >
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                 Click the link in the email to verify your account, then sign in. The link expires in 24 hours.
               </p>
             </div>
@@ -352,99 +328,17 @@ function VerifyEmailContent() {
               <Button
                 onClick={() => setState("resend")}
                 variant="outline"
-                className="w-full py-3.5 rounded-xl font-medium border-border transition-all"
+                size="lg"
+                className="w-full"
               >
                 Resend Verification Email
               </Button>
-              <Link href="/login" className="block">
-                <Button style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}>
+              <Button asChild size="lg" className="w-full">
+                <Link href="/login">
                   Back to Sign In
                   <ArrowRight className="size-4" />
-                </Button>
-              </Link>
-            </div>
-          </>
-        );
-
-      default:
-        // idle - no token, show resend form
-        return (
-          <>
-            <div className="flex items-center justify-center size-16 bg-primary-light rounded-2xl mb-6">
-              <Mail className="size-8 text-primary" />
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
-            >
-              Verify your email
-            </h1>
-            <p className="text-text-secondary text-base mt-2 mb-8">
-              Enter your email address to receive a verification link.
-            </p>
-
-            <form onSubmit={handleResendSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-xs font-semibold text-text-secondary uppercase tracking-wider"
-                >
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (emailError) setEmailError("");
-                  }}
-                  disabled={isResending}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${
-                    emailError ? "border-destructive" : ""
-                  }`}
-                  autoComplete="email"
-                />
-                {emailError && (
-                  <p className="text-xs text-destructive">{emailError}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
-                disabled={isResending}
-              >
-                {isResending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Sending verification...
-                  </>
-                ) : (
-                  <>
-                    Send Verification Link
-                    <ArrowRight className="size-4" />
-                  </>
-                )}
+                </Link>
               </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-semibold transition-colors"
-              >
-                <ArrowLeft className="size-4" />
-                Back to Sign In
-              </Link>
             </div>
           </>
         );
@@ -452,81 +346,47 @@ function VerifyEmailContent() {
   };
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "var(--editorial-cream)" }}
-    >
-      {/* Left Panel - Slideshow */}
+    <div className="min-h-screen flex relative">
+      <div className="mesh-background" />
+
       <AuthSlideshowPanel
         tagline="Healthcare credential verification, simplified"
         trustPoints={trustPoints}
       />
 
-      {/* Right Panel - Form */}
-      <div
-        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
-        style={{ background: "var(--editorial-cream)" }}
-      >
-
-        <div
-          className="max-w-[420px] w-full relative z-10">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative z-10">
+        <div className="max-w-[460px] w-full relative">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
             <div
+              className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.5rem",
-                borderRadius: "2px",
-                marginBottom: "1rem",
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
               }}
             >
               M
             </div>
             <h2
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "var(--editorial-navy)",
-                letterSpacing: "-0.02em",
-              }}
+              className="text-2xl font-bold text-foreground"
+              style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
             >
               MyZipVault
             </h2>
           </div>
 
-          {/* Glass card wrapping content */}
-          <div style={{ width: "100%" }}>
-            {renderRightContent()}
-          </div>
+          {renderRightContent()}
 
           {/* Security badges */}
-          <div
-            style={{
-              marginTop: "2.5rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "1.5rem",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
+          <div className="mt-10 pt-6 flex items-center justify-center gap-6 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5" style={{ color: "var(--terra)" }} />
+              <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>HIPAA Aligned</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
+            <div className="flex items-center gap-1.5">
+              <Lock className="size-3.5" style={{ color: "var(--terra)" }} />
+              <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>256-bit Encryption</span>
             </div>
           </div>
         </div>
@@ -539,8 +399,9 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="size-8 animate-spin text-primary" />
+        <div className="min-h-screen flex items-center justify-center bg-background relative">
+          <div className="mesh-background" />
+          <Loader2 className="size-8 animate-spin text-primary relative z-10" />
         </div>
       }
     >

@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Zap, Lock } from "@/lib/icons";
+import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Lock } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
@@ -27,11 +26,14 @@ function PasswordCheck({ label, met }: { label: string; met: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <Check className="size-3.5 text-primary shrink-0" />
+        <Check className="size-3.5 shrink-0" style={{ color: "var(--primary)" }} />
       ) : (
-        <X className="size-3.5 text-text-muted shrink-0" />
+        <X className="size-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
       )}
-      <span className={met ? "text-primary font-medium" : "text-text-muted"}>
+      <span
+        className={met ? "font-medium" : "font-normal"}
+        style={{ color: met ? "var(--primary)" : "var(--text-muted)" }}
+      >
         {label}
       </span>
     </div>
@@ -43,6 +45,9 @@ const trustPoints = [
   "Credit-Based Pricing",
   "HIPAA-Aligned",
 ];
+
+const sharedLabelClass = "block text-xs font-bold uppercase";
+const sharedLabelStyle = { color: "var(--text-secondary)", letterSpacing: "0.15em" } as const;
 
 export default function AgencySignupPage() {
   const router = useRouter();
@@ -138,11 +143,9 @@ export default function AgencySignupPage() {
   // ── Success state: pending approval ──
   if (isSuccess) {
     return (
-      <div
-      className="min-h-screen flex"
-      style={{ background: "var(--editorial-cream)" }}
-    >
-        {/* Left Panel - Slideshow */}
+      <div className="min-h-screen flex relative">
+        <div className="mesh-background" />
+
         <AuthSlideshowPanel
           tagline="For staffing agencies & healthcare recruiters"
           trustPoints={trustPoints}
@@ -157,127 +160,106 @@ export default function AgencySignupPage() {
           ]}
         />
 
-        {/* Right Panel - Success */}
-        <div
-        className="flex-1 flex items-center justify-center p-8 md:p-12 relative"
-        style={{ background: "var(--editorial-cream)" }}
-      >
-
-          <div
-            className="max-w-[420px] w-full relative z-10">
+        <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative z-10">
+          <div className="max-w-[460px] w-full relative">
             {/* Mobile branding */}
             <div className="lg:hidden text-center mb-8">
               <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.5rem",
-                borderRadius: "2px",
-                marginBottom: "1rem",
-              }}
-            >
-              M
-            </div>
-            <h2
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "var(--editorial-navy)",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              MyZipVault
-            </h2>
-            </div>
-
-            <div style={{ width: "100%" }}>
-              <div className="flex justify-center mb-6">
-                <div className="inline-flex items-center justify-center size-16 bg-amber-100 rounded-2xl">
-                  <Clock className="size-8 text-amber-600" />
-                </div>
+                className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                  fontFamily: "'Lora', serif",
+                }}
+              >
+                M
               </div>
+              <h2
+                className="text-2xl font-bold text-foreground"
+                style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
+              >
+                MyZipVault
+              </h2>
+            </div>
 
-              <h1
+            {/* Clock icon — spatial circle */}
+            <div className="flex justify-center mb-6">
+              <div
+                className="flex items-center justify-center size-16 rounded-[20px]"
+                style={{
+                  background: "var(--status-amber-bg)",
+                  border: "0.5px solid rgba(217,119,6,0.2)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
+                <Clock className="size-8" style={{ color: "var(--status-amber)" }} />
+              </div>
+            </div>
+
+            <h1
+              className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-center text-foreground"
+              style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
+            >
+              Registration Submitted!
+            </h1>
+            <p className="text-base mb-8 text-center" style={{ color: "var(--text-secondary)" }}>
+              Your account is pending admin approval
+            </p>
+
+            {/* Alert callout — spatial */}
+            <div
+              className="rounded-[16px] p-4 mb-6"
               style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
+                background: "var(--status-amber-bg)",
+                border: "0.5px solid rgba(217,119,6,0.25)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
               }}
             >
-                Registration Submitted!
-              </h1>
-              <p className="text-text-secondary text-base mt-2 mb-8 text-center">
-                Your account is pending admin approval
+              <p className="text-sm leading-relaxed" style={{ color: "var(--status-amber-dark)" }}>
+                Thank you for registering{accountType === "agency" ? ` ${agencyName}` : ""}! Our team will review your application and approve your account shortly. You&apos;ll receive an email once your account is activated.
               </p>
+            </div>
 
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-6">
-                <p className="text-sm text-amber-800 leading-relaxed">
-                  Thank you for registering{accountType === "agency" ? ` ${agencyName}` : ""}! Our team will review your application and approve your account shortly. You&apos;ll receive an email once your account is activated.
-                </p>
-              </div>
+            <div className="space-y-2.5 text-sm mb-8" style={{ color: "var(--text-secondary)" }}>
+              <p className="flex items-center gap-2.5">
+                <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
+                Approval typically takes 1-2 business days
+              </p>
+              <p className="flex items-center gap-2.5">
+                <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
+                You&apos;ll be notified via email once approved
+              </p>
+              <p className="flex items-center gap-2.5">
+                <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
+                Contact support if you have any questions
+              </p>
+            </div>
 
-              <div className="space-y-2.5 text-sm text-text-secondary mb-8">
-                <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
-                  Approval typically takes 1-2 business days
-                </p>
-                <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
-                  You&apos;ll be notified via email once approved
-                </p>
-                <p className="flex items-center gap-2.5">
-                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
-                  Contact support if you have any questions
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Link href="/agency-login" className="block">
-                  <Button variant="outline" className="w-full rounded-xl py-3 border-border">
-                    Go to Agency Login
-                  </Button>
+            <div className="space-y-3">
+              <Button asChild variant="outline" size="lg" className="w-full">
+                <Link href="/agency-login">
+                  Go to Agency Login
                 </Link>
-                <Link href="/" className="block">
-                  <Button variant="ghost" className="w-full rounded-xl py-3 text-text-secondary">
-                    Back to Homepage
-                  </Button>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="w-full">
+                <Link href="/">
+                  Back to Homepage
                 </Link>
-              </div>
+              </Button>
             </div>
 
             {/* Security badges */}
-            <div
-            style={{
-              marginTop: "2.5rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "1.5rem",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
+            <div className="mt-10 pt-6 flex items-center justify-center gap-6 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5" style={{ color: "var(--terra)" }} />
+                <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>HIPAA Aligned</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Lock className="size-3.5" style={{ color: "var(--terra)" }} />
+                <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>256-bit Encryption</span>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
-            </div>
-          </div>
           </div>
         </div>
       </div>
@@ -285,11 +267,9 @@ export default function AgencySignupPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "var(--editorial-cream)" }}
-    >
-      {/* Left Panel - Slideshow */}
+    <div className="min-h-screen flex relative">
+      <div className="mesh-background" />
+
       <AuthSlideshowPanel
         tagline="For staffing agencies & healthcare recruiters"
         trustPoints={trustPoints}
@@ -304,336 +284,315 @@ export default function AgencySignupPage() {
         ]}
       />
 
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-background relative overflow-y-auto">
-
-        <div
-          className="max-w-[420px] w-full relative z-10 my-8">
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative z-10 overflow-y-auto">
+        <div className="max-w-[460px] w-full relative my-8">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
             <div
+              className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.5rem",
-                borderRadius: "2px",
-                marginBottom: "1rem",
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
               }}
             >
               M
             </div>
             <h2
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "var(--editorial-navy)",
-                letterSpacing: "-0.02em",
-              }}
+              className="text-2xl font-bold text-foreground"
+              style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
             >
               MyZipVault
             </h2>
           </div>
 
-          {/* Glass card wrapping form */}
-          <div style={{ width: "100%" }}>
-            <div className="mb-8">
-              <h1
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
-                marginBottom: "0.75rem",
-              }}
+          {/* Eyebrow */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }} />
+            <span
+              className="text-xs font-bold uppercase"
+              style={{ color: "var(--terra)", letterSpacing: "0.2em" }}
             >
-                Join MyZipVault
-              </h1>
-              <p
-              style={{
-                fontSize: "1rem",
-                lineHeight: 1.6,
-                color: "var(--editorial-ink-soft)",
-                marginBottom: "2.5rem",
-              }}
-            >
-                For staffing agencies & healthcare recruiters
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Account Type Toggle */}
-              <div className="flex rounded-xl bg-surface border border-border p-1 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setAccountType("agency")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                    accountType === "agency"
-                      ? "bg-primary-light text-primary shadow-sm"
-                      : "text-text-muted hover:text-foreground"
-                  }`}
-                >
-                  <Briefcase className="size-3.5" />
-                  Staffing Agency
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAccountType("recruiter")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                    accountType === "recruiter"
-                      ? "bg-primary-light text-primary shadow-sm"
-                      : "text-text-muted hover:text-foreground"
-                  }`}
-                >
-                  <User className="size-3.5" />
-                  Individual Recruiter
-                </button>
-              </div>
-
-              {/* Name Row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                    First Name
-                  </Label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    placeholder="Jane"
-                    value={firstName}
-                    onChange={(e) => {
-                      setFirstName(e.target.value);
-                      if (errors.firstName)
-                        setErrors((prev) => ({ ...prev, firstName: "" }));
-                    }}
-                    disabled={isLoading}
-                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.firstName ? "border-destructive" : ""}`}
-                    autoComplete="given-name"
-                  />
-                  {errors.firstName && (
-                    <p className="text-xs text-destructive">
-                      {errors.firstName}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                    Last Name
-                  </Label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    placeholder="Smith"
-                    value={lastName}
-                    onChange={(e) => {
-                      setLastName(e.target.value);
-                      if (errors.lastName)
-                        setErrors((prev) => ({ ...prev, lastName: "" }));
-                    }}
-                    disabled={isLoading}
-                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.lastName ? "border-destructive" : ""}`}
-                    autoComplete="family-name"
-                  />
-                  {errors.lastName && (
-                    <p className="text-xs text-destructive">
-                      {errors.lastName}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Agency Name (only for agency) */}
-              {accountType === "agency" && (
-                <div className="space-y-2">
-                  <Label htmlFor="agencyName" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                    Agency / Organization Name
-                  </Label>
-                  <Input
-                    id="agencyName"
-                    type="text"
-                    placeholder="Acme Healthcare Staffing"
-                    value={agencyName}
-                    onChange={(e) => {
-                      setAgencyName(e.target.value);
-                      if (errors.agencyName)
-                        setErrors((prev) => ({ ...prev, agencyName: "" }));
-                    }}
-                    disabled={isLoading}
-                    className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.agencyName ? "border-destructive" : ""}`}
-                    autoComplete="organization"
-                  />
-                  {errors.agencyName && (
-                    <p className="text-xs text-destructive">
-                      {errors.agencyName}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                  Work Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@agency.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email)
-                      setErrors((prev) => ({ ...prev, email: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.email ? "border-destructive" : ""}`}
-                  autoComplete="email"
-                />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password)
-                      setErrors((prev) => ({ ...prev, password: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.password ? "border-destructive" : ""}`}
-                  autoComplete="new-password"
-                />
-                {errors.password && !allPasswordChecks && (
-                  <p className="text-xs text-destructive">{errors.password}</p>
-                )}
-                <div className="space-y-1.5 pt-1">
-                  <PasswordCheck label="At least 8 characters" met={checks.minLength} />
-                  <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
-                  <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
-                  <PasswordCheck label="One number" met={checks.number} />
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    if (errors.confirmPassword)
-                      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                  }}
-                  disabled={isLoading}
-                  className={`bg-surface border-border rounded-xl h-11 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${errors.confirmPassword ? "border-destructive" : ""}`}
-                  autoComplete="new-password"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-destructive">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
-
-              {/* TOS */}
-              <div className="space-y-2">
-                <div className="flex items-start gap-2.5">
-                  <Checkbox
-                    id="tos"
-                    checked={tosAccepted}
-                    onCheckedChange={(checked) => {
-                      setTosAccepted(checked === true);
-                      if (errors.tos)
-                        setErrors((prev) => ({ ...prev, tos: "" }));
-                    }}
-                    disabled={isLoading}
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="tos" className="text-sm font-normal leading-snug text-text-secondary">
-                    I agree to the{" "}
-                    <Link href="/terms" style={{ color: "var(--editorial-navy)", fontWeight: 500, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
-                      Terms & Conditions
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" style={{ color: "var(--editorial-navy)", fontWeight: 500, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
-                {errors.tos && (
-                  <p className="text-xs text-destructive">{errors.tos}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 1.5rem", background: "var(--editorial-navy)", color: "var(--editorial-cream)", fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid var(--editorial-navy)", borderRadius: "2px" }}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    Submit Application <ArrowRight className="size-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <p className="text-sm text-text-secondary text-center mt-6">
-              Already have an account?{" "}
-              <Link href="/agency-login" style={{ color: "var(--editorial-navy)", fontWeight: 600, textDecoration: "none", borderBottom: "1px solid var(--editorial-gold)", paddingBottom: "1px" }}>
-                Sign in
-              </Link>
-            </p>
+              Agency Registration
+            </span>
           </div>
 
-          {/* Security badges */}
-          <div
-            style={{
-              marginTop: "2.5rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "1.5rem",
-            }}
+          <h1
+            className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-foreground"
+            style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <ShieldCheck className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>HIPAA Aligned</span>
+            Join MyZipVault
+          </h1>
+          <p
+            className="text-base leading-relaxed mb-8"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            For staffing agencies & healthcare recruiters
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Account Type Toggle — spatial pill segment */}
+            <div
+              className="flex p-1 gap-1 rounded-full"
+              style={{
+                background: "var(--material-thin-bg)",
+                backdropFilter: "blur(20px) saturate(1.5)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                border: "0.5px solid var(--material-thin-border)",
+                boxShadow: "var(--specular-top), var(--depth-1)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setAccountType("agency")}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all"
+                style={
+                  accountType === "agency"
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-muted)" }
+                }
+              >
+                <Briefcase className="size-3.5" />
+                Staffing Agency
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType("recruiter")}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all"
+                style={
+                  accountType === "recruiter"
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-muted)" }
+                }
+              >
+                <User className="size-3.5" />
+                Individual Recruiter
+              </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Lock className="size-3.5" style={{ color: "var(--editorial-gold-dark)" }} />
-              <span style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--editorial-ink-muted)" }}>256-bit Encryption</span>
+
+            {/* Name Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label htmlFor="firstName" className={sharedLabelClass} style={sharedLabelStyle}>
+                  First Name
+                </label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="Jane"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: "" }));
+                  }}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.firstName}
+                  autoComplete="given-name"
+                />
+                {errors.firstName && (
+                  <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.firstName}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="lastName" className={sharedLabelClass} style={sharedLabelStyle}>
+                  Last Name
+                </label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Smith"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: "" }));
+                  }}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.lastName}
+                  autoComplete="family-name"
+                />
+                {errors.lastName && (
+                  <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.lastName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Agency Name (only for agency) */}
+            {accountType === "agency" && (
+              <div className="space-y-2">
+                <label htmlFor="agencyName" className={sharedLabelClass} style={sharedLabelStyle}>
+                  Agency / Organization Name
+                </label>
+                <Input
+                  id="agencyName"
+                  type="text"
+                  placeholder="Acme Healthcare Staffing"
+                  value={agencyName}
+                  onChange={(e) => {
+                    setAgencyName(e.target.value);
+                    if (errors.agencyName) setErrors((prev) => ({ ...prev, agencyName: "" }));
+                  }}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.agencyName}
+                  autoComplete="organization"
+                />
+                {errors.agencyName && (
+                  <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.agencyName}</p>
+                )}
+              </div>
+            )}
+
+            {/* Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className={sharedLabelClass} style={sharedLabelStyle}>
+                Work Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@agency.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                }}
+                disabled={isLoading}
+                aria-invalid={!!errors.email}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label htmlFor="password" className={sharedLabelClass} style={sharedLabelStyle}>
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+                }}
+                disabled={isLoading}
+                aria-invalid={!!errors.password && !allPasswordChecks}
+                autoComplete="new-password"
+              />
+              {errors.password && !allPasswordChecks && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.password}</p>
+              )}
+              <div className="flex flex-col gap-1.5 pt-2">
+                <PasswordCheck label="At least 8 characters" met={checks.minLength} />
+                <PasswordCheck label="One uppercase letter" met={checks.uppercase} />
+                <PasswordCheck label="One lowercase letter" met={checks.lowercase} />
+                <PasswordCheck label="One number" met={checks.number} />
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className={sharedLabelClass} style={sharedLabelStyle}>
+                Confirm Password
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }}
+                disabled={isLoading}
+                aria-invalid={!!errors.confirmPassword}
+                autoComplete="new-password"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* TOS */}
+            <div className="space-y-2">
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="tos"
+                  checked={tosAccepted}
+                  onCheckedChange={(checked) => {
+                    setTosAccepted(checked === true);
+                    if (errors.tos) setErrors((prev) => ({ ...prev, tos: "" }));
+                  }}
+                  disabled={isLoading}
+                  className="mt-0.5"
+                />
+                <label
+                  htmlFor="tos"
+                  className="text-sm font-normal leading-relaxed cursor-pointer"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  I agree to the{" "}
+                  <Link href="/terms" className="font-semibold transition-colors" style={{ color: "var(--primary)" }}>
+                    Terms & Conditions
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="font-semibold transition-colors" style={{ color: "var(--primary)" }}>
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errors.tos && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.tos}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              size="lg"
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  Submit Application
+                  <ArrowRight className="size-4" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <p className="text-sm text-center mt-6" style={{ color: "var(--text-secondary)" }}>
+            Already have an account?{" "}
+            <Link href="/agency-login" className="font-semibold transition-colors" style={{ color: "var(--primary)" }}>
+              Sign in
+            </Link>
+          </p>
+
+          {/* Security badges */}
+          <div className="mt-10 pt-6 flex items-center justify-center gap-6 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5" style={{ color: "var(--terra)" }} />
+              <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>HIPAA Aligned</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Lock className="size-3.5" style={{ color: "var(--terra)" }} />
+              <span className="text-[0.6875rem] font-medium" style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}>256-bit Encryption</span>
             </div>
           </div>
         </div>
