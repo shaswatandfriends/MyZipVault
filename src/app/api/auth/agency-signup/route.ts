@@ -109,6 +109,44 @@ export async function POST(request: Request) {
       },
     });
 
+    // ── Notify all super admins about the new company signup ──
+    if (organizationId) {
+      try {
+        const organization = await db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        });
+        const orgName = organization?.name ?? "A new organization";
+
+        const superAdmins = await db.user.findMany({
+          where: { role: "super_admin" },
+          select: { id: true },
+        });
+
+        const { createNotification } = await import("@/lib/notifications/create");
+        for (const admin of superAdmins) {
+          try {
+            await createNotification({
+              userId: admin.id,
+              category: "system",
+              priority: "info",
+              title: "New company signup 🏢",
+              message: `${orgName} has signed up on MyZipVault.`,
+              actionUrl: "/superadmin/companies",
+              actionLabel: "View companies",
+              relatedEntityId: organizationId,
+              relatedEntityType: "organization",
+            });
+          } catch (err) {
+            console.error("[AGENCY_SIGNUP] Failed to notify super admin:", admin.id, err);
+          }
+        }
+      } catch (notifErr) {
+        console.error("[AGENCY_SIGNUP] Failed to send signup notifications:", notifErr);
+        // Non-blocking
+      }
+    }
+
     return NextResponse.json(
       {
         message: "Account created successfully. Your account is pending admin approval.",

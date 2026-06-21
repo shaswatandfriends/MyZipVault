@@ -76,8 +76,9 @@ export async function captureError({
   }
 
   // Store in database
+  let errorLogId: number | null = null;
   try {
-    await db.systemErrorLog.create({
+    const errorLog = await db.systemErrorLog.create({
       data: {
         severity,
         service,
@@ -86,9 +87,61 @@ export async function captureError({
           : fullMessage,
       },
     });
+    errorLogId = errorLog.id;
   } catch (dbError) {
     // If we can't even log to the DB, just console.error
     console.error("[ERROR_MONITOR] Failed to store error in DB:", dbError);
+  }
+
+  // ─── Notify super admins (only if the error is new — not a duplicate in
+  // the last hour). We use the same service + first 200 chars of the
+  // message as a fingerprint to detect duplicates.
+  try {
+    if (errorLogId !== null) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const duplicateCount = await db.systemErrorLog.count({
+        where: {
+          service,
+          error_message: { startsWith: fullMessage.substring(0, 200) },
+          created_at: { gte: oneHourAgo },
+        },
+      });
+
+      // Only notify if this is the FIRST occurrence in the last hour
+      // (count includes the row we just created, so == 1 means "new")
+      if (duplicateCount <= 1) {
+        const superAdmins = await db.user.findMany({
+          where: { role: "super_admin" },
+          select: { id: true },
+        });
+
+        const { createNotification } = await import("@/lib/notifications/create");
+        const truncatedMessage = errorMessage.length > 50
+          ? errorMessage.slice(0, 50)
+          : errorMessage;
+
+        for (const admin of superAdmins) {
+          try {
+            await createNotification({
+              userId: admin.id,
+              category: "system",
+              priority: "important",
+              title: `Error: ${truncatedMessage}`,
+              message: `An error occurred: ${errorMessage}`,
+              actionUrl: "/superadmin/errors",
+              actionLabel: "View errors",
+              relatedEntityId: errorLogId,
+              relatedEntityType: "error",
+            });
+          } catch (adminNotifErr) {
+            console.error("[ERROR_MONITOR] Failed to notify super admin:", admin.id, adminNotifErr);
+          }
+        }
+      }
+    }
+  } catch (notifErr) {
+    console.error("[ERROR_MONITOR] Failed to send super admin notifications:", notifErr);
+    // Non-blocking
   }
 
   // Send email alert for critical errors (with cooldown to avoid spam)

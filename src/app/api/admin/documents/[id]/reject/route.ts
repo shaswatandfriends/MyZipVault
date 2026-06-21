@@ -61,6 +61,25 @@ export async function PUT(
     // Audit log
     await logDocumentRejected(adminUserId, 'platform_admin', credentialId);
 
+    // ─── Notification: document rejected (to candidate) ───
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: credential.candidate_user_id,
+        category: "document",
+        priority: "important",
+        title: "Document rejected ❌",
+        message: `Your ${credential.document_name} was rejected. ${review_notes || "Please re-upload."}`,
+        actionUrl: "/vault/credentials",
+        actionLabel: "View document",
+        relatedEntityId: credential.id,
+        relatedEntityType: "credential",
+      });
+    } catch (notifErr) {
+      console.error("[ADMIN_DOCUMENT_REJECT] Failed to send notification:", notifErr);
+      // Non-blocking
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[ADMIN_DOCUMENT_REJECT]", error);

@@ -48,6 +48,25 @@ export async function PUT(
     // Audit log
     await logDocumentApproved(adminUserId, "platform_admin", credentialId);
 
+    // ─── Notification: document approved (to candidate) ───
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: credential.candidate_user_id,
+        category: "document",
+        priority: "info",
+        title: "Document approved ✅",
+        message: `Your ${credential.document_name} has been verified and approved.`,
+        actionUrl: "/vault/credentials",
+        actionLabel: "View document",
+        relatedEntityId: credential.id,
+        relatedEntityType: "credential",
+      });
+    } catch (notifErr) {
+      console.error("[ADMIN_DOCUMENT_VERIFY] Failed to send notification:", notifErr);
+      // Non-blocking
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[ADMIN_DOCUMENT_VERIFY]", error);

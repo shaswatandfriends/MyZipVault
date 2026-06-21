@@ -90,6 +90,36 @@ export async function POST(request: Request) {
       data: { is_used: true },
     });
 
+    // ─── Notify the inviter that their team member has onboarded ───
+    if (inviteToken.invited_by) {
+      try {
+        // Fetch the new user's full name (the user was just created above)
+        const newUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { first_name: true, last_name: true },
+        });
+        const newUserFullName =
+          `${newUser?.first_name ?? ""} ${newUser?.last_name ?? ""}`.trim() ||
+          "A new team member";
+
+        const { createNotification } = await import("@/lib/notifications/create");
+        await createNotification({
+          userId: inviteToken.invited_by,
+          category: "system",
+          priority: "info",
+          title: "New team member 🎉",
+          message: `${newUserFullName} has joined your team.`,
+          actionUrl: "/recruiter/team",
+          actionLabel: "View team",
+          relatedEntityId: user.id,
+          relatedEntityType: "user",
+        });
+      } catch (notifErr) {
+        console.error("[ONBOARD] Failed to notify inviter:", notifErr);
+        // Non-blocking
+      }
+    }
+
     return NextResponse.json(
       { message: "Account created successfully", userId: user.id },
       { status: 201 }

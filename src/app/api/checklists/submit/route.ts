@@ -93,17 +93,47 @@ export async function POST(request: Request) {
     // Update candidate profile completion (Gap 17: use shared utility)
     await recalcProfileCompletion(userId);
 
-    // Create notification
-    const { createNotification } = await import("@/lib/notifications/create");
-    await createNotification({
-      userId,
-      category: "compliance",
-      priority: "info",
-      title: "Checklist submitted",
-      message: `Checklist "${checklistRequest.checklist_template.name}" submitted successfully!`,
-      relatedEntityId: checklistRequestId,
-      relatedEntityType: "checklist_request",
-    });
+    // ─── Notifications: candidate + recruiter ──────────────────────
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+
+      // Candidate notification (info)
+      await createNotification({
+        userId,
+        category: "compliance",
+        priority: "info",
+        title: "Checklist submitted ✅",
+        message: "Your checklist has been submitted.",
+        actionUrl: "/checklists",
+        actionLabel: "View",
+        relatedEntityId: checklistRequestId,
+        relatedEntityType: "checklist_request",
+      });
+
+      // Recruiter notification (important) — uses client_user_id as recruiter's userId
+      const candidate = await db.user.findUnique({
+        where: { id: userId },
+        select: { first_name: true, last_name: true },
+      });
+      const candidateName =
+        `${candidate?.first_name ?? ""} ${candidate?.last_name ?? ""}`.trim() ||
+        "Candidate";
+
+      await createNotification({
+        userId: checklistRequest.client_user_id,
+        category: "compliance",
+        priority: "important",
+        title: "Checklist completed 📋",
+        message: `${candidateName} completed their checklist.`,
+        actionUrl: `/recruiter/candidates/${userId}`,
+        actionLabel: "View candidate",
+        relatedEntityId: checklistRequestId,
+        relatedEntityType: "checklist_request",
+      });
+    } catch (notifErr) {
+      console.error("[CHECKLIST_SUBMIT] Failed to send notifications:", notifErr);
+      // Non-blocking
+    }
 
     return NextResponse.json({
       message: "Checklist submitted successfully",

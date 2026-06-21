@@ -114,24 +114,79 @@ export async function createNotification(params: CreateNotificationParams): Prom
     // 2. Create the in-app notification (if enabled)
     let notificationId: number | null = null;
     if (categoryDefault.in_app_enabled) {
-      const notification = await db.notification.create({
-        data: {
-          user_id: params.userId,
-          title: params.title,
-          message: params.message,
-          type: params.category, // use category as the type (backwards compat)
-          priority: params.priority,
-          category: params.category,
-          is_read: false,
-          is_emailed: false,
-          action_url: params.actionUrl || null,
-          action_label: params.actionLabel || null,
-          related_entity_id: params.relatedEntityId || null,
-          related_entity_type: params.relatedEntityType || null,
-          metadata: params.metadata ? JSON.stringify(params.metadata) : null,
-        },
-      });
-      notificationId = notification.id;
+      // ── Info grouping: if there are already 2+ info notifications of the same
+      // category for this user within the last hour, update the most recent
+      // one's message instead of creating a new one. This prevents flooding the
+      // user with low-priority notifications.
+      if (params.priority === "info") {
+        try {
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          const recentInfoCount = await db.notification.count({
+            where: {
+              user_id: params.userId,
+              category: params.category,
+              priority: "info",
+              created_at: { gte: oneHourAgo },
+            },
+          });
+
+          if (recentInfoCount >= 2) {
+            // Find the most recent info notification in this category
+            const mostRecent = await db.notification.findFirst({
+              where: {
+                user_id: params.userId,
+                category: params.category,
+                priority: "info",
+                created_at: { gte: oneHourAgo },
+              },
+              orderBy: { created_at: "desc" },
+            });
+
+            if (mostRecent) {
+              const newCount = recentInfoCount + 1;
+              await db.notification.update({
+                where: { id: mostRecent.id },
+                data: {
+                  message: `${newCount} ${params.category} notifications in the last hour`,
+                  is_read: false,
+                  action_url: params.actionUrl || mostRecent.action_url,
+                  action_label: params.actionLabel || mostRecent.action_label,
+                  // Refresh timestamp so it surfaces to top
+                  created_at: new Date(),
+                },
+              });
+              notificationId = mostRecent.id;
+              // Skip creating a new notification — grouped into the existing one
+              // Still proceed to email check below using notificationId
+            }
+          }
+        } catch (groupErr) {
+          // If grouping check fails, fall through and create a new notification
+          console.error("[NOTIFICATION] Info grouping check failed:", groupErr);
+        }
+      }
+
+      // If we didn't group into an existing notification, create a new one
+      if (notificationId === null) {
+        const notification = await db.notification.create({
+          data: {
+            user_id: params.userId,
+            title: params.title,
+            message: params.message,
+            type: params.category, // use category as the type (backwards compat)
+            priority: params.priority,
+            category: params.category,
+            is_read: false,
+            is_emailed: false,
+            action_url: params.actionUrl || null,
+            action_label: params.actionLabel || null,
+            related_entity_id: params.relatedEntityId || null,
+            related_entity_type: params.relatedEntityType || null,
+            metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+          },
+        });
+        notificationId = notification.id;
+      }
     }
 
     // 3. Determine if we should send an email

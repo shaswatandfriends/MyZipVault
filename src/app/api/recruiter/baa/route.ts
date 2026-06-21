@@ -150,6 +150,37 @@ export async function POST(request: Request) {
           baa_document_url: baaDocumentUrl,
         },
       });
+
+      // ─── Notify super admins that BAA is pending review ───
+      try {
+        const orgName = organization?.name ?? "An organization";
+        const superAdmins = await db.user.findMany({
+          where: { role: "super_admin" },
+          select: { id: true },
+        });
+
+        const { createNotification } = await import("@/lib/notifications/create");
+        for (const admin of superAdmins) {
+          try {
+            await createNotification({
+              userId: admin.id,
+              category: "compliance",
+              priority: "important",
+              title: "BAA pending review 📄",
+              message: `${orgName} has uploaded their BAA document for review.`,
+              actionUrl: "/superadmin/companies",
+              actionLabel: "Review BAA",
+              relatedEntityId: organizationId,
+              relatedEntityType: "organization",
+            });
+          } catch (adminNotifErr) {
+            console.error("[BAA] Failed to notify super admin:", admin.id, adminNotifErr);
+          }
+        }
+      } catch (baaNotifErr) {
+        console.error("[BAA] Failed to send BAA pending review notifications:", baaNotifErr);
+        // Non-blocking
+      }
     } catch (pdfError) {
       console.error("[BAA] PDF generation/upload failed (non-fatal):", pdfError);
       // BAA signing still succeeds even if PDF generation fails

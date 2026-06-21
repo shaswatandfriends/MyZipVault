@@ -351,6 +351,42 @@ export async function POST(request: Request) {
 
         // Audit log for credit deduction
         await logCreditsDeducted(userId, organizationId, totalCredits);
+
+        // ─── Credit balance low notification (to org admin) ───
+        try {
+          // Re-fetch org to get the post-deduction balance
+          const orgAfterDeduction = await db.organization.findUnique({
+            where: { id: organizationId },
+            select: { credits_balance: true },
+          });
+          const newBalance = orgAfterDeduction?.credits_balance ?? 0;
+
+          if (newBalance < 20) {
+            // Find the org's admin to notify
+            const admin = await db.user.findFirst({
+              where: { organization_id: organizationId, role: "client_admin" },
+              select: { id: true },
+            });
+
+            if (admin) {
+              const { createNotification } = await import("@/lib/notifications/create");
+              await createNotification({
+                userId: admin.id,
+                category: "credit",
+                priority: "important",
+                title: "Credit balance low ⚠️",
+                message: `Your organization has ${newBalance} credits remaining. Consider purchasing more.`,
+                actionUrl: "/recruiter/billing",
+                actionLabel: "Purchase credits",
+                relatedEntityId: organizationId,
+                relatedEntityType: "organization",
+              });
+            }
+          }
+        } catch (creditNotifErr) {
+          console.error("[SEND_REQUEST] Failed to send credit low notification:", creditNotifErr);
+          // Non-blocking
+        }
       } else {
         // Race condition lost — another concurrent request consumed the credits first
         console.warn(
