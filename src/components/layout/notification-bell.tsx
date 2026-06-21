@@ -255,8 +255,15 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <PopoverContent
           side="right"
           align="start"
-          className="w-96 p-0 rounded-xl shadow-lg border-[var(--border)]"
-          style={{ maxWidth: " calc(100vw - 32px)" }}
+          className="w-96 p-0 rounded-[16px]"
+          style={{
+            maxWidth: "calc(100vw - 32px)",
+            background: "rgba(255, 252, 248, 0.96)",
+            backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+            WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+            border: "0.5px solid var(--material-thick-border)",
+            boxShadow: "var(--specular-vibrant), var(--depth-floating)",
+          }}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
@@ -302,7 +309,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                   const priority = (notification as any).priority || "info";
                   const category = (notification as any).category || "system";
                   const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#2D5A3D";
-                  const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.06)" : priority === "important" ? "rgba(217,119,6,0.06)" : "rgba(45,90,61,0.04)";
+                  const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.08)" : priority === "important" ? "rgba(217,119,6,0.08)" : "rgba(45,90,61,0.06)";
                   const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
 
                   return (
@@ -311,7 +318,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                       className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors ${isActionable ? "cursor-pointer" : ""} ${
                         !notification.is_read ? "" : ""
                       }`}
-                      style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg + "40" } : { borderLeft: "3px solid transparent" }}
+                      style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg } : { borderLeft: "3px solid transparent" }}
                       onClick={() => {
                         if (actionLink) {
                           window.location.href = actionLink;
@@ -396,8 +403,15 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-96 p-0 rounded-xl shadow-lg border-[var(--border)]"
-        style={{ maxWidth: "calc(100vw - 32px)" }}
+        className="w-96 p-0 rounded-[16px]"
+        style={{
+          maxWidth: "calc(100vw - 32px)",
+          background: "rgba(255, 252, 248, 0.96)",
+          backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+          WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+          border: "0.5px solid var(--material-thick-border)",
+          boxShadow: "var(--specular-vibrant), var(--depth-floating)",
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
@@ -440,14 +454,14 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                 const priority = (notification as any).priority || "info";
                 const category = (notification as any).category || "system";
                 const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#2D5A3D";
-                const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.06)" : priority === "important" ? "rgba(217,119,6,0.06)" : "rgba(45,90,61,0.04)";
+                const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.08)" : priority === "important" ? "rgba(217,119,6,0.08)" : "rgba(45,90,61,0.06)";
                 const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
 
                 return (
                 <div key={notification.id}>
                   <div
                     className={`flex items-start gap-2.5 p-3 hover:bg-[var(--background)] transition-colors overflow-hidden ${actionLink ? "cursor-pointer" : ""}`}
-                    style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg + "40" } : { borderLeft: "3px solid transparent" }}
+                    style={!notification.is_read ? { borderLeft: `3px solid ${priorityColor}`, backgroundColor: priorityBg } : { borderLeft: "3px solid transparent" }}
                     onClick={() => {
                       if (actionLink) {
                         window.location.href = actionLink;
