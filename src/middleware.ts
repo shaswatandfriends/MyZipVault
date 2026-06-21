@@ -1,4 +1,5 @@
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
 export default withAuth({
   pages: {
@@ -9,7 +10,7 @@ export default withAuth({
       const pathname = req.nextUrl.pathname;
 
       // Public routes - always allowed
-      const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document"];
+      const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/ai/debug", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document"];
 
       // Allow public GET access to landing page content (so the public landing page can fetch it)
@@ -21,9 +22,23 @@ export default withAuth({
       // Static files and API routes for auth
       if (pathname.startsWith("/_next/")) return true;
 
-      // Not authenticated — also catch tokens where the JWT refresh callback
-      // cleared the id (happens when user is deleted/suspended mid-session)
-      if (!token || !token.id) return false;
+      // Not authenticated — redirect to the CORRECT login page based on URL
+      // (instead of always going to /login which is the candidate login)
+      if (!token || !token.id) {
+        // Determine which login page to redirect to based on the URL
+        const loginPage = pathname.startsWith("/superadmin") ? "/superadmin-login"
+          : pathname.startsWith("/admin") ? "/admin-login"
+          : pathname.startsWith("/recruiter") ? "/agency-login"
+          : "/login";
+
+        // If we're already on the correct login page, allow (don't loop)
+        if (pathname === loginPage) return true;
+
+        // Redirect to the role-appropriate login page
+        const loginUrl = new URL(loginPage, req.nextUrl.origin);
+        loginUrl.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(loginUrl) as any;
+      }
 
       const role = token.role as string;
 
