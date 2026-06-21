@@ -37,6 +37,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,35 +118,15 @@ function formatDate(dateStr: string): string {
 function getRoleBadge(role: string) {
   switch (role) {
     case "candidate":
-      return (
-        <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100">
-          Candidate
-        </Badge>
-      );
+      return <Badge variant="info">Candidate</Badge>;
     case "client_recruiter":
-      return (
-        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
-          Recruiter
-        </Badge>
-      );
+      return <Badge variant="secondary">Recruiter</Badge>;
     case "client_admin":
-      return (
-        <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">
-          Client Admin
-        </Badge>
-      );
+      return <Badge variant="warning">Client Admin</Badge>;
     case "platform_admin":
-      return (
-        <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
-          Admin
-        </Badge>
-      );
+      return <Badge variant="destructive">Admin</Badge>;
     case "super_admin":
-      return (
-        <Badge className="bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100">
-          Super Admin
-        </Badge>
-      );
+      return <Badge variant="terra">Super Admin</Badge>;
     default:
       return <Badge variant="outline">{role}</Badge>;
   }
@@ -154,11 +135,11 @@ function getRoleBadge(role: string) {
 function getSeverityBadge(severity: string) {
   switch (severity) {
     case "critical":
-      return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Critical</Badge>;
+      return <Badge variant="destructive">Critical</Badge>;
     case "error":
-      return <Badge className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">Error</Badge>;
+      return <Badge variant="destructive">Error</Badge>;
     case "warning":
-      return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Warning</Badge>;
+      return <Badge variant="warning">Warning</Badge>;
     default:
       return <Badge variant="outline">{severity}</Badge>;
   }
@@ -346,20 +327,27 @@ export default function SuperadminDashboardPage() {
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
-      {/* ── Onboarding Empty State ── */}
+      {/* ── Onboarding Empty State — spatial ── */}
       {!isLoading && data && data.usersByRole.total === 0 && (
-        <Card className="border-dashed border-2 border-teal-200 bg-teal-50/50">
+        <Card>
           <CardContent className="py-8 text-center">
-            <div className="flex justify-center mb-3">
-              <div className="size-12 rounded-full bg-teal-100 flex items-center justify-center">
-                <Sparkles className="size-6 text-teal-600" />
+            <div className="flex justify-center mb-4">
+              <div
+                className="empty-state-icon"
+                style={{
+                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  color: "#fff",
+                }}
+              >
+                <Sparkles className="size-7" />
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-teal-900 mb-1">Welcome to Your Platform!</h3>
-            <p className="text-sm text-teal-700 max-w-md mx-auto mb-4">
+            <h3 className="empty-state-title">Welcome to Your Platform!</h3>
+            <p className="empty-state-description">
               Your platform is brand new. Start by setting up organizations and inviting admins to begin managing the system.
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 mt-4">
               <Button asChild>
                 <Link href="/superadmin/users">
                   <Users className="size-4 mr-1.5" />
@@ -378,8 +366,7 @@ export default function SuperadminDashboardPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════
-          HERO METRIC CARDS — 3 prominent cards with gradient backgrounds
-          Consolidates: stats cards + revenue snapshot + removes redundancy
+          HERO METRIC CARDS — 3 spatial cards with dark gradient backgrounds
       ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {isLoading ? (
@@ -390,110 +377,166 @@ export default function SuperadminDashboardPage() {
           </>
         ) : (
           <>
-            {/* ── Card 1: Users & Organizations ─────────────────────── */}
+            {/* ── Card 1: Users & Organizations — forest green ─────────── */}
             <Card
-              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br from-teal-600 to-teal-700 text-white"
+              className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/users")}
+              style={{
+                background: "linear-gradient(135deg, #2D5A3D 0%, #1E3A26 100%)",
+                border: "0.5px solid rgba(255,255,255,0.15)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(45,90,61,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                color: "#fff",
+              }}
             >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Users className="size-5 text-white" />
-                  </div>
-                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
-                </div>
-                <div className="text-3xl font-bold tracking-tight">{stats?.total ?? 0}</div>
-                <p className="text-sm text-teal-100 font-medium mt-0.5">Total Users</p>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
-                    {stats?.candidates ?? 0} Candidates
-                  </Badge>
-                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
-                    {stats?.clientRecruiters ?? 0} Recruiters
-                  </Badge>
-                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
-                    {stats?.clientAdmins ?? 0} Admins
-                  </Badge>
-                  <Badge className="bg-white/20 text-white border-0 hover:bg-white/20 text-[11px] px-2">
-                    {data?.organizationsCount ?? 0} Orgs
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ── Card 2: Credits & Revenue ────────────────────────── */}
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-all group/card border-0 bg-gradient-to-br var(--editorial-navy)  text-white"
-              onClick={() => router.push("/superadmin/analytics")}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <TrendingUp className="size-5 text-white" />
-                  </div>
-                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
-                </div>
-                <div className="text-3xl font-bold tracking-tight">{data?.creditsPurchasedMonth ?? 0}</div>
-                <p className="text-sm var(--editorial-cream) font-medium mt-0.5">Credits Purchased (Month)</p>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="var(--editorial-cream) flex items-center gap-1.5">
-                      <CreditCard className="size-3.5" /> Spent This Month
-                    </span>
-                    <span className="font-semibold">{data?.creditsSpentMonth ?? 0}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+              <CardContent className="pt-6 relative">
+                {/* Subtle orb */}
+                <div
+                  className="absolute rounded-full pointer-events-none"
+                  style={{ width: 200, height: 200, top: -80, right: -60, background: "radial-gradient(circle, rgba(74,124,89,0.5) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }}
+                />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
                     <div
-                      className="h-full rounded-full bg-white/70 transition-all duration-500"
+                      className="flex items-center justify-center size-10 rounded-[12px]"
                       style={{
-                        width: `${Math.min(((data?.creditsSpentMonth ?? 0) / Math.max(data?.creditsPurchasedMonth ?? 1, 1)) * 100, 100)}%`,
+                        background: "rgba(255,255,255,0.18)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
                       }}
-                    />
+                    >
+                      <Users className="size-5 text-white" />
+                    </div>
+                    <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                   </div>
-                  <div className="flex items-center justify-between text-xs var(--editorial-gold)">
-                    <span>Today: {data?.creditsPurchasedToday ?? 0} purchased / {data?.creditsSpentToday ?? 0} spent</span>
+                  <div className="text-3xl font-bold tracking-tight tabular-nums">{stats?.total ?? 0}</div>
+                  <p className="text-sm font-medium mt-0.5 text-white/85">Total Users</p>
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    <Badge className="bg-white/15 text-white border-0 hover:bg-white/15 text-[11px] px-2">
+                      {stats?.candidates ?? 0} Candidates
+                    </Badge>
+                    <Badge className="bg-white/15 text-white border-0 hover:bg-white/15 text-[11px] px-2">
+                      {stats?.clientRecruiters ?? 0} Recruiters
+                    </Badge>
+                    <Badge className="bg-white/15 text-white border-0 hover:bg-white/15 text-[11px] px-2">
+                      {stats?.clientAdmins ?? 0} Admins
+                    </Badge>
+                    <Badge className="bg-white/15 text-white border-0 hover:bg-white/15 text-[11px] px-2">
+                      {data?.organizationsCount ?? 0} Orgs
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* ── Card 3: Platform Health ──────────────────────────── */}
+            {/* ── Card 2: Credits & Revenue — terracotta ─────────────── */}
             <Card
-              className={`cursor-pointer hover:shadow-lg transition-all group/card border-0 text-white ${
-                healthStatus === "critical"
-                  ? "bg-gradient-to-br from-red-600 to-red-700"
-                  : healthStatus === "warning"
-                  ? "bg-gradient-to-br from-amber-500 to-amber-600"
-                  : "bg-gradient-to-br from-violet-600 to-violet-700"
-              }`}
+              className="cursor-pointer transition-all group/card overflow-hidden"
+              onClick={() => router.push("/superadmin/analytics")}
+              style={{
+                background: "linear-gradient(135deg, #C97B54 0%, #A0522D 100%)",
+                border: "0.5px solid rgba(255,255,255,0.15)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(201,123,84,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                color: "#fff",
+              }}
+            >
+              <CardContent className="pt-6 relative">
+                <div
+                  className="absolute rounded-full pointer-events-none"
+                  style={{ width: 200, height: 200, top: -80, right: -60, background: "radial-gradient(circle, rgba(232,168,130,0.4) 0%, rgba(232,168,130,0) 70%)", filter: "blur(40px)" }}
+                />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div
+                      className="flex items-center justify-center size-10 rounded-[12px]"
+                      style={{
+                        background: "rgba(255,255,255,0.22)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
+                      }}
+                    >
+                      <TrendingUp className="size-5 text-white" />
+                    </div>
+                    <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
+                  </div>
+                  <div className="text-3xl font-bold tracking-tight tabular-nums">{data?.creditsPurchasedMonth ?? 0}</div>
+                  <p className="text-sm font-medium mt-0.5 text-white/85">Credits Purchased (Month)</p>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-white/85 flex items-center gap-1.5">
+                        <CreditCard className="size-3.5" /> Spent This Month
+                      </span>
+                      <span className="font-semibold tabular-nums">{data?.creditsSpentMonth ?? 0}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-white/80 transition-all duration-500"
+                        style={{
+                          width: `${Math.min(((data?.creditsSpentMonth ?? 0) / Math.max(data?.creditsPurchasedMonth ?? 1, 1)) * 100, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-white/70">
+                      <span>Today: {data?.creditsPurchasedToday ?? 0} purchased / {data?.creditsSpentToday ?? 0} spent</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ── Card 3: Platform Health — adaptive color ─────────── */}
+            <Card
+              className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => {
                 if (hasErrors) router.push("/superadmin/errors");
                 else if (hasPending) router.push("/superadmin/admins");
                 else router.push("/superadmin/compliance");
               }}
+              style={{
+                background:
+                  healthStatus === "critical"
+                    ? "linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)"
+                    : healthStatus === "warning"
+                    ? "linear-gradient(135deg, #D97706 0%, #92400E 100%)"
+                    : "linear-gradient(135deg, #4A7C59 0%, #2D5A3D 100%)",
+                border: "0.5px solid rgba(255,255,255,0.15)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08)",
+                color: "#fff",
+              }}
             >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Activity className="size-5 text-white" />
+              <CardContent className="pt-6 relative">
+                <div
+                  className="absolute rounded-full pointer-events-none"
+                  style={{ width: 200, height: 200, top: -80, right: -60, background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)", filter: "blur(40px)" }}
+                />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div
+                      className="flex items-center justify-center size-10 rounded-[12px]"
+                      style={{
+                        background: "rgba(255,255,255,0.2)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
+                      }}
+                    >
+                      <Activity className="size-5 text-white" />
+                    </div>
+                    <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                   </div>
-                  <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
-                </div>
-                <div className="text-3xl font-bold tracking-tight capitalize">{healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Attention" : "Critical"}</div>
-                <p className="text-sm font-medium mt-0.5 opacity-90">Platform Status</p>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  <Badge className={`border-0 text-[11px] px-2 ${data?.errorCountToday ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
-                    <AlertTriangle className="size-3 mr-1" />
-                    {data?.errorCountToday ?? 0} Errors
-                  </Badge>
-                  <Badge className={`border-0 text-[11px] px-2 ${data?.pendingAdminApprovals ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
-                    <ShieldCheck className="size-3 mr-1" />
-                    {data?.pendingAdminApprovals ?? 0} Pending
-                  </Badge>
-                  <Badge className="bg-white/15 text-white/80 border-0 text-[11px] px-2">
-                    <Megaphone className="size-3 mr-1" />
-                    {data?.activeAnnouncements ?? 0} Announcements
-                  </Badge>
+                  <div className="text-3xl font-bold tracking-tight capitalize">
+                    {healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Attention" : "Critical"}
+                  </div>
+                  <p className="text-sm font-medium mt-0.5 text-white/85">Platform Status</p>
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    <Badge className={`border-0 text-[11px] px-2 ${data?.errorCountToday ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
+                      <AlertTriangle className="size-3 mr-1" />
+                      {data?.errorCountToday ?? 0} Errors
+                    </Badge>
+                    <Badge className={`border-0 text-[11px] px-2 ${data?.pendingAdminApprovals ? "bg-white/30 text-white" : "bg-white/15 text-white/80"}`}>
+                      <ShieldCheck className="size-3 mr-1" />
+                      {data?.pendingAdminApprovals ?? 0} Pending
+                    </Badge>
+                    <Badge className="bg-white/15 text-white/80 border-0 text-[11px] px-2">
+                      <Megaphone className="size-3 mr-1" />
+                      {data?.activeAnnouncements ?? 0} Announcements
+                    </Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -513,11 +556,18 @@ export default function SuperadminDashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">User Growth</CardTitle>
+                  <CardTitle className="text-base font-heading">User Growth</CardTitle>
                   <CardDescription>New signups over the last 6 months</CardDescription>
                 </div>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <BarChart3 className="size-4 text-teal-600" />
+                <div
+                  className="flex items-center justify-center size-8 rounded-[10px]"
+                  style={{
+                    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                    color: "#fff",
+                  }}
+                >
+                  <BarChart3 className="size-4" />
                 </div>
               </div>
             </CardHeader>
@@ -526,19 +576,22 @@ export default function SuperadminDashboardPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
+                    <YAxis tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
+                        backgroundColor: "rgba(255,252,248,0.95)",
+                        border: "0.5px solid var(--material-thick-border)",
+                        borderRadius: "14px",
                         fontSize: "12px",
+                        backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+                        WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+                        boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(0,0,0,0.06)",
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="candidates" name="Candidates" fill="var(--accent-teal)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="recruiters" name="Recruiters" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="candidates" name="Candidates" fill="#4A7C59" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="recruiters" name="Recruiters" fill="#C97B54" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -549,36 +602,43 @@ export default function SuperadminDashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">User Growth</CardTitle>
+                  <CardTitle className="text-base font-heading">User Growth</CardTitle>
                   <CardDescription>New signups over the last 6 months</CardDescription>
                 </div>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <BarChart3 className="size-4 text-teal-600" />
+                <div
+                  className="flex items-center justify-center size-8 rounded-[10px]"
+                  style={{
+                    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                    color: "#fff",
+                  }}
+                >
+                  <BarChart3 className="size-4" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center h-48 text-center">
-                <BarChart3 className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">Not enough data to show growth chart</p>
+              <div className="empty-state">
+                <BarChart3 className="size-10 mb-3" style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Not enough data to show growth chart</p>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* ── Pending Admin Approvals ──────────────────────────────── */}
+        {/* ── Pending Admin Approvals — spatial list items ────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Pending Admin Approvals</CardTitle>
+                <CardTitle className="text-base font-heading">Pending Admin Approvals</CardTitle>
                 <CardDescription>
                   {(data?.pendingAdminList ?? []).length > 0
                     ? `${data?.pendingAdminList.length} awaiting your review`
                     : "All clear"}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/superadmin/admins">
                   <ArrowUpRight className="size-3.5" />
                   Manage
@@ -590,38 +650,41 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.pendingAdminList ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="size-14 rounded-full var(--editorial-navy)  flex items-center justify-center mb-3">
-                  <CheckCircle2 className="size-7 var(--editorial-gold)" />
+              <div className="empty-state">
+                <div
+                  className="empty-state-icon"
+                  style={{
+                    background: "var(--primary-light)",
+                    border: "0.5px solid var(--status-green-border)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  <CheckCircle2 className="size-7" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">No pending approvals</p>
-                <p className="text-xs text-muted-foreground mt-1">All admin accounts have been reviewed</p>
+                <p className="empty-state-title">No pending approvals</p>
+                <p className="empty-state-description">All admin accounts have been reviewed</p>
               </div>
             ) : (
               <div className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
-                {(data?.pendingAdminList ?? []).map((admin) => {
+                {(data?.pendingAdminList ?? []).map((admin, idx) => {
                   const fullName =
                     [admin.firstName, admin.lastName].filter(Boolean).join(" ") || admin.email;
+                  const avatarInitial = admin.firstName?.[0]?.toUpperCase() ?? "A";
+                  const avatarVariant = (idx % 2 === 0 ? "primary" : "terra") as "primary" | "terra";
                   return (
-                    <div
-                      key={admin.id}
-                      className="flex items-center justify-between py-3 border-b last:border-0"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-9 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold shrink-0">
-                          {admin.firstName?.[0]?.toUpperCase() ?? "A"}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{fullName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {admin.email} · {formatDate(admin.createdAt)}
-                          </p>
-                        </div>
+                    <div key={admin.id} className="spatial-list-item">
+                      <SpatialAvatar initials={avatarInitial} variant={avatarVariant} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{fullName}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                          {admin.email} · {formatDate(admin.createdAt)}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <Button
                           size="sm"
-                          className="h-7 text-xs gap-1 var(--editorial-navy) var(--editorial-navy-light) text-white"
+                          className="h-7 text-xs gap-1"
                           onClick={() => handleApprove(admin.id)}
                           disabled={processingId === admin.id}
                         >
@@ -631,7 +694,7 @@ export default function SuperadminDashboardPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs gap-1 text-red-700 border-red-300 hover:bg-red-50"
+                          className="h-7 text-xs gap-1"
                           onClick={() => handleReject(admin.id)}
                           disabled={processingId === admin.id}
                         >
@@ -657,14 +720,14 @@ export default function SuperadminDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Recent Errors</CardTitle>
+                <CardTitle className="text-base font-heading">Recent Errors</CardTitle>
                 <CardDescription>
                   {(data?.errorCountToday ?? 0) > 0
                     ? `${data?.errorCountToday} error${(data?.errorCountToday ?? 0) !== 1 ? "s" : ""} logged today`
                     : "No errors today"}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/superadmin/errors">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -676,12 +739,20 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.recentErrors ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="size-14 rounded-full var(--editorial-navy)  flex items-center justify-center mb-3">
-                  <CheckCircle2 className="size-7 var(--editorial-gold)" />
+              <div className="empty-state">
+                <div
+                  className="empty-state-icon"
+                  style={{
+                    background: "var(--primary-light)",
+                    border: "0.5px solid var(--status-green-border)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  <CheckCircle2 className="size-7" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">No recent errors</p>
-                <p className="text-xs text-muted-foreground mt-1">System is running smoothly</p>
+                <p className="empty-state-title">No recent errors</p>
+                <p className="empty-state-description">System is running smoothly</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
@@ -698,15 +769,15 @@ export default function SuperadminDashboardPage() {
                     {(data?.recentErrors ?? []).map((err) => (
                       <TableRow
                         key={err.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className="cursor-pointer"
                         onClick={() => router.push("/superadmin/errors")}
                       >
                         <TableCell>{getSeverityBadge(err.severity)}</TableCell>
                         <TableCell className="text-sm font-medium">{err.service}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                        <TableCell className="text-sm max-w-[200px] truncate" style={{ color: "var(--text-secondary)" }}>
                           {err.errorMessage}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        <TableCell className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                           {formatDate(err.createdAt)}
                         </TableCell>
                       </TableRow>
@@ -718,15 +789,15 @@ export default function SuperadminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Recent Signups ────────────────────────────────────────── */}
+        {/* ── Recent Signups — spatial list items ────────────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Recent Signups</CardTitle>
+                <CardTitle className="text-base font-heading">Recent Signups</CardTitle>
                 <CardDescription>Latest users who joined the platform</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/superadmin/users">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -738,34 +809,40 @@ export default function SuperadminDashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : (data?.recentSignups ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="size-14 rounded-full bg-teal-50 flex items-center justify-center mb-3">
-                  <UserPlus className="size-7 text-teal-500" />
+              <div className="empty-state">
+                <div
+                  className="empty-state-icon"
+                  style={{
+                    background: "var(--primary-light)",
+                    border: "0.5px solid var(--status-green-border)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  <UserPlus className="size-7" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">No recent signups</p>
-                <p className="text-xs text-muted-foreground mt-1">New users will appear here</p>
+                <p className="empty-state-title">No recent signups</p>
+                <p className="empty-state-description">New users will appear here</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border space-y-0">
-                {(data?.recentSignups ?? []).map((user) => {
+                {(data?.recentSignups ?? []).map((user, idx) => {
                   const fullName =
                     [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email;
+                  const avatarInitial = user.firstName?.[0]?.toUpperCase() ?? user.email[0]?.toUpperCase() ?? "U";
+                  const avatarVariant = (idx % 2 === 0 ? "primary" : "terra") as "primary" | "terra";
                   return (
                     <Link
                       key={user.id}
                       href="/superadmin/users"
-                      className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-muted/50 transition-colors"
+                      className="spatial-list-item"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-9 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
-                          {user.firstName?.[0]?.toUpperCase() ?? user.email[0]?.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{fullName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email} · {formatDate(user.createdAt)}
-                          </p>
-                        </div>
+                      <SpatialAvatar initials={avatarInitial} variant={avatarVariant} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{fullName}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                          {user.email} · {formatDate(user.createdAt)}
+                        </p>
                       </div>
                       {getRoleBadge(user.role)}
                     </Link>
@@ -778,48 +855,48 @@ export default function SuperadminDashboardPage() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          QUICK ACTIONS — Clean, contextual grid
+          QUICK ACTIONS — spatial icon containers
       ═══════════════════════════════════════════════════════════════ */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base font-heading">Quick Actions</CardTitle>
           <CardDescription>Jump to common administrative tasks</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-teal-300 hover:bg-teal-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/users">
-                <Users className="size-5 text-teal-600" />
+                <Users className="size-5" style={{ color: "var(--primary)" }} />
                 <span className="text-xs">Users</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-[var(--editorial-gold)] var(--editorial-gold)/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/companies">
-                <Building2 className="size-5 var(--editorial-cream)" />
+                <Building2 className="size-5" style={{ color: "var(--terra)" }} />
                 <span className="text-xs">Companies</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-amber-300 hover:bg-amber-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/admins">
-                <ShieldCheck className="size-5 text-amber-600" />
+                <ShieldCheck className="size-5" style={{ color: "var(--primary)" }} />
                 <span className="text-xs">Admin Team</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-purple-300 hover:bg-purple-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/announcements">
-                <Megaphone className="size-5 text-purple-600" />
+                <Megaphone className="size-5" style={{ color: "var(--terra)" }} />
                 <span className="text-xs">Announcements</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-blue-300 hover:bg-blue-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/analytics">
-                <BarChart3 className="size-5 text-blue-600" />
+                <BarChart3 className="size-5" style={{ color: "var(--primary)" }} />
                 <span className="text-xs">Analytics</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2 hover:border-gray-300 hover:bg-gray-50/50">
+            <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/superadmin/settings">
-                <Settings className="size-5 text-gray-600" />
+                <Settings className="size-5" style={{ color: "var(--terra)" }} />
                 <span className="text-xs">Settings</span>
               </Link>
             </Button>

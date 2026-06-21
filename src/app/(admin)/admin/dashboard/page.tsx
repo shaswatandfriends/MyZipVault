@@ -29,6 +29,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,30 +86,14 @@ function formatDate(dateStr: string): string {
 function getRoleBadge(role: string) {
   switch (role) {
     case "candidate":
-      return (
-        <Badge className="bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-100">
-          Candidate
-        </Badge>
-      );
+      return <Badge variant="info">Candidate</Badge>;
     case "client_recruiter":
-      return (
-        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
-          Recruiter
-        </Badge>
-      );
+      return <Badge variant="secondary">Recruiter</Badge>;
     case "client_admin":
-      return (
-        <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">
-          Client Admin
-        </Badge>
-      );
+      return <Badge variant="warning">Client Admin</Badge>;
     case "platform_admin":
     case "super_admin":
-      return (
-        <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
-          Admin
-        </Badge>
-      );
+      return <Badge variant="destructive">Admin</Badge>;
     default:
       return <Badge variant="outline">{role}</Badge>;
   }
@@ -229,20 +214,27 @@ export default function AdminDashboardPage() {
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
-      {/* ── Onboarding Empty State (Fix #18) ── */}
+      {/* ── Onboarding Empty State (Fix #18) — spatial empty state ── */}
       {!isLoading && data && data.usersByRole.total === 0 && (
-        <Card className="border-dashed border-2 border-teal-200 bg-teal-50/50">
+        <Card>
           <CardContent className="py-8 text-center">
-            <div className="flex justify-center mb-3">
-              <div className="size-12 rounded-full bg-teal-100 flex items-center justify-center">
-                <Sparkles className="size-6 text-teal-600" />
+            <div className="flex justify-center mb-4">
+              <div
+                className="empty-state-icon"
+                style={{
+                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  color: "#fff",
+                }}
+              >
+                <Sparkles className="size-7" />
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-teal-900 mb-1">Welcome to Your Platform!</h3>
-            <p className="text-sm text-teal-700 max-w-md mx-auto mb-4">
+            <h3 className="empty-state-title">Welcome to Your Platform!</h3>
+            <p className="empty-state-description">
               Your platform is brand new. Start by inviting recruiters and candidates to begin building your community.
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 mt-4">
               <Button asChild>
                 <Link href="/admin/users">
                   <Users className="size-4 mr-1.5" />
@@ -260,7 +252,7 @@ export default function AdminDashboardPage() {
         </Card>
       )}
 
-      {/* ── Stats Cards ────────────────────────────────────────────── */}
+      {/* ── Stats Cards — Spatial UI ──────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
           <>
@@ -271,75 +263,48 @@ export default function AdminDashboardPage() {
           </>
         ) : (
           <>
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <Users className="size-4 text-teal-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.candidates ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Registered candidates</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Recruiters</CardTitle>
-                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
-                  <ShieldCheck className="size-4 var(--editorial-cream)" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(stats?.clientRecruiters ?? 0) + (stats?.clientAdmins ?? 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats?.clientRecruiters ?? 0} recruiters, {stats?.clientAdmins ?? 0} admins
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
-                <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <FileText className="size-4 text-amber-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.pendingDocuments ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Documents awaiting review</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">New Signups This Week</CardTitle>
-                <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <UserPlus className="size-4 text-teal-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data?.recentSignups ?? 0}</div>
-                <p className="text-xs text-muted-foreground">New users in last 7 days</p>
-              </CardContent>
-            </Card>
+            <SpatialStatCard
+              title="Total Candidates"
+              value={stats?.candidates ?? 0}
+              subtitle="Registered candidates"
+              icon={Users}
+              iconVariant="primary"
+            />
+            <SpatialStatCard
+              title="Total Recruiters"
+              value={(stats?.clientRecruiters ?? 0) + (stats?.clientAdmins ?? 0)}
+              subtitle={`${stats?.clientRecruiters ?? 0} recruiters, ${stats?.clientAdmins ?? 0} admins`}
+              icon={ShieldCheck}
+              iconVariant="terra"
+            />
+            <SpatialStatCard
+              title="Pending Verifications"
+              value={data?.pendingDocuments ?? 0}
+              subtitle="Documents awaiting review"
+              icon={FileText}
+              iconVariant="amber"
+            />
+            <SpatialStatCard
+              title="New Signups This Week"
+              value={data?.recentSignups ?? 0}
+              subtitle="New users in last 7 days"
+              icon={UserPlus}
+              iconVariant="primary"
+            />
           </>
         )}
       </div>
 
-      {/* ── User Growth Chart (Fix #16) ──────────────────────────────── */}
+      {/* ── User Growth Chart ──────────────────────────────────────── */}
       {!isLoading && data?.userGrowth && data.userGrowth.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">User Growth</CardTitle>
+                <CardTitle className="text-base font-heading">User Growth</CardTitle>
                 <CardDescription>New signups over the last 6 months</CardDescription>
               </div>
-              <BarChart3 className="size-4 text-muted-foreground" />
+              <BarChart3 className="size-4" style={{ color: "var(--text-muted)" }} />
             </div>
           </CardHeader>
           <CardContent>
@@ -347,19 +312,22 @@ export default function AdminDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.userGrowth} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
+                  <YAxis tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "rgba(255,252,248,0.95)",
+                      border: "0.5px solid var(--material-thick-border)",
+                      borderRadius: "14px",
                       fontSize: "12px",
+                      backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+                      WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+                      boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(0,0,0,0.06)",
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="candidates" name="Candidates" fill="var(--accent-teal)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="recruiters" name="Recruiters" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="candidates" name="Candidates" fill="#4A7C59" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="recruiters" name="Recruiters" fill="#C97B54" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -373,8 +341,8 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Document Verification Queue</CardTitle>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <CardTitle className="text-base font-heading">Document Verification Queue</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/admin/documents">
                   <ArrowUpRight className="size-3.5" />
                   Review All
@@ -390,34 +358,32 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : data?.pendingVerificationPreview.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FileText className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No pending documents</p>
+              <div className="empty-state">
+                <FileText className="size-10 mb-3" style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>No pending documents</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                {data?.pendingVerificationPreview.map((doc) => {
+                {data?.pendingVerificationPreview.map((doc, idx) => {
                   const candidateName =
                     [doc.candidate.firstName, doc.candidate.lastName]
                       .filter(Boolean)
                       .join(" ") || doc.candidate.email;
+                  const avatarInitial = doc.candidate.firstName?.[0]?.toUpperCase() ?? "D";
+                  const avatarVariant = (idx % 2 === 0 ? "primary" : "terra") as "primary" | "terra";
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center justify-between py-3 border-b last:border-0"
+                      className="spatial-list-item"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold shrink-0">
-                          {doc.candidate.firstName?.[0]?.toUpperCase() ?? "D"}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">
-                            {doc.documentName}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {candidateName} · {formatDate(doc.uploadedAt)}
-                          </p>
-                        </div>
+                      <SpatialAvatar initials={avatarInitial} variant={avatarVariant} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {doc.documentName}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                          {candidateName} · {formatDate(doc.uploadedAt)}
+                        </p>
                       </div>
                       <Button variant="outline" size="sm" asChild className="shrink-0 ml-2">
                         <Link href="/admin/documents">
@@ -432,12 +398,12 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ── Recent User Signups (Fix #9 - clickable) ────────── */}
+        {/* ── Recent User Signups — spatial list items ────────── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Recent Signups</CardTitle>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <CardTitle className="text-base font-heading">Recent Signups</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/admin/users">
                   <ArrowUpRight className="size-3.5" />
                   View All
@@ -453,33 +419,31 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : data?.recentSignupList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Users className="size-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No recent signups</p>
+              <div className="empty-state">
+                <Users className="size-10 mb-3" style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>No recent signups</p>
               </div>
             ) : (
               <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                {data?.recentSignupList.map((user) => {
+                {data?.recentSignupList.map((user, idx) => {
                   const fullName =
                     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
                     user.email;
+                  const avatarInitial = user.firstName?.[0]?.toUpperCase() ??
+                    user.email[0]?.toUpperCase() ?? "U";
+                  const avatarVariant = (idx % 2 === 0 ? "primary" : "terra") as "primary" | "terra";
                   return (
                     <Link
                       key={user.id}
                       href="/admin/users"
-                      className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-muted/50 transition-colors"
+                      className="spatial-list-item"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-semibold shrink-0">
-                          {user.firstName?.[0]?.toUpperCase() ??
-                            user.email[0]?.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{fullName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email} · {formatDate(user.createdAt)}
-                          </p>
-                        </div>
+                      <SpatialAvatar initials={avatarInitial} variant={avatarVariant} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{fullName}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                          {user.email} · {formatDate(user.createdAt)}
+                        </p>
                       </div>
                       {getRoleBadge(user.role)}
                     </Link>
@@ -491,34 +455,34 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* ── Quick Links ────────────────────────────────────────────── */}
+      {/* ── Quick Actions — spatial icon containers ──────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base font-heading">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/users">
-                <Users className="size-5 text-teal-600" />
+                <Users className="size-5" style={{ color: "var(--primary)" }} />
                 <span className="text-sm">Manage Users</span>
               </Link>
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/documents">
-                <FileText className="size-5 var(--editorial-cream)" />
+                <FileText className="size-5" style={{ color: "var(--terra)" }} />
                 <span className="text-sm">Verify Documents</span>
               </Link>
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/content">
-                <PenSquare className="size-5 text-teal-600" />
+                <PenSquare className="size-5" style={{ color: "var(--primary)" }} />
                 <span className="text-sm">Edit Content</span>
               </Link>
             </Button>
             <Button variant="outline" asChild className="h-auto py-4 flex-col gap-2">
               <Link href="/admin/reminders">
-                <Bell className="size-5 var(--editorial-cream)" />
+                <Bell className="size-5" style={{ color: "var(--terra)" }} />
                 <span className="text-sm">Approve Reminders</span>
               </Link>
             </Button>

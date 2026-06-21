@@ -22,6 +22,7 @@ import {
 
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import {
   Table,
   TableBody,
@@ -101,21 +102,21 @@ function getComplianceBadge(status: Candidate["complianceStatus"]) {
   switch (status) {
     case "compliant":
       return (
-        <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">
+        <Badge variant="success">
           <CheckCircle2 className="size-3" />
           Compliant
         </Badge>
       );
     case "pending":
       return (
-        <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">
+        <Badge variant="warning">
           <Clock className="size-3" />
           Pending
         </Badge>
       );
     case "non_compliant":
       return (
-        <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">
+        <Badge variant="destructive">
           <AlertCircle className="size-3" />
           Non-Compliant
         </Badge>
@@ -126,11 +127,11 @@ function getComplianceBadge(status: Candidate["complianceStatus"]) {
 function getComplianceDot(status: Candidate["complianceStatus"]) {
   switch (status) {
     case "compliant":
-      return <span className="inline-block size-2 rounded-full var(--editorial-navy) 0" />;
+      return <span className="inline-block size-2 rounded-full" style={{ background: "var(--primary)" }} />;
     case "pending":
-      return <span className="inline-block size-2 rounded-full bg-amber-500" />;
+      return <span className="inline-block size-2 rounded-full" style={{ background: "var(--status-amber)" }} />;
     case "non_compliant":
-      return <span className="inline-block size-2 rounded-full bg-red-500" />;
+      return <span className="inline-block size-2 rounded-full" style={{ background: "var(--status-red)" }} />;
   }
 }
 
@@ -278,13 +279,13 @@ export default function RecruiterDashboardPage() {
   function getBaaBadge(status: string) {
     switch (status) {
       case "signed":
-        return <Badge className="var(--editorial-navy)  var(--editorial-cream) var(--editorial-gold) hover:var(--editorial-navy) ">Signed</Badge>;
+        return <Badge variant="success">Signed</Badge>;
       case "pending":
-        return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Pending</Badge>;
+        return <Badge variant="warning">Pending</Badge>;
       case "not_signed":
-        return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Not Signed</Badge>;
+        return <Badge variant="destructive">Not Signed</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100">{status}</Badge>;
+        return <Badge variant="secondary">{status}</Badge>;
     }
   }
 
@@ -297,7 +298,7 @@ export default function RecruiterDashboardPage() {
 
       {/* ── Period Selector ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Overview</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide font-heading" style={{ color: "var(--text-secondary)" }}>Overview</h2>
         <Select value={period} onValueChange={(val) => setPeriod(val as "week" | "month" | "all")}>
           <SelectTrigger className="w-36">
             <SelectValue />
@@ -323,28 +324,25 @@ export default function RecruiterDashboardPage() {
         ) : (
           <>
             {/* Total Candidates — clickable: scrolls to candidate table */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+            <SpatialStatCard
+              title="Total Candidates"
+              value={stats?.totalCandidates ?? 0}
+              subtitle="Candidates in pipeline"
+              icon={Users}
+              iconVariant="primary"
               onClick={() => {
                 const el = document.getElementById("candidate-table-section");
                 el?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
-                  <Users className="size-4 var(--editorial-cream)" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalCandidates ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Candidates in pipeline</p>
-              </CardContent>
-            </Card>
+            />
 
             {/* Pending Requests — clickable: filters candidates to pending */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+            <SpatialStatCard
+              title="Pending Requests"
+              value={stats?.pendingRequests ?? 0}
+              subtitle="Awaiting candidate response"
+              icon={Clock}
+              iconVariant="amber"
               onClick={() => {
                 setComplianceFilter("pending");
                 setTimeout(() => {
@@ -352,22 +350,15 @@ export default function RecruiterDashboardPage() {
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 50);
               }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <Clock className="size-4 text-amber-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.pendingRequests ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:text-amber-700 transition-colors">Awaiting candidate response</p>
-              </CardContent>
-            </Card>
+            />
 
             {/* Completed Packets — clickable: filters candidates to compliant */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+            <SpatialStatCard
+              title="Completed Packets"
+              value={stats?.completedPackets ?? 0}
+              subtitle="Fully verified checklists"
+              icon={CheckCircle2}
+              iconVariant="primary"
               onClick={() => {
                 setComplianceFilter("compliant");
                 setTimeout(() => {
@@ -375,54 +366,27 @@ export default function RecruiterDashboardPage() {
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 50);
               }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Completed Packets</CardTitle>
-                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
-                  <CheckCircle2 className="size-4 var(--editorial-cream)" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.completedPackets ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Fully verified checklists</p>
-              </CardContent>
-            </Card>
+            />
 
             {/* Credits Used — clickable: navigates to billing */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+            <SpatialStatCard
+              title={`Credits Used${period === "all" ? "" : ` ${period === "week" ? "This Week" : "This Month"}`}`}
+              value={stats?.creditsUsedThisMonth ?? 0}
+              subtitle={`of ${stats?.creditsBalance ?? 0} remaining`}
+              icon={CreditCard}
+              iconVariant="terra"
               onClick={() => router.push("/recruiter/billing")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Credits Used{period === "all" ? "" : ` ${period === "week" ? "This Week" : "This Month"}`}</CardTitle>
-                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
-                  <CreditCard className="size-4 var(--editorial-cream)" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.creditsUsedThisMonth ?? 0}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">
-                  of {stats?.creditsBalance ?? 0} remaining
-                </p>
-              </CardContent>
-            </Card>
+            />
 
             {/* BAA Status — clickable: navigates to BAA page */}
-            <Card
-              className="hover:shadow-md transition-shadow cursor-pointer group/card"
+            <SpatialStatCard
+              title="BAA Status"
+              value={getBaaBadge(stats?.baaStatus ?? "pending")}
+              subtitle="Business Associate Agreement"
+              icon={FileCheck}
+              iconVariant="primary"
               onClick={() => router.push("/recruiter/baa")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">BAA Status</CardTitle>
-                <div className="size-8 rounded-lg var(--editorial-navy)  flex items-center justify-center">
-                  <FileCheck className="size-4 var(--editorial-cream)" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-1">{getBaaBadge(stats?.baaStatus ?? "pending")}</div>
-                <p className="text-xs text-muted-foreground group-hover/card:var(--editorial-gold) transition-colors">Business Associate Agreement</p>
-              </CardContent>
-            </Card>
+            />
           </>
         )}
       </div>
@@ -438,12 +402,12 @@ export default function RecruiterDashboardPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {/* Search input */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: "var(--text-muted)" }} />
                 <Input
                   placeholder="Search by name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-full sm:w-56"
+                  className="pl-9 w-full sm:w-56"
                 />
               </div>
 
@@ -459,19 +423,19 @@ export default function RecruiterDashboardPage() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="compliant">
                     <span className="flex items-center gap-2">
-                      <span className="size-2 rounded-full var(--editorial-navy) 0" />
+                      <span className="size-2 rounded-full" style={{ background: "var(--primary)" }} />
                       Compliant
                     </span>
                   </SelectItem>
                   <SelectItem value="pending">
                     <span className="flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-amber-500" />
+                      <span className="size-2 rounded-full" style={{ background: "var(--status-amber)" }} />
                       Pending
                     </span>
                   </SelectItem>
                   <SelectItem value="non_compliant">
                     <span className="flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-red-500" />
+                      <span className="size-2 rounded-full" style={{ background: "var(--status-red)" }} />
                       Non-Compliant
                     </span>
                   </SelectItem>
@@ -507,16 +471,23 @@ export default function RecruiterDashboardPage() {
               </TableBody>
             </Table>
           ) : filteredCandidates.length === 0 ? (
-            /* ── Empty state / Onboarding ─────────────────────────── */
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="size-16 rounded-full var(--editorial-navy)  flex items-center justify-center mb-4">
-                <Send className="size-8 var(--editorial-cream)" />
+            /* ── Empty state / Onboarding — spatial empty state ───────── */
+            <div className="empty-state">
+              <div
+                className="empty-state-icon"
+                style={{
+                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  color: "#fff",
+                }}
+              >
+                <Send className="size-7" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">Welcome! Get started by sending your first request</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
+              <h3 className="empty-state-title">Welcome! Get started by sending your first request</h3>
+              <p className="empty-state-description">
                 Send a verification request to a candidate to begin tracking their compliance and documents. It only takes a moment.
               </p>
-              <Button asChild className="mt-4" style={{ background: "var(--editorial-navy)", color: "var(--editorial-cream)" }}>
+              <Button asChild className="mt-4">
                 <Link href="/recruiter/send">
                   <Send className="size-4" />
                   Send New Request
@@ -543,24 +514,24 @@ export default function RecruiterDashboardPage() {
                       [candidate.firstName, candidate.lastName]
                         .filter(Boolean)
                         .join(" ") || candidate.email;
+                    const avatarInitial = candidate.firstName?.[0]?.toUpperCase() ??
+                      candidate.email[0]?.toUpperCase() ?? "U";
+                    const avatarVariant = (candidate.id % 2 === 0 ? "primary" : "terra") as "primary" | "terra";
 
                     return (
-                      <TableRow key={candidate.id} className="group hover:bg-muted/50">
+                      <TableRow key={candidate.id} className="group">
                         {/* Candidate Name — clickable link */}
                         <TableCell>
                           <Link
                             href={`/recruiter/candidates/${candidate.id}`}
                             className="flex items-center gap-3"
                           >
-                            <div className="flex size-8 items-center justify-center rounded-full var(--editorial-navy)  var(--editorial-gold) text-xs font-semibold shrink-0">
-                              {candidate.firstName?.[0]?.toUpperCase() ??
-                                candidate.email[0]?.toUpperCase()}
-                            </div>
+                            <SpatialAvatar initials={avatarInitial} variant={avatarVariant} />
                             <div className="min-w-0">
-                              <p className="font-medium text-sm truncate group-hover:var(--editorial-gold) group-hover:underline underline-offset-2">
+                              <p className="font-medium text-sm truncate group-hover:text-primary group-hover:underline underline-offset-2 transition-colors">
                                 {fullName}
                               </p>
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
                                 {candidate.email}
                               </p>
                             </div>
@@ -569,7 +540,7 @@ export default function RecruiterDashboardPage() {
 
                         {/* Specialty */}
                         <TableCell>
-                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:var(--editorial-gold)">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:text-primary transition-colors">
                             {candidate.specialty || "—"}
                           </Link>
                         </TableCell>
@@ -587,14 +558,14 @@ export default function RecruiterDashboardPage() {
                         {/* Documents Shared */}
                         <TableCell>
                           <Link href={`/recruiter/candidates/${candidate.id}`} className="inline-flex items-center gap-1 text-sm">
-                            <FileText className="size-3.5 text-muted-foreground" />
+                            <FileText className="size-3.5" style={{ color: "var(--text-muted)" }} />
                             {candidate.sharedDocuments.length}
                           </Link>
                         </TableCell>
 
                         {/* Last Activity */}
                         <TableCell>
-                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm text-muted-foreground hover:var(--editorial-gold)">
+                          <Link href={`/recruiter/candidates/${candidate.id}`} className="text-sm hover:text-primary transition-colors" style={{ color: "var(--text-secondary)" }}>
                             {formatDate(candidate.lastActivity)}
                           </Link>
                         </TableCell>
@@ -605,7 +576,7 @@ export default function RecruiterDashboardPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-7 text-xs gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
+                              className="h-7 text-xs gap-1.5"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -624,7 +595,7 @@ export default function RecruiterDashboardPage() {
                               )}
                             </Button>
                           ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -637,12 +608,12 @@ export default function RecruiterDashboardPage() {
 
           {/* ── Table footer info ──────────────────────────────────── */}
           {!isLoading && filteredCandidates.length > 0 && (
-            <div className="flex items-center justify-between pt-4 border-t mt-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between pt-4 border-t mt-4" style={{ borderColor: "var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                 Showing {filteredCandidates.length} of {data?.candidates.length ?? 0}{" "}
                 candidate{(data?.candidates.length ?? 0) !== 1 ? "s" : ""}
               </p>
-              <Button variant="ghost" size="sm" asChild className="var(--editorial-cream) hover:var(--editorial-gold)">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/recruiter/requests">
                   <ArrowUpRight className="size-3.5" />
                   View All Requests
@@ -685,7 +656,7 @@ function BobSummaryWidget() {
   }, []);
 
   if (loading) {
-    return <Skeleton className="h-24 w-full rounded-lg" />;
+    return <Skeleton className="h-24 w-full rounded-[20px]" />;
   }
 
   if (!bobStats || bobStats.total === 0) {
@@ -694,7 +665,7 @@ function BobSummaryWidget() {
         <CardContent className="py-6 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Your Book of Business is empty</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               Add your first candidate lead to start tracking them through the pipeline.
             </p>
           </div>
@@ -714,8 +685,8 @@ function BobSummaryWidget() {
       <CardContent className="py-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Users className="size-4 text-emerald-600" />
-            <h3 className="text-sm font-semibold text-foreground">Book of Business</h3>
+            <Users className="size-4" style={{ color: "var(--primary)" }} />
+            <h3 className="text-sm font-semibold text-foreground font-heading">Book of Business</h3>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/recruiter/candidates">
@@ -727,27 +698,39 @@ function BobSummaryWidget() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Active in BOB */}
-          <Link href="/recruiter/candidates" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <p className="text-2xl font-bold text-foreground">{bobStats.active}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</p>
+          <Link href="/recruiter/candidates" className="block p-2 rounded-[12px] transition-colors" style={{ background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--material-thin-bg)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <p className="text-2xl font-bold text-foreground tabular-nums">{bobStats.active}</p>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Active</p>
           </Link>
 
           {/* Hot leads */}
-          <Link href="/recruiter/candidates?tag=hot" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <p className="text-2xl font-bold text-red-500">{bobStats.by_tag.hot}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">🔥 Hot (7d)</p>
+          <Link href="/recruiter/candidates?tag=hot" className="block p-2 rounded-[12px] transition-colors" style={{ background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--material-thin-bg)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--status-red)" }}>{bobStats.by_tag.hot}</p>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>🔥 Hot (7d)</p>
           </Link>
 
           {/* Cold leads */}
-          <Link href="/recruiter/candidates?tag=cold" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <p className="text-2xl font-bold text-blue-500">{bobStats.by_tag.cold}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">❄️ Cold (15-30d)</p>
+          <Link href="/recruiter/candidates?tag=cold" className="block p-2 rounded-[12px] transition-colors" style={{ background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--material-thin-bg)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--status-blue)" }}>{bobStats.by_tag.cold}</p>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>❄️ Cold (15-30d)</p>
           </Link>
 
           {/* Company Pool */}
-          <Link href="/recruiter/candidates?view=company_pool" className="block p-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <p className="text-2xl font-bold text-muted-foreground">{bobStats.in_pool}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Company Pool</p>
+          <Link href="/recruiter/candidates?view=company_pool" className="block p-2 rounded-[12px] transition-colors" style={{ background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--material-thin-bg)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--text-muted)" }}>{bobStats.in_pool}</p>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Company Pool</p>
           </Link>
         </div>
       </CardContent>
