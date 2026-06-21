@@ -55,6 +55,23 @@ interface DashboardData {
   emailVerified: boolean;
 }
 
+// ─── Stat Card Icon Style Helper ──────────────────────────────────
+// Returns spatial-styled icon container — forest green or terracotta
+function statIconStyle(variant: "primary" | "terra") {
+  if (variant === "terra") {
+    return {
+      background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
+      color: "#fff",
+    };
+  }
+  return {
+    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+    color: "#fff",
+  };
+}
+
 // ─── Main Dashboard Component ─────────────────────────────────────
 export default function CandidateDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -148,7 +165,7 @@ export default function CandidateDashboardPage() {
           </div>
           <Skeleton className="size-20 rounded-full" />
         </div>
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-[20px]" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -169,7 +186,7 @@ export default function CandidateDashboardPage() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-destructive mb-4">{error}</p>
+            <p className="mb-4" style={{ color: "var(--status-red)" }}>{error}</p>
             <Button onClick={fetchDashboard} variant="outline">
               Try Again
             </Button>
@@ -192,35 +209,46 @@ export default function CandidateDashboardPage() {
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
-      {/* ── Email Verification Nudge ── */}
+      {/* ── Email Verification Nudge — spatial amber callout ── */}
       {data && !data.emailVerified && !emailBannerDismissed && (
-        <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50">
-          <CardContent className="p-4 flex items-start gap-3">
-            <Mail className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-medium text-sm text-amber-800 dark:text-amber-200">
-                Verify your email address
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                Please verify your email to access all features and secure your account.
-              </p>
-              <Link href="/verify-email" className="inline-block mt-2">
-                <Button size="sm" variant="outline" className="gap-1.5 border-amber-400 text-amber-800 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-900">
-                  <Mail className="size-3.5" />
-                  Verify Email
-                </Button>
-              </Link>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200"
-              onClick={() => setEmailBannerDismissed(true)}
-            >
-              <X className="size-4" />
-            </Button>
-          </CardContent>
-        </Card>
+        <div
+          className="rounded-[20px] p-4 flex items-start gap-3"
+          style={{
+            background: "var(--status-amber-bg)",
+            border: "0.5px solid rgba(217,119,6,0.25)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+          }}
+        >
+          <Mail className="size-5 shrink-0 mt-0.5" style={{ color: "var(--status-amber)" }} />
+          <div className="flex-1">
+            <p className="font-semibold text-sm" style={{ color: "var(--status-amber-dark)" }}>
+              Verify your email address
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--status-amber-dark)" }}>
+              Please verify your email to access all features and secure your account.
+            </p>
+            <Link href="/verify-email" className="inline-block mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+              >
+                <Mail className="size-3.5" />
+                Verify Email
+              </Button>
+            </Link>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setEmailBannerDismissed(true)}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
       )}
 
       {/* ── Requested Documents (from recruiters) ── */}
@@ -229,174 +257,205 @@ export default function CandidateDashboardPage() {
         <RequestedDocuments />
       </div>
 
-      {/* ── Thank You State ── */}
+      {/* ── Thank You State — spatial primary callout ── */}
       {thankYouState?.show && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="p-4 flex items-start gap-3">
+        <div
+          className="rounded-[20px] p-4 flex items-start gap-3"
+          style={{
+            background: "var(--primary-light)",
+            border: "0.5px solid var(--status-green-border)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+          }}
+        >
+          {thankYouState.pct >= 100 ? (
+            <PartyPopper className="size-5 shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+          ) : thankYouState.pct >= 25 ? (
+            <Sparkles className="size-5 shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+          ) : (
+            <CheckCircle2 className="size-5 shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+          )}
+          <div className="flex-1">
             {thankYouState.pct >= 100 ? (
-              <PartyPopper className="size-5 text-primary shrink-0 mt-0.5" />
+              <>
+                <p className="font-semibold text-sm" style={{ color: "var(--primary)" }}>You&apos;re all set!</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                  Your profile is fully ready. Recruiters can now access your verified credentials.
+                </p>
+              </>
             ) : thankYouState.pct >= 25 ? (
-              <Sparkles className="size-5 text-primary shrink-0 mt-0.5" />
+              <>
+                <p className="font-semibold text-sm" style={{ color: "var(--primary)" }}>Your checklist is saved!</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                  Your profile is {thankYouState.pct}% complete. Keep going to unlock full access for recruiters.
+                </p>
+              </>
             ) : (
-              <CheckCircle2 className="size-5 text-primary shrink-0 mt-0.5" />
+              <>
+                <p className="font-semibold text-sm" style={{ color: "var(--primary)" }}>Great job! Your checklist is saved!</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                  You&apos;re just getting started. Complete your profile to make it visible to recruiters.
+                </p>
+              </>
             )}
-            <div className="flex-1">
-              {thankYouState.pct >= 100 ? (
-                <>
-                  <p className="font-medium text-sm">You&apos;re all set!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Your profile is fully ready. Recruiters can now access your verified credentials.
-                  </p>
-                </>
-              ) : thankYouState.pct >= 25 ? (
-                <>
-                  <p className="font-medium text-sm">Your checklist is saved!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Your profile is {thankYouState.pct}% complete. Keep going to unlock full access for recruiters.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-medium text-sm">Great job! Your checklist is saved!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    You&apos;re just getting started. Complete your profile to make it visible to recruiters.
-                  </p>
-                </>
-              )}
-            </div>
-            <Button variant="ghost" size="sm" className="shrink-0" onClick={dismissThankYou}>
-              <X className="size-4" />
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+          <Button variant="ghost" size="sm" className="shrink-0" onClick={dismissThankYou}>
+            <X className="size-4" />
+          </Button>
+        </div>
       )}
 
-      {/* ── Getting Started Onboarding (for new users) ── */}
+      {/* ── Getting Started Onboarding — spatial list items ── */}
       {data && (data.profile?.profileCompletionPct ?? 0) < 50 && !thankYouState?.show && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="size-5 text-primary" />
-              <h2 className="font-semibold text-base text-foreground">Getting Started</h2>
+              <Sparkles className="size-5" style={{ color: "var(--primary)" }} />
+              <h2 className="font-semibold text-base text-foreground font-heading">Getting Started</h2>
               <Badge variant="outline" className="ml-auto text-xs">
                 {data.profile?.profileCompletionPct ?? 0}% complete
               </Badge>
             </div>
-            <p className="text-xs text-text-secondary mb-4">
+            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
               Complete these steps to build your vault and make your profile visible to recruiters.
             </p>
             <div className="space-y-2">
               {/* Step 1: Resume */}
               <Link
                 href="/vault/resume"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+                className="spatial-list-item group"
               >
                 {data.resume ? (
-                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                  <CheckCircle2 className="size-5 shrink-0" style={{ color: "var(--primary)" }} />
                 ) : (
-                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                  <div
+                    className="size-5 rounded-full shrink-0"
+                    style={{ border: "2px solid var(--border-strong)" }}
+                  />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${data.resume ? "text-text-secondary line-through" : "text-foreground"}`}>
+                  <p
+                    className={`text-sm font-medium ${data.resume ? "line-through" : ""}`}
+                    style={{ color: data.resume ? "var(--text-secondary)" : "var(--text-primary)" }}
+                  >
                     Upload your resume
                   </p>
-                  <p className="text-xs text-text-muted">PDF or Word — we&apos;ll parse it automatically</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>PDF or Word — we&apos;ll parse it automatically</p>
                 </div>
-                {!data.resume && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+                {!data.resume && <ArrowRight className="size-4 group-hover:text-primary transition-colors shrink-0" style={{ color: "var(--text-muted)" }} />}
               </Link>
 
               {/* Step 2: Credentials */}
               <Link
                 href="/vault/credentials"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+                className="spatial-list-item group"
               >
                 {data.credentials.total > 0 ? (
-                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                  <CheckCircle2 className="size-5 shrink-0" style={{ color: "var(--primary)" }} />
                 ) : (
-                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                  <div
+                    className="size-5 rounded-full shrink-0"
+                    style={{ border: "2px solid var(--border-strong)" }}
+                  />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${data.credentials.total > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                  <p
+                    className={`text-sm font-medium ${data.credentials.total > 0 ? "line-through" : ""}`}
+                    style={{ color: data.credentials.total > 0 ? "var(--text-secondary)" : "var(--text-primary)" }}
+                  >
                     Add a credential
                   </p>
-                  <p className="text-xs text-text-muted">BLS, ACLS, immunizations, licenses, etc.</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>BLS, ACLS, immunizations, licenses, etc.</p>
                 </div>
-                {data.credentials.total === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+                {data.credentials.total === 0 && <ArrowRight className="size-4 group-hover:text-primary transition-colors shrink-0" style={{ color: "var(--text-muted)" }} />}
               </Link>
 
               {/* Step 3: Checklist */}
               <Link
                 href="/checklists"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+                className="spatial-list-item group"
               >
                 {data.checklists.completed > 0 ? (
-                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                  <CheckCircle2 className="size-5 shrink-0" style={{ color: "var(--primary)" }} />
                 ) : (
-                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                  <div
+                    className="size-5 rounded-full shrink-0"
+                    style={{ border: "2px solid var(--border-strong)" }}
+                  />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${data.checklists.completed > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                  <p
+                    className={`text-sm font-medium ${data.checklists.completed > 0 ? "line-through" : ""}`}
+                    style={{ color: data.checklists.completed > 0 ? "var(--text-secondary)" : "var(--text-primary)" }}
+                  >
                     Complete a skill checklist
                   </p>
-                  <p className="text-xs text-text-muted">
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {data.checklists.pending > 0
                       ? `You have ${data.checklists.pending} pending request${data.checklists.pending > 1 ? "s" : ""}`
                       : "Recruiters will send these — check back soon"}
                   </p>
                 </div>
-                {data.checklists.completed === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+                {data.checklists.completed === 0 && <ArrowRight className="size-4 group-hover:text-primary transition-colors shrink-0" style={{ color: "var(--text-muted)" }} />}
               </Link>
 
               {/* Step 4: References */}
               <Link
                 href="/references"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-2 transition-colors group"
+                className="spatial-list-item group"
               >
                 {data.references.total > 0 ? (
-                  <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                  <CheckCircle2 className="size-5 shrink-0" style={{ color: "var(--primary)" }} />
                 ) : (
-                  <div className="size-5 rounded-full border-2 border-text-muted shrink-0" />
+                  <div
+                    className="size-5 rounded-full shrink-0"
+                    style={{ border: "2px solid var(--border-strong)" }}
+                  />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${data.references.total > 0 ? "text-text-secondary line-through" : "text-foreground"}`}>
+                  <p
+                    className={`text-sm font-medium ${data.references.total > 0 ? "line-through" : ""}`}
+                    style={{ color: data.references.total > 0 ? "var(--text-secondary)" : "var(--text-primary)" }}
+                  >
                     Request a reference
                   </p>
-                  <p className="text-xs text-text-muted">Ask a manager to verify your work history</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Ask a manager to verify your work history</p>
                 </div>
-                {data.references.total === 0 && <ArrowRight className="size-4 text-text-muted group-hover:text-primary transition-colors shrink-0" />}
+                {data.references.total === 0 && <ArrowRight className="size-4 group-hover:text-primary transition-colors shrink-0" style={{ color: "var(--text-muted)" }} />}
               </Link>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* ── Quick Status Cards ── */}
+      {/* ── Quick Status Cards — spatial cards with gradient icons ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
+        <Card className="group">
           <Link href="/vault/resume">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
-                  <FileText className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("primary")}>
+                  <FileText className="size-4" />
                 </div>
                 <Badge variant={hasResume ? "default" : "secondary"} className="text-xs">
                   {hasResume ? "Uploaded" : "Not Added"}
                 </Badge>
               </div>
-              <p className="text-sm font-medium">Resume</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-semibold">Resume</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {hasResume ? "Resume on file" : "Upload your resume"}
               </p>
             </CardContent>
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
+        <Card className="group">
           <Link href="/checklists">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
-                  <ClipboardCheck className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("terra")}>
+                  <ClipboardCheck className="size-4" />
                 </div>
                 {data?.checklists?.pending > 0 && (
                   <Badge variant="destructive" className="text-xs">
@@ -404,77 +463,77 @@ export default function CandidateDashboardPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm font-medium">Checklists</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-semibold">Checklists</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {data?.checklists?.completed ?? 0} of {data?.checklists?.total ?? 0} completed
               </p>
             </CardContent>
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
+        <Card className="group">
           <Link href="/calendar">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
-                  <CalendarDays className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("primary")}>
+                  <CalendarDays className="size-4" />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   Schedule
                 </Badge>
               </div>
-              <p className="text-sm font-medium">Calendar</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Track deadlines & expirations
+              <p className="text-sm font-semibold">Calendar</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                Track deadlines &amp; expirations
               </p>
             </CardContent>
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
+        <Card className="group">
           <Link href="/vault/credentials">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
-                  <ShieldCheck className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("terra")}>
+                  <ShieldCheck className="size-4" />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {data?.credentials?.active ?? 0} active
                 </Badge>
               </div>
-              <p className="text-sm font-medium">Credentials</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-semibold">Credentials</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {data?.credentials?.total ?? 0} total documents
               </p>
             </CardContent>
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-navy, #0B1F3A)" }}>
+        <Card className="group">
           <Link href="/references">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-navy, #0B1F3A)" }}>
-                  <Users className="size-4" style={{ color: "var(--editorial-cream, #F5F0E6)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("primary")}>
+                  <Users className="size-4" />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {data?.references?.completed ?? 0} done
                 </Badge>
               </div>
-              <p className="text-sm font-medium">References</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-semibold">References</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {data?.references?.total ?? 0} total references
               </p>
             </CardContent>
           </Link>
         </Card>
 
-        <Card className="group hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: "var(--editorial-gold, #C9A961)" }}>
+        <Card className="group">
           <Link href="/vaultsign">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--editorial-gold, #C9A961)" }}>
-                  <FileSignature className="size-4" style={{ color: "var(--editorial-navy, #0B1F3A)" }} />
+                <div className="size-9 rounded-[10px] flex items-center justify-center" style={statIconStyle("terra")}>
+                  <FileSignature className="size-4" />
                 </div>
                 {(data?.vaultsign?.pending ?? 0) > 0 ? (
                   <Badge variant="destructive" className="text-xs">
@@ -486,8 +545,8 @@ export default function CandidateDashboardPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm font-medium">VaultSign</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-semibold">VaultSign</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {(data?.vaultsign?.pending ?? 0) > 0
                   ? `${data.vaultsign.pending} document${data.vaultsign.pending > 1 ? "s" : ""} to sign`
                   : `${data?.vaultsign?.total ?? 0} total documents`}
@@ -497,15 +556,22 @@ export default function CandidateDashboardPage() {
         </Card>
       </div>
 
-      {/* ── Empty State for Organic Signups ── */}
+      {/* ── Empty State — spatial empty state ── */}
       {isEmptyState && (
         <Card>
           <CardContent className="p-8 text-center">
-            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="size-7 text-primary" />
+            <div
+              className="size-14 rounded-[20px] flex items-center justify-center mx-auto mb-4"
+              style={{
+                background: "var(--primary-light)",
+                border: "0.5px solid var(--status-green-border)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+              }}
+            >
+              <Sparkles className="size-7" style={{ color: "var(--primary)" }} />
             </div>
-            <h3 className="text-lg font-semibold">Welcome to MyZipVault</h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+            <h3 className="text-lg font-semibold font-heading">Welcome to MyZipVault</h3>
+            <p className="text-sm mt-2 max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
               Your vault is ready. Start by uploading your resume or adding your certifications
               to build your verified professional profile.
             </p>
@@ -529,12 +595,12 @@ export default function CandidateDashboardPage() {
 
       {/* ── Pending Checklists Action Items ── */}
       {data?.pendingChecklistRequests && data.pendingChecklistRequests.length > 0 && (
-        <Card className="border-primary/20">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <ClipboardList className="size-4 text-primary" />
-                <h3 className="text-sm font-semibold">Pending Checklists</h3>
+                <ClipboardList className="size-4" style={{ color: "var(--primary)" }} />
+                <h3 className="text-sm font-semibold font-heading">Pending Checklists</h3>
               </div>
               <Badge variant="destructive" className="text-xs">
                 {data.pendingChecklistRequests.length} pending
@@ -544,11 +610,11 @@ export default function CandidateDashboardPage() {
               {data.pendingChecklistRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  className="spatial-list-item"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{req.checklistName}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                       Assigned {new Date(req.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -569,19 +635,29 @@ export default function CandidateDashboardPage() {
       {data?.notifications && data.notifications.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Recent Activity</h3>
+            <h3 className="text-sm font-semibold mb-3 font-heading">Recent Activity</h3>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {data.notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`flex items-start gap-3 p-2 rounded-lg text-sm ${
-                    notification.isRead ? "opacity-60" : "bg-muted/50"
+                  className={`flex items-start gap-3 p-2 rounded-[12px] text-sm ${
+                    notification.isRead ? "opacity-60" : ""
                   }`}
+                  style={
+                    notification.isRead
+                      ? {}
+                      : {
+                          background: "var(--material-thin-bg)",
+                          backdropFilter: "blur(20px) saturate(1.5)",
+                          WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                          border: "0.5px solid var(--material-thin-border)",
+                        }
+                  }
                 >
-                  <div className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                  <div className="size-2 rounded-full shrink-0 mt-1.5" style={{ background: "var(--primary)" }} />
                   <div className="flex-1 min-w-0">
                     <p className="truncate">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                       {new Date(notification.createdAt).toLocaleDateString()}
                     </p>
                   </div>

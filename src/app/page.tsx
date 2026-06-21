@@ -27,6 +27,7 @@ import {
   Menu,
   X,
 } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
 
 interface LandingPageContent {
   hero: {
@@ -110,78 +111,30 @@ const DEFAULT_CONTENT: LandingPageContent = {
     trustLine3: "You own your data",
   },
   colors: {
-    primary: "#0B1F3A",
-    accent: "#C9A961",
-    background: "#F5F0E6",
-    textPrimary: "#1A1A1A",
-    textSecondary: "#3A3A3A",
+    primary: "#2D5A3D",
+    accent: "#C97B54",
+    background: "#F2EDE4",
+    textPrimary: "#2D5A3D",
+    textSecondary: "#6A8A6A",
   },
   featureCards: [
-    {
-      icon: "FolderOpen",
-      heading: "One Vault. Every Credential.",
-      body: "Resume, certifications, immunizations, skill checklists, references — all in one secure, organized place. Upload once, share forever.",
-    },
-    {
-      icon: "Eye",
-      heading: "Share On Your Terms.",
-      body: "Approve every recruiter request individually. Set expiry dates. Revoke access instantly. Your credentials, your rules — always.",
-    },
-    {
-      icon: "ClipboardCheck",
-      heading: "Skill Checklists, Done Right.",
-      body: "Complete once, reuse for 30 days. Recruiters still pay to access, but you never redo the same checklist twice in a month.",
-    },
-    {
-      icon: "BadgeCheck",
-      heading: "Verified. Trusted. Ready.",
-      body: "Every uploaded credential goes through admin verification. Recruiters see a 'Verified' badge — and trust what they're placing.",
-    },
-    {
-      icon: "Timer",
-      heading: "Never Let a Cert Expire.",
-      body: "Automatic 30-day reminders before any credential expires. Stay ahead of compliance, never lose a contract over paperwork.",
-    },
-    {
-      icon: "Lock",
-      heading: "Bank-Level Security.",
-      body: "256-bit encryption at rest and in transit. HIPAA-aligned architecture. Pre-signed URLs that expire in 15 minutes. Your data is fortress-grade.",
-    },
+    { icon: "FolderOpen", heading: "One Vault. Every Credential.", body: "Resume, certifications, immunizations, skill checklists, references — all in one secure, organized place. Upload once, share forever." },
+    { icon: "Eye", heading: "Share On Your Terms.", body: "Approve every recruiter request individually. Set expiry dates. Revoke access instantly. Your credentials, your rules — always." },
+    { icon: "ClipboardCheck", heading: "Skill Checklists, Done Right.", body: "Complete once, reuse for 30 days. Recruiters still pay to access, but you never redo the same checklist twice in a month." },
+    { icon: "BadgeCheck", heading: "Verified. Trusted. Ready.", body: "Every uploaded credential goes through admin verification. Recruiters see a 'Verified' badge — and trust what they're placing." },
+    { icon: "Timer", heading: "Never Let a Cert Expire.", body: "Automatic 30-day reminders before any credential expires. Stay ahead of compliance, never lose a contract over paperwork." },
+    { icon: "Lock", heading: "Bank-Level Security.", body: "256-bit encryption at rest and in transit. HIPAA-aligned architecture. Pre-signed URLs that expire in 15 minutes. Your data is fortress-grade." },
   ],
   privacySection: [
-    {
-      icon: "Lock",
-      heading: "Private by Design",
-      body: "We never sell your data. We never share without your explicit consent. We never use your credentials for marketing.",
-    },
-    {
-      icon: "Trash2",
-      heading: "Delete Forever, Anytime",
-      body: "Suspend your account and all recruiter access is killed instantly. 30-day restore window. Permanent purge after — no traces left.",
-    },
-    {
-      icon: "ShieldCheck",
-      heading: "Audit Everything",
-      body: "Every view, every share, every download is logged. You can see exactly who accessed what, when. Total transparency.",
-    },
+    { icon: "Lock", heading: "Private by Design", body: "We never sell your data. We never share without your explicit consent. We never use your credentials for marketing." },
+    { icon: "Trash2", heading: "Delete Forever, Anytime", body: "Suspend your account and all recruiter access is killed instantly. 30-day restore window. Permanent purge after — no traces left." },
+    { icon: "ShieldCheck", heading: "Audit Everything", body: "Every view, every share, every download is logged. You can see exactly who accessed what, when. Total transparency." },
   ],
   howItWorks: [
-    {
-      title: "Build Your Vault",
-      description: "Sign up free. Upload your resume, certifications, and references. Takes about 5 minutes to get started.",
-    },
-    {
-      title: "Receive Requests",
-      description: "When a recruiter needs your compliance packet, you'll get an email + in-app notification showing exactly what they're asking for.",
-    },
-    {
-      title: "Approve & Share",
-      description: "Review the request, set an expiry (7/14/30 days), and approve. Recruiter gets instant access. You can revoke anytime.",
-    },
-    {
-      title: "Get Placed Faster",
-      description: "Recruiters love MyZipVault candidates because their packets are verified, complete, and ready to submit. You win the contract.",
-    },
+    { title: "Build Your Vault", description: "Sign up free. Upload your resume, certifications, and references. Takes about 5 minutes to get started." },
+    { title: "Receive Requests", description: "When a recruiter needs your compliance packet, you'll get an email + in-app notification showing exactly what they're asking for." },
+    { title: "Approve & Share", description: "Review the request, set an expiry (7/14/30 days), and approve. Recruiter gets instant access. You can revoke anytime." },
+    { title: "Get Placed Faster", description: "Recruiters love MyZipVault candidates because their packets are verified, complete, and ready to submit. You win the contract." },
   ],
   footer: {
     copyrightText: "© 2026 MyZipVault. All rights reserved.",
@@ -189,41 +142,41 @@ const DEFAULT_CONTENT: LandingPageContent = {
   },
 };
 
+// Reusable Spatial UI eyebrow — terra gradient bar + uppercase tracked text
+function SpatialEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div
+        className="h-0.5 w-8 rounded-full"
+        style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }}
+      />
+      <span
+        className="text-xs font-bold uppercase"
+        style={{ color: "var(--terra)", letterSpacing: "0.2em" }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("candidate");
   const [content, setContent] = useState<LandingPageContent>(DEFAULT_CONTENT);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Fetch landing page content from superadmin-configured API
   useEffect(() => {
-    fetch(`/api/superadmin/landing-page?t=${Date.now()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-        return res.json();
-      })
+    fetch("/api/landing-content")
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.content) {
-          try {
-            const parsed =
-              typeof data.content === "string"
-                ? JSON.parse(data.content)
-                : data.content;
-            setContent({ ...DEFAULT_CONTENT, ...parsed });
-          } catch {
-            // Keep defaults if parse fails
-          }
-        }
+        if (data && Object.keys(data).length > 0) setContent(data);
       })
       .catch((err) => {
-        // Silent fail — defaults are fine
-        if (process.env.NODE_ENV === "development") {
-          console.error("Landing page content fetch failed:", err);
-        }
+        if (process.env.NODE_ENV === "development") console.error("Landing content fetch failed:", err);
       });
   }, []);
 
-  // Detect scroll for navbar background change
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -233,422 +186,244 @@ export default function LandingPage() {
   const isCandidate = viewMode === "candidate";
 
   return (
-    <div
-      style={{
-        background: "var(--editorial-cream)",
-        color: "var(--editorial-ink)",
-        fontFamily: "var(--editorial-font-sans)",
-        minHeight: "100vh",
-      }}
-    >
+    <div className="relative min-h-screen" style={{ background: "var(--background)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
+      {/* Mesh background — animated gradient orbs */}
+      <div className="mesh-background" />
+
       {/* ═══════════════════════════════════════════════════════════════
-          NAVIGATION
-          Sticky nav with subtle background change on scroll
+          NAVIGATION — Spatial header (transparent → material on scroll)
           ═══════════════════════════════════════════════════════════════ */}
       <nav
+        className="sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: scrolled ? "var(--editorial-cream-warm)" : "transparent",
-          borderBottom: scrolled ? "1px solid var(--editorial-rule-soft)" : "1px solid transparent",
-          transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
-          backdropFilter: scrolled ? "blur(8px)" : "none",
+          background: scrolled ? "var(--material-regular-bg)" : "transparent",
+          backdropFilter: scrolled ? "blur(30px) saturate(1.8) brightness(1.04)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(30px) saturate(1.8) brightness(1.04)" : "none",
+          borderBottom: scrolled ? "0.5px solid var(--material-regular-border)" : "0.5px solid transparent",
+          boxShadow: scrolled ? "inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(45,90,61,0.04)" : "none",
         }}
       >
-        <div
-          style={{
-            maxWidth: "1280px",
-            margin: "0 auto",
-            padding: "1rem 1.5rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
             <div
+              className="flex items-center justify-center size-8 rounded-[10px] text-white text-base font-bold"
               style={{
-                width: "32px",
-                height: "32px",
-                background: "var(--editorial-navy)",
-                borderRadius: "2px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--editorial-cream)",
-                fontFamily: "var(--editorial-font-serif)",
-                fontWeight: 700,
-                fontSize: "1.25rem",
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
               }}
             >
               M
             </div>
             <span
-              style={{
-                fontFamily: "var(--editorial-font-serif)",
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                color: "var(--editorial-navy)",
-                letterSpacing: "-0.02em",
-              }}
+              className="text-xl font-bold"
+              style={{ fontFamily: "'Lora', serif", color: "var(--text-primary)", letterSpacing: "-0.02em" }}
             >
               MyZipVault
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <div style={{ display: "flex", alignItems: "center", gap: "2rem" }} className="hidden md:flex">
+          <div className="hidden md:flex items-center gap-8">
             <a
               href="#features"
-              style={{
-                fontSize: "0.875rem",
-                color: "var(--editorial-ink-soft)",
-                textDecoration: "none",
-                letterSpacing: "0.05em",
-                transition: "color 150ms",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--editorial-navy)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--editorial-ink-soft)")}
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
             >
               Features
             </a>
             <a
               href="#how-it-works"
-              style={{
-                fontSize: "0.875rem",
-                color: "var(--editorial-ink-soft)",
-                textDecoration: "none",
-                letterSpacing: "0.05em",
-                transition: "color 150ms",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--editorial-navy)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--editorial-ink-soft)")}
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
             >
               How It Works
             </a>
             <a
               href="#privacy"
-              style={{
-                fontSize: "0.875rem",
-                color: "var(--editorial-ink-soft)",
-                textDecoration: "none",
-                letterSpacing: "0.05em",
-                transition: "color 150ms",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--editorial-navy)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--editorial-ink-soft)")}
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
             >
               Privacy
             </a>
 
-            {/* Toggle */}
+            {/* View Mode Toggle — spatial pill segment */}
             <div
+              className="flex p-1 rounded-full"
               style={{
-                display: "flex",
-                background: "var(--editorial-cream-cool)",
-                borderRadius: "2px",
-                padding: "2px",
-                border: "1px solid var(--editorial-rule-soft)",
+                background: "var(--material-thin-bg)",
+                backdropFilter: "blur(20px) saturate(1.5)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                border: "0.5px solid var(--material-thin-border)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
               }}
             >
               <button
                 onClick={() => setViewMode("candidate")}
-                style={{
-                  padding: "0.5rem 1rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  background: isCandidate ? "var(--editorial-navy)" : "transparent",
-                  color: isCandidate ? "var(--editorial-cream)" : "var(--editorial-ink-soft)",
-                  border: "none",
-                  borderRadius: "2px",
-                  cursor: "pointer",
-                  transition: "all 150ms",
-                }}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+                style={
+                  isCandidate
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-secondary)" }
+                }
               >
                 For Professionals
               </button>
               <button
                 onClick={() => setViewMode("recruiter")}
-                style={{
-                  padding: "0.5rem 1rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  background: !isCandidate ? "var(--editorial-navy)" : "transparent",
-                  color: !isCandidate ? "var(--editorial-cream)" : "var(--editorial-ink-soft)",
-                  border: "none",
-                  borderRadius: "2px",
-                  cursor: "pointer",
-                  transition: "all 150ms",
-                }}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+                style={
+                  !isCandidate
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-secondary)" }
+                }
               >
                 For Agencies
               </button>
             </div>
 
-            <Link
-              href={isCandidate ? "/signup" : "/agency-signup"}
-              style={{
-                padding: "0.625rem 1.5rem",
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                borderRadius: "2px",
-                border: "1px solid var(--editorial-navy)",
-                transition: "all 150ms",
-                display: "inline-block",
-              }}
-            >
-              {isCandidate ? "Sign Up Free" : "Get Started"}
-            </Link>
+            <Button asChild size="sm">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? "Sign Up Free" : "Get Started"}
+              </Link>
+            </Button>
           </div>
 
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--editorial-navy)",
-              cursor: "pointer",
-              padding: "0.5rem",
-            }}
+            style={{ background: "transparent", border: "none", color: "var(--text-primary)", cursor: "pointer", padding: "0.5rem" }}
+            aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu — spatial material */}
         {mobileMenuOpen && (
           <div
-            className="md:hidden"
+            className="md:hidden p-6 flex flex-col gap-4"
             style={{
-              background: "var(--editorial-cream-warm)",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-              padding: "1.5rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
+              background: "var(--material-thick-bg)",
+              backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+              WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+              borderTop: "0.5px solid var(--material-thick-border)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
             }}
           >
-            <a href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--editorial-ink-soft)", textDecoration: "none", fontSize: "0.875rem" }}>
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
               Features
             </a>
-            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--editorial-ink-soft)", textDecoration: "none", fontSize: "0.875rem" }}>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
               How It Works
             </a>
-            <a href="#privacy" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--editorial-ink-soft)", textDecoration: "none", fontSize: "0.875rem" }}>
+            <a href="#privacy" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
               Privacy
             </a>
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <div
+              className="flex p-1 rounded-full mt-2"
+              style={{
+                background: "var(--material-thin-bg)",
+                border: "0.5px solid var(--material-thin-border)",
+              }}
+            >
               <button
-                onClick={() => {
-                  setViewMode("candidate");
-                  setMobileMenuOpen(false);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "0.5rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  background: isCandidate ? "var(--editorial-navy)" : "transparent",
-                  color: isCandidate ? "var(--editorial-cream)" : "var(--editorial-ink-soft)",
-                  border: "1px solid var(--editorial-navy)",
-                  borderRadius: "2px",
-                  cursor: "pointer",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
+                onClick={() => { setViewMode("candidate"); setMobileMenuOpen(false); }}
+                className="flex-1 rounded-full px-3 py-2 text-xs font-semibold transition-all"
+                style={
+                  isCandidate
+                    ? { background: "linear-gradient(180deg, var(--primary-vivid), var(--primary))", color: "#fff" }
+                    : { color: "var(--text-secondary)" }
+                }
               >
                 Pros
               </button>
               <button
-                onClick={() => {
-                  setViewMode("recruiter");
-                  setMobileMenuOpen(false);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "0.5rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  background: !isCandidate ? "var(--editorial-navy)" : "transparent",
-                  color: !isCandidate ? "var(--editorial-cream)" : "var(--editorial-ink-soft)",
-                  border: "1px solid var(--editorial-navy)",
-                  borderRadius: "2px",
-                  cursor: "pointer",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
+                onClick={() => { setViewMode("recruiter"); setMobileMenuOpen(false); }}
+                className="flex-1 rounded-full px-3 py-2 text-xs font-semibold transition-all"
+                style={
+                  !isCandidate
+                    ? { background: "linear-gradient(180deg, var(--primary-vivid), var(--primary))", color: "#fff" }
+                    : { color: "var(--text-secondary)" }
+                }
               >
                 Agencies
               </button>
             </div>
-            <Link
-              href={isCandidate ? "/signup" : "/agency-signup"}
-              style={{
-                padding: "0.75rem",
-                background: "var(--editorial-gold)",
-                color: "var(--editorial-navy)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                borderRadius: "2px",
-                textAlign: "center",
-                display: "block",
-              }}
-            >
-              {isCandidate ? "Sign Up Free" : "Get Started"}
-            </Link>
+            <Button asChild className="w-full">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? "Sign Up Free" : "Get Started"}
+              </Link>
+            </Button>
           </div>
         )}
       </nav>
 
       {/* ═══════════════════════════════════════════════════════════════
-          HERO
-          Magazine-style: eyebrow + huge serif headline + body + CTA
+          HERO — Spatial with mesh-background, terra eyebrow, pill CTAs
           ═══════════════════════════════════════════════════════════════ */}
-      <section
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "6rem 1.5rem 4rem",
-        }}
-      >
-        <div style={{ maxWidth: "64rem" }}>
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold-dark)",
-              }}
-            >
-              {isCandidate ? "For Healthcare Professionals" : "For Staffing Agencies"}
-            </span>
-          </div>
+      <section className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-4xl">
+          <SpatialEyebrow>
+            {isCandidate ? "For Healthcare Professionals" : "For Staffing Agencies"}
+          </SpatialEyebrow>
 
-          {/* Headline */}
           <h1
+            className="font-bold leading-[1.05] mb-6"
             style={{
-              fontFamily: "var(--editorial-font-serif)",
+              fontFamily: "'Lora', serif",
               fontSize: "clamp(2.75rem, 7vw, 5.5rem)",
-              fontWeight: 700,
-              lineHeight: 1.05,
               letterSpacing: "-0.025em",
-              color: "var(--editorial-navy)",
-              marginBottom: "1.5rem",
-              margin: "0 0 1.5rem 0",
+              color: "var(--text-primary)",
             }}
           >
             {isCandidate ? content.hero.candidateHeadline : content.hero.recruiterHeadline}{" "}
-            <span style={{ fontStyle: "italic", color: "var(--editorial-gold-dark)" }}>
+            <span style={{ fontStyle: "italic", color: "var(--terra)" }}>
               {isCandidate ? content.hero.candidateGradientText : content.hero.recruiterGradientText}
             </span>
           </h1>
 
-          {/* Subheadline */}
           <p
-            style={{
-              fontSize: "1.25rem",
-              lineHeight: 1.6,
-              color: "var(--editorial-ink-soft)",
-              maxWidth: "42rem",
-              marginBottom: "2.5rem",
-            }}
+            className="leading-relaxed mb-10 max-w-2xl"
+            style={{ fontSize: "1.25rem", color: "var(--text-secondary)" }}
           >
             {isCandidate ? content.hero.candidateSubheadline : content.hero.recruiterSubheadline}
           </p>
 
-          {/* CTAs */}
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-            <Link
-              href={isCandidate ? "/signup" : "/agency-signup"}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "1rem 2rem",
-                background: "var(--editorial-navy)",
-                color: "var(--editorial-cream)",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                borderRadius: "2px",
-                border: "1px solid var(--editorial-navy)",
-                transition: "all 250ms",
-              }}
-            >
-              {isCandidate ? content.hero.candidateCtaText : content.hero.recruiterCtaText}
-              <ArrowRight className="size-4" />
-            </Link>
-            <Link
-              href="/login"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "1rem 2rem",
-                background: "transparent",
-                color: "var(--editorial-navy)",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                borderRadius: "2px",
-                border: "1px solid var(--editorial-navy)",
-                transition: "all 250ms",
-              }}
-            >
-              Sign In
-            </Link>
+          <div className="flex gap-3 items-center flex-wrap">
+            <Button asChild size="lg">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? content.hero.candidateCtaText : content.hero.recruiterCtaText}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/login">
+                Sign In
+              </Link>
+            </Button>
           </div>
 
-          {/* Trust line */}
-          <div
-            style={{
-              marginTop: "3rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "1.5rem",
-              flexWrap: "wrap",
-              paddingTop: "2rem",
-              borderTop: "1px solid var(--editorial-rule-soft)",
-            }}
-          >
+          {/* Trust line — terra checkmark pills */}
+          <div className="mt-12 pt-8 flex items-center gap-6 flex-wrap border-t" style={{ borderColor: "var(--border)" }}>
             {[
               { icon: ShieldCheck, label: content.hero.trustLine1 },
               { icon: Lock, label: content.hero.trustLine2 },
               { icon: BadgeCheck, label: content.hero.trustLine3 },
             ].map(({ icon: Icon, label }, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Icon className="size-4" style={{ color: "var(--editorial-gold-dark)" }} />
-                <span style={{ fontSize: "0.875rem", color: "var(--editorial-ink-soft)" }}>{label}</span>
+              <div key={i} className="flex items-center gap-2">
+                <Icon className="size-4" style={{ color: "var(--terra)" }} />
+                <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
               </div>
             ))}
           </div>
@@ -656,24 +431,23 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          STATS BAND — Dark navy section with key numbers
+          STATS BAND — Dark forest green with terra numbers + spatial orbs
           ═══════════════════════════════════════════════════════════════ */}
       <section
-        style={{
-          background: "var(--editorial-navy)",
-          color: "var(--editorial-cream)",
-          padding: "4rem 1.5rem",
-        }}
+        className="relative py-16 px-6 overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1E3A26 0%, #2D5A3D 50%, #1E3A26 100%)", color: "#fff" }}
       >
+        {/* Spatial orbs */}
         <div
-          style={{
-            maxWidth: "1280px",
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "3rem",
-          }}
-        >
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 400, height: 400, top: -100, right: -100, background: "radial-gradient(circle, rgba(74,124,89,0.6) 0%, rgba(74,124,89,0) 70%)", filter: "blur(60px)" }}
+        />
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 350, height: 350, bottom: -100, left: -80, background: "radial-gradient(circle, rgba(201,123,84,0.5) 0%, rgba(201,123,84,0) 70%)", filter: "blur(60px)" }}
+        />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto grid gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           {[
             { value: "10,000+", label: "Healthcare Professionals Verified" },
             { value: "99.9%", label: "Platform Uptime" },
@@ -682,26 +456,21 @@ export default function LandingPage() {
           ].map((stat, i) => (
             <div key={i}>
               <div
+                className="mb-2"
                 style={{
-                  fontFamily: "var(--editorial-font-serif)",
+                  fontFamily: "'Lora', serif",
                   fontSize: "3rem",
                   fontWeight: 700,
-                  color: "var(--editorial-gold)",
+                  color: "#E8A882",
                   lineHeight: 1,
-                  marginBottom: "0.5rem",
                   letterSpacing: "-0.02em",
                 }}
               >
                 {stat.value}
               </div>
               <div
-                style={{
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-cream)",
-                  opacity: 0.7,
-                }}
+                className="text-white/70"
+                style={{ fontSize: "0.75rem", letterSpacing: "0.1em", textTransform: "uppercase" }}
               >
                 {stat.label}
               </div>
@@ -711,132 +480,81 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          FEATURES
-          Magazine-style grid with editorial cards
+          FEATURES — Spatial cards with gradient icon containers
           ═══════════════════════════════════════════════════════════════ */}
-      <section id="features" style={{ padding: "6rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
-        {/* Section header */}
-        <div style={{ maxWidth: "48rem", marginBottom: "4rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold-dark)",
-              }}
-            >
-              What You Get
-            </span>
-          </div>
+      <section id="features" className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-3xl mb-16">
+          <SpatialEyebrow>What You Get</SpatialEyebrow>
           <h2
+            className="font-bold leading-tight mb-6"
             style={{
-              fontFamily: "var(--editorial-font-serif)",
+              fontFamily: "'Lora', serif",
               fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              fontWeight: 700,
-              lineHeight: 1.1,
               letterSpacing: "-0.02em",
-              color: "var(--editorial-navy)",
-              marginBottom: "1.5rem",
+              color: "var(--text-primary)",
             }}
           >
             Built for the way healthcare actually works.
           </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              lineHeight: 1.7,
-              color: "var(--editorial-ink-soft)",
-            }}
-          >
+          <p className="leading-relaxed text-lg" style={{ color: "var(--text-secondary)" }}>
             Not a generic SaaS tool retrofitted for healthcare. MyZipVault was designed from day one for nurses, recruiters, and the unique compliance flow that connects them.
           </p>
         </div>
 
-        {/* Feature grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "1.5rem",
-          }}
-        >
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
           {content.featureCards.map((feature, i) => (
             <div
               key={i}
-              style={{
-                background: "var(--editorial-cream-warm)",
-                border: "1px solid var(--editorial-rule-soft)",
-                borderRadius: "2px",
-                padding: "2.5rem",
-                transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(11, 31, 58, 0.08), 0 4px 8px rgba(11, 31, 58, 0.04)";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 1px 2px rgba(11, 31, 58, 0.04)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
+              className="spatial-card p-8"
             >
-              {/* Number */}
-              <div
-                style={{
-                  fontFamily: "var(--editorial-font-serif)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "var(--editorial-gold-dark)",
-                  marginBottom: "1.5rem",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {String(i + 1).padStart(2, "0")}
+              <div className="flex items-center gap-3 mb-6">
+                {/* Number — terra serif */}
+                <span
+                  className="font-bold"
+                  style={{
+                    fontFamily: "'Lora', serif",
+                    fontSize: "0.875rem",
+                    color: "var(--terra)",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }} />
+                {/* Icon — spatial gradient container */}
+                <div
+                  className="flex items-center justify-center size-10 rounded-[12px]"
+                  style={
+                    i % 2 === 0
+                      ? {
+                          background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                          color: "#fff",
+                        }
+                      : {
+                          background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
+                          color: "#fff",
+                        }
+                  }
+                >
+                  <DynamicIcon name={feature.icon} fallback={ShieldCheck} className="size-5" />
+                </div>
               </div>
 
-              {/* Icon */}
-              <DynamicIcon
-                name={feature.icon}
-                fallback={ShieldCheck}
-                className="size-8"
-              />
-              <div style={{ color: "var(--editorial-navy)" }}>
-                {/* Workaround: DynamicIcon doesn't take style — wrap with parent color */}
-              </div>
-
-              {/* Heading */}
               <h3
+                className="font-bold mb-3"
                 style={{
-                  fontFamily: "var(--editorial-font-serif)",
+                  fontFamily: "'Lora', serif",
                   fontSize: "1.5rem",
-                  fontWeight: 700,
                   lineHeight: 1.2,
-                  color: "var(--editorial-navy)",
-                  marginTop: "1rem",
-                  marginBottom: "0.75rem",
                   letterSpacing: "-0.01em",
+                  color: "var(--text-primary)",
                 }}
               >
                 {feature.heading}
               </h3>
-
-              {/* Body */}
-              <p
-                style={{
-                  fontSize: "0.9375rem",
-                  lineHeight: 1.7,
-                  color: "var(--editorial-ink-soft)",
-                }}
-              >
+              <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
                 {feature.body}
               </p>
             </div>
@@ -845,104 +563,65 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          HOW IT WORKS — Numbered editorial layout
+          HOW IT WORKS — Material-thin band with terra numbers
           ═══════════════════════════════════════════════════════════════ */}
       <section
         id="how-it-works"
+        className="py-24 px-6 relative"
         style={{
-          background: "var(--editorial-cream-cool)",
-          padding: "6rem 1.5rem",
+          background: "var(--material-thin-bg)",
+          backdropFilter: "blur(20px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.5)",
         }}
       >
-        <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
-          {/* Section header */}
-          <div style={{ maxWidth: "48rem", marginBottom: "4rem" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                marginBottom: "1rem",
-              }}
-            >
-              <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-gold-dark)",
-                }}
-              >
-                {isCandidate ? "For Professionals" : "For Agencies"}
-              </span>
-            </div>
+        <div className="max-w-[1280px] mx-auto relative z-10">
+          <div className="max-w-3xl mb-16">
+            <SpatialEyebrow>
+              {isCandidate ? "For Professionals" : "For Agencies"}
+            </SpatialEyebrow>
             <h2
+              className="font-bold leading-tight"
               style={{
-                fontFamily: "var(--editorial-font-serif)",
+                fontFamily: "'Lora', serif",
                 fontSize: "clamp(2rem, 5vw, 3.5rem)",
-                fontWeight: 700,
-                lineHeight: 1.1,
                 letterSpacing: "-0.02em",
-                color: "var(--editorial-navy)",
+                color: "var(--text-primary)",
               }}
             >
               How it works.
             </h2>
           </div>
 
-          {/* Steps */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "3rem",
-            }}
-          >
+          <div className="grid gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
             {content.howItWorks.map((step, i) => (
               <div key={i}>
                 <div
+                  className="mb-4"
                   style={{
-                    fontFamily: "var(--editorial-font-serif)",
+                    fontFamily: "'Lora', serif",
                     fontSize: "4rem",
                     fontWeight: 700,
-                    color: "var(--editorial-gold)",
+                    color: "var(--terra)",
                     lineHeight: 1,
-                    marginBottom: "1rem",
                     letterSpacing: "-0.02em",
                   }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </div>
-                <div
-                  style={{
-                    width: "32px",
-                    height: "1px",
-                    background: "var(--editorial-rule)",
-                    marginBottom: "1.5rem",
-                  }}
-                />
+                <div className="w-8 h-px mb-6" style={{ background: "var(--terra)" }} />
                 <h3
+                  className="font-bold mb-3"
                   style={{
-                    fontFamily: "var(--editorial-font-serif)",
+                    fontFamily: "'Lora', serif",
                     fontSize: "1.5rem",
-                    fontWeight: 700,
                     lineHeight: 1.2,
-                    color: "var(--editorial-navy)",
-                    marginBottom: "0.75rem",
                     letterSpacing: "-0.01em",
+                    color: "var(--text-primary)",
                   }}
                 >
                   {step.title}
                 </h3>
-                <p
-                  style={{
-                    fontSize: "0.9375rem",
-                    lineHeight: 1.7,
-                    color: "var(--editorial-ink-soft)",
-                  }}
-                >
+                <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
                   {step.description}
                 </p>
               </div>
@@ -954,112 +633,61 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════
           PRIVACY & TRUST
           ═══════════════════════════════════════════════════════════════ */}
-      <section id="privacy" style={{ padding: "6rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
-        <div style={{ maxWidth: "48rem", marginBottom: "4rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold-dark)",
-              }}
-            >
-              Privacy & Trust
-            </span>
-          </div>
+      <section id="privacy" className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-3xl mb-16">
+          <SpatialEyebrow>Privacy &amp; Trust</SpatialEyebrow>
           <h2
+            className="font-bold leading-tight mb-6"
             style={{
-              fontFamily: "var(--editorial-font-serif)",
+              fontFamily: "'Lora', serif",
               fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              fontWeight: 700,
-              lineHeight: 1.1,
               letterSpacing: "-0.02em",
-              color: "var(--editorial-navy)",
-              marginBottom: "1.5rem",
+              color: "var(--text-primary)",
             }}
           >
             Your data. Your rules. Always.
           </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              lineHeight: 1.7,
-              color: "var(--editorial-ink-soft)",
-            }}
-          >
+          <p className="leading-relaxed text-lg" style={{ color: "var(--text-secondary)" }}>
             Healthcare credentials are deeply personal. We treat them that way — with bank-level encryption, granular sharing controls, and a permanent commitment to never sell your data.
           </p>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "1.5rem",
-          }}
-        >
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           {content.privacySection.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                background: "var(--editorial-paper)",
-                border: "1px solid var(--editorial-rule-soft)",
-                borderRadius: "2px",
-                padding: "2.5rem",
-              }}
-            >
-              <DynamicIcon
-                name={item.icon}
-                fallback={ShieldCheck}
-                className="size-7"
-              />
-              <h3
+            <div key={i} className="spatial-card p-8">
+              <div
+                className="flex items-center justify-center size-12 rounded-[14px] mb-4"
                 style={{
-                  fontFamily: "var(--editorial-font-serif)",
+                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                  color: "#fff",
+                }}
+              >
+                <DynamicIcon name={item.icon} fallback={ShieldCheck} className="size-6" />
+              </div>
+              <h3
+                className="font-bold mb-3"
+                style={{
+                  fontFamily: "'Lora', serif",
                   fontSize: "1.375rem",
-                  fontWeight: 700,
                   lineHeight: 1.2,
-                  color: "var(--editorial-navy)",
-                  marginTop: "1rem",
-                  marginBottom: "0.75rem",
                   letterSpacing: "-0.01em",
+                  color: "var(--text-primary)",
                 }}
               >
                 {item.heading}
               </h3>
-              <p
-                style={{
-                  fontSize: "0.9375rem",
-                  lineHeight: 1.7,
-                  color: "var(--editorial-ink-soft)",
-                }}
-              >
+              <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
                 {item.body}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Trust badges row */}
+        {/* Trust badges row — spatial icons */}
         <div
-          style={{
-            marginTop: "4rem",
-            paddingTop: "3rem",
-            borderTop: "1px solid var(--editorial-rule-soft)",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "2rem",
-          }}
+          className="mt-16 pt-12 grid gap-8 border-t"
+          style={{ borderTopColor: "var(--border)", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
         >
           {[
             { icon: ShieldCheck, label: "HIPAA Aligned", sub: "Full regulatory compliance" },
@@ -1067,118 +695,91 @@ export default function LandingPage() {
             { icon: Lock, label: "256-bit Encryption", sub: "Bank-level data protection" },
             { icon: Shield, label: "Background Verified", sub: "Identity authentication" },
           ].map(({ icon: Icon, label, sub }, i) => (
-            <div key={i} style={{ textAlign: "center" }}>
-              <Icon
-                className="size-8"
-                style={{
-                  color: "var(--editorial-navy)",
-                  margin: "0 auto 0.75rem",
-                  display: "block",
-                }}
-              />
+            <div key={i} className="text-center">
               <div
+                className="flex items-center justify-center size-14 mx-auto mb-3 rounded-[16px]"
                 style={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "var(--editorial-navy)",
-                  marginBottom: "0.25rem",
+                  background: "var(--primary-light)",
+                  border: "0.5px solid var(--status-green-border)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                 }}
               >
-                {label}
+                <Icon className="size-7" style={{ color: "var(--primary)" }} />
               </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--editorial-ink-muted)" }}>{sub}</div>
+              <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{label}</div>
+              <div className="text-xs" style={{ color: "var(--text-muted)" }}>{sub}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          FINAL CTA — Big editorial statement
+          FINAL CTA — Dark forest green band with terra CTA
           ═══════════════════════════════════════════════════════════════ */}
       <section
+        className="relative py-24 px-6 text-center overflow-hidden"
         style={{
-          background: "var(--editorial-navy)",
-          color: "var(--editorial-cream)",
-          padding: "6rem 1.5rem",
-          textAlign: "center",
+          background: "linear-gradient(135deg, #1E3A26 0%, #2D5A3D 50%, #1E3A26 100%)",
+          color: "#fff",
         }}
       >
-        <div style={{ maxWidth: "48rem", margin: "0 auto" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "2rem",
-            }}
-          >
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--editorial-gold)",
-              }}
-            >
+        {/* Spatial orbs */}
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 500, height: 500, top: -150, left: -100, background: "radial-gradient(circle, rgba(74,124,89,0.5) 0%, rgba(74,124,89,0) 70%)", filter: "blur(80px)" }}
+        />
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 400, height: 400, bottom: -100, right: -80, background: "radial-gradient(circle, rgba(201,123,84,0.4) 0%, rgba(201,123,84,0) 70%)", filter: "blur(70px)" }}
+        />
+
+        <div className="relative z-10 max-w-3xl mx-auto">
+          {/* Eyebrow — terra gradient bars */}
+          <div className="inline-flex items-center gap-3 mb-8">
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, transparent, #E8A882)" }} />
+            <span className="text-xs font-bold uppercase" style={{ color: "#E8A882", letterSpacing: "0.2em" }}>
               Get Started Today
             </span>
-            <div style={{ width: "32px", height: "2px", background: "var(--editorial-gold)" }} />
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, #E8A882, transparent)" }} />
           </div>
+
           <h2
+            className="font-bold leading-[1.05] mb-6"
             style={{
-              fontFamily: "var(--editorial-font-serif)",
+              fontFamily: "'Lora', serif",
               fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
-              fontWeight: 700,
-              lineHeight: 1.05,
               letterSpacing: "-0.025em",
-              marginBottom: "1.5rem",
             }}
           >
             {isCandidate ? (
               <>
                 Build your vault.{" "}
-                <span style={{ fontStyle: "italic", color: "var(--editorial-gold)" }}>Free forever.</span>
+                <span style={{ fontStyle: "italic", color: "#E8A882" }}>Free forever.</span>
               </>
             ) : (
               <>
                 Place talent faster.{" "}
-                <span style={{ fontStyle: "italic", color: "var(--editorial-gold)" }}>Pay only for what you use.</span>
+                <span style={{ fontStyle: "italic", color: "#E8A882" }}>Pay only for what you use.</span>
               </>
             )}
           </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              lineHeight: 1.7,
-              color: "var(--editorial-cream)",
-              opacity: 0.85,
-              marginBottom: "2.5rem",
-              maxWidth: "36rem",
-              margin: "0 auto 2.5rem",
-            }}
-          >
+          <p className="text-white/85 leading-relaxed mb-10 max-w-2xl mx-auto text-lg">
             {isCandidate
               ? "Join thousands of healthcare professionals who trust MyZipVault with their credentials. No credit card. No commitments. Just a better way to manage your career."
               : "Stop chasing paperwork. Start placing talent. Credit-based pricing means you only pay when you actually access candidate data."}
           </p>
+
+          {/* CTA — terra gradient pill button with depth-3 shadow */}
           <Link
             href={isCandidate ? "/signup" : "/agency-signup"}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-bold transition-all no-underline relative overflow-hidden"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "1.125rem 2.5rem",
-              background: "var(--editorial-gold)",
-              color: "var(--editorial-navy)",
-              fontSize: "0.875rem",
-              fontWeight: 600,
+              background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+              color: "#fff",
+              border: "0.5px solid rgba(201,123,84,0.5)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32), 0 2px 4px rgba(201,123,84,0.18)",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              textDecoration: "none",
-              borderRadius: "2px",
-              transition: "all 250ms",
             }}
           >
             {isCandidate ? "Build Your Free Vault" : "Start Recruiting Smarter"}
@@ -1188,145 +789,76 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          FOOTER
+          FOOTER — Dark forest green with terra accents
           ═══════════════════════════════════════════════════════════════ */}
       <footer
-        style={{
-          background: "var(--editorial-navy-dark)",
-          color: "var(--editorial-cream)",
-          padding: "3rem 1.5rem 2rem",
-        }}
+        className="px-6 pt-12 pb-8"
+        style={{ background: "#1E3A26", color: "#fff" }}
       >
-        <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+        <div className="max-w-[1280px] mx-auto">
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "3rem",
-              paddingBottom: "2rem",
-              borderBottom: "1px solid rgba(245, 240, 230, 0.1)",
-            }}
+            className="grid gap-12 pb-8 border-b"
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", borderBottomColor: "rgba(255,255,255,0.1)" }}
           >
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+              <div className="flex items-center gap-2.5 mb-4">
                 <div
+                  className="flex items-center justify-center size-7 rounded-[8px] text-white text-sm font-bold"
                   style={{
-                    width: "28px",
-                    height: "28px",
-                    background: "var(--editorial-gold)",
-                    borderRadius: "2px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--editorial-navy)",
-                    fontFamily: "var(--editorial-font-serif)",
-                    fontWeight: 700,
-                    fontSize: "1rem",
+                    background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
+                    fontFamily: "'Lora', serif",
                   }}
                 >
                   M
                 </div>
-                <span
-                  style={{
-                    fontFamily: "var(--editorial-font-serif)",
-                    fontSize: "1.125rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  MyZipVault
-                </span>
+                <span className="text-lg font-bold" style={{ fontFamily: "'Lora', serif" }}>MyZipVault</span>
               </div>
-              <p style={{ fontSize: "0.875rem", opacity: 0.7, lineHeight: 1.6, maxWidth: "20rem" }}>
+              <p className="text-sm leading-relaxed max-w-xs text-white/70">
                 The trusted credential verification platform for healthcare professionals and staffing agencies.
               </p>
             </div>
 
             <div>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-gold)",
-                  marginBottom: "1rem",
-                }}
-              >
-                Platform
-              </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <li><Link href="/signup" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>Sign Up</Link></li>
-                <li><Link href="/login" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>Sign In</Link></li>
-                <li><Link href="/agency-signup" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>For Agencies</Link></li>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#E8A882", letterSpacing: "0.1em" }}>Platform</div>
+              <ul className="list-none p-0 m-0 flex flex-col gap-2">
+                <li><Link href="/signup" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Sign Up</Link></li>
+                <li><Link href="/login" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Sign In</Link></li>
+                <li><Link href="/agency-signup" className="text-sm no-underline text-white/70 hover:text-white transition-colors">For Agencies</Link></li>
               </ul>
             </div>
 
             <div>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-gold)",
-                  marginBottom: "1rem",
-                }}
-              >
-                Company
-              </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <li><Link href="/about" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>About</Link></li>
-                <li><Link href="/privacy" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>Privacy Policy</Link></li>
-                <li><Link href="/terms" style={{ color: "var(--editorial-cream)", opacity: 0.7, fontSize: "0.875rem", textDecoration: "none" }}>Terms of Service</Link></li>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#E8A882", letterSpacing: "0.1em" }}>Company</div>
+              <ul className="list-none p-0 m-0 flex flex-col gap-2">
+                <li><Link href="/about" className="text-sm no-underline text-white/70 hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/privacy" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
 
             <div>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--editorial-gold)",
-                  marginBottom: "1rem",
-                }}
-              >
-                Trust
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem", opacity: 0.7 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <ShieldCheck className="size-4" style={{ color: "var(--editorial-gold)" }} />
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#E8A882", letterSpacing: "0.1em" }}>Trust</div>
+              <div className="flex flex-col gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="size-4" style={{ color: "#E8A882" }} />
                   HIPAA Aligned
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Lock className="size-4" style={{ color: "var(--editorial-gold)" }} />
+                <div className="flex items-center gap-2">
+                  <Lock className="size-4" style={{ color: "#E8A882" }} />
                   256-bit Encryption
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <BadgeCheck className="size-4" style={{ color: "var(--editorial-gold)" }} />
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="size-4" style={{ color: "#E8A882" }} />
                   SOC 2 Type II
                 </div>
               </div>
             </div>
           </div>
 
-          <div
-            style={{
-              paddingTop: "2rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
-            <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>
-              {content.footer.copyrightText}
-            </div>
-            <div style={{ fontSize: "0.75rem", opacity: 0.6, letterSpacing: "0.05em" }}>
-              {content.footer.hipaaBadgeText}
-            </div>
+          <div className="pt-8 flex justify-between items-center flex-wrap gap-4">
+            <div className="text-xs text-white/60">{content.footer.copyrightText}</div>
+            <div className="text-xs text-white/60" style={{ letterSpacing: "0.05em" }}>{content.footer.hipaaBadgeText}</div>
           </div>
         </div>
       </footer>
