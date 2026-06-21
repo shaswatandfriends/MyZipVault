@@ -22,9 +22,9 @@ export async function PUT(
     const organizationId = (session.user as Record<string, unknown>)
       .organizationId as number | null;
 
-    if (userRole !== "client_admin") {
+    if (!["client_admin", "client_recruiter"].includes(userRole)) {
       return NextResponse.json(
-        { error: "Only agency admins can edit bundles" },
+        { error: "Only agency admins and recruiters can edit bundles" },
         { status: 403 }
       );
     }
@@ -129,9 +129,9 @@ export async function DELETE(
     const organizationId = (session.user as Record<string, unknown>)
       .organizationId as number | null;
 
-    if (userRole !== "client_admin") {
+    if (!["client_admin", "client_recruiter"].includes(userRole)) {
       return NextResponse.json(
-        { error: "Only agency admins can delete bundles" },
+        { error: "Only agency admins and recruiters can delete bundles" },
         { status: 403 }
       );
     }

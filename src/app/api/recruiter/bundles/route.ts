@@ -99,9 +99,9 @@ export async function POST(request: NextRequest) {
     const organizationId = (session.user as Record<string, unknown>)
       .organizationId as number | null;
 
-    if (userRole !== "client_admin") {
+    if (!["client_admin", "client_recruiter"].includes(userRole)) {
       return NextResponse.json(
-        { error: "Only agency admins can create bundles" },
+        { error: "Only agency admins and recruiters can create bundles" },
         { status: 403 }
       );
     }

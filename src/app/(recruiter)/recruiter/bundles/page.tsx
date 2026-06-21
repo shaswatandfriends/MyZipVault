@@ -78,7 +78,7 @@ const DOC_LABELS: Record<string, { label: string; icon: React.ComponentType<{ cl
 
 export default function BundlesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "client_admin";
+  const isAdmin = user?.role === "client_admin" || user?.role === "client_recruiter";
 
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
