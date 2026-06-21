@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadCard, type LeadCardData } from "@/components/bob/lead-card";
 import { AddLeadDialog } from "@/components/bob/add-lead-dialog";
+import { useAuth } from "@/components/providers/auth-provider";
 import {
   ALL_STATUSES, STATUS_META, TAG_META, SOURCE_OPTIONS,
   type CandidateStatus,
@@ -44,10 +45,12 @@ interface Stats {
 
 export default function BOBPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [leads, setLeads] = useState<LeadCardData[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canExportCsv, setCanExportCsv] = useState(true);
 
   // View + filters
   const [view, setView] = useState<ViewMode>("kanban");
@@ -69,6 +72,23 @@ export default function BOBPage() {
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<number>>(new Set());
   const [bulkAction, setBulkAction] = useState<string>("");
   const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  // Fetch org settings to check CSV export permission for recruiters
+  useEffect(() => {
+    if (user?.role === "client_admin" || user?.role === "super_admin") {
+      setCanExportCsv(true);
+      return;
+    }
+    // For recruiters, check org setting
+    fetch("/api/vaultsign/organization")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setCanExportCsv(data.allow_recruiter_csv_export !== false);
+        }
+      })
+      .catch(() => {});
+  }, [user?.role]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -256,7 +276,8 @@ export default function BOBPage() {
           />
         </div>
 
-        {/* Export CSV */}
+        {/* Export CSV — hidden when org setting is off for recruiters */}
+        {canExportCsv && (
         <Button
           variant="outline"
           size="sm"
@@ -273,6 +294,7 @@ export default function BOBPage() {
         >
           <Download className="h-4 w-4 mr-1.5" /> Export CSV
         </Button>
+        )}
       </div>
 
       {/* Metrics */}

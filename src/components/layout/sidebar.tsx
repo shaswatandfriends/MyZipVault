@@ -336,8 +336,13 @@ export function AppSidebar() {
   let navItems = isSuperAdmin ? superAdminFlatNav : getNavItems(role);
 
   // Filter out Billing for recruiters if org setting is off
-  if (role === "client_recruiter" && orgSettings && !orgSettings.show_billing_to_recruiters) {
-    navItems = navItems.filter((item) => item.href !== "/recruiter/billing");
+  // Default: hide billing for recruiters until org settings confirm it should show
+  // This prevents the "Billing appears for a second then disappears" flicker
+  if (role === "client_recruiter") {
+    const shouldShowBilling = orgSettings?.show_billing_to_recruiters === true;
+    if (!shouldShowBilling) {
+      navItems = navItems.filter((item) => item.href !== "/recruiter/billing");
+    }
   }
 
   const label = roleLabels[role];

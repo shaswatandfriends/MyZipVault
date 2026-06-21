@@ -108,19 +108,34 @@ function getPdfPrinter(): any {
   const vfs = getVirtualfs();
 
   // Define fonts using virtualfs paths
-  const fonts = {
-    Helvetica: {
-      normal: `${FONT_VFS_PREFIX}/LiberationSans-Regular.ttf`,
-      bold: `${FONT_VFS_PREFIX}/LiberationSans-Bold.ttf`,
-      italics: `${FONT_VFS_PREFIX}/LiberationSans-Italic.ttf`,
-      bolditalics: `${FONT_VFS_PREFIX}/LiberationSans-BoldItalic.ttf`,
-    },
-    Courier: {
-      normal: `${FONT_VFS_PREFIX}/LiberationSans-Regular.ttf`,
-      bold: `${FONT_VFS_PREFIX}/LiberationSans-Bold.ttf`,
-      italics: `${FONT_VFS_PREFIX}/LiberationSans-Italic.ttf`,
-      bolditalics: `${FONT_VFS_PREFIX}/LiberationSans-BoldItalic.ttf`,
-    },
+  // Liberation Sans is metrically identical to Helvetica, but we also
+  // map common font names (Times New Roman, Arial, Georgia, Courier New, etc.)
+  // to the same Liberation Sans files so documents that reference those
+  // fonts don't crash with "Font not defined" errors.
+  const liberationFontPaths = {
+    normal: `${FONT_VFS_PREFIX}/LiberationSans-Regular.ttf`,
+    bold: `${FONT_VFS_PREFIX}/LiberationSans-Bold.ttf`,
+    italics: `${FONT_VFS_PREFIX}/LiberationSans-Italic.ttf`,
+    bolditalics: `${FONT_VFS_PREFIX}/LiberationSans-BoldItalic.ttf`,
+  };
+
+  const fonts: Record<string, typeof liberationFontPaths> = {
+    Helvetica: liberationFontPaths,
+    Courier: liberationFontPaths,
+    // Map all common font names to Liberation Sans to prevent "Font not defined" errors
+    "Times New Roman": liberationFontPaths,
+    "Times": liberationFontPaths,
+    "Arial": liberationFontPaths,
+    "Arial Narrow": liberationFontPaths,
+    "Georgia": liberationFontPaths,
+    "Courier New": liberationFontPaths,
+    "Verdana": liberationFontPaths,
+    "Tahoma": liberationFontPaths,
+    "Trebuchet MS": liberationFontPaths,
+    "Calibri": liberationFontPaths,
+    "Cambria": liberationFontPaths,
+    "Garamond": liberationFontPaths,
+    "Default": liberationFontPaths,
   };
 
   const urlResolver = new URLResolver(vfs, () => true);

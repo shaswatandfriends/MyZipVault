@@ -40,6 +40,7 @@ interface OrgSettings {
 }
 
 export default function OrgSettingsPage() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<OrgSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -225,7 +226,8 @@ export default function OrgSettingsPage() {
             </Select>
           </div>
 
-          {/* Permission Toggles (admin only) */}
+          {/* Permission Toggles (admin only) — hidden for regular recruiters */}
+          {user?.role === "client_admin" && (
           <div className="pt-4 border-t border-border space-y-3">
             <h3 className="text-sm font-semibold text-foreground">Recruiter Permissions</h3>
             <p className="text-xs text-text-muted">Control what recruiters in your organization can see and do.</p>
@@ -275,6 +277,7 @@ export default function OrgSettingsPage() {
               </button>
             </div>
           </div>
+          )}
 
           {/* Save button */}
           <div className="pt-4 border-t border-border">

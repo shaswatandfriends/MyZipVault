@@ -198,14 +198,6 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="space-y-3">
-      {/* ── Top Bar with Export ── */}
-      <div className="flex items-center justify-end">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
-          <Download className="size-3.5" />
-          Export
-        </Button>
-      </div>
-
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 

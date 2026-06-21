@@ -30,6 +30,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // ── Permission check: recruiters need allow_recruiter_csv_export enabled ──
+    // Admins and superadmins can always export
+    if (role === "client_recruiter" && orgId) {
+      const orgSettings = await db.organizationSettings.findUnique({
+        where: { organization_id: orgId },
+        select: { allow_recruiter_csv_export: true },
+      });
+      if (!orgSettings?.allow_recruiter_csv_export) {
+        return NextResponse.json(
+          { error: "CSV export is disabled for recruiters. Contact your admin." },
+          { status: 403 }
+        );
+      }
+    }
+
     const { searchParams } = new URL(request.url);
     const view = (searchParams.get("view") ?? "my_bob") as "my_bob" | "company_pool" | "all";
     const statusFilter = searchParams.get("status");
