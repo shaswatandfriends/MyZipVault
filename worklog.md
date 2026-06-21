@@ -700,3 +700,42 @@ Stage Summary:
 - 440+ hardcoded hex colors replaced with design system tokens across 40+ files
 - Shared status-colors.ts utility eliminates duplicated status badge maps across VaultSign pages
 - All remaining hex colors are intentional (color picker swatches, document rendering)
+
+---
+Task ID: 5
+Agent: Main
+Task: Improve glassmorphism design and ensure buttons are properly visible
+
+Work Log:
+- Audited current Glass Warm design system in globals.css and button.tsx
+- Discovered `mesh-background` class was missing in current globals.css (only existed in backup file) — all 4 dashboard layouts reference it but the class didn't exist, causing flat backgrounds
+- Strengthened glass tokens: --glass-bg opacity 0.52→0.68, added --glass-bg-strong, --glass-border-strong, --glass-highlight, --glass-shadow-hover
+- Upgraded all glass utility classes:
+  - .glass: 18px→24px blur, added saturate(1.8), 0.5px→1px border, added glass shine ::before pseudo
+  - .glass-dark: 20px→28px blur, stronger borders & inset highlight
+  - .glass-terra: 16px→22px blur, stronger terra borders & highlight
+  - .glass-sidebar: 20px→28px blur, added right border & box-shadow
+  - .glass-header: 0.55→0.72 opacity, 16px→20px blur, stronger bottom border + inset highlight
+  - .glass-card-static: 20px→28px blur, added top-edge highlight ::after, hover lift + shadow transition
+  - .glass-modal: 0.85→0.92 opacity, 40px→48px blur, layered shadow
+- Added new .glass-button-bg utility for buttons floating on glass surfaces
+- Added missing .mesh-background class with forest-green + terracotta animated radial-gradient orbs using mesh-drift keyframes (22s loop). Also added .mesh-tertiary for a 3rd accent orb.
+- Upgraded Button component (button.tsx) for proper visibility:
+  - default: forest-green gradient (vivid→primary), strong layered shadow with rgba(45,90,61,0.32), inset white highlight, hover lift + glow
+  - destructive: red gradient with matching shadow system
+  - outline: 1.5px primary border + glass-tinted bg + backdrop-blur (clearly visible on glass)
+  - secondary: warm off-white glass with strong border + inset highlight
+  - ghost: subtle glass tint appears on hover so it's visible on glass surfaces
+  - terra (NEW variant): terracotta gradient for warm CTAs
+  - lg size bumped h-10→h-11, larger text
+- Upgraded .btn-gradient & .btn-terra utility classes with 3-stop gradients, layered shadows, gloss ::before pseudo, active press feedback
+- Added new .btn-outline-premium and .btn-glass utility classes
+- Added .gradient-text and .gradient-text-hero utilities (used in landing page)
+- Build verified: `next build` completes successfully with all routes
+
+Stage Summary:
+- Glass Warm design system now has significantly stronger depth: 24-48px blur, layered shadows with colored glow, gloss sheen on cards, top-edge highlights
+- All dashboard layouts now have animated forest-green + terracotta background orbs (mesh-background was missing entirely)
+- Buttons now have strong layered shadows (rgba 0.32 alpha), glossy inset highlights, hover lift, and clear borders — making them unmistakably visible on any glass surface
+- New "terra" button variant added for warm CTA differentiation
+- New utility classes: .glass-button-bg, .btn-outline-premium, .btn-glass, .mesh-tertiary, .gradient-text, .gradient-text-hero

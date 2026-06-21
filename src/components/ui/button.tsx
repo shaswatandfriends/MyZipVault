@@ -9,22 +9,29 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Primary — forest green gradient with glossy highlight + strong shadow for clear visibility
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+          "bg-gradient-to-b from-[var(--primary-vivid)] to-[var(--primary)] text-white shadow-[0_4px_14px_rgba(45,90,61,0.32),0_2px_4px_rgba(45,90,61,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(45,90,61,0.42),0_3px_6px_rgba(45,90,61,0.22),inset_0_1px_0_rgba(255,255,255,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_6px_rgba(45,90,61,0.28),inset_0_1px_0_rgba(255,255,255,0.15)] border border-[rgba(45,90,61,0.4)]",
         destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-gradient-to-b from-[#C84545] to-[var(--status-red)] text-white shadow-[0_4px_14px_rgba(184,64,64,0.32),0_2px_4px_rgba(184,64,64,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(184,64,64,0.42),0_3px_6px_rgba(184,64,64,0.22)] hover:-translate-y-0.5 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 border border-[rgba(184,64,64,0.4)]",
+        // Outline — visible 1.5px border + glass-tinted background for proper contrast over glass surfaces
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border-[1.5px] border-[var(--primary)] bg-[rgba(255,252,248,0.7)] backdrop-blur-md text-[var(--primary)] shadow-[0_2px_8px_rgba(45,90,61,0.08),inset_0_1px_0_rgba(255,255,255,0.5)] hover:bg-[var(--primary-light)] hover:text-[var(--primary-hover)] hover:shadow-[0_4px_14px_rgba(45,90,61,0.14)] hover:border-[var(--primary-hover)] hover:-translate-y-0.5 dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        // Secondary — warm off-white glass with strong border
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+          "bg-[rgba(255,252,248,0.8)] backdrop-blur-md text-[var(--text-primary)] border border-[var(--border-strong)] shadow-[0_2px_8px_rgba(45,90,61,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] hover:bg-[rgba(255,252,248,0.95)] hover:shadow-[0_4px_14px_rgba(45,90,61,0.1)] hover:-translate-y-0.5",
+        // Ghost — subtle glass tint on hover so it's visible on glass surfaces
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "text-[var(--text-primary)] hover:bg-[rgba(255,252,248,0.7)] hover:backdrop-blur-md hover:text-[var(--primary)] dark:hover:bg-accent/50",
+        // Terra — terracotta accent button (warm CTA)
+        terra:
+          "bg-gradient-to-b from-[#E08862] to-[var(--terra)] text-white shadow-[0_4px_14px_rgba(201,123,84,0.32),0_2px_4px_rgba(201,123,84,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(201,123,84,0.42),0_3px_6px_rgba(201,123,84,0.22)] hover:-translate-y-0.5 active:translate-y-0 border border-[rgba(201,123,84,0.4)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        lg: "h-11 rounded-md px-6 has-[>svg]:px-4 text-[0.95rem]",
         icon: "size-9",
       },
     },
