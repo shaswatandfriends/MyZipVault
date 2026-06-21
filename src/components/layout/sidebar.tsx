@@ -263,29 +263,36 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out",
+          "flex w-full items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150",
           isAnyActive
-            ? "bg-primary-light font-semibold text-primary"
-            : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
+            ? "text-white font-medium"
+            : "text-white/42 hover:text-white/70"
         )}
+        style={isAnyActive ? {
+          background: "rgba(201,123,84,0.2)",
+          borderLeft: "2px solid #C97B54",
+        } : {
+          borderLeft: "2px solid transparent",
+        }}
       >
-        <group.icon className="size-5 shrink-0" />
+        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#C97B54" : "rgba(255,255,255,0.28)" }} />
         <span className="flex-1 text-left">{group.title}</span>
         <ChevronDown
           className={cn(
-            "size-4 shrink-0 transition-transform duration-200",
+            "size-3.5 shrink-0 transition-transform duration-200",
             isExpanded ? "rotate-180" : "rotate-0"
           )}
+          style={{ color: "rgba(255,255,255,0.28)" }}
         />
       </button>
 
       {/* Collapsible content */}
       {isExpanded && (
-        <div className="ml-2 pl-4 border-l border-border space-y-2">
+        <div className="ml-2 pl-4 space-y-1.5" style={{ borderLeft: "0.5px solid rgba(255,255,255,0.07)" }}>
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
-              <p className="px-3 pt-2 pb-1 text-[10px] font-bold tracking-widest text-text-muted uppercase">
+              <p className="px-3 pt-2 pb-0.5 text-[8px] font-bold tracking-widest text-white/20 uppercase">
                 {section.title}
               </p>
               {/* Section items */}
@@ -298,13 +305,17 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ease-in-out",
+                      "flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-medium transition-all duration-150",
                       isActive
-                        ? "bg-primary-light font-semibold text-primary"
-                        : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
+                        ? "text-white font-medium"
+                        : "text-white/42 hover:text-white/70"
                     )}
+                    style={isActive ? {
+                      background: "rgba(201,123,84,0.15)",
+                      borderRadius: "6px",
+                    } : {}}
                   >
-                    <item.icon className="size-4 shrink-0" />
+                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#C97B54" : "rgba(255,255,255,0.28)" }} />
                     <span>{item.title}</span>
                   </Link>
                 );
@@ -357,29 +368,29 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <div className="glass-sidebar flex h-full w-full flex-col overflow-hidden border-r border-sidebar-border">
+      <div className="glass-sidebar flex h-full w-full flex-col overflow-hidden" style={{ borderRight: "0.5px solid rgba(255,255,255,0.07)" }}>
         {/* ── Top Section: Logo + Brand ── */}
-        <div className="flex shrink-0 items-center gap-3 px-4 py-4">
-          <div className="flex size-8 items-center justify-center rounded-xl btn-gradient text-xs font-bold text-white shadow-glow">
-            ZV
+        <div className="flex shrink-0 items-center gap-2.5 px-3.5 py-4" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.07)" }}>
+          <div className="flex size-6 items-center justify-center rounded-md shrink-0" style={{ background: "#C97B54" }}>
+            <span className="text-[11px] font-bold text-white">M</span>
           </div>
           <div className="flex flex-col gap-0.5">
             <span
-              className="text-[15px] font-bold leading-tight text-foreground font-heading tracking-tight"
+              className="text-sm font-medium leading-tight text-white"
+              style={{ fontFamily: "'Lora', serif" }}
             >
               MyZipVault
             </span>
-            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+            <span className="text-[8px] text-white/30 uppercase tracking-wider font-medium">
               {label}
             </span>
           </div>
         </div>
-        <div className="mx-3 h-px shrink-0 bg-gradient-to-r from-transparent via-border to-transparent" />
 
         {/* ── Navigation Section ── */}
-        <ScrollArea className="flex-1 overflow-hidden px-3 py-3">
-          <nav className="flex flex-col gap-1">
-            {/* Flat nav items (Dashboard for superadmin, all items for other roles) */}
+        <ScrollArea className="flex-1 overflow-hidden py-2.5">
+          <nav className="flex flex-col gap-0.5">
+            {/* Flat nav items */}
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -389,16 +400,19 @@ export function AppSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out relative",
+                    "group flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150 relative",
                     isActive
-                      ? "font-semibold text-primary bg-primary-light"
-                      : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
+                      ? "text-white font-medium"
+                      : "text-white/42 hover:text-white/70"
                   )}
+                  style={isActive ? {
+                    background: "rgba(201,123,84,0.2)",
+                    borderLeft: "2px solid #C97B54",
+                  } : {
+                    borderLeft: "2px solid transparent",
+                  }}
                 >
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-primary to-accent-teal" />
-                  )}
-                  <item.icon className={cn("size-5 shrink-0 transition-colors", isActive ? "text-primary" : "text-text-muted group-hover:text-text-secondary")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#C97B54]" : "text-white/28 group-hover:text-white/42")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -407,7 +421,7 @@ export function AppSidebar() {
             {/* Superadmin: Collapsible Groups */}
             {isSuperAdmin && (
               <>
-                <div className="my-1.5 h-px bg-border" />
+                <div className="my-1.5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
                 {superAdminGroups.map((group) => (
                   <NavGroupSection
                     key={group.title}
@@ -415,7 +429,7 @@ export function AppSidebar() {
                     pathname={pathname}
                   />
                 ))}
-                <div className="my-1.5 h-px bg-border" />
+                <div className="my-1.5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
 
                 {/* Bottom nav items for superadmin with section dividers */}
                 {superAdminBottomNav.map((item, index) => {
@@ -427,8 +441,8 @@ export function AppSidebar() {
                     <React.Fragment key={item.href}>
                       {sectionLabel && (
                         <>
-                          {index > 0 && <div className="my-1 h-px bg-border" />}
-                          <p className="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
+                          {index > 0 && <div className="my-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />}
+                          <p className="px-3.5 pt-2 pb-0.5 text-[8px] font-bold tracking-widest text-white/20 uppercase">
                             {sectionLabel}
                           </p>
                         </>
@@ -436,16 +450,19 @@ export function AppSidebar() {
                       <Link
                         href={item.href}
                         className={cn(
-                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out relative",
+                          "group flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150 relative",
                           isActive
-                            ? "font-semibold text-primary bg-primary-light"
-                            : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
+                            ? "text-white font-medium"
+                            : "text-white/42 hover:text-white/70"
                         )}
+                        style={isActive ? {
+                          background: "rgba(201,123,84,0.2)",
+                          borderLeft: "2px solid #C97B54",
+                        } : {
+                          borderLeft: "2px solid transparent",
+                        }}
                       >
-                        {isActive && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-primary to-accent-teal" />
-                        )}
-                        <item.icon className={cn("size-5 shrink-0 transition-colors", isActive ? "text-primary" : "text-text-muted group-hover:text-text-secondary")} />
+                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#C97B54]" : "text-white/28 group-hover:text-white/42")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>
@@ -457,7 +474,7 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="shrink-0 space-y-2 border-t border-border p-3">
+        <div className="shrink-0 space-y-2 p-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.07)" }}>
           {/* Theme Toggle + Notification Bell (all roles) */}
           <div className="flex items-center gap-1">
             <ThemeToggle />
@@ -465,16 +482,16 @@ export function AppSidebar() {
           </div>
 
           {/* User Info */}
-          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2 transition-colors">
-            <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent-teal text-xs font-bold text-white shadow-sm">
-              {initials}
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-white/5 transition-colors rounded-lg">
+            <div className="flex size-7 items-center justify-center rounded-full shrink-0" style={{ background: "#C97B54" }}>
+              <span className="text-[10px] font-semibold text-white">{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">
+              <p className="truncate text-xs font-medium text-white/70">
                 {displayName}
               </p>
               <p
-                className="truncate text-xs text-text-muted"
+                className="truncate text-[9px] text-white/25"
                 title={user?.email ?? ""}
               >
                 {user?.email}
@@ -485,7 +502,7 @@ export function AppSidebar() {
           {/* Logout Button with Confirmation */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-secondary transition-all duration-200 ease-in-out hover:bg-surface-2 hover:text-foreground">
+              <button className="flex w-full items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-white/42 hover:text-white/70 hover:bg-white/5 transition-colors rounded-lg">
                 <LogOut className="size-5" />
                 <span>Sign Out</span>
               </button>
