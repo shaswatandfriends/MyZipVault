@@ -46,7 +46,7 @@ export default function RecruiterLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="glass-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
+        <header className="spatial-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
           <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
           <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />
           <div className="flex items-center justify-between flex-1 min-w-0">
@@ -59,14 +59,14 @@ export default function RecruiterLayout({
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-surface/60 backdrop-blur-sm">
+              <div className="spatial-material-thin flex items-center gap-2 px-3 py-1.5">
                 <CreditCard className="size-3.5 text-primary" />
                 <span className="text-xs font-medium text-text-secondary">Credits</span>
-                <Badge className="btn-gradient text-white border-0 text-xs px-2 py-0 hover:brightness-110">
+                <Badge className="text-white border-0 text-xs px-2 py-0">
                   {credits ?? "..."}
                 </Badge>
               </div>
-              <Button asChild className="btn-gradient h-8 text-xs px-4 rounded-xl border-0">
+              <Button asChild className="h-8 text-xs">
                 <Link href="/recruiter/send">
                   <Send className="size-3" />
                   Send Request

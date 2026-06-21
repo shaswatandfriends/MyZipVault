@@ -4,34 +4,41 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+// Spatial UI Button — pill-shaped, visionOS-inspired depth system
+// All variants use rounded-full for consistent pill shape language
+// Depth via 4-tier shadow system + specular top edge highlight
+// Motion: scale(1.02) on hover, scale(0.97) on press
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  // Base — pill shape, specular gloss, spatial motion
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-[-0.005em] transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(45,90,61,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 disabled:scale-100! disabled:filter-none! [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 select-none relative overflow-hidden",
   {
     variants: {
       variant: {
-        // Primary — forest green gradient with glossy highlight + strong shadow for clear visibility
+        // Primary — forest green 3-stop gradient + depth-3 + glow
         default:
-          "bg-gradient-to-b from-[var(--primary-vivid)] to-[var(--primary)] text-white shadow-[0_4px_14px_rgba(45,90,61,0.32),0_2px_4px_rgba(45,90,61,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(45,90,61,0.42),0_3px_6px_rgba(45,90,61,0.22),inset_0_1px_0_rgba(255,255,255,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_6px_rgba(45,90,61,0.28),inset_0_1px_0_rgba(255,255,255,0.15)] border border-[rgba(45,90,61,0.4)]",
+          "bg-gradient-to-b from-[var(--primary-vivid)] to-[var(--primary)] text-white border border-[rgba(45,90,61,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(45,90,61,0.04),0_2px_4px_rgba(45,90,61,0.06),0_6px_14px_rgba(45,90,61,0.08),0_12px_32px_rgba(45,90,61,0.06)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(45,90,61,0.04),0_4px_8px_rgba(45,90,61,0.08),0_10px_24px_rgba(45,90,61,0.1),0_20px_48px_rgba(45,90,61,0.1),0_0_24px_rgba(45,90,61,0.2)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.97] active:brightness-95",
+        // Destructive — red gradient with matching depth system
         destructive:
-          "bg-gradient-to-b from-[#C84545] to-[var(--status-red)] text-white shadow-[0_4px_14px_rgba(184,64,64,0.32),0_2px_4px_rgba(184,64,64,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(184,64,64,0.42),0_3px_6px_rgba(184,64,64,0.22)] hover:-translate-y-0.5 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 border border-[rgba(184,64,64,0.4)]",
-        // Outline — visible 1.5px border + glass-tinted background for proper contrast over glass surfaces
+          "bg-gradient-to-b from-[#C84545] to-[var(--status-red)] text-white border border-[rgba(184,64,64,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_4px_rgba(184,64,64,0.06),0_6px_14px_rgba(184,64,64,0.08),0_12px_32px_rgba(184,64,64,0.06)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_4px_8px_rgba(184,64,64,0.08),0_10px_24px_rgba(184,64,64,0.1),0_20px_48px_rgba(184,64,64,0.1),0_0_24px_rgba(184,64,64,0.22)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.97] active:brightness-95 focus-visible:ring-[rgba(184,64,64,0.25)]",
+        // Outline — 1.5px primary border + material-thin glass tint
         outline:
-          "border-[1.5px] border-[var(--primary)] bg-[rgba(255,252,248,0.7)] backdrop-blur-md text-[var(--primary)] shadow-[0_2px_8px_rgba(45,90,61,0.08),inset_0_1px_0_rgba(255,255,255,0.5)] hover:bg-[var(--primary-light)] hover:text-[var(--primary-hover)] hover:shadow-[0_4px_14px_rgba(45,90,61,0.14)] hover:border-[var(--primary-hover)] hover:-translate-y-0.5 dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        // Secondary — warm off-white glass with strong border
+          "border-[1.5px] border-[var(--primary)] bg-[rgba(255,252,248,0.55)] backdrop-blur-[20px] text-[var(--primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(45,90,61,0.05)] hover:bg-[var(--primary-light)] hover:border-[var(--primary-hover)] hover:text-[var(--primary-hover)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_14px_rgba(45,90,61,0.14)] hover:scale-[1.02] active:scale-[0.97]",
+        // Secondary — material-regular with strong text
         secondary:
-          "bg-[rgba(255,252,248,0.8)] backdrop-blur-md text-[var(--text-primary)] border border-[var(--border-strong)] shadow-[0_2px_8px_rgba(45,90,61,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] hover:bg-[rgba(255,252,248,0.95)] hover:shadow-[0_4px_14px_rgba(45,90,61,0.1)] hover:-translate-y-0.5",
-        // Ghost — subtle glass tint on hover so it's visible on glass surfaces
+          "bg-[rgba(255,252,248,0.72)] backdrop-blur-[30px] text-[var(--text-primary)] border border-[rgba(255,255,255,0.7)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(45,90,61,0.04),0_1px_2px_rgba(45,90,61,0.05),0_2px_6px_rgba(45,90,61,0.06),0_4px_12px_rgba(45,90,61,0.04)] hover:bg-[rgba(255,252,248,0.86)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(45,90,61,0.04),0_2px_4px_rgba(45,90,61,0.06),0_6px_14px_rgba(45,90,61,0.08),0_12px_32px_rgba(45,90,61,0.06)] hover:scale-[1.02] active:scale-[0.97]",
+        // Ghost — transparent, glass tint appears on hover
         ghost:
-          "text-[var(--text-primary)] hover:bg-[rgba(255,252,248,0.7)] hover:backdrop-blur-md hover:text-[var(--primary)] dark:hover:bg-accent/50",
-        // Terra — terracotta accent button (warm CTA)
+          "text-[var(--text-primary)] bg-transparent border border-transparent shadow-none hover:bg-[rgba(255,252,248,0.55)] hover:backdrop-blur-[20px] hover:text-[var(--primary)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] hover:scale-[1.02] active:scale-[0.97]",
+        // Terra — terracotta accent for warm CTAs
         terra:
-          "bg-gradient-to-b from-[#E08862] to-[var(--terra)] text-white shadow-[0_4px_14px_rgba(201,123,84,0.32),0_2px_4px_rgba(201,123,84,0.18),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_6px_20px_rgba(201,123,84,0.42),0_3px_6px_rgba(201,123,84,0.22)] hover:-translate-y-0.5 active:translate-y-0 border border-[rgba(201,123,84,0.4)]",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-gradient-to-b from-[#E08862] to-[var(--terra)] text-white border border-[rgba(201,123,84,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_4px_rgba(201,123,84,0.06),0_6px_14px_rgba(201,123,84,0.08),0_12px_32px_rgba(201,123,84,0.06)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_4px_8px_rgba(201,123,84,0.08),0_10px_24px_rgba(201,123,84,0.1),0_20px_48px_rgba(201,123,84,0.1),0_0_24px_rgba(201,123,84,0.22)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.97] active:brightness-95",
+        link: "text-[var(--primary)] underline-offset-4 hover:underline hover:scale-100! rounded-none",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-11 rounded-md px-6 has-[>svg]:px-4 text-[0.95rem]",
+        default: "h-9 px-5 has-[>svg]:px-4",
+        sm: "h-8 gap-1.5 px-3.5 has-[>svg]:px-3 text-xs",
+        lg: "h-11 px-7 has-[>svg]:px-5 text-[0.9375rem]",
         icon: "size-9",
       },
     },

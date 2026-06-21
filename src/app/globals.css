@@ -191,6 +191,70 @@
   --glass-shadow: 0 8px 32px rgba(45, 90, 61, 0.1), 0 2px 8px rgba(45, 90, 61, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(45, 90, 61, 0.04);
   --glass-shadow-hover: 0 16px 48px rgba(45, 90, 61, 0.14), 0 4px 12px rgba(45, 90, 61, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 
+  /* ══════════════════════════════════════════════════════════════════
+     SPATIAL UI DESIGN TOKENS — visionOS-inspired depth system
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* Material tiers — translucency + saturation for vibrant background bleed */
+  --material-thin-bg: rgba(255, 252, 248, 0.55);
+  --material-thin-blur: blur(20px) saturate(1.5);
+  --material-thin-border: rgba(255, 255, 255, 0.5);
+
+  --material-regular-bg: rgba(255, 252, 248, 0.72);
+  --material-regular-blur: blur(30px) saturate(1.8) brightness(1.04);
+  --material-regular-border: rgba(255, 255, 255, 0.7);
+
+  --material-thick-bg: rgba(255, 252, 248, 0.86);
+  --material-thick-blur: blur(44px) saturate(2) brightness(1.06);
+  --material-thick-border: rgba(255, 255, 255, 0.85);
+
+  /* Dark material for sidebar / dark surfaces */
+  --material-dark-bg: rgba(28, 50, 36, 0.78);
+  --material-dark-blur: blur(36px) saturate(1.7);
+  --material-dark-border: rgba(255, 255, 255, 0.14);
+
+  /* Depth shadows — 4-tier diffused system (z-axis layering) */
+  --depth-1: 0 0.5px 1px rgba(45, 90, 61, 0.04), 0 1px 2px rgba(45, 90, 61, 0.05);
+  --depth-2: 0 1px 2px rgba(45, 90, 61, 0.05), 0 2px 6px rgba(45, 90, 61, 0.06), 0 4px 12px rgba(45, 90, 61, 0.04);
+  --depth-3: 0 2px 4px rgba(45, 90, 61, 0.06), 0 6px 14px rgba(45, 90, 61, 0.08), 0 12px 32px rgba(45, 90, 61, 0.06);
+  --depth-4: 0 4px 8px rgba(45, 90, 61, 0.08), 0 10px 24px rgba(45, 90, 61, 0.1), 0 20px 48px rgba(45, 90, 61, 0.1), 0 40px 96px rgba(45, 90, 61, 0.06);
+  --depth-floating: 0 8px 16px rgba(45, 90, 61, 0.1), 0 16px 40px rgba(45, 90, 61, 0.14), 0 32px 80px rgba(45, 90, 61, 0.08);
+
+  /* Specular highlights — light catching top edge of glass */
+  --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(45, 90, 61, 0.04);
+  --specular-edge: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 50%);
+  --specular-vibrant: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(45, 90, 61, 0.06);
+
+  /* Concentric radii — nested elements maintain 4px gap */
+  --radius-pill: 9999px;
+  --radius-xs: 6px;
+  --radius-sm-2: 8px;
+  --radius-concentric-1: 12px;
+  --radius-concentric-2: 16px;
+  --radius-concentric-3: 20px;
+  --radius-concentric-4: 24px;
+  --radius-concentric-5: 32px;
+
+  /* Motion — visionOS standard easing */
+  --ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spatial-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-spatial-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-instant: 0.1s;
+  --duration-quick: 0.18s;
+  --duration-standard: 0.3s;
+  --duration-slow: 0.5s;
+
+  /* Spatial color reflections — vibrant bleed for materials */
+  --reflection-primary: rgba(45, 90, 61, 0.08);
+  --reflection-terra: rgba(201, 123, 84, 0.1);
+  --reflection-light: rgba(255, 255, 255, 0.4);
+
+  /* Spatial scale transforms for press/hover feedback */
+  --scale-press: 0.97;
+  --scale-hover: 1.02;
+  --scale-floating: 1.04;
+
   /* ─── Shadows — Soft & Warm ──────────────────────────────────────── */
   --shadow-sm: 0 1px 3px rgba(45, 90, 61, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-md: 0 4px 12px rgba(45, 90, 61, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
@@ -376,6 +440,617 @@
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 2px 8px rgba(45, 90, 61, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SPATIAL UI DESIGN SYSTEM — visionOS-inspired
+   The single source of truth for the platform's spatial language.
+   Every surface, control, and motion uses these classes.
+
+   Principles:
+   1. Three material tiers (thin/regular/thick) for depth hierarchy
+   2. All controls are pill-shaped (rounded-full)
+   3. Concentric radii — nested elements maintain 4px gap
+   4. 4-tier depth shadows + specular top edge highlights
+   5. Subtle scale on press (0.97), parallax on hover (1.02)
+   6. Smooth spatial easing (cubic-bezier(0.16, 1, 0.3, 1))
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Material Tiers ──────────────────────────────────────────────── */
+
+/* Thin material — nested content inside other surfaces */
+.spatial-material-thin {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  border: 0.5px solid var(--material-thin-border);
+  box-shadow: var(--specular-top), var(--depth-1);
+  border-radius: var(--radius-concentric-2);
+}
+
+/* Regular material — default for cards, sheets, list items */
+.spatial-material-regular {
+  background: var(--material-regular-bg);
+  backdrop-filter: var(--material-regular-blur);
+  -webkit-backdrop-filter: var(--material-regular-blur);
+  border: 0.5px solid var(--material-regular-border);
+  box-shadow: var(--specular-top), var(--depth-2);
+  border-radius: var(--radius-concentric-3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Specular top edge — light catching glass */
+.spatial-material-regular::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Thick material — modals, prominent panels, hero sections */
+.spatial-material-thick {
+  background: var(--material-thick-bg);
+  backdrop-filter: var(--material-thick-blur);
+  -webkit-backdrop-filter: var(--material-thick-blur);
+  border: 0.5px solid var(--material-thick-border);
+  box-shadow: var(--specular-vibrant), var(--depth-3);
+  border-radius: var(--radius-concentric-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.spatial-material-thick::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Dark material — sidebars, dark mode surfaces */
+.spatial-material-dark {
+  background: var(--material-dark-bg);
+  backdrop-filter: var(--material-dark-blur);
+  -webkit-backdrop-filter: var(--material-dark-blur);
+  border: 0.5px solid var(--material-dark-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.04), 8px 0 32px rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  position: relative;
+}
+
+.spatial-material-dark::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+}
+
+/* ─── Spatial Card — the universal surface ────────────────────────── */
+.spatial-card {
+  background: var(--material-regular-bg);
+  backdrop-filter: var(--material-regular-blur);
+  -webkit-backdrop-filter: var(--material-regular-blur);
+  border: 0.5px solid var(--material-regular-border);
+  border-radius: var(--radius-concentric-3);
+  box-shadow: var(--specular-top), var(--depth-2);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--duration-standard) var(--ease-spatial),
+              box-shadow var(--duration-standard) var(--ease-spatial);
+}
+
+.spatial-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.spatial-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.spatial-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--specular-top), var(--depth-3);
+}
+
+/* Card material variants */
+.spatial-card-thin {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  border: 0.5px solid var(--material-thin-border);
+  border-radius: var(--radius-concentric-2);
+  box-shadow: var(--specular-top), var(--depth-1);
+}
+
+.spatial-card-thick {
+  background: var(--material-thick-bg);
+  backdrop-filter: var(--material-thick-blur);
+  -webkit-backdrop-filter: var(--material-thick-blur);
+  border: 0.5px solid var(--material-thick-border);
+  border-radius: var(--radius-concentric-4);
+  box-shadow: var(--specular-vibrant), var(--depth-3);
+}
+
+/* ─── Spatial Pill — universal control shape ──────────────────────── */
+.spatial-pill {
+  border-radius: var(--radius-pill);
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.spatial-pill-sm {
+  border-radius: var(--radius-pill);
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+}
+
+.spatial-pill-icon {
+  border-radius: var(--radius-pill);
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Spatial Button — pill-shaped with depth + specular ──────────── */
+.spatial-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-pill);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border: 0.5px solid transparent;
+  cursor: pointer;
+  transition: transform var(--duration-quick) var(--ease-spatial),
+              box-shadow var(--duration-quick) var(--ease-spatial),
+              filter var(--duration-quick) var(--ease-spatial);
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Specular gloss highlight */
+.spatial-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.06) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.spatial-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.spatial-button:hover {
+  transform: scale(var(--scale-hover));
+  filter: brightness(1.06);
+}
+
+.spatial-button:active {
+  transform: scale(var(--scale-press));
+  filter: brightness(0.96);
+  transition-duration: var(--duration-instant);
+}
+
+.spatial-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Primary button — forest green gradient + depth-3 + glow */
+.spatial-button-primary {
+  background: linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 60%, var(--primary-hover) 100%);
+  color: #fff;
+  border-color: rgba(45, 90, 61, 0.5);
+  box-shadow: var(--specular-top), var(--depth-3), 0 0 0 0 rgba(45, 90, 61, 0);
+}
+
+.spatial-button-primary:hover {
+  box-shadow: var(--specular-top), var(--depth-4), 0 0 24px rgba(45, 90, 61, 0.2);
+}
+
+/* Secondary button — material-regular with strong text */
+.spatial-button-secondary {
+  background: var(--material-regular-bg);
+  backdrop-filter: var(--material-regular-blur);
+  -webkit-backdrop-filter: var(--material-regular-blur);
+  color: var(--text-primary);
+  border-color: var(--material-regular-border);
+  box-shadow: var(--specular-top), var(--depth-2);
+}
+
+.spatial-button-secondary:hover {
+  box-shadow: var(--specular-top), var(--depth-3);
+}
+
+/* Outline button — pill border + glass tint */
+.spatial-button-outline {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  box-shadow: var(--depth-1);
+}
+
+.spatial-button-outline:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-hover);
+  color: var(--primary-hover);
+}
+
+/* Ghost button — transparent, subtle tint on hover */
+.spatial-button-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.spatial-button-ghost:hover {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  color: var(--primary);
+}
+
+/* Terra button — terracotta accent for warm CTAs */
+.spatial-button-terra {
+  background: linear-gradient(180deg, #E08862 0%, var(--terra) 60%, #A0522D 100%);
+  color: #fff;
+  border-color: rgba(201, 123, 84, 0.5);
+  box-shadow: var(--specular-top), var(--depth-3);
+}
+
+.spatial-button-terra:hover {
+  box-shadow: var(--specular-top), var(--depth-4), 0 0 24px rgba(201, 123, 84, 0.22);
+}
+
+/* Destructive button — red gradient */
+.spatial-button-destructive {
+  background: linear-gradient(180deg, #C84545 0%, var(--status-red) 60%, var(--status-red-dark) 100%);
+  color: #fff;
+  border-color: rgba(184, 64, 64, 0.5);
+  box-shadow: var(--specular-top), var(--depth-3);
+}
+
+.spatial-button-destructive:hover {
+  box-shadow: var(--specular-top), var(--depth-4), 0 0 24px rgba(184, 64, 64, 0.22);
+}
+
+/* Button sizes */
+.spatial-button-sm {
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.8125rem;
+  gap: 0.375rem;
+}
+
+.spatial-button-lg {
+  padding: 0.8125rem 1.625rem;
+  font-size: 0.9375rem;
+  gap: 0.625rem;
+}
+
+.spatial-button-icon {
+  padding: 0.625rem;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* ─── Spatial Input — pill-shaped with vibrant focus ──────────────── */
+.spatial-input {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 1.125rem;
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  border: 0.5px solid var(--material-thin-border);
+  border-radius: var(--radius-pill);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  box-shadow: var(--specular-top), var(--depth-1);
+  transition: all var(--duration-standard) var(--ease-spatial);
+  outline: none;
+}
+
+.spatial-input::placeholder {
+  color: var(--text-muted);
+}
+
+.spatial-input:hover {
+  border-color: var(--primary-vivid);
+  background: var(--material-regular-bg);
+}
+
+.spatial-input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--specular-top), 0 0 0 4px rgba(45, 90, 61, 0.12), var(--depth-1);
+}
+
+.spatial-input-lg {
+  height: 3.25rem;
+  padding: 0 1.375rem;
+  font-size: 1rem;
+}
+
+.spatial-textarea {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  border: 0.5px solid var(--material-thin-border);
+  border-radius: var(--radius-concentric-3);
+  padding: 0.75rem 1.125rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  box-shadow: var(--specular-top), var(--depth-1);
+  transition: all var(--duration-standard) var(--ease-spatial);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.spatial-textarea:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--specular-top), 0 0 0 4px rgba(45, 90, 61, 0.12), var(--depth-1);
+}
+
+/* ─── Spatial Floating — for modals, popovers, dropdowns ──────────── */
+.spatial-floating {
+  background: var(--material-thick-bg);
+  backdrop-filter: var(--material-thick-blur);
+  -webkit-backdrop-filter: var(--material-thick-blur);
+  border: 0.5px solid var(--material-thick-border);
+  border-radius: var(--radius-concentric-4);
+  box-shadow: var(--specular-vibrant), var(--depth-floating);
+  position: relative;
+  overflow: hidden;
+}
+
+.spatial-floating::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── Spatial Header — top bar with depth ─────────────────────────── */
+.spatial-header {
+  background: var(--material-regular-bg);
+  backdrop-filter: var(--material-regular-blur);
+  -webkit-backdrop-filter: var(--material-regular-blur);
+  border-bottom: 0.5px solid var(--material-regular-border);
+  box-shadow: var(--specular-top), 0 4px 16px rgba(45, 90, 61, 0.04);
+}
+
+/* ─── Spatial Sidebar — floating dark glass ───────────────────────── */
+.spatial-sidebar {
+  background: var(--material-dark-bg);
+  backdrop-filter: var(--material-dark-blur);
+  -webkit-backdrop-filter: var(--material-dark-blur);
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 8px 0 32px rgba(0, 0, 0, 0.08);
+}
+
+.spatial-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+}
+
+/* ─── Spatial Nav Item — sidebar navigation links ─────────────────── */
+.spatial-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  transition: all var(--duration-quick) var(--ease-spatial);
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.spatial-nav-item:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.spatial-nav-item-active {
+  color: #fff;
+  background: rgba(201, 123, 84, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(201, 123, 84, 0.3), 0 2px 8px rgba(201, 123, 84, 0.18);
+}
+
+.spatial-nav-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--terra);
+  box-shadow: 0 0 8px rgba(201, 123, 84, 0.6);
+}
+
+/* ─── Spatial Badge — pill with vibrant fill ──────────────────────── */
+.spatial-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1875rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 0.5px solid transparent;
+  transition: all var(--duration-quick) var(--ease-spatial);
+}
+
+.spatial-badge-primary {
+  background: linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(45, 90, 61, 0.2);
+}
+
+.spatial-badge-secondary {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  color: var(--text-primary);
+  border-color: var(--material-thin-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.spatial-badge-terra {
+  background: var(--badge-terra-bg);
+  color: var(--badge-terra);
+  border-color: rgba(201, 123, 84, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.spatial-badge-success {
+  background: var(--status-green-bg);
+  color: var(--status-green-dark);
+  border-color: var(--status-green-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.spatial-badge-warning {
+  background: var(--status-amber-bg);
+  color: var(--status-amber-dark);
+  border-color: rgba(217, 119, 6, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.spatial-badge-info {
+  background: var(--status-blue-bg);
+  color: var(--status-blue-dark);
+  border-color: var(--status-blue-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.spatial-badge-destructive {
+  background: linear-gradient(180deg, #C84545 0%, var(--status-red) 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(184, 64, 64, 0.24);
+}
+
+/* ─── Spatial List Item — for settings, rows, etc. ────────────────── */
+.spatial-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-concentric-2);
+  background: transparent;
+  border: 0.5px solid transparent;
+  transition: all var(--duration-quick) var(--ease-spatial);
+  cursor: pointer;
+}
+
+.spatial-list-item:hover {
+  background: var(--material-thin-bg);
+  backdrop-filter: var(--material-thin-blur);
+  -webkit-backdrop-filter: var(--material-thin-blur);
+  border-color: var(--material-thin-border);
+  box-shadow: var(--specular-top), var(--depth-1);
+}
+
+.spatial-list-item:active {
+  transform: scale(0.99);
+}
+
+/* ─── Spatial Divider ─────────────────────────────────────────────── */
+.spatial-divider {
+  height: 0.5px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-strong) 20%, var(--border-strong) 80%, transparent 100%);
+  margin: 0.75rem 0;
+}
+
+/* ─── Spatial Motion Utilities ────────────────────────────────────── */
+.spatial-lift {
+  transition: transform var(--duration-standard) var(--ease-spatial),
+              box-shadow var(--duration-standard) var(--ease-spatial);
+}
+
+.spatial-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--specular-top), var(--depth-3);
+}
+
+.spatial-press {
+  transition: transform var(--duration-instant) var(--ease-spatial);
+}
+
+.spatial-press:active {
+  transform: scale(var(--scale-press));
+}
+
+/* Concentric radius utilities for manual nesting */
+.r-concentric-1 { border-radius: var(--radius-concentric-1) !important; }
+.r-concentric-2 { border-radius: var(--radius-concentric-2) !important; }
+.r-concentric-3 { border-radius: var(--radius-concentric-3) !important; }
+.r-concentric-4 { border-radius: var(--radius-concentric-4) !important; }
+.r-concentric-5 { border-radius: var(--radius-concentric-5) !important; }
+.r-pill { border-radius: var(--radius-pill) !important; }
+
+/* Depth utility classes */
+.depth-1 { box-shadow: var(--depth-1); }
+.depth-2 { box-shadow: var(--specular-top), var(--depth-2); }
+.depth-3 { box-shadow: var(--specular-top), var(--depth-3); }
+.depth-4 { box-shadow: var(--specular-vibrant), var(--depth-4); }
+.depth-floating { box-shadow: var(--specular-vibrant), var(--depth-floating); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    MESH BACKGROUND — Animated gradient orbs for dashboard layouts

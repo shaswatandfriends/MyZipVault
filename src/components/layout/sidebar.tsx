@@ -258,41 +258,33 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
   }, [isAnyActive]);
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
       {/* Group header - clickable to toggle */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          "flex w-full items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150",
-          isAnyActive
-            ? "text-white font-medium"
-            : "text-white/42 hover:text-white/70"
+          "spatial-nav-item w-full",
+          isAnyActive && "spatial-nav-item-active"
         )}
-        style={isAnyActive ? {
-          background: "rgba(201,123,84,0.2)",
-          borderLeft: "2px solid #C97B54",
-        } : {
-          borderLeft: "2px solid transparent",
-        }}
       >
-        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#C97B54" : "rgba(255,255,255,0.28)" }} />
+        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#E8A882" : "rgba(255,255,255,0.35)" }} />
         <span className="flex-1 text-left">{group.title}</span>
         <ChevronDown
           className={cn(
             "size-3.5 shrink-0 transition-transform duration-200",
             isExpanded ? "rotate-180" : "rotate-0"
           )}
-          style={{ color: "rgba(255,255,255,0.28)" }}
+          style={{ color: "rgba(255,255,255,0.35)" }}
         />
       </button>
 
       {/* Collapsible content */}
       {isExpanded && (
-        <div className="ml-2 pl-4 space-y-1.5" style={{ borderLeft: "0.5px solid rgba(255,255,255,0.07)" }}>
+        <div className="ml-2 pl-3 space-y-1.5" style={{ borderLeft: "0.5px solid rgba(255,255,255,0.08)" }}>
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
-              <p className="px-3 pt-2 pb-0.5 text-[8px] font-bold tracking-widest text-white/20 uppercase">
+              <p className="px-3 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase">
                 {section.title}
               </p>
               {/* Section items */}
@@ -305,17 +297,11 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-medium transition-all duration-150",
-                      isActive
-                        ? "text-white font-medium"
-                        : "text-white/42 hover:text-white/70"
+                      "spatial-nav-item text-[11px] py-1",
+                      isActive && "spatial-nav-item-active"
                     )}
-                    style={isActive ? {
-                      background: "rgba(201,123,84,0.15)",
-                      borderRadius: "6px",
-                    } : {}}
                   >
-                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#C97B54" : "rgba(255,255,255,0.28)" }} />
+                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#E8A882" : "rgba(255,255,255,0.35)" }} />
                     <span>{item.title}</span>
                   </Link>
                 );
@@ -368,11 +354,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <div className="glass-sidebar flex h-full w-full flex-col overflow-hidden" style={{ borderRight: "0.5px solid rgba(255,255,255,0.07)" }}>
+      <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
         {/* ── Top Section: Logo + Brand ── */}
-        <div className="flex shrink-0 items-center gap-2.5 px-3.5 py-4" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.07)" }}>
-          <div className="flex size-6 items-center justify-center rounded-md shrink-0" style={{ background: "#C97B54" }}>
-            <span className="text-[11px] font-bold text-white">M</span>
+        <div className="relative z-[1] flex shrink-0 items-center gap-2.5 px-4 py-4" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex size-7 items-center justify-center rounded-[6px] shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
+            <span className="text-[12px] font-bold text-white">M</span>
           </div>
           <div className="flex flex-col gap-0.5">
             <span
@@ -381,15 +367,15 @@ export function AppSidebar() {
             >
               MyZipVault
             </span>
-            <span className="text-[8px] text-white/30 uppercase tracking-wider font-medium">
+            <span className="text-[9px] text-white/35 uppercase tracking-[0.12em] font-semibold">
               {label}
             </span>
           </div>
         </div>
 
         {/* ── Navigation Section ── */}
-        <ScrollArea className="flex-1 overflow-hidden py-2.5">
-          <nav className="flex flex-col gap-0.5">
+        <ScrollArea className="flex-1 overflow-hidden py-3">
+          <nav className="flex flex-col gap-1 px-2.5">
             {/* Flat nav items */}
             {navItems.map((item) => {
               const isActive =
@@ -400,19 +386,11 @@ export function AppSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "group flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150 relative",
-                    isActive
-                      ? "text-white font-medium"
-                      : "text-white/42 hover:text-white/70"
+                    "spatial-nav-item",
+                    isActive && "spatial-nav-item-active"
                   )}
-                  style={isActive ? {
-                    background: "rgba(201,123,84,0.2)",
-                    borderLeft: "2px solid #C97B54",
-                  } : {
-                    borderLeft: "2px solid transparent",
-                  }}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#C97B54]" : "text-white/28 group-hover:text-white/42")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -421,7 +399,7 @@ export function AppSidebar() {
             {/* Superadmin: Collapsible Groups */}
             {isSuperAdmin && (
               <>
-                <div className="my-1.5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+                <div className="my-2 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
                 {superAdminGroups.map((group) => (
                   <NavGroupSection
                     key={group.title}
@@ -429,7 +407,7 @@ export function AppSidebar() {
                     pathname={pathname}
                   />
                 ))}
-                <div className="my-1.5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+                <div className="my-2 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
 
                 {/* Bottom nav items for superadmin with section dividers */}
                 {superAdminBottomNav.map((item, index) => {
@@ -441,8 +419,8 @@ export function AppSidebar() {
                     <React.Fragment key={item.href}>
                       {sectionLabel && (
                         <>
-                          {index > 0 && <div className="my-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />}
-                          <p className="px-3.5 pt-2 pb-0.5 text-[8px] font-bold tracking-widest text-white/20 uppercase">
+                          {index > 0 && <div className="my-1.5 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
+                          <p className="px-3.5 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase">
                             {sectionLabel}
                           </p>
                         </>
@@ -450,19 +428,11 @@ export function AppSidebar() {
                       <Link
                         href={item.href}
                         className={cn(
-                          "group flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium transition-all duration-150 relative",
-                          isActive
-                            ? "text-white font-medium"
-                            : "text-white/42 hover:text-white/70"
+                          "spatial-nav-item",
+                          isActive && "spatial-nav-item-active"
                         )}
-                        style={isActive ? {
-                          background: "rgba(201,123,84,0.2)",
-                          borderLeft: "2px solid #C97B54",
-                        } : {
-                          borderLeft: "2px solid transparent",
-                        }}
                       >
-                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#C97B54]" : "text-white/28 group-hover:text-white/42")} />
+                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>
@@ -474,24 +444,24 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="shrink-0 space-y-2 p-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.07)" }}>
+        <div className="relative z-[1] shrink-0 space-y-2 p-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
           {/* Theme Toggle + Notification Bell (all roles) */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
             <NotificationBell variant="sidebar" />
           </div>
 
           {/* User Info */}
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-white/5 transition-colors rounded-lg">
-            <div className="flex size-7 items-center justify-center rounded-full shrink-0" style={{ background: "#C97B54" }}>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.06] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full">
+            <div className="flex size-8 items-center justify-center rounded-full shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
               <span className="text-[10px] font-semibold text-white">{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-white/70">
+              <p className="truncate text-xs font-medium text-white/75">
                 {displayName}
               </p>
               <p
-                className="truncate text-[9px] text-white/25"
+                className="truncate text-[10px] text-white/30"
                 title={user?.email ?? ""}
               >
                 {user?.email}
@@ -502,8 +472,8 @@ export function AppSidebar() {
           {/* Logout Button with Confirmation */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="flex w-full items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-white/42 hover:text-white/70 hover:bg-white/5 transition-colors rounded-lg">
-                <LogOut className="size-5" />
+              <button className="spatial-nav-item w-full text-white/42 hover:text-white/80 hover:bg-white/[0.06]">
+                <LogOut className="size-4" />
                 <span>Sign Out</span>
               </button>
             </AlertDialogTrigger>

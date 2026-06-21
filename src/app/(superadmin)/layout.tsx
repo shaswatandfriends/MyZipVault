@@ -14,7 +14,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="glass-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
+        <header className="spatial-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
           <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
           <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />
           <div className="flex items-center justify-between flex-1 min-w-0">
