@@ -1454,6 +1454,176 @@
   background: rgba(255, 252, 248, 0.5);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   TAILWIND COLOR UTILITY ALIASES — cascade Spatial palette to legacy classes
+   ═══════════════════════════════════════════════════════════════════════
+   Many inner pages (63 files) still use Tailwind utility classes like
+   bg-teal-50, bg-amber-100, text-emerald-700, etc. from the previous
+   design system. Rather than refactor each file, we override these
+   classes globally to use Spatial palette equivalents.
+
+   Mapping:
+   - teal-*    → primary forest green (success/active)
+   - emerald-* → primary forest green (success)
+   - amber-*   → status-amber (warning)
+   - red/rose-* → status-red (destructive)
+   - blue-*    → status-blue (info)
+   - purple-*  → terra (accent)
+   - orange-*  → terra-light
+   - gray-*    → text-secondary/muted
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Teal → Forest Green (primary) */
+.bg-teal-50 { background-color: var(--status-green-bg) !important; }
+.bg-teal-100 { background-color: rgba(45, 90, 61, 0.12) !important; }
+.bg-teal-500 { background-color: var(--primary) !important; }
+.bg-teal-600 { background-color: var(--primary) !important; }
+.bg-teal-700 { background-color: var(--primary-hover) !important; }
+.text-teal-600 { color: var(--primary) !important; }
+.text-teal-700 { color: var(--primary-hover) !important; }
+.text-teal-900 { color: var(--primary-hover) !important; }
+.border-teal-200 { border-color: var(--status-green-border) !important; }
+.border-teal-300 { border-color: var(--status-green-border) !important; }
+.hover\:border-teal-300:hover { border-color: var(--status-green-border) !important; }
+.hover\:bg-teal-50:hover { background-color: var(--status-green-bg) !important; }
+.hover\:bg-teal-50\/50:hover { background-color: rgba(45, 90, 61, 0.04) !important; }
+
+/* Emerald → Forest Green (primary) */
+.bg-emerald-50 { background-color: var(--status-green-bg) !important; }
+.bg-emerald-100 { background-color: rgba(45, 90, 61, 0.12) !important; }
+.bg-emerald-500 { background-color: var(--primary) !important; }
+.bg-emerald-600 { background-color: var(--primary) !important; }
+.text-emerald-600 { color: var(--primary) !important; }
+.text-emerald-700 { color: var(--primary-hover) !important; }
+.border-emerald-200 { border-color: var(--status-green-border) !important; }
+.border-emerald-300 { border-color: var(--status-green-border) !important; }
+.hover\:bg-emerald-50:hover { background-color: var(--status-green-bg) !important; }
+
+/* Amber → status-amber */
+.bg-amber-50 { background-color: var(--status-amber-bg) !important; }
+.bg-amber-100 { background-color: rgba(217, 119, 6, 0.12) !important; }
+.bg-amber-500 { background-color: var(--status-amber) !important; }
+.text-amber-600 { color: var(--status-amber) !important; }
+.text-amber-700 { color: var(--status-amber-dark) !important; }
+.text-amber-800 { color: var(--status-amber-dark) !important; }
+.text-amber-900 { color: var(--status-amber-dark) !important; }
+.border-amber-200 { border-color: rgba(217, 119, 6, 0.2) !important; }
+.border-amber-300 { border-color: rgba(217, 119, 6, 0.3) !important; }
+.border-amber-700 { border-color: var(--status-amber-dark) !important; }
+.hover\:bg-amber-50:hover { background-color: var(--status-amber-bg) !important; }
+.hover\:bg-amber-100:hover { background-color: rgba(217, 119, 6, 0.12) !important; }
+.hover\:bg-amber-50\/50:hover { background-color: rgba(217, 119, 6, 0.04) !important; }
+.hover\:border-amber-300:hover { border-color: rgba(217, 119, 6, 0.3) !important; }
+
+/* Red → status-red */
+.bg-red-50 { background-color: var(--status-red-bg) !important; }
+.bg-red-100 { background-color: rgba(184, 64, 64, 0.12) !important; }
+.bg-red-500 { background-color: var(--status-red) !important; }
+.bg-red-600 { background-color: var(--status-red) !important; }
+.text-red-500 { color: var(--status-red) !important; }
+.text-red-600 { color: var(--status-red) !important; }
+.text-red-700 { color: var(--status-red-dark) !important; }
+.text-red-800 { color: var(--status-red-dark) !important; }
+.border-red-200 { border-color: var(--status-red-border) !important; }
+.border-red-300 { border-color: rgba(184, 64, 64, 0.3) !important; }
+.hover\:bg-red-50:hover { background-color: var(--status-red-bg) !important; }
+
+/* Rose → status-red (alternative) */
+.bg-rose-50 { background-color: var(--status-red-bg) !important; }
+.bg-rose-100 { background-color: rgba(184, 64, 64, 0.12) !important; }
+.bg-rose-500 { background-color: var(--status-red) !important; }
+.bg-rose-600 { background-color: var(--status-red) !important; }
+.text-rose-600 { color: var(--status-red) !important; }
+.text-rose-700 { color: var(--status-red-dark) !important; }
+.text-rose-800 { color: var(--status-red-dark) !important; }
+.border-rose-200 { border-color: var(--status-red-border) !important; }
+.hover\:bg-rose-50\/50:hover { background-color: rgba(184, 64, 64, 0.04) !important; }
+
+/* Blue → status-blue */
+.bg-blue-50 { background-color: var(--status-blue-bg) !important; }
+.bg-blue-100 { background-color: rgba(59, 130, 246, 0.12) !important; }
+.bg-blue-500 { background-color: var(--status-blue) !important; }
+.bg-blue-600 { background-color: var(--status-blue) !important; }
+.text-blue-500 { color: var(--status-blue) !important; }
+.text-blue-600 { color: var(--status-blue) !important; }
+.text-blue-700 { color: var(--status-blue-dark) !important; }
+.text-blue-800 { color: var(--status-blue-dark) !important; }
+.border-blue-200 { border-color: var(--status-blue-border) !important; }
+.border-blue-300 { border-color: rgba(59, 130, 246, 0.3) !important; }
+.hover\:bg-blue-50:hover { background-color: var(--status-blue-bg) !important; }
+.hover\:bg-blue-50\/50:hover { background-color: rgba(59, 130, 246, 0.04) !important; }
+.hover\:border-blue-300:hover { border-color: rgba(59, 130, 246, 0.3) !important; }
+
+/* Purple → Terra (accent) */
+.bg-purple-50 { background-color: var(--terra-bg) !important; }
+.bg-purple-100 { background-color: rgba(201, 123, 84, 0.12) !important; }
+.bg-purple-500 { background-color: var(--terra) !important; }
+.bg-purple-600 { background-color: var(--terra) !important; }
+.text-purple-600 { color: var(--terra) !important; }
+.text-purple-700 { color: var(--badge-terra) !important; }
+.text-purple-800 { color: var(--badge-terra) !important; }
+.border-purple-200 { border-color: rgba(201, 123, 84, 0.3) !important; }
+.border-purple-300 { border-color: rgba(201, 123, 84, 0.4) !important; }
+.hover\:bg-purple-50\/50:hover { background-color: rgba(201, 123, 84, 0.04) !important; }
+.hover\:border-purple-300:hover { border-color: rgba(201, 123, 84, 0.4) !important; }
+
+/* Orange → Terra-light */
+.bg-orange-50 { background-color: var(--terra-bg) !important; }
+.bg-orange-100 { background-color: rgba(201, 123, 84, 0.12) !important; }
+.bg-orange-500 { background-color: var(--terra) !important; }
+.text-orange-600 { color: var(--terra) !important; }
+.text-orange-700 { color: var(--badge-terra) !important; }
+.text-orange-800 { color: var(--badge-terra) !important; }
+.border-orange-200 { border-color: rgba(201, 123, 84, 0.3) !important; }
+
+/* Indigo → Terra (alternative accent) */
+.bg-indigo-50 { background-color: var(--terra-bg) !important; }
+.bg-indigo-100 { background-color: rgba(201, 123, 84, 0.12) !important; }
+.bg-indigo-500 { background-color: var(--terra) !important; }
+.bg-indigo-600 { background-color: var(--terra) !important; }
+.text-indigo-600 { color: var(--terra) !important; }
+.text-indigo-700 { color: var(--badge-terra) !important; }
+.text-indigo-800 { color: var(--badge-terra) !important; }
+.border-indigo-200 { border-color: rgba(201, 123, 84, 0.3) !important; }
+
+/* Violet → Terra (alternative accent) */
+.bg-violet-50 { background-color: var(--terra-bg) !important; }
+.bg-violet-500 { background-color: var(--terra) !important; }
+.bg-violet-600 { background-color: var(--terra) !important; }
+.bg-violet-700 { background-color: var(--badge-terra) !important; }
+.text-violet-600 { color: var(--terra) !important; }
+.text-violet-700 { color: var(--badge-terra) !important; }
+
+/* Gray → text-secondary/muted (Spatial neutral) */
+.bg-gray-50 { background-color: var(--material-thin-bg) !important; }
+.bg-gray-100 { background-color: rgba(154, 170, 148, 0.12) !important; }
+.bg-gray-200 { background-color: rgba(154, 170, 148, 0.2) !important; }
+.bg-gray-500 { background-color: var(--text-muted) !important; }
+.bg-gray-600 { background-color: var(--text-secondary) !important; }
+.text-gray-500 { color: var(--text-muted) !important; }
+.text-gray-600 { color: var(--text-secondary) !important; }
+.text-gray-700 { color: var(--text-secondary) !important; }
+.text-gray-800 { color: var(--text-primary) !important; }
+.text-gray-900 { color: var(--text-primary) !important; }
+.border-gray-200 { border-color: var(--border) !important; }
+.border-gray-300 { border-color: var(--border-strong) !important; }
+.hover\:bg-gray-50\/50:hover { background-color: var(--material-thin-bg) !important; }
+.hover\:border-gray-300:hover { border-color: var(--border-strong) !important; }
+
+/* Slate → text-secondary (common in notifications page) */
+.bg-slate-50 { background-color: var(--material-thin-bg) !important; }
+.bg-slate-100 { background-color: rgba(154, 170, 148, 0.12) !important; }
+.bg-slate-200 { background-color: rgba(154, 170, 148, 0.2) !important; }
+.bg-slate-500 { background-color: var(--text-muted) !important; }
+.bg-slate-700 { background-color: var(--text-secondary) !important; }
+.bg-slate-800 { background-color: var(--text-primary) !important; }
+.bg-slate-900 { background-color: var(--primary-hover) !important; }
+.text-slate-500 { color: var(--text-muted) !important; }
+.text-slate-700 { color: var(--text-secondary) !important; }
+.text-slate-900 { color: var(--text-primary) !important; }
+.border-slate-200 { border-color: var(--border) !important; }
+.border-slate-300 { border-color: var(--border-strong) !important; }
+
 /* ─── Base Layer ──────────────────────────────────────────────────── */
 @layer base {
   * {

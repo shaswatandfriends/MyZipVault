@@ -87,22 +87,53 @@ function getNotificationIcon(type: string) {
   }
 }
 
-function getNotificationIconBg(type: string) {
+function getNotificationIconBg(type: string): React.CSSProperties {
+  // Spatial UI: gradient backgrounds with inset white highlight + colored shadow
   switch (type) {
     case "call_scheduled":
     case "call_reminder":
     case "call_follow_up":
-      return "bg-emerald-100 text-emerald-700";
+      // Primary green
+      return {
+        background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+        color: "#fff",
+      };
     case "shift_accepted":
-      return "bg-teal-100 text-teal-700";
+      // Terra
+      return {
+        background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
+        color: "#fff",
+      };
     case "shift_declined":
-      return "bg-red-100 text-red-700";
+      // Red
+      return {
+        background: "linear-gradient(180deg, #FCA5A5 0%, #DC2626 60%, #7F1D1D 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(220,38,38,0.28)",
+        color: "#fff",
+      };
     case "lead_stage_change":
-      return "bg-amber-100 text-amber-700";
+      // Amber
+      return {
+        background: "linear-gradient(180deg, #FCD34D 0%, #D97706 60%, #92400E 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(217,119,6,0.28)",
+        color: "#fff",
+      };
     case "share_request":
-      return "bg-blue-100 text-blue-700";
+      // Blue
+      return {
+        background: "linear-gradient(180deg, #60A5FA 0%, #3B82F6 60%, #1E40AF 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(59,130,246,0.28)",
+        color: "#fff",
+      };
     default:
-      return "bg-gray-100 text-gray-700";
+      // Muted neutral — text-secondary gradient
+      return {
+        background: "linear-gradient(180deg, #9AAA94 0%, #6A8A6A 60%, #4A5A4A 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(106,138,106,0.28)",
+        color: "#fff",
+      };
   }
 }
 
@@ -171,17 +202,21 @@ function NotificationCard({
 
   return (
     <Card
-      className={`mb-3 transition-all duration-200 hover:shadow-md ${
-        notification.is_read ? "opacity-70" : "border-l-4 border-l-[var(--primary)]"
+      className={`mb-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        notification.is_read ? "opacity-70" : ""
       }`}
+      style={
+        !notification.is_read
+          ? { borderLeftWidth: "3px", borderLeftColor: "var(--primary)" }
+          : {}
+      }
     >
       <CardContent className="p-4">
         <div className="flex gap-3">
-          {/* Icon */}
+          {/* Icon — spatial gradient container */}
           <div
-            className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${getNotificationIconBg(
-              notification.type
-            )}`}
+            className="size-10 rounded-[12px] flex items-center justify-center shrink-0"
+            style={getNotificationIconBg(notification.type)}
           >
             {getNotificationIcon(notification.type)}
           </div>
@@ -216,7 +251,7 @@ function NotificationCard({
                   {notification.snoozed_until && (
                     <>
                       <span>·</span>
-                      <span className="text-amber-600 flex items-center gap-0.5">
+                      <span className="flex items-center gap-0.5" style={{ color: "var(--status-amber)" }}>
                         <AlarmClock className="size-3" />
                         Snoozed until {new Date(notification.snoozed_until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                       </span>
@@ -233,7 +268,7 @@ function NotificationCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    className="h-7 text-xs gap-1"
                     onClick={() => onAction(notification.id, "called")}
                     disabled={isLoading}
                   >
@@ -247,7 +282,7 @@ function NotificationCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs gap-1 text-blue-700 border-blue-200 hover:bg-blue-50"
+                    className="h-7 text-xs gap-1"
                     onClick={() => onAction(notification.id, "reschedule")}
                     disabled={isLoading}
                   >
@@ -265,7 +300,7 @@ function NotificationCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs gap-1 text-red-700 border-red-200 hover:bg-red-50"
+                  className="h-7 text-xs gap-1"
                   onClick={() => onAction(notification.id, "not_interested")}
                   disabled={isLoading}
                 >
@@ -281,7 +316,7 @@ function NotificationCard({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs gap-1 text-amber-700 border-amber-200 hover:bg-amber-50"
+                className="h-7 text-xs gap-1"
                 onClick={() => onAction(notification.id, "snooze")}
                 disabled={isLoading}
               >
@@ -297,7 +332,7 @@ function NotificationCard({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 text-xs gap-1 text-text-secondary hover:text-primary hover:bg-emerald-50"
+                  className="h-7 text-xs gap-1"
                   onClick={() => onAction(notification.id, "mark_read")}
                   disabled={isLoading}
                 >
