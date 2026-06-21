@@ -6,18 +6,12 @@ import { Mail, X, RefreshCw, Loader2 } from "@/lib/icons";
 import { toast } from "sonner";
 
 /**
- * Email Verification Banner
+ * Email Verification Banner — Spatial UI
  *
  * Shows a persistent banner at the top of the page when the logged-in
  * user has not verified their email address.
  *
- * Per Gap 5 fix: unverified users can log in but have limited functionality.
- * This banner reminds them to verify and provides a resend link.
- *
- * The banner auto-hides if:
- *   - User is not logged in
- *   - User's email is verified (email_verified_at is set)
- *   - User closes it manually (per-session, comes back on next login)
+ * Spatial UI: amber callout with backdrop-blur, terra accent on action button.
  */
 export function EmailVerificationBanner() {
   const { data: session, status } = useSession();
@@ -94,8 +88,11 @@ export function EmailVerificationBanner() {
   return (
     <div
       style={{
-        background: "#FAF1DC",
-        borderBottom: "1px solid #B8862B",
+        background: "var(--status-amber-bg)",
+        backdropFilter: "blur(10px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(10px) saturate(1.4)",
+        borderBottom: "0.5px solid rgba(217, 119, 6, 0.25)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
         padding: "0.75rem 1.5rem",
         display: "flex",
         alignItems: "center",
@@ -113,16 +110,22 @@ export function EmailVerificationBanner() {
           minWidth: 0,
         }}
       >
-        <Mail
-          className="size-5 shrink-0"
-          style={{ color: "#B8862B" }}
-        />
+        <div
+          className="flex items-center justify-center size-7 shrink-0 rounded-[8px]"
+          style={{
+            background: "linear-gradient(180deg, #FCD34D 0%, #D97706 60%, #92400E 100%)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 6px rgba(217,119,6,0.28)",
+            color: "#fff",
+          }}
+        >
+          <Mail className="size-4" />
+        </div>
         <div style={{ minWidth: 0 }}>
           <p
             style={{
               fontSize: "0.875rem",
               fontWeight: 600,
-              color: "#1A1A1A",
+              color: "var(--status-amber-dark)",
               margin: 0,
             }}
           >
@@ -131,7 +134,8 @@ export function EmailVerificationBanner() {
           <p
             style={{
               fontSize: "0.75rem",
-              color: "#3A3A3A",
+              color: "var(--status-amber-dark)",
+              opacity: 0.85,
               margin: 0,
               marginTop: "2px",
             }}
@@ -152,20 +156,24 @@ export function EmailVerificationBanner() {
         <button
           onClick={handleResend}
           disabled={isResending}
+          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.375rem",
-            padding: "0.4rem 0.875rem",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            background: "#0B1F3A",
-            color: "#F5F0E6",
-            border: "1px solid #0B1F3A",
-            borderRadius: "2px",
+            background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 60%, var(--primary-hover) 100%)",
+            color: "#fff",
+            border: "0.5px solid rgba(45, 90, 61, 0.5)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
             cursor: isResending ? "not-allowed" : "pointer",
             opacity: isResending ? 0.7 : 1,
-            transition: "all 150ms",
+          }}
+          onMouseEnter={(e) => {
+            if (!isResending) {
+              e.currentTarget.style.filter = "brightness(1.08)";
+              e.currentTarget.style.transform = "scale(1.02)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = "none";
+            e.currentTarget.style.transform = "scale(1)";
           }}
         >
           {isResending ? (
@@ -177,17 +185,21 @@ export function EmailVerificationBanner() {
         </button>
         <button
           onClick={() => setDismissed(true)}
+          className="inline-flex items-center justify-center size-7 rounded-full transition-all"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 28,
-            height: 28,
             background: "transparent",
             border: "none",
             cursor: "pointer",
-            color: "#6B6B6B",
-            borderRadius: "2px",
+            color: "var(--status-amber-dark)",
+            opacity: 0.7,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "1";
+            e.currentTarget.style.background = "rgba(217, 119, 6, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.7";
+            e.currentTarget.style.background = "transparent";
           }}
           aria-label="Dismiss banner"
         >
