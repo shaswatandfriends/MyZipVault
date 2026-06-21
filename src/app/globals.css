@@ -255,6 +255,111 @@
   --scale-hover: 1.02;
   --scale-floating: 1.04;
 
+  /* ══════════════════════════════════════════════════════════════════
+     EDITORIAL-* TOKEN ALIASES — map legacy inline styles to Spatial UI
+     ══════════════════════════════════════════════════════════════════
+     Many inner pages use inline `style={{ background: "var(--editorial-navy)" }}`
+     from the previous design system. These tokens were removed when we
+     migrated to Spatial UI, breaking those inline styles silently.
+
+     These aliases map the old tokens to the new Spatial palette so all
+     existing inline styles automatically pick up the new design language
+     without needing to refactor 88+ inner pages individually.
+
+     Mapping rationale:
+     - editorial-navy (was #0B1F3A dark blue) → forest green primary (#2D5A3D)
+     - editorial-cream (was #F5F0E6 warm bg) → background (#F2EDE4)
+     - editorial-gold (was #C9A961 accent) → terra (#C97B54)
+     - editorial-ink (was #1A1A1A body text) → text-primary (#2D5A3D)
+     - editorial-paper (was #FFFEFA pure white) → surface (#FFFFFF)
+     - editorial-rule (was #D4CFC0 hairline) → border (rgba(90,120,80,0.15))
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* Brand colors */
+  --editorial-navy: #2D5A3D;              /* → primary forest green */
+  --editorial-navy-light: #4A7C59;        /* → primary-vivid */
+  --editorial-navy-dark: #1E3A26;         /* → primary-hover */
+  --editorial-cream: #F2EDE4;             /* → background */
+  --editorial-cream-warm: #FFFFFF;        /* → surface white */
+  --editorial-cream-cool: rgba(255, 252, 248, 0.6); /* → surface-2 */
+  --editorial-paper: #FFFFFF;             /* → surface pure white */
+
+  /* Accent */
+  --editorial-gold: #C97B54;              /* → terra */
+  --editorial-gold-light: #E8A882;        /* → terra-light */
+  --editorial-gold-dark: #A0522D;         /* → badge-terra */
+
+  /* Text */
+  --editorial-ink: #2D5A3D;               /* → text-primary */
+  --editorial-ink-soft: #6A8A6A;          /* → text-secondary */
+  --editorial-ink-muted: #9AAA94;         /* → text-muted */
+  --editorial-ink-faint: #9AAA94;         /* → text-muted */
+
+  /* Dividers */
+  --editorial-rule: rgba(90, 120, 80, 0.15);   /* → border */
+  --editorial-rule-soft: rgba(90, 120, 80, 0.08);
+
+  /* Status colors */
+  --editorial-success: #2D5A3D;           /* → primary */
+  --editorial-success-bg: rgba(45, 90, 61, 0.08);
+  --editorial-warning: #D97706;           /* → status-amber */
+  --editorial-warning-bg: #FEF3C7;
+  --editorial-danger: #B84040;            /* → status-red */
+  --editorial-danger-bg: rgba(184, 64, 64, 0.08);
+  --editorial-info: #3B82F6;              /* → status-blue */
+  --editorial-info-bg: #EFF6FF;
+
+  /* Typography */
+  --editorial-font-serif: 'Lora', Georgia, serif;
+  --editorial-font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --editorial-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Type scale */
+  --editorial-text-display: 4.5rem;
+  --editorial-text-h1: 3rem;
+  --editorial-text-h2: 2.25rem;
+  --editorial-text-h3: 1.75rem;
+  --editorial-text-h4: 1.375rem;
+  --editorial-text-body: 1rem;
+  --editorial-text-small: 0.875rem;
+  --editorial-text-xs: 0.75rem;
+  --editorial-text-xxs: 0.625rem;
+
+  /* Spacing */
+  --editorial-space-section: 6rem;
+  --editorial-space-block: 3rem;
+  --editorial-space-element: 1.5rem;
+  --editorial-space-tight: 0.75rem;
+
+  /* Line height */
+  --editorial-leading-tight: 1.1;
+  --editorial-leading-snug: 1.3;
+  --editorial-leading-normal: 1.6;
+  --editorial-leading-relaxed: 1.8;
+
+  /* Letter spacing */
+  --editorial-tracking-tight: -0.02em;
+  --editorial-tracking-normal: 0;
+  --editorial-tracking-wide: 0.05em;
+  --editorial-tracking-wider: 0.1em;
+  --editorial-tracking-widest: 0.2em;
+
+  /* Radius */
+  --editorial-radius-sm: 10px;
+  --editorial-radius-md: 14px;
+  --editorial-radius-lg: 16px;
+  --editorial-radius-pill: 9999px;
+
+  /* Shadows */
+  --editorial-shadow-sm: 0 1px 2px rgba(45, 90, 61, 0.04);
+  --editorial-shadow-md: 0 4px 12px rgba(45, 90, 61, 0.06), 0 1px 2px rgba(45, 90, 61, 0.04);
+  --editorial-shadow-lg: 0 12px 32px rgba(45, 90, 61, 0.08), 0 4px 8px rgba(45, 90, 61, 0.04);
+
+  /* Transitions */
+  --editorial-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --editorial-transition-base: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --editorial-transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
   /* ─── Shadows — Soft & Warm ──────────────────────────────────────── */
   --shadow-sm: 0 1px 3px rgba(45, 90, 61, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-md: 0 4px 12px rgba(45, 90, 61, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
@@ -1332,6 +1437,21 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ─── Spatial Tabs active state — gradient background for active tab ── */
+[data-slot="tabs-trigger"][data-state="active"] {
+  background: linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%);
+  color: #fff !important;
+}
+
+[data-slot="tabs-trigger"][data-state="inactive"] {
+  color: var(--text-secondary);
+}
+
+[data-slot="tabs-trigger"][data-state="inactive"]:hover {
+  color: var(--text-primary);
+  background: rgba(255, 252, 248, 0.5);
 }
 
 /* ─── Base Layer ──────────────────────────────────────────────────── */

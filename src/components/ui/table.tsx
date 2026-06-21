@@ -4,6 +4,9 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// Spatial UI Table — uses material-thin header, spatial hover rows, tabular nums
+// Header gets sticky glass treatment, rows lift slightly on hover
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
@@ -12,7 +15,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-sm border-collapse", className)}
         {...props}
       />
     </div>
@@ -24,6 +27,11 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn("[&_tr]:border-b", className)}
+      style={{
+        background: "var(--material-thin-bg)",
+        backdropFilter: "blur(20px) saturate(1.5)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+      }}
       {...props}
     />
   )
@@ -44,9 +52,14 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
+        "border-t font-medium [&>tr]:last:border-b-0",
         className
       )}
+      style={{
+        background: "var(--material-thin-bg)",
+        backdropFilter: "blur(20px) saturate(1.5)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+      }}
       {...props}
     />
   )
@@ -57,9 +70,14 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        "border-b transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "hover:bg-[rgba(255,252,248,0.5)] hover:backdrop-blur-md",
+        "data-[state=selected]:bg-[var(--primary-light)]",
         className
       )}
+      style={{
+        borderBottomColor: "var(--border)",
+      }}
       {...props}
     />
   )
@@ -70,9 +88,14 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-11 px-3 text-left align-middle font-semibold whitespace-nowrap uppercase tracking-wide text-xs [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
+      style={{
+        color: "var(--text-secondary)",
+        letterSpacing: "0.08em",
+        borderBottom: "1px solid var(--border-strong)",
+      }}
       {...props}
     />
   )
@@ -83,9 +106,12 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
+      style={{
+        color: "var(--text-primary)",
+      }}
       {...props}
     />
   )
@@ -98,7 +124,8 @@ function TableCaption({
   return (
     <caption
       data-slot="table-caption"
-      className={cn("text-muted-foreground mt-4 text-sm", className)}
+      className={cn("mt-4 text-sm", className)}
+      style={{ color: "var(--text-muted)" }}
       {...props}
     />
   )
