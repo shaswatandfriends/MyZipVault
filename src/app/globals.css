@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -12,8 +13,6 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ─── Font Imports ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
-
 @font-face {
   font-family: 'Satoshi';
   src: url('/fonts/satoshi-var.woff2') format('woff2');
