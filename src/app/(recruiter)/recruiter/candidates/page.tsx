@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadCard, type LeadCardData } from "@/components/bob/lead-card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AddLeadDialog } from "@/components/bob/add-lead-dialog";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
@@ -214,20 +215,53 @@ export default function BOBPage() {
   const leadsByStatus = (status: string) => leads.filter((l) => l.pipeline_stage === status);
 
   // ─── Render ─────────────────────────────────────────────────────
+  const [showActivityPanel, setShowActivityPanel] = useState(true);
+
+  // Compact KPI card component
+  const KpiCard = ({ value, label, color }: { value: number; label: string; color: string }) => (
+    <div
+      className="flex flex-col items-center justify-center px-3 py-2 rounded-[12px] shrink-0"
+      style={{
+        background: "var(--material-thin-bg)",
+        backdropFilter: "var(--material-thin-blur)",
+        WebkitBackdropFilter: "var(--material-thin-blur)",
+        border: "0.5px solid var(--material-thin-border)",
+        boxShadow: "var(--specular-top), var(--depth-1)",
+        minWidth: "90px",
+      }}
+    >
+      <span className="text-xl font-bold tabular-nums" style={{ color }}>{value}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</span>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Book of Business"
         description="Your candidate pipeline — from cold lead to active assignment."
       />
 
-      {/* Top action bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => setShowAddLead(true)}>
+      {/* ── Compact KPI Cards Row ── */}
+      {stats && !loading && (
+        <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+          <KpiCard value={stats.total} label="Total" color="var(--text-primary)" />
+          <KpiCard value={stats.active} label="Active" color="var(--primary)" />
+          <KpiCard value={stats.in_pool} label="Pool" color="var(--text-muted)" />
+          <KpiCard value={stats.by_tag.hot} label="Hot" color="var(--status-red)" />
+          <KpiCard value={stats.by_tag.warm} label="Warm" color="var(--status-amber)" />
+          <KpiCard value={stats.by_tag.cold} label="Cold" color="var(--status-blue)" />
+          <KpiCard value={stats.by_tag.inactive} label="Inactive" color="var(--text-muted)" />
+        </div>
+      )}
+
+      {/* ── Toolbar: prominent search + actions ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button onClick={() => setShowAddLead(true)} size="default">
           <Plus className="h-4 w-4 mr-1.5" /> Add Lead
         </Button>
 
-        {/* Company Pool — separate button */}
+        {/* Company Pool */}
         <Button
           variant={view === "company_pool" ? "default" : "outline"}
           onClick={() => setView(view === "company_pool" ? "kanban" : "company_pool")}
@@ -236,47 +270,54 @@ export default function BOBPage() {
           {view === "company_pool" ? "Back to My BOB" : "Company Pool"}
         </Button>
 
-        {/* Candidate Pools — moved from sidebar to here */}
+        {/* Pools */}
         <Button variant="outline" asChild>
           <Link href="/recruiter/pools">
             <Users className="h-4 w-4 mr-1.5" /> Pools
           </Link>
         </Button>
 
-        {/* View toggle (Kanban / List only — Company Pool is now a separate button) */}
+        {/* View toggle */}
         {view !== "company_pool" && (
-          <div className="flex items-center bg-surface-2 rounded-md p-0.5">
+          <div
+            className="flex items-center rounded-full p-1 gap-1"
+            style={{
+              background: "var(--material-thin-bg)",
+              backdropFilter: "var(--material-thin-blur)",
+              WebkitBackdropFilter: "var(--material-thin-blur)",
+              border: "0.5px solid var(--material-thin-border)",
+              boxShadow: "var(--specular-top), var(--depth-1)",
+            }}
+          >
             <button
               onClick={() => setView("kanban")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                view === "kanban" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-              }`}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              style={view === "kanban" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Kanban
             </button>
             <button
               onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                view === "list" ? "bg-background text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
-              }`}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              style={view === "list" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
             >
               <ListIcon className="h-3.5 w-3.5" /> List
             </button>
           </div>
         )}
 
-        {/* Search */}
-        <div className="flex-1 min-w-[200px] max-w-xs relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+        {/* Search — prominent, flex-1 */}
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "var(--text-muted)" }} />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, phone..."
-            className="pl-9"
+            placeholder="Search leads, name, email, phone..."
+            className="pl-10 h-10"
           />
         </div>
 
-        {/* Export CSV — hidden when org setting is off for recruiters */}
+        {/* Export CSV */}
         {canExportCsv && (
         <Button
           variant="outline"
@@ -292,40 +333,23 @@ export default function BOBPage() {
           }}
           disabled={loading || leads.length === 0}
         >
-          <Download className="h-4 w-4 mr-1.5" /> Export CSV
+          <Download className="h-4 w-4 mr-1.5" /> Export
         </Button>
+        )}
+
+        {/* Activity panel toggle */}
+        {view === "kanban" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowActivityPanel(!showActivityPanel)}
+          >
+            {showActivityPanel ? "◀ Hide Panel" : "▶ Show Panel"}
+          </Button>
         )}
       </div>
 
-      {/* Metrics */}
-      {stats && !loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MetricCard
-            label="Active in BOB"
-            value={stats.active}
-            icon={<Users className="h-4 w-4" />}
-            color="text-primary"
-          />
-          <MetricCard
-            label={view === "company_pool" ? "In Company Pool" : "In Company Pool"}
-            value={stats.in_pool}
-            icon={<Building2 className="h-4 w-4" />}
-            color="text-text-muted"
-          />
-          <MetricCard
-            label="Hot leads (7d)"
-            value={stats.by_tag.hot}
-            icon={<Flame className="h-4 w-4" />}
-            color="text-red-500"
-          />
-          <MetricCard
-            label="Cold (15-30d)"
-            value={stats.by_tag.cold}
-            icon={<Clock className="h-4 w-4" />}
-            color="text-blue-500"
-          />
-        </div>
-      )}
+      {/* Old metrics removed — replaced by compact KPI cards above */}
 
       {/* Filters (only in list view) */}
       {view === "list" && (
@@ -419,59 +443,150 @@ export default function BOBPage() {
         </div>
       )}
 
-      {/* Kanban view */}
+      {/* Kanban view — 70/30 layout with activity panel */}
       {!loading && !error && leads.length > 0 && view === "kanban" && (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {kanbanStatuses.map((status) => {
-            const meta = STATUS_META[status];
-            const columnLeads = leadsByStatus(status);
-            const isDragOver = dragOverStatus === status;
-            return (
-              <div
-                key={status}
-                className={`shrink-0 w-72 rounded-lg transition-colors ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
-                onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
-                onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverStatus(null); }}
-                onDrop={(e) => { e.preventDefault(); handleDrop(status); }}
-              >
-                <div
-                  className="rounded-md px-3 py-2 mb-2 flex items-center justify-between"
-                  style={{ backgroundColor: meta.bgColor, border: `1px solid ${meta.borderColor}` }}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>{meta.icon}</span>
-                    <span className="text-xs font-semibold" style={{ color: meta.color }}>
-                      {meta.label}
-                    </span>
-                  </div>
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: "#fff", color: meta.color, border: `1px solid ${meta.borderColor}` }}
+        <div className={`flex gap-4 ${showActivityPanel ? "flex-col lg:flex-row" : ""}`}>
+          {/* Kanban Pipeline (70% or 100%) */}
+          <div className={showActivityPanel ? "lg:w-[70%] min-w-0" : "w-full"}>
+            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+              {kanbanStatuses.map((status) => {
+                const meta = STATUS_META[status];
+                const columnLeads = leadsByStatus(status);
+                const isDragOver = dragOverStatus === status;
+                return (
+                  <div
+                    key={status}
+                    className={`shrink-0 transition-all rounded-[16px] ${isDragOver ? "ring-2 ring-[var(--primary)]/40" : ""}`}
+                    style={{ width: "300px" }}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
+                    onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverStatus(null); }}
+                    onDrop={(e) => { e.preventDefault(); handleDrop(status); }}
                   >
-                    {columnLeads.length}
-                  </span>
+                    {/* Column header — spatial glass */}
+                    <div
+                      className="rounded-t-[16px] px-3 py-2.5 flex items-center justify-between"
+                      style={{ backgroundColor: meta.bgColor, border: `0.5px solid ${meta.borderColor}`, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{meta.icon}</span>
+                        <span className="text-xs font-bold" style={{ color: meta.color }}>{meta.label}</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums" style={{ backgroundColor: "#fff", color: meta.color, border: `0.5px solid ${meta.borderColor}` }}>
+                        {columnLeads.length}
+                      </span>
+                    </div>
+                    {/* Cards drop zone — spatial material-thin */}
+                    <div
+                      className="rounded-b-[16px] p-2 space-y-2 min-h-[100px] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+                      style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)" }}
+                    >
+                      {columnLeads.map((lead) => (
+                        <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          draggable
+                          onDragStart={(e, id) => setDraggedLeadId(id)}
+                        />
+                      ))}
+                      {columnLeads.length === 0 && (
+                        <div className="text-center py-6 text-[11px] border border-dashed border-border rounded-[10px]" style={{ color: "var(--text-muted)" }}>
+                          {isDragOver ? "Drop here" : "No leads"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {dragChanging && (
+                <div className="fixed bottom-4 right-4 bg-foreground text-background px-4 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Updating status...
                 </div>
-                <div className="space-y-2 min-h-[100px]">
-                  {columnLeads.map((lead) => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={lead}
-                      draggable
-                      onDragStart={(e, id) => setDraggedLeadId(id)}
-                    />
-                  ))}
-                  {columnLeads.length === 0 && (
-                    <div className="text-center py-6 text-[11px] text-text-muted border border-dashed border-border rounded-lg">
-                      {isDragOver ? "Drop here" : "No leads"}
+              )}
+            </div>
+          </div>
+
+          {/* Activity Panel (30%) — collapsible */}
+          {showActivityPanel && (
+            <div className="lg:w-[30%] shrink-0 space-y-4">
+              {/* Hot Leads */}
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                    🔥 Hot Leads ({stats?.by_tag.hot ?? 0})
+                  </h4>
+                  {leads.filter((l) => l.tag === "hot").length === 0 ? (
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>No hot leads</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {leads.filter((l) => l.tag === "hot").slice(0, 5).map((lead) => (
+                        <div key={lead.id} className="flex items-center gap-2 p-2 rounded-[10px] cursor-pointer"
+                          style={{ background: "var(--material-thin-bg)" }}
+                          onClick={() => router.push(`/recruiter/candidates/${lead.id}`)}
+                        >
+                          <div className="flex size-7 items-center justify-center rounded-full shrink-0"
+                            style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+                          >
+                            <span className="text-[10px] font-bold">{lead.first_name?.[0] ?? "?"}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{lead.first_name} {lead.last_name}</p>
+                            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{lead.specialty ?? "—"}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
-              </div>
-            );
-          })}
-          {dragChanging && (
-            <div className="fixed bottom-4 right-4 bg-foreground text-background px-4 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Updating status...
+                </CardContent>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                    📊 Pipeline Breakdown
+                  </h4>
+                  <div className="space-y-1.5">
+                    {kanbanStatuses.map((s) => {
+                      const count = leadsByStatus(s).length;
+                      const meta = STATUS_META[s];
+                      return (
+                        <div key={s} className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}>
+                            {meta.icon} {meta.label}
+                          </span>
+                          <span className="font-bold tabular-nums" style={{ color: count > 0 ? meta.color : "var(--text-muted)" }}>{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Leads */}
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                    🕐 Recent Leads
+                  </h4>
+                  {leads.length === 0 ? (
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>No leads yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {leads.slice(0, 5).map((lead) => (
+                        <div key={lead.id} className="flex items-center gap-2 p-2 rounded-[10px] cursor-pointer"
+                          style={{ background: "var(--material-thin-bg)" }}
+                          onClick={() => router.push(`/recruiter/candidates/${lead.id}`)}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{lead.first_name} {lead.last_name}</p>
+                            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{lead.specialty ?? "—"}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
