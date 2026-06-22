@@ -22,7 +22,7 @@ export default function CandidateLayout({
           <SidebarTrigger className="text-text-secondary hover:text-foreground transition-colors" />
         </header>
         <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
-          <div className="p-6 md:p-10 relative z-10">
+          <div className="p-4 md:p-6 relative z-10">
             <PageTransition>
               {children}
             </PageTransition>
