@@ -55,6 +55,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useSidebar } from "@/components/ui/sidebar";
+import { ChevronLeft, ChevronRight } from "@/lib/icons";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserRole } from "@/lib/types";
@@ -322,6 +324,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
 export function AppSidebar() {
   const { user, role } = useAuth();
   const pathname = usePathname();
+  const { state, toggleSidebar, isMobile } = useSidebar();
   const [orgSettings, setOrgSettings] = useState<{ show_billing_to_recruiters?: boolean } | null>(null);
 
   // Fetch org settings to conditionally show/hide Billing for recruiters
@@ -364,12 +367,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
-        {/* ── Top Section: Logo + Brand ── */}
+        {/* ── Top Section: Logo + Brand + Collapse Button ── */}
         <div className="relative z-[1] flex shrink-0 items-center gap-2.5 px-4 py-4" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
           <div className="flex size-7 items-center justify-center rounded-[6px] shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
             <span className="text-[12px] font-bold text-white">M</span>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <span
               className="text-sm font-medium leading-tight text-white"
               style={{ fontFamily: "'Lora', serif" }}
@@ -380,6 +383,20 @@ export function AppSidebar() {
               {label}
             </span>
           </div>
+          {/* Collapse/Expand button — inside sidebar, next to logo */}
+          {!isMobile && (
+            <button
+              onClick={toggleSidebar}
+              className="shrink-0 flex items-center justify-center size-7 rounded-[8px] transition-all hover:bg-white/10"
+              title={state === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {state === "expanded" ? (
+                <ChevronLeft className="size-4 text-white/50 hover:text-white/80" />
+              ) : (
+                <ChevronRight className="size-4 text-white/50 hover:text-white/80" />
+              )}
+            </button>
+          )}
         </div>
 
         {/* ── Navigation Section ── */}
