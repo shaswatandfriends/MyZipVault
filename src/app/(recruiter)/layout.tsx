@@ -45,8 +45,9 @@ export default function RecruiterLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="h-screen flex flex-col overflow-hidden">
-        <header className="spatial-header flex h-14 items-center gap-3 px-6 shrink-0 z-30 sticky top-0">
+      <SidebarInset className="h-screen flex flex-col overflow-hidden relative">
+        <div className="mesh-background" />
+        <header className="spatial-header flex h-14 items-center gap-3 px-6 shrink-0 z-30 relative">
           <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
           <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />
           <div className="flex items-center justify-between flex-1 min-w-0">
@@ -75,8 +76,7 @@ export default function RecruiterLayout({
             </div>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
-          <div className="mesh-background" />
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
           <div className="p-6 md:p-10 relative z-10">
             <PageTransition>
               {children}
