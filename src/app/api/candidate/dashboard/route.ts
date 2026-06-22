@@ -18,7 +18,7 @@ export async function GET() {
 
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { email_verified_at: true, email: true },
+      select: { email_verified_at: true, email: true, first_name: true, last_name: true },
     });
 
     const profile = await db.candidateProfile.findUnique({
@@ -27,9 +27,15 @@ export async function GET() {
 
     const credentials = await db.credential.findMany({
       where: { candidate_user_id: userId },
+      orderBy: { uploaded_at: "desc" },
+      take: 4,
     });
 
-    const activeCredentials = credentials.filter(
+    const allCredentials = await db.credential.findMany({
+      where: { candidate_user_id: userId },
+    });
+
+    const activeCredentials = allCredentials.filter(
       (c) => c.verification_status === "verified" || c.verification_status === "pending_review"
     );
 
@@ -37,6 +43,7 @@ export async function GET() {
       where: { candidate_user_id: userId },
       include: {
         checklist_template: { select: { name: true } },
+        client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
         candidate_response: {
           include: { skill_ratings: true },
         },
@@ -44,19 +51,13 @@ export async function GET() {
       orderBy: { created_at: "desc" },
     });
 
-    const completedChecklists = checklists.filter(
-      (c) => c.status === "completed"
-    );
-    const pendingChecklists = checklists.filter(
-      (c) => c.status === "sent"
-    );
+    const completedChecklists = checklists.filter((c) => c.status === "completed");
+    const pendingChecklists = checklists.filter((c) => c.status === "sent");
 
     const references = await db.candidateReference.findMany({
       where: { candidate_user_id: userId },
     });
-    const completedReferences = references.filter(
-      (r) => r.status === "completed"
-    );
+    const completedReferences = references.filter((r) => r.status === "completed");
 
     const resume = await db.resume.findFirst({
       where: { candidate_user_id: userId },
@@ -65,15 +66,14 @@ export async function GET() {
     const notifications = await db.notification.findMany({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
-      take: 5,
+      take: 8,
     });
 
-    // Calculate profile completion dynamically with new weights:
-    // Profile info 20%, Email verified 15%, Resume 25%, Credential 15%, Reference 15%, Calendar 10%
+    // Profile completion
     const hasProfileInfo = !!(profile?.first_name && profile?.last_name && profile?.phone);
     const hasEmailVerified = !!user?.email_verified_at;
     const hasResume = !!resume?.file_url;
-    const hasCredential = credentials.length > 0;
+    const hasCredential = allCredentials.length > 0;
     const hasReference = completedReferences.length > 0;
     const calendarAvailabilities = await db.calendarAvailability.findMany({
       where: { candidate_user_id: userId },
@@ -90,36 +90,37 @@ export async function GET() {
       (hasReference ? 15 : 0) +
       (hasCalendar ? 10 : 0);
 
-    // VaultSign stats - find signer records for this candidate
+    // VaultSign
     const vaultSignSigners = await db.vaultSignSigner.findMany({
-      where: {
-        OR: [
-          { user_id: userId },
-          { email: user?.email },
-        ],
-      },
+      where: { OR: [{ user_id: userId }, { email: user?.email }] },
       select: { status: true },
     });
     const vaultSignPending = vaultSignSigners.filter(
       (s) => s.status === "sent" || s.status === "viewed" || s.status === "pending"
     ).length;
-    const vaultSignSigned = vaultSignSigners.filter(
-      (s) => s.status === "signed"
-    ).length;
+    const vaultSignSigned = vaultSignSigners.filter((s) => s.status === "signed").length;
+
+    // Share requests (pending)
+    const shareRequests = await db.shareRequest.findMany({
+      where: { candidate_user_id: userId, status: "pending" },
+      select: { id: true },
+    });
 
     return NextResponse.json({
       profile: profile
-        ? {
-            firstName: profile.first_name,
-            lastName: profile.last_name,
-            phone: profile.phone,
-            profileCompletionPct: profileCompletion,
-          }
+        ? { firstName: profile.first_name, lastName: profile.last_name, phone: profile.phone, profileCompletionPct: profileCompletion }
         : null,
       resume: resume ? { id: resume.id, fileUrl: resume.file_url } : null,
       credentials: {
-        total: credentials.length,
+        total: allCredentials.length,
         active: activeCredentials.length,
+        topItems: credentials.map((c) => ({
+          id: c.id,
+          documentName: c.document_name,
+          status: c.status,
+          verificationStatus: c.verification_status,
+          expirationDate: c.expiration_date,
+        })),
       },
       checklists: {
         total: checklists.length,
@@ -140,7 +141,13 @@ export async function GET() {
         checklistName: c.checklist_template.name,
         status: c.status,
         createdAt: c.created_at,
+        assignedBy: c.client_user
+          ? `${c.client_user.first_name ?? ""} ${c.client_user.last_name ?? ""}`.trim() ||
+            c.client_user.organization?.name ||
+            "Recruiter"
+          : "Recruiter",
       })),
+      shareRequestCount: shareRequests.length,
       notifications: notifications.map((n) => ({
         id: n.id,
         message: n.message,
@@ -152,9 +159,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Dashboard error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch dashboard data" }, { status: 500 });
   }
 }
