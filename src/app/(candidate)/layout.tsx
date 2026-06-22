@@ -30,7 +30,7 @@ function CircularProgress({
       : percentage >= 50
         ? "var(--primary-vivid)"
         : percentage >= 25
-          ? "var(--gold)"
+          ? "var(--terra)"
           : "var(--badge-red)";
 
   return (
@@ -100,9 +100,9 @@ export default function CandidateLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="h-screen flex flex-col overflow-hidden">
         <EmailVerificationBanner />
-        <header className="spatial-header flex h-14 items-center gap-3 px-6 sticky top-0 z-30">
+        <header className="spatial-header flex h-14 items-center gap-3 px-6 shrink-0 z-30 sticky top-0">
           <SidebarTrigger className="-ml-1 text-text-secondary hover:text-foreground transition-colors" />
           <Separator orientation="vertical" className="mr-2 !h-4 bg-border" />
           <div className="flex items-center justify-between flex-1 min-w-0">
@@ -130,7 +130,7 @@ export default function CandidateLayout({
             </Link>
           </div>
         </header>
-        <div className="relative min-h-screen">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
           <div className="mesh-background" />
           <div className="p-6 md:p-10 relative z-10">
             <PageTransition>

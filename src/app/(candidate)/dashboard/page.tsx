@@ -17,7 +17,6 @@ import {
   CalendarDays,
   FileSignature,
   Mail,
-  Download,
   ClipboardList,
   ArrowRight,
 } from "@/lib/icons";
@@ -131,28 +130,6 @@ export default function CandidateDashboardPage() {
     !data?.credentials?.total &&
     !data?.references?.total &&
     !hasResume;
-
-  const handleExport = () => {
-    if (!data) return;
-    const rows = [
-      ["Category", "Status", "Count", "Details"],
-      ["Resume", hasResume ? "Uploaded" : "Not Added", "", data.resume?.fileUrl ? "On file" : "Not uploaded"],
-      ["Credentials", "Active", String(data.credentials.active), `${data.credentials.total} total`],
-      ["Checklists", "Completed", String(data.checklists.completed), `${data.checklists.completed} of ${data.checklists.total}`],
-      ["References", "Completed", String(data.references.completed), `${data.references.total} total`],
-      ["VaultSign", "Pending", String(data.vaultsign.pending), `${data.vaultsign.signed} signed, ${data.vaultsign.total} total`],
-      ["Profile Completion", "", `${data.profile?.profileCompletionPct ?? 0}%`, ""],
-      ["Email Verified", data.emailVerified ? "Yes" : "No", "", ""],
-    ];
-    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "myzipvault-dashboard.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   if (isLoading) {
     return (
