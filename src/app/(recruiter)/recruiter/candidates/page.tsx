@@ -445,10 +445,10 @@ export default function BOBPage() {
 
       {/* Kanban view — 70/30 layout with activity panel */}
       {!loading && !error && leads.length > 0 && view === "kanban" && (
-        <div className={`flex gap-4 ${showActivityPanel ? "flex-col lg:flex-row" : ""}`}>
+        <div className={`flex gap-4 ${showActivityPanel ? "flex-col lg:flex-row lg:overflow-hidden" : ""}`}>
           {/* Kanban Pipeline (70% or 100%) */}
-          <div className={showActivityPanel ? "lg:w-[70%] min-w-0" : "w-full"}>
-            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+          <div className={showActivityPanel ? "lg:w-[70%] lg:min-w-0 min-w-0" : "w-full min-w-0"}>
+            <div className="flex gap-3 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
               {kanbanStatuses.map((status) => {
                 const meta = STATUS_META[status];
                 const columnLeads = leadsByStatus(status);
@@ -457,7 +457,7 @@ export default function BOBPage() {
                   <div
                     key={status}
                     className={`shrink-0 transition-all rounded-[16px] ${isDragOver ? "ring-2 ring-[var(--primary)]/40" : ""}`}
-                    style={{ width: "300px" }}
+                    style={{ width: "280px" }}
                     onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
                     onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverStatus(null); }}
                     onDrop={(e) => { e.preventDefault(); handleDrop(status); }}
