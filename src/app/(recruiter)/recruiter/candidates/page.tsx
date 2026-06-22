@@ -462,23 +462,34 @@ export default function BOBPage() {
                     onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverStatus(null); }}
                     onDrop={(e) => { e.preventDefault(); handleDrop(status); }}
                   >
-                    {/* Column header — spatial glass */}
+                    {/* Column header — spatial glass with stage color tint */}
                     <div
                       className="rounded-t-[16px] px-3 py-2.5 flex items-center justify-between"
-                      style={{ backgroundColor: meta.bgColor, border: `0.5px solid ${meta.borderColor}`, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+                      style={{
+                        background: `linear-gradient(180deg, ${meta.bgColor} 0%, ${meta.bgColor}cc 100%)`,
+                        border: `0.5px solid ${meta.borderColor}`,
+                        backdropFilter: "blur(20px) saturate(1.5)",
+                        WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                      }}
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>{meta.icon}</span>
-                        <span className="text-xs font-bold" style={{ color: meta.color }}>{meta.label}</span>
+                        <span className="text-sm">{meta.icon}</span>
+                        <span className="text-xs font-bold tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums" style={{ backgroundColor: "#fff", color: meta.color, border: `0.5px solid ${meta.borderColor}` }}>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums" style={{ backgroundColor: "rgba(255,255,255,0.8)", color: meta.color, border: `0.5px solid ${meta.borderColor}` }}>
                         {columnLeads.length}
                       </span>
                     </div>
-                    {/* Cards drop zone — spatial material-thin */}
+                    {/* Cards drop zone — spatial material-thin glass */}
                     <div
                       className="rounded-b-[16px] p-2 space-y-2 min-h-[100px] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
-                      style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)" }}
+                      style={{
+                        background: "rgba(255, 252, 248, 0.6)",
+                        backdropFilter: "blur(20px) saturate(1.5)",
+                        WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(45,90,61,0.04)",
+                      }}
                     >
                       {columnLeads.map((lead) => (
                         <LeadCard
