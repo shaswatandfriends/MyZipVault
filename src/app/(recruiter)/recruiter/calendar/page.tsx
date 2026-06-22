@@ -2419,44 +2419,48 @@ function PipelineTab({
   return (
     <div className="space-y-4">
       {/* Drag hint */}
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
         <GripVertical className="size-3.5" />
         <span>Drag cards between columns to change pipeline stage</span>
       </div>
-      <div className="overflow-x-auto pb-4">
+      <div className="overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
         <div className="flex gap-3 min-w-max">
           {PIPELINE_STAGES.map((stage) => (
             <div
               key={stage.value}
-              className={`w-64 shrink-0 transition-colors rounded-lg ${
+              className={`shrink-0 transition-all rounded-[16px] ${
                 dragOverStage === stage.value
-                  ? "ring-2 ring-[var(--primary)]/40 bg-emerald-50/30"
+                  ? "ring-2 ring-[var(--primary)]/40"
                   : ""
               }`}
+              style={{ width: "300px" }}
               onDragOver={(e) => handleDragOver(e, stage.value)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, stage.value)}
             >
-              {/* Column header */}
-              <div
-                className="rounded-t-lg px-3 py-2"
-                style={{ backgroundColor: STATUS_META[stage.value as CandidateStatus]?.bgColor }}
+              {/* Column header — spatial glass */}
+              <div className={`rounded-t-[16px] px-3 py-2.5 ${stage.headerBg}`}
+                style={{
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                }}
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold" style={{ color: STATUS_META[stage.value as CandidateStatus]?.color }}>
-                    {STATUS_META[stage.value as CandidateStatus]?.icon} {stage.label}
-                  </h4>
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                  <h4 className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{stage.label}</h4>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-2 tabular-nums">
                     {leadsByStage[stage.value]?.length ?? 0}
                   </Badge>
                 </div>
               </div>
 
-              {/* Cards drop zone */}
+              {/* Cards drop zone — spatial material-thin */}
               <div
-                className={`bg-gray-50 rounded-b-lg p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 transition-colors ${
-                  dragOverStage === stage.value ? "bg-emerald-50" : ""
-                }`}
+                className="rounded-b-[16px] p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border transition-colors"
+                style={{
+                  background: "var(--material-thin-bg)",
+                  backdropFilter: "var(--material-thin-blur)",
+                  WebkitBackdropFilter: "var(--material-thin-blur)",
+                }}
               >
                 {(leadsByStage[stage.value] ?? []).map((lead) => (
                   <Card
@@ -2464,7 +2468,7 @@ function PipelineTab({
                     draggable
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onDragEnd={handleDragEnd}
-                    className={`cursor-grab hover:shadow-md transition-shadow py-0 active:cursor-grabbing ${
+                    className={`cursor-grab transition-shadow py-0 active:cursor-grabbing ${
                       draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[var(--primary)]/30" : ""
                     }`}
                     onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
@@ -2472,7 +2476,7 @@ function PipelineTab({
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between mb-1.5">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <GripVertical className="size-3.5 text-gray-300 shrink-0" />
+                          <GripVertical className="size-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                           <p className="font-medium text-sm text-foreground truncate">
                             {lead.first_name} {lead.last_name}
                           </p>
@@ -2480,9 +2484,9 @@ function PipelineTab({
                         <StarRatingDisplay value={lead.star_rating} />
                       </div>
                       {lead.specialty && (
-                        <p className="text-xs text-gray-500 mb-1.5 pl-5">{lead.specialty}</p>
+                        <p className="text-xs mb-1.5 pl-5" style={{ color: "var(--text-secondary)" }}>{lead.specialty}</p>
                       )}
-                      <p className="text-[10px] text-gray-400 mb-2 pl-5">
+                      <p className="text-[10px] mb-2 pl-5" style={{ color: "var(--text-muted)" }}>
                         Last contact: {getLastContact(lead)}
                       </p>
                       {/* Stage change dropdown (alternative to drag) */}
@@ -2508,9 +2512,7 @@ function PipelineTab({
                   </Card>
                 ))}
                 {leadsByStage[stage.value]?.length === 0 && (
-                  <div className={`text-center py-6 ${
-                    dragOverStage === stage.value ? "text-emerald-600" : "text-gray-400"
-                  }`}>
+                  <div className="text-center py-6" style={{ color: "var(--text-muted)" }}>
                     <p className="text-xs">
                       {dragOverStage === stage.value ? "Drop here" : "No leads"}
                     </p>
