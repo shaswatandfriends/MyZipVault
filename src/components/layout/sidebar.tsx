@@ -358,7 +358,7 @@ export function AppSidebar() {
       : user?.email ?? "User";
 
   return (
-    <Sidebar collapsible="offcanvas">
+    <Sidebar collapsible="icon">
       <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
         {/* ── Top Section: Logo + Brand ── */}
         <div className="relative z-[1] flex shrink-0 items-center gap-2.5 px-4 py-4" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
