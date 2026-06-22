@@ -75,7 +75,7 @@ export default function RecruiterLayout({
             </div>
           </div>
         </header>
-        <div className="relative min-h-screen">
+        <div className="relative min-h-screen overflow-x-hidden">
           <div className="mesh-background" />
           <div className="p-6 md:p-10 relative z-10">
             <PageTransition>
