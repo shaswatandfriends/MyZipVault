@@ -37,6 +37,8 @@ import {
   Activity,
   UserCheck,
   ClipboardList,
+  Layers,
+  FolderOpen,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -105,7 +107,10 @@ const recruiterNav: NavItem[] = [
   { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "Send Request", href: "/recruiter/send", icon: Send },
+  { title: "Bundles", href: "/recruiter/bundles", icon: Layers },
+  { title: "Pools", href: "/recruiter/pools", icon: FolderOpen },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
+  { title: "Notifications", href: "/recruiter/notifications", icon: Bell },
   { title: "Org Settings", href: "/recruiter/settings", icon: Settings },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileCheck, adminOnly: true },
@@ -189,7 +194,6 @@ const superAdminBottomNav: NavItem[] = [
   // Management
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
-  { title: "Ref Requests", href: "/superadmin/reference-requests", icon: ScrollText },
   // Communication
   { title: "Templates", href: "/superadmin/templates", icon: Mail },
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },

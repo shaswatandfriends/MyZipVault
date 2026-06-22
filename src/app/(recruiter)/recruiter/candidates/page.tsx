@@ -17,7 +17,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   Plus, Search, LayoutGrid, List as ListIcon, Users, Building2,
-  Flame, Clock, Loader2, AlertCircle, ChevronRight, Download,
+  Loader2, AlertCircle, ChevronRight, Download,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -698,25 +698,6 @@ export default function BOBPage() {
           router.push(`/recruiter/candidates/${leadId}`);
         }}
       />
-    </div>
-  );
-}
-
-function MetricCard({
-  label, value, icon, color,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  color: string;
-}) {
-  return (
-    <div className="bg-background border rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <span className={color}>{icon}</span>
-        <span className="text-[11px] font-medium text-text-muted uppercase tracking-wide">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
     </div>
   );
 }

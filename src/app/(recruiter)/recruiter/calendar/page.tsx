@@ -3293,26 +3293,18 @@ export default function RecruiterCalendarPage() {
     <div className="space-y-6 min-h-screen">
       <PageHeader
         title="Calendar & Scheduler"
-        description="Manage your calls, pipeline, candidates, and availability in one place."
+        description="Manage your calls, candidate availability, and scheduling."
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white border border-gray-200 rounded-lg p-1 h-auto">
-          <TabsTrigger value="my-calendar" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
+        <TabsList>
+          <TabsTrigger value="my-calendar">
             <Calendar className="size-4 mr-1.5" />
             My Calendar
           </TabsTrigger>
-          <TabsTrigger value="candidates" className="data-[state=active]:bg-accent-teal data-[state=active]:text-white text-sm">
+          <TabsTrigger value="candidates">
             <UserCheck className="size-4 mr-1.5" />
             Candidates
-          </TabsTrigger>
-          <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
-            <Briefcase className="size-4 mr-1.5" />
-            Pipeline
-          </TabsTrigger>
-          <TabsTrigger value="leads" className="data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
-            <List className="size-4 mr-1.5" />
-            Leads List
           </TabsTrigger>
         </TabsList>
 
@@ -3340,38 +3332,6 @@ export default function RecruiterCalendarPage() {
 
         <TabsContent value="candidates" className="mt-4">
           <CandidatesCalendarTab refreshKey={refreshKey} />
-        </TabsContent>
-
-        <TabsContent value="pipeline" className="mt-4">
-          {isLoading ? (
-            <div className="flex gap-3 overflow-hidden">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-80 w-64 shrink-0 rounded-lg" />
-              ))}
-            </div>
-          ) : (
-            <PipelineTab
-              leads={leads}
-              refresh={refresh}
-              onScheduleCall={handleScheduleCall}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="leads" className="mt-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-64 w-full rounded-lg" />
-            </div>
-          ) : (
-            <LeadsListTab
-              leads={leads}
-              onAddLead={handleAddLead}
-              onScheduleCall={handleScheduleCall}
-              refresh={refresh}
-            />
-          )}
         </TabsContent>
       </Tabs>
 
