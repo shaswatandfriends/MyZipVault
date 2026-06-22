@@ -2331,15 +2331,71 @@ function PipelineTab({
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [changingStage, setChangingStage] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [showActivityPanel, setShowActivityPanel] = useState(true);
 
   // Drag-and-drop state
   const [draggedLeadId, setDraggedLeadId] = useState<number | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
+  // Filter leads by search
+  const filteredLeads = useMemo(() => {
+    if (!search.trim()) return leads;
+    const q = search.toLowerCase();
+    return leads.filter((l) =>
+      `${l.first_name} ${l.last_name}`.toLowerCase().includes(q) ||
+      (l.email ?? "").toLowerCase().includes(q) ||
+      (l.phone ?? "").toLowerCase().includes(q) ||
+      (l.specialty ?? "").toLowerCase().includes(q)
+    );
+  }, [leads, search]);
+
+  // Compute KPI counts
+  const kpis = useMemo(() => {
+    const active = leads.filter((l) => l.is_active).length;
+    const hot = leads.filter((l) => (l as any).tag === "hot").length;
+    const cold = leads.filter((l) => (l as any).tag === "cold").length;
+    const submitted = leads.filter((l) => l.pipeline_stage === "submitted").length;
+    const interested = leads.filter((l) => l.pipeline_stage === "interested").length;
+    const docPending = leads.filter((l) => l.pipeline_stage === "doc_pending").length;
+    const newLead = leads.filter((l) => l.pipeline_stage === "new_lead").length;
+    return { active, hot, cold, submitted, interested, docPending, newLead, total: leads.length };
+  }, [leads]);
+
+  // Today's follow-ups — leads with call schedules today
+  const todaysFollowUps = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return leads.filter((l) =>
+      l.call_schedules.some((s) => s.scheduled_date?.slice(0, 10) === today && s.status === "scheduled")
+    ).slice(0, 5);
+  }, [leads]);
+
+  // Recent activity — from call_logs
+  const recentActivity = useMemo(() => {
+    const allLogs: { leadName: string; outcome: string; date: string }[] = [];
+    leads.forEach((l) => {
+      l.call_logs.forEach((log) => {
+        allLogs.push({
+          leadName: `${l.first_name} ${l.last_name}`,
+          outcome: log.outcome,
+          date: log.call_date,
+        });
+      });
+    });
+    return allLogs
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  }, [leads]);
+
+  // Hot leads
+  const hotLeads = useMemo(() => {
+    return leads.filter((l) => (l as any).tag === "hot").slice(0, 5);
+  }, [leads]);
+
   const leadsByStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     PIPELINE_STAGES.forEach((s) => { map[s.value] = []; });
-    leads.forEach((l) => {
+    filteredLeads.forEach((l) => {
       if (map[l.pipeline_stage]) {
         map[l.pipeline_stage].push(l);
       } else {
@@ -2347,7 +2403,7 @@ function PipelineTab({
       }
     });
     return map;
-  }, [leads]);
+  }, [filteredLeads]);
 
   const handleStageChange = async (leadId: number, newStage: string) => {
     setChangingStage(leadId);
@@ -2372,7 +2428,6 @@ function PipelineTab({
     setDraggedLeadId(leadId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", String(leadId));
-    // Add a semi-transparent drag image
     const target = e.currentTarget as HTMLElement;
     target.style.opacity = "0.5";
   };
@@ -2401,7 +2456,6 @@ function PipelineTab({
     if (!leadId) return;
     const lead = leads.find((l) => l.id === leadId);
     if (!lead) return;
-    // Skip if dropped on same stage
     if (lead.pipeline_stage === targetStage) {
       setDraggedLeadId(null);
       return;
@@ -2416,112 +2470,260 @@ function PipelineTab({
     return formatDate(lead.updated_at);
   };
 
+  // Compact KPI card
+  const KpiCard = ({ value, label, color }: { value: number; label: string; color: string }) => (
+    <div
+      className="flex flex-col items-center justify-center px-3 py-2 rounded-[12px] shrink-0"
+      style={{
+        background: "var(--material-thin-bg)",
+        backdropFilter: "var(--material-thin-blur)",
+        WebkitBackdropFilter: "var(--material-thin-blur)",
+        border: "0.5px solid var(--material-thin-border)",
+        boxShadow: "var(--specular-top), var(--depth-1)",
+        minWidth: "90px",
+      }}
+    >
+      <span className="text-xl font-bold tabular-nums" style={{ color }}>{value}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</span>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
-      {/* Drag hint */}
-      <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
-        <GripVertical className="size-3.5" />
-        <span>Drag cards between columns to change pipeline stage</span>
+      {/* ── KPI Cards Row (compact, single row, horizontal scroll) ── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+        <KpiCard value={kpis.total} label="Total" color="var(--text-primary)" />
+        <KpiCard value={kpis.active} label="Active" color="var(--primary)" />
+        <KpiCard value={kpis.newLead} label="New Lead" color="var(--primary)" />
+        <KpiCard value={kpis.docPending} label="Doc Pend" color="var(--status-amber)" />
+        <KpiCard value={kpis.interested} label="Interest" color="var(--primary-vivid)" />
+        <KpiCard value={kpis.submitted} label="Submit" color="var(--terra)" />
+        <KpiCard value={kpis.hot} label="Hot" color="var(--status-red)" />
+        <KpiCard value={kpis.cold} label="Cold" color="var(--status-blue)" />
       </div>
-      <div className="overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-        <div className="flex gap-3 min-w-max">
-          {PIPELINE_STAGES.map((stage) => (
-            <div
-              key={stage.value}
-              className={`shrink-0 transition-all rounded-[16px] ${
-                dragOverStage === stage.value
-                  ? "ring-2 ring-[var(--primary)]/40"
-                  : ""
-              }`}
-              style={{ width: "300px" }}
-              onDragOver={(e) => handleDragOver(e, stage.value)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, stage.value)}
-            >
-              {/* Column header — spatial glass */}
-              <div className={`rounded-t-[16px] px-3 py-2.5 ${stage.headerBg}`}
-                style={{
-                  backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)",
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{stage.label}</h4>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-2 tabular-nums">
-                    {leadsByStage[stage.value]?.length ?? 0}
-                  </Badge>
-                </div>
-              </div>
 
-              {/* Cards drop zone — spatial material-thin */}
-              <div
-                className="rounded-b-[16px] p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border transition-colors"
-                style={{
-                  background: "var(--material-thin-bg)",
-                  backdropFilter: "var(--material-thin-blur)",
-                  WebkitBackdropFilter: "var(--material-thin-blur)",
-                }}
-              >
-                {(leadsByStage[stage.value] ?? []).map((lead) => (
-                  <Card
-                    key={lead.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`cursor-grab transition-shadow py-0 active:cursor-grabbing ${
-                      draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[var(--primary)]/30" : ""
-                    }`}
-                    onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
+      {/* ── Toolbar: prominent search + actions ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4" style={{ color: "var(--text-muted)" }} />
+          <Input
+            placeholder="Search leads, name, email, phone, specialty..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 h-10"
+          />
+        </div>
+        <Button onClick={() => { /* trigger add lead */ }} size="default">
+          <Plus className="size-4 mr-1" />
+          Add Lead
+        </Button>
+        <Button
+          variant="outline"
+          size="default"
+          onClick={() => setShowActivityPanel(!showActivityPanel)}
+        >
+          {showActivityPanel ? "◀ Hide Panel" : "▶ Show Panel"}
+        </Button>
+      </div>
+
+      {/* ── 70/30 Layout: Kanban + Activity Panel ── */}
+      <div className={`flex gap-4 ${showActivityPanel ? "flex-col lg:flex-row" : ""}`}>
+        {/* Kanban Pipeline (70% or 100%) */}
+        <div className={showActivityPanel ? "lg:w-[70%] min-w-0" : "w-full"}>
+          {/* Drag hint */}
+          <div className="flex items-center gap-2 text-xs mb-2" style={{ color: "var(--text-muted)" }}>
+            <GripVertical className="size-3.5" />
+            <span>Drag cards between columns to change pipeline stage</span>
+          </div>
+          <div className="overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+            <div className="flex gap-3 min-w-max">
+              {PIPELINE_STAGES.map((stage) => (
+                <div
+                  key={stage.value}
+                  className={`shrink-0 transition-all rounded-[16px] ${
+                    dragOverStage === stage.value
+                      ? "ring-2 ring-[var(--primary)]/40"
+                      : ""
+                  }`}
+                  style={{ width: "300px" }}
+                  onDragOver={(e) => handleDragOver(e, stage.value)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, stage.value)}
+                >
+                  {/* Column header — spatial glass */}
+                  <div className={`rounded-t-[16px] px-3 py-2.5 ${stage.headerBg}`}
+                    style={{ backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <GripVertical className="size-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-                          <p className="font-medium text-sm text-foreground truncate">
-                            {lead.first_name} {lead.last_name}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{stage.label}</h4>
+                      <Badge variant="secondary" className="text-[10px] h-5 px-2 tabular-nums">
+                        {leadsByStage[stage.value]?.length ?? 0}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Cards drop zone — spatial material-thin */}
+                  <div
+                    className="rounded-b-[16px] p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border transition-colors"
+                    style={{
+                      background: "var(--material-thin-bg)",
+                      backdropFilter: "var(--material-thin-blur)",
+                      WebkitBackdropFilter: "var(--material-thin-blur)",
+                    }}
+                  >
+                    {(leadsByStage[stage.value] ?? []).map((lead) => (
+                      <Card
+                        key={lead.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, lead.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`cursor-grab transition-shadow py-0 active:cursor-grabbing ${
+                          draggedLeadId === lead.id ? "opacity-50 ring-2 ring-[var(--primary)]/30" : ""
+                        }`}
+                        onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <GripVertical className="size-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                              <p className="font-medium text-sm text-foreground truncate">
+                                {lead.first_name} {lead.last_name}
+                              </p>
+                            </div>
+                            <StarRatingDisplay value={lead.star_rating} />
+                          </div>
+                          {lead.specialty && (
+                            <p className="text-xs mb-1.5 pl-5" style={{ color: "var(--text-secondary)" }}>{lead.specialty}</p>
+                          )}
+                          <p className="text-[10px] mb-2 pl-5" style={{ color: "var(--text-muted)" }}>
+                            Last contact: {getLastContact(lead)}
                           </p>
+                          <div className="pl-5" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={lead.pipeline_stage}
+                              onValueChange={(v) => handleStageChange(lead.id, v)}
+                              disabled={changingStage === lead.id}
+                            >
+                              <SelectTrigger className="h-7 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PIPELINE_STAGES.map((s) => (
+                                  <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {leadsByStage[stage.value]?.length === 0 && (
+                      <div className="text-center py-6" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-xs">
+                          {dragOverStage === stage.value ? "Drop here" : "No leads"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Panel (30%) — collapsible */}
+        {showActivityPanel && (
+          <div className="lg:w-[30%] shrink-0 space-y-4">
+            {/* Today's Follow-Ups */}
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                  📋 Today's Follow-Ups
+                </h4>
+                {todaysFollowUps.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>No follow-ups due today</p>
+                ) : (
+                  <div className="space-y-2">
+                    {todaysFollowUps.map((lead) => (
+                      <div key={lead.id} className="flex items-center justify-between gap-2 p-2 rounded-[10px]"
+                        style={{ background: "var(--material-thin-bg)" }}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{lead.first_name} {lead.last_name}</p>
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{lead.specialty ?? "—"}</p>
                         </div>
-                        <StarRatingDisplay value={lead.star_rating} />
-                      </div>
-                      {lead.specialty && (
-                        <p className="text-xs mb-1.5 pl-5" style={{ color: "var(--text-secondary)" }}>{lead.specialty}</p>
-                      )}
-                      <p className="text-[10px] mb-2 pl-5" style={{ color: "var(--text-muted)" }}>
-                        Last contact: {getLastContact(lead)}
-                      </p>
-                      {/* Stage change dropdown (alternative to drag) */}
-                      <div className="pl-5" onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={lead.pipeline_stage}
-                          onValueChange={(v) => handleStageChange(lead.id, v)}
-                          disabled={changingStage === lead.id}
+                        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0"
+                          onClick={() => onScheduleCall(lead.id)}
                         >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PIPELINE_STAGES.map((s) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          📞 Call
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {leadsByStage[stage.value]?.length === 0 && (
-                  <div className="text-center py-6" style={{ color: "var(--text-muted)" }}>
-                    <p className="text-xs">
-                      {dragOverStage === stage.value ? "Drop here" : "No leads"}
-                    </p>
+                    ))}
                   </div>
                 )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                  📊 Recent Activity
+                </h4>
+                {recentActivity.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>No recent activity</p>
+                ) : (
+                  <div className="space-y-2">
+                    {recentActivity.map((log, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <span className="size-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "var(--primary)" }} />
+                        <div className="min-w-0">
+                          <p className="truncate" style={{ color: "var(--text-secondary)" }}>
+                            <span className="font-medium">{log.leadName}</span> — {log.outcome}
+                          </p>
+                          <p style={{ color: "var(--text-muted)" }}>{formatDate(log.date)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Hot Leads */}
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-secondary)" }}>
+                  🔥 Hot Leads ({hotLeads.length})
+                </h4>
+                {hotLeads.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>No hot leads</p>
+                ) : (
+                  <div className="space-y-2">
+                    {hotLeads.map((lead) => (
+                      <div key={lead.id} className="flex items-center gap-2 p-2 rounded-[10px] cursor-pointer"
+                        style={{ background: "var(--material-thin-bg)" }}
+                        onClick={() => { setDetailLead(lead); setDetailOpen(true); }}
+                      >
+                        <div className="flex size-7 items-center justify-center rounded-full shrink-0"
+                          style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+                        >
+                          <span className="text-[10px] font-bold">{lead.first_name[0]}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{lead.first_name} {lead.last_name}</p>
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{lead.specialty ?? "—"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       <LeadDetailDialog
