@@ -222,6 +222,10 @@ interface AutoMatchResult {
 const PIPELINE_STAGES = ALL_STATUSES.map((status) => ({
   value: status,
   label: STATUS_META[status].label,
+  color: STATUS_META[status].color,
+  bgColor: STATUS_META[status].bgColor,
+  borderColor: STATUS_META[status].borderColor,
+  icon: STATUS_META[status].icon,
 }));
 
 const SOURCE_OPTIONS = [
@@ -2545,30 +2549,39 @@ function PipelineTab({
                       ? "ring-2 ring-[var(--primary)]/40"
                       : ""
                   }`}
-                  style={{ width: "300px" }}
+                  style={{ width: "280px" }}
                   onDragOver={(e) => handleDragOver(e, stage.value)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.value)}
                 >
-                  {/* Column header — spatial glass */}
-                  <div className={`rounded-t-[16px] px-3 py-2.5 ${stage.headerBg}`}
-                    style={{ backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+                  {/* Column header — spatial glass with stage color tint */}
+                  <div
+                    className="rounded-t-[16px] px-3 py-2.5 flex items-center justify-between"
+                    style={{
+                      background: `linear-gradient(180deg, ${stage.bgColor} 0%, ${stage.bgColor}cc 100%)`,
+                      border: `0.5px solid ${stage.borderColor}`,
+                      backdropFilter: "blur(20px) saturate(1.5)",
+                      WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                    }}
                   >
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{stage.label}</h4>
-                      <Badge variant="secondary" className="text-[10px] h-5 px-2 tabular-nums">
-                        {leadsByStage[stage.value]?.length ?? 0}
-                      </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{stage.icon}</span>
+                      <span className="text-xs font-bold tracking-wide" style={{ color: stage.color }}>{stage.label}</span>
                     </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums" style={{ backgroundColor: "rgba(255,255,255,0.8)", color: stage.color, border: `0.5px solid ${stage.borderColor}` }}>
+                      {leadsByStage[stage.value]?.length ?? 0}
+                    </span>
                   </div>
 
-                  {/* Cards drop zone — spatial material-thin */}
+                  {/* Cards drop zone — spatial material-thin glass */}
                   <div
                     className="rounded-b-[16px] p-2 space-y-2 min-h-[12rem] max-h-[28rem] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border transition-colors"
                     style={{
-                      background: "var(--material-thin-bg)",
-                      backdropFilter: "var(--material-thin-blur)",
-                      WebkitBackdropFilter: "var(--material-thin-blur)",
+                      background: "rgba(255, 252, 248, 0.6)",
+                      backdropFilter: "blur(20px) saturate(1.5)",
+                      WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(45,90,61,0.04)",
                     }}
                   >
                     {(leadsByStage[stage.value] ?? []).map((lead) => (
