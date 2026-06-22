@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -73,7 +74,9 @@ export default function CandidateLayout({
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [profileCompletion, setProfileCompletion] = useState(0);
+  const isResumePage = pathname === "/vault/resume";
 
   // Fetch profile completion dynamically
   const fetchProfileCompletion = useCallback(async () => {
@@ -111,7 +114,7 @@ export default function CandidateLayout({
                 Welcome, {displayName}
               </h1>
               <p className="text-xs text-text-secondary truncate">
-                Here&apos;s an overview of your vault
+                {isResumePage ? "Here's an overview of your resume" : "Here's an overview of your vault"}
               </p>
             </div>
             <Link href="/profile-completion" className="group shrink-0 ml-3">
@@ -119,10 +122,10 @@ export default function CandidateLayout({
                 <CircularProgress percentage={profileCompletion} size={32} strokeWidth={3} />
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors leading-tight">
-                    Profile
+                    {isResumePage ? "Profile Complete" : "Profile"}
                   </span>
                   <span className="text-[10px] text-text-secondary leading-tight">
-                    {profileCompletion}% done
+                    {isResumePage ? "Great job! Keep it updated." : `${profileCompletion}% done`}
                   </span>
                 </div>
                 <ArrowUpRight className="size-2.5 text-text-muted group-hover:text-primary transition-colors" />

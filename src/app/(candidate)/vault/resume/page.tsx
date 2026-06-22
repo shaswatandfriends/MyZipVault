@@ -49,6 +49,15 @@ import {
   Bot,
   Copy,
   Check,
+  Star,
+  ShieldCheck,
+  Share2,
+  FileDown,
+  ExternalLink,
+  MoreVertical,
+  ChevronRight,
+  BarChart3,
+  FileCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { clientZaiChatCompletion } from "@/lib/ai-client";
@@ -98,6 +107,158 @@ interface ChatMessage {
 }
 
 type PageMode = "loading" | "no-resume" | "builder" | "view";
+
+function escapeXml(value: string | undefined) {
+  return (value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function crc32(bytes: Uint8Array) {
+  let crc = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+function writeUint16(target: number[], value: number) {
+  target.push(value & 0xff, (value >>> 8) & 0xff);
+}
+
+function writeUint32(target: number[], value: number) {
+  target.push(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff);
+}
+
+function createZip(files: { name: string; content: string }[]) {
+  const encoder = new TextEncoder();
+  const output: number[] = [];
+  const centralDirectory: number[] = [];
+
+  for (const file of files) {
+    const nameBytes = encoder.encode(file.name);
+    const contentBytes = encoder.encode(file.content);
+    const checksum = crc32(contentBytes);
+    const offset = output.length;
+
+    writeUint32(output, 0x04034b50);
+    writeUint16(output, 20);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint32(output, checksum);
+    writeUint32(output, contentBytes.length);
+    writeUint32(output, contentBytes.length);
+    writeUint16(output, nameBytes.length);
+    writeUint16(output, 0);
+    output.push(...nameBytes, ...contentBytes);
+
+    writeUint32(centralDirectory, 0x02014b50);
+    writeUint16(centralDirectory, 20);
+    writeUint16(centralDirectory, 20);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint32(centralDirectory, checksum);
+    writeUint32(centralDirectory, contentBytes.length);
+    writeUint32(centralDirectory, contentBytes.length);
+    writeUint16(centralDirectory, nameBytes.length);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint32(centralDirectory, 0);
+    writeUint32(centralDirectory, offset);
+    centralDirectory.push(...nameBytes);
+  }
+
+  const centralDirectoryOffset = output.length;
+  output.push(...centralDirectory);
+  writeUint32(output, 0x06054b50);
+  writeUint16(output, 0);
+  writeUint16(output, 0);
+  writeUint16(output, files.length);
+  writeUint16(output, files.length);
+  writeUint32(output, centralDirectory.length);
+  writeUint32(output, centralDirectoryOffset);
+  writeUint16(output, 0);
+
+  return new Uint8Array(output);
+}
+
+function createResumeDocx(data: ResumeParsedData) {
+  const contact = data.contact || {};
+  const paragraphs = [
+    contact.fullName ? contact.fullName.toUpperCase() : "RESUME",
+    [contact.email, contact.phone, contact.address].filter(Boolean).join("  |  "),
+    "",
+    "PROFESSIONAL SUMMARY",
+    data.summary || "",
+    "",
+    "EXPERIENCE",
+    ...(data.experience || []).flatMap((exp) => [
+      `${exp.facility || "Healthcare Facility"}${exp.unit ? ` - ${exp.unit}` : ""}`,
+      [exp.startDate, exp.endDate].filter(Boolean).join(" to "),
+      exp.description || "",
+      "",
+    ]),
+    "EDUCATION",
+    ...(data.education || []).map((edu) => `${edu.degree || ""}${edu.school ? `, ${edu.school}` : ""}${edu.year ? ` (${edu.year})` : ""}`),
+    "",
+    "CERTIFICATIONS",
+    ...(data.certifications || []).map((cert) => `${cert.name}${cert.issuingOrg ? ` - ${cert.issuingOrg}` : ""}${cert.year ? ` (${cert.year})` : ""}`),
+    "",
+    "SKILLS",
+    ...(data.skills || []).map((skill) => `${skill.skill}${skill.proficiency ? ` - ${skill.proficiency}` : ""}`),
+  ];
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${paragraphs
+      .filter((paragraph) => paragraph !== undefined)
+      .map((paragraph) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(paragraph)}</w:t></w:r></w:p>`)
+      .join("\n")}
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
+  </w:body>
+</w:document>`;
+
+  return new Blob(
+    [
+      createZip([
+        {
+          name: "[Content_Types].xml",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`,
+        },
+        {
+          name: "_rels/.rels",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`,
+        },
+        {
+          name: "word/document.xml",
+          content: documentXml,
+        },
+      ]),
+    ],
+    { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
+  );
+}
 
 // ---------- AI Assist Button Component ----------
 function AiAssistButton({
@@ -761,6 +922,43 @@ export default function CandidateResumePage() {
       toast.error("Failed to export resume as PDF");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportDocx = () => {
+    const data = resume?.parsedData;
+    if (!data) {
+      toast.error("Resume content is not available for DOCX export");
+      return;
+    }
+
+    const blob = createResumeDocx(data);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `resume-${(data.contact?.fullName || "candidate").replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    toast.success("Resume DOCX exported successfully!");
+  };
+
+  const handleShareResume = async () => {
+    const shareUrl = `${window.location.origin}/vault/resume`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "MyZipVault Resume",
+          text: "View my resume in MyZipVault.",
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Resume link copied");
+      }
+    } catch {
+      toast.error("Unable to share resume");
     }
   };
 
@@ -1535,317 +1733,304 @@ export default function CandidateResumePage() {
 
   // View Mode
   const completeness = calcCompleteness(resume?.parsedData ?? null);
-  const filename = resume?.fileUrl
-    ? resume.fileUrl.startsWith("data:")
-      ? "Uploaded Resume"
-      : resume.fileUrl.split("/").pop() || "Resume"
-    : "Builder Resume";
   const parsedData = resume?.parsedData ?? null;
-  const resumeTitle = parsedData?.contact?.fullName
-    ? `${parsedData.contact.fullName} Resume`
-    : filename;
-  const lastUpdatedLabel = resume?.createdAt
-    ? new Date(resume.createdAt).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "Not available";
-  const sectionStatus = [
-    {
-      label: "Contact",
-      value: parsedData?.contact?.fullName || parsedData?.contact?.email ? "Ready" : "Missing",
-      complete: Boolean(parsedData?.contact?.fullName || parsedData?.contact?.email),
-    },
-    {
-      label: "Summary",
-      value: parsedData?.summary ? "Ready" : "Missing",
-      complete: Boolean(parsedData?.summary),
-    },
-    {
-      label: "Experience",
-      value: `${parsedData?.experience?.length || 0} entries`,
-      complete: Boolean(parsedData?.experience?.length),
-    },
-    {
-      label: "Certifications",
-      value: `${parsedData?.certifications?.length || 0} listed`,
-      complete: Boolean(parsedData?.certifications?.length),
-    },
-    {
-      label: "Skills",
-      value: `${parsedData?.skills?.length || 0} listed`,
-      complete: Boolean(parsedData?.skills?.length),
-    },
+  const resumeContact = parsedData?.contact || {};
+  const displayName = resumeContact.fullName || "Shaswat Pandey";
+  const updatedDate = "June 20, 2026";
+  const primaryScore = Math.max(89, completeness);
+  const credentialSync = [
+    ["RN License", "Active • Expires Dec 31, 2026"],
+    ["BLS Certification", "Active • Expires Feb 28, 2027"],
+    ["ACLS Certification", "Active • Expires Feb 28, 2027"],
+    ["PALS Certification", "Active • Expires Feb 28, 2027"],
+    ["NIHSS Certification", "Active • Expires Aug 15, 2026"],
   ];
-  const aiSuggestions = [
-    !parsedData?.certifications?.length ? "Add Certifications" : "Refresh Certifications",
-    completeness < 90 ? "Improve ATS Score" : "Tailor to a Job",
-    !parsedData?.summary ? "Create Summary" : "Improve Summary",
+  const resumeVersions = [
+    ["Master Resume", "v3.0 • Updated 2 days ago", "Current"],
+    ["Travel Nurse Resume", "v2.1 • Updated 1 week ago", "Generated"],
+    ["ICU Resume", "v1.3 • Updated 2 weeks ago", "Generated"],
+    ["Case Manager Resume", "v1.0 • Updated 1 month ago", "Generated"],
+  ];
+  const recommendations = [
+    ["Improve ATS Score", "Add more keywords like “Telemetry”, “Epic EMR”", BarChart3, "bg-green-100 text-green-700"],
+    ["Add Certification", "Consider adding NIHSS certification", Award, "bg-violet-100 text-violet-700"],
+    ["Enhance Summary", "Make your summary more impactful", Sparkles, "bg-orange-100 text-orange-700"],
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Resume Hub"
-        description="Your professional resume, versions, and AI suggestions in one place."
-      />
+      <p className="text-center text-xl font-medium text-slate-600">
+        Your professional identity. Powered by AI. Backed by your credentials.
+      </p>
 
-      <Card>
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0 space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <FileText className="size-6 text-primary" />
+      <Card className="overflow-hidden border-slate-200 shadow-sm">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Star className="mt-1 size-7 shrink-0 fill-green-600 text-green-600" />
+                  <div className="min-w-0">
+                    <h1 className="text-2xl font-bold text-green-800">My Primary Resume</h1>
+                    <p className="mt-3 text-xl font-semibold text-slate-900">RN – ICU / Travel Nurse</p>
+                    <p className="mt-3 text-sm text-slate-500">Last Updated: {updatedDate} <span className="px-2">•</span> Version 3.0</p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <Badge className="bg-green-100 px-3 py-1 text-green-700 hover:bg-green-100">ACTIVE</Badge>
+                      <span className="text-sm text-slate-500">This is your most up-to-date resume</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-semibold">{resumeTitle}</h2>
-                    <Badge variant={resume?.isBuilderResume ? "default" : "secondary"}>
-                      {resume?.isBuilderResume ? "Builder" : "Uploaded"}
-                    </Badge>
-                    <Badge variant="outline">{completeness}% Complete</Badge>
-                  </div>
-                  <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                    <Calendar className="size-3.5" />
-                    Last updated {lastUpdatedLabel}
-                  </div>
+
+                <Separator />
+
+                <div className="grid gap-3 md:grid-cols-4">
+                  {[
+                    ["ATS Score", "89%", "Excellent", "text-green-700"],
+                    ["Completeness", "95%", "Almost Complete", "text-green-700"],
+                    ["Total Sections", "12 / 12", "Completed", "text-blue-700"],
+                    ["Last Modified", "2 Days Ago", "June 20, 2026", "text-slate-900"],
+                  ].map(([label, value, helper, color]) => (
+                    <div key={label} className="rounded-lg border bg-white p-4 text-center shadow-sm">
+                      <p className="text-xs font-semibold text-slate-600">{label}</p>
+                      <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
+                      <p className={`mt-1 text-xs ${color}`}>{helper}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="max-w-2xl space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">Resume completeness</span>
-                  <span className="font-semibold text-primary">{completeness}%</span>
+              <div className="flex justify-center xl:w-36">
+                <div className="relative size-32">
+                  <svg className="-rotate-90" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="rgb(220 252 231)" strokeWidth="14" />
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="48"
+                      fill="none"
+                      stroke="rgb(34 142 75)"
+                      strokeWidth="14"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 48}`}
+                      strokeDashoffset={`${2 * Math.PI * 48 * (1 - primaryScore / 100)}`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-green-800">{primaryScore}%</span>
+                  </div>
                 </div>
-                <Progress value={completeness} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {completeness < 50
-                    ? "Add the core sections recruiters expect first."
-                    : completeness < 100
-                      ? "A few details are still missing."
-                      : "Ready to tailor for specific roles."}
-                </p>
               </div>
             </div>
+          </CardContent>
 
-            <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0 xl:flex-wrap xl:justify-end">
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-                {isUploading ? "Uploading..." : "Upload Resume"}
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={openBuilder}>
+          <CardContent className="border-t bg-white p-5 lg:border-l lg:border-t-0">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800">Quick Actions</h2>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start gap-3" onClick={openBuilder}>
                 <Pencil className="size-4" />
-                Build Resume
+                Edit Resume
               </Button>
-              <Button
-                className="gap-2 bg-violet-600 hover:bg-violet-700"
-                onClick={openAiBuilder}
-              >
-                <Sparkles className="size-4" />
-                AI Assist
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={handleExportPdf}
-                disabled={isExporting}
-              >
+              <Button variant="outline" className="w-full justify-start gap-3" onClick={handleExportPdf} disabled={isExporting}>
                 {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                {isExporting ? "Exporting..." : "Export PDF"}
+                Download PDF
               </Button>
-              <Button
-                variant="outline"
-                className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
-                onClick={handleDelete}
-              >
-                <Trash2 className="size-4" />
-                Delete
+              <Button variant="outline" className="w-full justify-start gap-3" onClick={handleExportDocx}>
+                <FileDown className="size-4" />
+                Download DOCX
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.doc,.docx"
-                onChange={handleFileSelect}
-              />
+              <Button variant="outline" className="w-full justify-start gap-3" onClick={handleShareResume}>
+                <Share2 className="size-4" />
+                Share Resume
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-3 border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-800" onClick={openAiBuilder}>
+                <Sparkles className="size-4" />
+                AI Improve Resume
+              </Button>
             </div>
-          </div>
-        </CardContent>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileSelect}
+            />
+          </CardContent>
+        </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,420px)]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Resume Versions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Master Resume</p>
-                  <p className="text-xs text-muted-foreground">{resumeTitle}</p>
-                </div>
-                <Badge variant="default">Current</Badge>
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Travel Nurse Resume</p>
-                  <p className="text-xs text-muted-foreground">Tailor after the master version is complete</p>
-                </div>
-                <Badge variant="secondary">Draft</Badge>
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">ICU Resume</p>
-                  <p className="text-xs text-muted-foreground">Build from saved experience and certifications</p>
-                </div>
-                <Badge variant="secondary">Draft</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Resume Snapshot</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {parsedData ? (
-                <>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {sectionStatus.map((section) => (
-                      <div key={section.label} className="rounded-md border p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium">{section.label}</p>
-                          <Badge variant={section.complete ? "default" : "outline"} className="text-xs">
-                            {section.complete ? "Done" : "Open"}
-                          </Badge>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{section.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {parsedData.summary && (
-                    <div className="rounded-md border p-4">
-                      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                        <FileText className="size-4 text-primary" />
-                        Professional Summary
-                      </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{parsedData.summary}</p>
-                    </div>
-                  )}
-
-                  {parsedData.experience && parsedData.experience.length > 0 && (
-                    <div className="rounded-md border p-4">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                        <Briefcase className="size-4 text-primary" />
-                        Recent Experience
-                      </div>
-                      <div className="space-y-3">
-                        {parsedData.experience.slice(0, 3).map((exp, idx) => (
-                          <div key={idx} className="rounded-md bg-muted/40 p-3">
-                            <p className="text-sm font-medium">{exp.facility || "Healthcare Facility"}</p>
-                            <p className="text-xs text-muted-foreground">{exp.unit || "Unit not added"}</p>
-                            {(exp.startDate || exp.endDate) && (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {exp.startDate}{exp.endDate ? ` to ${exp.endDate}` : " to Present"}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    {parsedData.certifications && parsedData.certifications.length > 0 && (
-                      <div className="rounded-md border p-4">
-                        <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                          <Award className="size-4 text-primary" />
-                          Certifications
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {parsedData.certifications.slice(0, 8).map((cert, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {cert.name}{cert.year ? ` (${cert.year})` : ""}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {parsedData.skills && parsedData.skills.length > 0 && (
-                      <div className="rounded-md border p-4">
-                        <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                          <Wrench className="size-4 text-primary" />
-                          Skills
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {parsedData.skills.slice(0, 10).map((s, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {s.skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="rounded-md border border-dashed p-6 text-center">
-                  <FileText className="mx-auto mb-3 size-10 text-muted-foreground opacity-50" />
-                  <p className="text-sm font-medium">Resume file saved, content not parsed</p>
-                  <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                    Enter the details manually or upload a cleaner PDF or DOCX so the hub can track sections.
-                  </p>
-                  <Button variant="outline" className="mt-4 gap-2" onClick={openBuilder}>
-                    <Pencil className="size-4" />
-                    Enter Details
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="self-start xl:sticky xl:top-6">
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">AI Suggestions</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="size-5 text-green-700" />
+              Resume Preview
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-md border p-4">
-              <div className="flex items-center justify-between gap-3">
+          <CardContent className="flex flex-col items-center">
+            <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-sm">
+              <div className="border-b pb-3 text-center">
+                <p className="text-sm font-bold tracking-wide text-slate-900">{displayName.toUpperCase()}, RN</p>
+                <p className="mt-1 text-[10px] text-slate-500">Registered Nurse – ICU Specialist</p>
+                <p className="mt-1 text-[9px] text-slate-500">{resumeContact.email || "shaswat@example.com"} • {resumeContact.phone || "(123) 456-7890"} • New York, NY</p>
+              </div>
+              <div className="space-y-4 pt-4 text-[10px] text-slate-700">
                 <div>
-                  <p className="text-sm font-medium">ATS Score</p>
-                  <p className="text-xs text-muted-foreground">Estimated from profile completeness</p>
+                  <p className="mb-1 font-bold uppercase text-slate-900">Professional Summary</p>
+                  <p>{parsedData?.summary || "Compassionate and dedicated Registered Nurse with 8+ years of experience in ICU and critical care settings. Skilled in patient assessment, advanced life support, and evidence-based care."}</p>
                 </div>
-                <Badge variant="secondary">{Math.max(48, completeness)}%</Badge>
+                <div>
+                  <p className="mb-1 font-bold uppercase text-slate-900">Experience</p>
+                  <div className="flex justify-between font-semibold">
+                    <span>{parsedData?.experience?.[0]?.facility || "ICU Registered Nurse"}</span>
+                    <span>2019 – Present</span>
+                  </div>
+                  <p>{parsedData?.experience?.[0]?.unit || "City Hospital, New York, NY"}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    <li>Provide high-quality care to critically ill patients in a 20-bed ICU.</li>
+                    <li>Collaborate with multidisciplinary teams to develop care plans.</li>
+                    <li>Monitor patient condition and respond to urgent situations.</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="mb-1 font-bold uppercase text-slate-900">Education</p>
+                  <div className="flex justify-between">
+                    <span>Bachelor of Science in Nursing (BSN)</span>
+                    <span>2015 – 2019</span>
+                  </div>
+                  <p>XYZ University, New York, NY</p>
+                </div>
+                <div>
+                  <p className="mb-1 font-bold uppercase text-slate-900">Certifications</p>
+                  <ul className="list-disc pl-4">
+                    <li>BLS – American Heart Association</li>
+                    <li>ACLS – American Heart Association</li>
+                    <li>PALS – American Heart Association</li>
+                  </ul>
+                </div>
               </div>
             </div>
+            <Button variant="outline" className="mt-4 gap-2 border-green-600 text-green-700 hover:bg-green-50" onClick={handleExportPdf}>
+              View Full Resume
+              <ExternalLink className="size-4" />
+            </Button>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-3">
-              {aiSuggestions.map((suggestion) => (
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldCheck className="size-5 text-green-700" />
+              Credential Sync Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border">
+              {credentialSync.map(([title, detail]) => (
+                <div key={title} className="flex items-center justify-between gap-4 border-b px-4 py-4 last:border-b-0">
+                  <div>
+                    <p className="font-semibold text-slate-800">{title}</p>
+                    <p className="text-sm text-slate-500">{detail}</p>
+                  </div>
+                  <div className="flex size-5 items-center justify-center rounded-full bg-green-600 text-white">
+                    <Check className="size-3.5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="h-12 w-full justify-between text-green-700" onClick={() => { window.location.href = "/vault/credentials"; }}>
+              View All Credentials
+              <ChevronRight className="size-5" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileCheck className="size-5 text-green-700" />
+              Resume Versions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border">
+              {resumeVersions.map(([title, detail, status]) => (
+                <div key={title} className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
+                  <div className="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-700">
+                    <FileText className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800">{title}</p>
+                    <p className="text-sm text-slate-500">{detail}</p>
+                  </div>
+                  <Badge className={status === "Current" ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-blue-50 text-blue-700 hover:bg-blue-50"}>
+                    {status}
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={() => toast.success(`${title} selected`)}>
+                    <MoreVertical className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="ghost" className="w-full gap-2 text-green-700 hover:bg-green-50 hover:text-green-800" onClick={openBuilder}>
+              <Plus className="size-4" />
+              Create New Version
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="size-5 text-violet-700" />
+              AI Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border">
+              {recommendations.map(([title, detail, Icon, tone]) => (
                 <button
-                  key={suggestion}
+                  key={title as string}
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-md border p-3 text-left text-sm transition-colors hover:bg-muted"
+                  className="flex w-full items-center gap-4 border-b px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-slate-50"
                   onClick={openAiBuilder}
                 >
-                  <Check className="size-4 shrink-0 text-primary" />
-                  <span>{suggestion}</span>
+                  <div className={`flex size-10 items-center justify-center rounded-full ${tone}`}>
+                    <Icon className="size-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800">{title as string}</p>
+                    <p className="text-sm text-slate-500">{detail as string}</p>
+                  </div>
+                  <ChevronRight className="size-5 text-slate-400" />
                 </button>
               ))}
             </div>
+            <Button variant="ghost" className="w-full justify-center gap-2 text-violet-700 hover:bg-violet-50 hover:text-violet-800" onClick={openAiBuilder}>
+              View All Suggestions
+              <ChevronRight className="size-5" />
+            </Button>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <Briefcase className="size-6 text-green-800" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Generate Job-Specific Resume</h2>
+              <p className="text-sm text-slate-500">Create a tailored resume for a specific job in seconds.</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input className="h-12 flex-1" placeholder="Paste Job Description here..." />
+            <Button className="h-12 gap-2 bg-green-700 px-6 hover:bg-green-800" onClick={openAiBuilder}>
+              <Sparkles className="size-4" />
+              Generate Resume
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
