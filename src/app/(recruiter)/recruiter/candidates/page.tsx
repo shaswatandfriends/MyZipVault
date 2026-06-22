@@ -236,7 +236,7 @@ export default function BOBPage() {
   );
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-4 p-4 md:p-6 overflow-x-hidden">
       <PageHeader
         title="Book of Business"
         description="Your candidate pipeline — from cold lead to active assignment."
@@ -505,9 +505,9 @@ export default function BOBPage() {
             </div>
           </div>
 
-          {/* Activity Panel (30%) — collapsible */}
+          {/* Activity Panel (30%) — collapsible, sticky */}
           {showActivityPanel && (
-            <div className="lg:w-[30%] shrink-0 space-y-4">
+            <div className="lg:w-[30%] shrink-0 space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
               {/* Hot Leads */}
               <Card>
                 <CardContent className="p-4">
