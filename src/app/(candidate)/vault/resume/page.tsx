@@ -611,6 +611,28 @@ export default function CandidateResumePage() {
     setSkills(data.skills || []);
   };
 
+  const resetBuilder = () => {
+    setContact({ fullName: "", phone: "", email: "", address: "" });
+    setSummary("");
+    setExperiences([]);
+    setEducation([]);
+    setCertifications([]);
+    setSkills([]);
+  };
+
+  const openBuilder = () => {
+    if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+    else resetBuilder();
+    setMode("builder");
+  };
+
+  const openAiBuilder = () => {
+    if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
+    else resetBuilder();
+    setMode("builder");
+    setShowAiChat(true);
+  };
+
   const handleUpload = async (file: File) => {
     const allowedTypes = [
       "application/pdf",
@@ -786,84 +808,119 @@ export default function CandidateResumePage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Resume"
-          description="Upload or build your professional resume for healthcare positions."
+          title="Resume Hub"
+          description="Create one healthcare resume and keep it ready for sharing."
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Upload Option */}
-          <Card
-            className="border-2 border-dashed hover:border-primary/50 transition-colors cursor-pointer"
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
-              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Upload className="size-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold">Upload Resume</h3>
-              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
-                Drag & drop your resume file or click to browse. AI will automatically parse and extract your information.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Accepts PDF and Word documents
-              </p>
-              {isUploading && (
-                <div className="flex items-center gap-2 mt-4 text-primary">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span className="text-sm">Uploading & parsing...</span>
+        <Card
+          className="border-dashed"
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <FileText className="size-6 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold">Healthcare Resume</h2>
+                      <Badge variant="secondary">0% Complete</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Upload an existing PDF or DOCX, build one section by section, or start with AI assistance.
+                    </p>
+                  </div>
                 </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.doc,.docx"
-                onChange={handleFileSelect}
-              />
+                <div className="max-w-xl space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Resume completeness</span>
+                    <span className="font-semibold text-primary">0%</span>
+                  </div>
+                  <Progress value={0} className="h-2" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row lg:shrink-0">
+                <Button
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                  {isUploading ? "Uploading..." : "Upload Resume"}
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={openBuilder}>
+                  <Pencil className="size-4" />
+                  Build Resume
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
+                  onClick={openAiBuilder}
+                >
+                  <Sparkles className="size-4" />
+                  AI Assist
+                </Button>
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileSelect}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Resume Versions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Master Resume</p>
+                  <p className="text-xs text-muted-foreground">Primary version for recruiter sharing</p>
+                </div>
+                <Badge variant="outline">Draft</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3 text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Travel Nurse Resume</p>
+                  <p className="text-xs">Create after your master resume is ready</p>
+                </div>
+                <Badge variant="secondary">Later</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3 text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">ICU Resume</p>
+                  <p className="text-xs">Tailor from your saved experience</p>
+                </div>
+                <Badge variant="secondary">Later</Badge>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Builder Option */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
-              <div className="size-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-                <Pencil className="size-8 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <h3 className="text-lg font-semibold">Use Resume Builder</h3>
-              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
-                Create a professional healthcare resume step by step with our guided builder
-              </p>
-              <Button
-                className="mt-6 gap-2 bg-emerald-600 hover:bg-emerald-700"
-                onClick={() => setMode("builder")}
-              >
-                <Pencil className="size-4" />
-                Start Building
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* AI Builder Option */}
-          <Card className="hover:shadow-md transition-shadow border-violet-200 dark:border-violet-800">
-            <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
-              <div className="size-16 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
-                <Sparkles className="size-8 text-violet-600 dark:text-violet-400" />
-              </div>
-              <h3 className="text-lg font-semibold">AI Resume Builder</h3>
-              <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
-                Let AI help you build a professional healthcare resume with smart suggestions and content generation
-              </p>
-              <Button
-                className="mt-6 gap-2 bg-violet-600 hover:bg-violet-700"
-                onClick={() => {
-                  setMode("builder");
-                  setShowAiChat(true);
-                }}
-              >
-                <Sparkles className="size-4" />
-                Start with AI
-              </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">AI Suggestions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                "Add contact details",
+                "Import certifications",
+                "Create professional summary",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3 text-sm">
+                  <Check className="size-4 text-primary" />
+                  <span>{item}</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
@@ -1483,297 +1540,312 @@ export default function CandidateResumePage() {
       ? "Uploaded Resume"
       : resume.fileUrl.split("/").pop() || "Resume"
     : "Builder Resume";
+  const parsedData = resume?.parsedData ?? null;
+  const resumeTitle = parsedData?.contact?.fullName
+    ? `${parsedData.contact.fullName} Resume`
+    : filename;
+  const lastUpdatedLabel = resume?.createdAt
+    ? new Date(resume.createdAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Not available";
+  const sectionStatus = [
+    {
+      label: "Contact",
+      value: parsedData?.contact?.fullName || parsedData?.contact?.email ? "Ready" : "Missing",
+      complete: Boolean(parsedData?.contact?.fullName || parsedData?.contact?.email),
+    },
+    {
+      label: "Summary",
+      value: parsedData?.summary ? "Ready" : "Missing",
+      complete: Boolean(parsedData?.summary),
+    },
+    {
+      label: "Experience",
+      value: `${parsedData?.experience?.length || 0} entries`,
+      complete: Boolean(parsedData?.experience?.length),
+    },
+    {
+      label: "Certifications",
+      value: `${parsedData?.certifications?.length || 0} listed`,
+      complete: Boolean(parsedData?.certifications?.length),
+    },
+    {
+      label: "Skills",
+      value: `${parsedData?.skills?.length || 0} listed`,
+      complete: Boolean(parsedData?.skills?.length),
+    },
+  ];
+  const aiSuggestions = [
+    !parsedData?.certifications?.length ? "Add Certifications" : "Refresh Certifications",
+    completeness < 90 ? "Improve ATS Score" : "Tailor to a Job",
+    !parsedData?.summary ? "Create Summary" : "Improve Summary",
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Resume"
-        description="Your professional resume on file"
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              className="gap-2 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:hover:bg-violet-950"
-              onClick={() => {
-                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
-                else {
-                  setContact({ fullName: "", phone: "", email: "", address: "" });
-                  setSummary("");
-                  setExperiences([]);
-                  setEducation([]);
-                  setCertifications([]);
-                  setSkills([]);
-                }
-                setMode("builder");
-                setShowAiChat(true);
-              }}
-            >
-              <Sparkles className="size-4" />
-              AI Edit
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                if (resume?.parsedData) populateBuilderFromResume(resume.parsedData);
-                else {
-                  setContact({ fullName: "", phone: "", email: "", address: "" });
-                  setSummary("");
-                  setExperiences([]);
-                  setEducation([]);
-                  setCertifications([]);
-                  setSkills([]);
-                }
-                setMode("builder");
-              }}
-            >
-              <Pencil className="size-4" />
-              Edit in Builder
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleExportPdf}
-              disabled={isExporting}
-            >
-              {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-              {isExporting ? "Exporting..." : "Export PDF"}
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="size-4" />
-              Replace
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
-              onClick={handleDelete}
-            >
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileSelect}
-            />
-          </div>
-        }
+        title="Resume Hub"
+        description="Your professional resume, versions, and AI suggestions in one place."
       />
 
-      {/* Resume Preview Card */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="size-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <FileText className="size-7 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-lg">{filename}</h3>
-                <Badge variant={resume?.isBuilderResume ? "default" : "secondary"} className="text-xs">
-                  {resume?.isBuilderResume ? "Builder" : "Uploaded"}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                <Calendar className="size-3.5" />
-                Added {resume?.createdAt ? new Date(resume.createdAt).toLocaleDateString() : "N/A"}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Completeness Progress */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Resume Completeness</span>
-            <span className="text-sm font-semibold text-primary">{completeness}%</span>
-          </div>
-          <Progress value={completeness} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {completeness < 50
-              ? "Add more sections to strengthen your resume"
-              : completeness < 100
-                ? "Almost there! Fill in remaining details"
-                : "Your resume is complete!"}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Parsed Data Preview Cards */}
-      {resume?.parsedData && (
-        <div className="space-y-4">
-          {/* Contact */}
-          {resume.parsedData.contact && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <User className="size-4" /> Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  {resume.parsedData.contact.fullName && (
-                    <div><span className="text-muted-foreground">Name:</span> {resume.parsedData.contact.fullName}</div>
-                  )}
-                  {resume.parsedData.contact.phone && (
-                    <div><span className="text-muted-foreground">Phone:</span> {resume.parsedData.contact.phone}</div>
-                  )}
-                  {resume.parsedData.contact.email && (
-                    <div><span className="text-muted-foreground">Email:</span> {resume.parsedData.contact.email}</div>
-                  )}
-                  {resume.parsedData.contact.address && (
-                    <div><span className="text-muted-foreground">Address:</span> {resume.parsedData.contact.address}</div>
-                  )}
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0 space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <FileText className="size-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Summary */}
-          {resume.parsedData.summary && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="size-4" /> Professional Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{resume.parsedData.summary}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Experience */}
-          {resume.parsedData.experience && resume.parsedData.experience.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <Briefcase className="size-4" /> Work Experience ({resume.parsedData.experience.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {resume.parsedData.experience.map((exp, idx) => (
-                  <div key={idx} className="border-l-2 border-primary/20 pl-3">
-                    <p className="font-medium text-sm">{exp.facility}</p>
-                    <p className="text-xs text-muted-foreground">{exp.unit}</p>
-                    {(exp.startDate || exp.endDate) && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {exp.startDate}{exp.endDate ? ` — ${exp.endDate}` : " — Present"}
-                      </p>
-                    )}
-                    {exp.description && (
-                      <p className="text-sm mt-1 text-muted-foreground">{exp.description}</p>
-                    )}
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-semibold">{resumeTitle}</h2>
+                    <Badge variant={resume?.isBuilderResume ? "default" : "secondary"}>
+                      {resume?.isBuilderResume ? "Builder" : "Uploaded"}
+                    </Badge>
+                    <Badge variant="outline">{completeness}% Complete</Badge>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+                  <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                    <Calendar className="size-3.5" />
+                    Last updated {lastUpdatedLabel}
+                  </div>
+                </div>
+              </div>
 
-          {/* Education */}
-          {resume.parsedData.education && resume.parsedData.education.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <GraduationCap className="size-4" /> Education ({resume.parsedData.education.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {resume.parsedData.education.map((edu, idx) => (
-                  <div key={idx} className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-sm">{edu.degree}</p>
-                      <p className="text-xs text-muted-foreground">{edu.school}</p>
+              <div className="max-w-2xl space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Resume completeness</span>
+                  <span className="font-semibold text-primary">{completeness}%</span>
+                </div>
+                <Progress value={completeness} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  {completeness < 50
+                    ? "Add the core sections recruiters expect first."
+                    : completeness < 100
+                      ? "A few details are still missing."
+                      : "Ready to tailor for specific roles."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0 xl:flex-wrap xl:justify-end">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                {isUploading ? "Uploading..." : "Upload Resume"}
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={openBuilder}>
+                <Pencil className="size-4" />
+                Build Resume
+              </Button>
+              <Button
+                className="gap-2 bg-violet-600 hover:bg-violet-700"
+                onClick={openAiBuilder}
+              >
+                <Sparkles className="size-4" />
+                AI Assist
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExportPdf}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                {isExporting ? "Exporting..." : "Export PDF"}
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
+                onClick={handleDelete}
+              >
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileSelect}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,420px)]">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Resume Versions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Master Resume</p>
+                  <p className="text-xs text-muted-foreground">{resumeTitle}</p>
+                </div>
+                <Badge variant="default">Current</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Travel Nurse Resume</p>
+                  <p className="text-xs text-muted-foreground">Tailor after the master version is complete</p>
+                </div>
+                <Badge variant="secondary">Draft</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">ICU Resume</p>
+                  <p className="text-xs text-muted-foreground">Build from saved experience and certifications</p>
+                </div>
+                <Badge variant="secondary">Draft</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Resume Snapshot</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {parsedData ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {sectionStatus.map((section) => (
+                      <div key={section.label} className="rounded-md border p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium">{section.label}</p>
+                          <Badge variant={section.complete ? "default" : "outline"} className="text-xs">
+                            {section.complete ? "Done" : "Open"}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">{section.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {parsedData.summary && (
+                    <div className="rounded-md border p-4">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                        <FileText className="size-4 text-primary" />
+                        Professional Summary
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{parsedData.summary}</p>
                     </div>
-                    {edu.year && (
-                      <span className="text-xs text-muted-foreground shrink-0">{edu.year}</span>
+                  )}
+
+                  {parsedData.experience && parsedData.experience.length > 0 && (
+                    <div className="rounded-md border p-4">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                        <Briefcase className="size-4 text-primary" />
+                        Recent Experience
+                      </div>
+                      <div className="space-y-3">
+                        {parsedData.experience.slice(0, 3).map((exp, idx) => (
+                          <div key={idx} className="rounded-md bg-muted/40 p-3">
+                            <p className="text-sm font-medium">{exp.facility || "Healthcare Facility"}</p>
+                            <p className="text-xs text-muted-foreground">{exp.unit || "Unit not added"}</p>
+                            {(exp.startDate || exp.endDate) && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {exp.startDate}{exp.endDate ? ` to ${exp.endDate}` : " to Present"}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {parsedData.certifications && parsedData.certifications.length > 0 && (
+                      <div className="rounded-md border p-4">
+                        <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                          <Award className="size-4 text-primary" />
+                          Certifications
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsedData.certifications.slice(0, 8).map((cert, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {cert.name}{cert.year ? ` (${cert.year})` : ""}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {parsedData.skills && parsedData.skills.length > 0 && (
+                      <div className="rounded-md border p-4">
+                        <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                          <Wrench className="size-4 text-primary" />
+                          Skills
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsedData.skills.slice(0, 10).map((s, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {s.skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Certifications */}
-          {resume.parsedData.certifications && resume.parsedData.certifications.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <Award className="size-4" /> Certifications ({resume.parsedData.certifications.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {resume.parsedData.certifications.map((cert, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {cert.name}{cert.issuingOrg ? ` — ${cert.issuingOrg}` : ""}{cert.year ? ` (${cert.year})` : ""}
-                    </Badge>
-                  ))}
+                </>
+              ) : (
+                <div className="rounded-md border border-dashed p-6 text-center">
+                  <FileText className="mx-auto mb-3 size-10 text-muted-foreground opacity-50" />
+                  <p className="text-sm font-medium">Resume file saved, content not parsed</p>
+                  <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+                    Enter the details manually or upload a cleaner PDF or DOCX so the hub can track sections.
+                  </p>
+                  <Button variant="outline" className="mt-4 gap-2" onClick={openBuilder}>
+                    <Pencil className="size-4" />
+                    Enter Details
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Skills */}
-          {resume.parsedData.skills && resume.parsedData.skills.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <Wrench className="size-4" /> Skills ({resume.parsedData.skills.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {resume.parsedData.skills.map((s, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
-                      {s.skill}{s.proficiency ? ` (${s.proficiency})` : ""}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
 
-      {/* No parsed data available for uploaded resume */}
-      {resume?.parsedData === null && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <FileText className="size-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-sm text-muted-foreground mb-2">
-              Your uploaded resume file is on record, but the content could not be parsed automatically.
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              You can use the Resume Builder to manually enter your information, or try uploading a different file format.
-            </p>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                setContact({ fullName: "", phone: "", email: "", address: "" });
-                setSummary("");
-                setExperiences([]);
-                setEducation([]);
-                setCertifications([]);
-                setSkills([]);
-                setMode("builder");
-              }}
-            >
-              <Pencil className="size-4" />
-              Enter Details Manually
-            </Button>
+        <Card className="self-start xl:sticky xl:top-6">
+          <CardHeader>
+            <CardTitle className="text-base">AI Suggestions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">ATS Score</p>
+                  <p className="text-xs text-muted-foreground">Estimated from profile completeness</p>
+                </div>
+                <Badge variant="secondary">{Math.max(48, completeness)}%</Badge>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {aiSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-md border p-3 text-left text-sm transition-colors hover:bg-muted"
+                  onClick={openAiBuilder}
+                >
+                  <Check className="size-4 shrink-0 text-primary" />
+                  <span>{suggestion}</span>
+                </button>
+              ))}
+            </div>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }
