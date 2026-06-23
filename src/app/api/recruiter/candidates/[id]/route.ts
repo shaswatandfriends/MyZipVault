@@ -94,28 +94,35 @@ export async function GET(
     }
 
     // Get consent shares (shared documents) — scoped to this recruiter/admin's org
-    const consentShares = await db.consentShare.findMany({
-      where: {
-        candidate_user_id: candidateId,
-        client_user_id: { in: scope.clientUserIds },
-        is_deleted: false,
-      },
-      include: {
-        unlocked_documents: true,
-        checklist_response: {
-          select: { id: true, status: true, submitted_at: true },
+    // Wrapped in try/catch for schema-drift resilience
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let consentShares: any[] = [];
+    try {
+      consentShares = await db.consentShare.findMany({
+        where: {
+          candidate_user_id: candidateId,
+          client_user_id: { in: scope.clientUserIds },
+          is_deleted: false,
         },
-        credential: {
-          select: { id: true, document_name: true, file_url: true, status: true, verification_status: true },
+        include: {
+          unlocked_documents: true,
+          checklist_response: {
+            select: { id: true, status: true, submitted_at: true },
+          },
+          credential: {
+            select: { id: true, document_name: true, file_url: true, status: true, verification_status: true },
+          },
+          resume: {
+            select: { id: true, file_url: true, is_builder_resume: true },
+          },
+          reference: {
+            select: { id: true, facility_name: true, employment_status: true, status: true },
+          },
         },
-        resume: {
-          select: { id: true, file_url: true, is_builder_resume: true },
-        },
-        reference: {
-          select: { id: true, facility_name: true, employment_status: true, status: true },
-        },
-      },
-    });
+      });
+    } catch (shareErr) {
+      console.error("[RECRUITER_CANDIDATE_DETAIL] ConsentShare query failed (schema mismatch?):", shareErr);
+    }
 
     // Build documents list
     const documents = consentShares.map((share) => {

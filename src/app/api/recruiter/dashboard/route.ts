@@ -69,21 +69,29 @@ export async function GET(request: Request) {
     }
 
     // Get consent shares for these candidates — scoped to this recruiter/admin's users
+    // Wrapped in try/catch for schema-drift resilience (checklist_response now has
+    // superseded_by_id column which may not exist if migration is partially applied)
     const candidateIds = [...new Set(checklistRequests.map((cr) => cr.candidate_user_id))];
-    const consentShares = await db.consentShare.findMany({
-      where: {
-        candidate_user_id: { in: candidateIds },
-        client_user_id: { in: scopedUserIds },
-        is_deleted: false,
-      },
-      include: {
-        unlocked_documents: true,
-        checklist_response: { select: { id: true } },
-        credential: { select: { id: true, document_name: true } },
-        resume: { select: { id: true } },
-        reference: { select: { id: true, facility_name: true } },
-      },
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let consentShares: any[] = [];
+    try {
+      consentShares = await db.consentShare.findMany({
+        where: {
+          candidate_user_id: { in: candidateIds },
+          client_user_id: { in: scopedUserIds },
+          is_deleted: false,
+        },
+        include: {
+          unlocked_documents: true,
+          checklist_response: { select: { id: true } },
+          credential: { select: { id: true, document_name: true } },
+          resume: { select: { id: true } },
+          reference: { select: { id: true, facility_name: true } },
+        },
+      });
+    } catch (shareErr) {
+      console.error("[RECRUITER_DASHBOARD] ConsentShare query failed (schema mismatch?):", shareErr);
+    }
 
     // Build candidate map with compliance status
     const candidateMap = new Map<number, {
