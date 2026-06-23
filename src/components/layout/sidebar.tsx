@@ -383,17 +383,40 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          {/* Collapse/Expand button — right side of header, always visible */}
+          {/* Collapse/Expand button — right side when expanded, centered glass pill when collapsed */}
           {!isMobile && (
             <button
               onClick={toggleSidebar}
-              className="shrink-0 flex items-center justify-center size-8 rounded-[8px] transition-all hover:bg-white/10 group-data-[collapsible=icon]:mx-auto"
+              className="shrink-0 flex items-center justify-center rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:bottom-4 group-data-[collapsible=icon]:left-1/2 group-data-[collapsible=icon]:-translate-x-1/2"
+              style={{
+                width: state === "expanded" ? "32px" : "40px",
+                height: state === "expanded" ? "32px" : "40px",
+                background: state === "expanded"
+                  ? "transparent"
+                  : "rgba(255,255,255,0.12)",
+                border: state === "expanded"
+                  ? "none"
+                  : "0.5px solid rgba(255,255,255,0.2)",
+                boxShadow: state === "collapsed"
+                  ? "inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.15)"
+                  : "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = state === "expanded"
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(255,255,255,0.18)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = state === "expanded"
+                  ? "transparent"
+                  : "rgba(255,255,255,0.12)";
+              }}
               title={state === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
             >
               {state === "expanded" ? (
-                <ChevronLeft className="size-4 text-white/50 hover:text-white/90" />
+                <ChevronLeft className="size-4 text-white/50" />
               ) : (
-                <ChevronRight className="size-5 text-white/70 hover:text-white" />
+                <ChevronRight className="size-5 text-white/90" />
               )}
             </button>
           )}
