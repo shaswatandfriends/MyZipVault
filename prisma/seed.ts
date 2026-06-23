@@ -696,6 +696,11 @@ IN WITNESS WHEREOF, the parties have executed this Agreement as of the date set 
       subject: '{{document_name}} has expired',
       body: '<p>The document <strong>{{document_name}}</strong> has expired and is no longer available for signing.</p><p>Thank you,<br/>MyZipVault Team</p>',
     },
+    {
+      template_key: 'checklist_expiry_reminder',
+      subject: 'Action needed: Your skills checklist expires in {{days_remaining}} days',
+      body: '<p>Hello {{candidate_name}},</p><p>This is a friendly reminder that the skills checklist <strong>{{checklist_name}}</strong> requested by <strong>{{recruiter_name}}</strong> will expire in <strong>{{days_remaining}} days</strong>.</p><p>If you don\'t complete it before the expiry date, the request will be cancelled and the recruiter will need to send a new one.</p><p><a href="{{login_link}}" style="background-color:#166534;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;">Complete Checklist</a></p><p>Thank you,<br/>MyZipVault Team</p>',
+    },
   ];
 
   for (const tmpl of emailTemplates) {

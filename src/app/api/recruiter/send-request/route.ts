@@ -9,6 +9,7 @@ import { sendRequestSchema, validateBody } from "@/lib/validation-schemas";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limiter";
 import { onDocRequested } from "@/lib/bob/status-engine";
 import { findLeadInRecruiterBob } from "@/lib/bob/lead-finder";
+import { getPendingRequestExpiryDays } from "@/lib/checklist-settings";
 
 export async function POST(request: Request) {
   try {
@@ -160,6 +161,11 @@ export async function POST(request: Request) {
     });
     const checklistTemplateName = checklistTemplate?.name || "Unknown";
 
+    // Fetch org early — needed for both pipeline-lock + reuse paths
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+    });
+
     // ─── Gap 2: Pipeline lock within company ───────────────────────
     // If another recruiter in the same org already has an active checklist
     // request for this candidate, BLOCK this request with a message
@@ -193,8 +199,9 @@ export async function POST(request: Request) {
           where: {
             candidate_user_id: candidateUserId,
             client_user_id: { in: otherRecruiterIds },
-            // Exclude explicitly closed/cancelled requests
-            status: { notIn: ["declined", "cancelled"] },
+            // Exclude explicitly closed/cancelled/expired requests —
+            // expired requests no longer hold the pipeline lock
+            status: { notIn: ["declined", "cancelled", "expired"] },
           },
           select: {
             id: true,
@@ -239,38 +246,87 @@ export async function POST(request: Request) {
     }
 
     // Check if there's an existing active checklist response for this candidate + template
+    // (excludes superseded responses — those have superseded_by_id set)
     const existingResponse = await db.candidateChecklistResponse.findFirst({
       where: {
         candidate_user_id: candidateUserId,
         checklist_template_id: Number(checklistTemplateId),
         status: 'active',
         valid_until: { gte: new Date() }, // still valid
+        superseded_by_id: null, // not superseded by a newer response
       },
+      orderBy: { submitted_at: "desc" },
     });
 
     if (existingResponse) {
-      // Reuse the existing response - just create a new request linking to it
+      // ─── Option B: explicit candidate consent ───────────────────────
+      // Don't auto-share. Create a ChecklistRequest with status
+      // "reuse_pending" + send the candidate an in-app notification asking
+      // them to choose: "Approve Share" or "Complete New".
+      //
+      // The request links to the existing response so the candidate UI can
+      // show "You completed this on [date]" and offer the two actions.
+      //
+      // expires_at is still set using the org's pending-expiry config so
+      // that if the candidate ignores the consent prompt, it eventually
+      // expires and frees the pipeline.
+      const expiryDays = await getPendingRequestExpiryDays(organizationId);
+      const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+
       const checklistRequest = await db.checklistRequest.create({
         data: {
           client_user_id: userId,
           candidate_user_id: candidateUserId,
           checklist_template_id: Number(checklistTemplateId),
-          status: 'completed',
+          status: 'reuse_pending',
           completion_pct: 100,
           candidate_response_id: existingResponse.id,
           opened_at: new Date(),
+          expires_at: expiresAt,
         },
       });
 
-      // Create consent share for the existing response
-      await db.consentShare.create({
-        data: {
-          candidate_user_id: candidateUserId,
-          client_user_id: userId,
-          checklist_response_id: existingResponse.id,
-          shared_at: new Date(),
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      // Notify candidate: consent prompt
+      try {
+        const recruiterName = (session.user as Record<string, unknown>).name as string || "A recruiter";
+        await db.notification.create({
+          data: {
+            user_id: candidateUserId,
+            title: "Checklist share request",
+            message: `${recruiterName} requested your ${checklistTemplateName} checklist. You already have a valid one — share it or complete a new one?`,
+            type: "checklist_share_request",
+            related_entity_id: checklistRequest.id,
+            related_entity_type: "checklist_request",
+            metadata: JSON.stringify({
+              existing_response_id: existingResponse.id,
+              checklist_template_id: Number(checklistTemplateId),
+              checklist_name: checklistTemplateName,
+              recruiter_user_id: userId,
+              recruiter_name: recruiterName,
+              submitted_at: existingResponse.submitted_at,
+            }),
+          },
+        });
+      } catch (e) {
+        console.error("[SEND_REQUEST] Failed to create reuse_pending notification:", e);
+      }
+
+      // Send email to candidate (existing-candidate path)
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
+      const loginLink = `${appUrl}/checklists`;
+      const candidateName = `${firstName} ${lastName}`;
+      sendEmail({
+        to: email,
+        templateKey: "checklist_request",
+        variables: {
+          candidate_name: candidateName,
+          client_name: org?.name || "MyZipVault",
+          checklist_name: checklistTemplateName,
+          login_link: loginLink,
         },
+        phone: phone || undefined,
+      }).catch((err) => {
+        console.error("[EMAIL] Failed to send checklist reuse-request email:", err);
       });
 
       return NextResponse.json({
@@ -278,12 +334,17 @@ export async function POST(request: Request) {
         checklistRequestId: checklistRequest.id,
         candidateUserId,
         isNewCandidate,
-        reusedExistingResponse: true,
-        message: `Checklist reused - ${firstName} ${lastName} already has an active ${checklistTemplateName} checklist`,
+        reusePending: true,
+        message: `${firstName} ${lastName} already has a valid ${checklistTemplateName} checklist. We've asked them to share it or complete a new one.`,
       }, { status: 201 });
     }
 
-    // Create checklist request
+    // ─── Fresh request path ───────────────────────────────────────────
+    // No existing valid response — candidate must complete from scratch.
+    // Set expires_at based on the org's pending-request-expiry config.
+    const expiryDays = await getPendingRequestExpiryDays(organizationId);
+    const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+
     const checklistRequest = await db.checklistRequest.create({
       data: {
         client_user_id: userId,
@@ -291,6 +352,7 @@ export async function POST(request: Request) {
         checklist_template_id: Number(checklistTemplateId),
         status: "sent",
         completion_pct: 0,
+        expires_at: expiresAt,
       },
     });
 
@@ -313,10 +375,6 @@ export async function POST(request: Request) {
     // Deduct credits for the request (1 credit per document requested)
     const docCount = documents?.length ?? 0;
     const totalCredits = 1 + docCount; // 1 for checklist request + 1 per document
-
-    const org = await db.organization.findUnique({
-      where: { id: organizationId },
-    });
 
     if (org && org.credits_balance < totalCredits) {
       // Not enough credits — still create the request but don't deduct

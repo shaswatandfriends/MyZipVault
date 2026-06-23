@@ -48,6 +48,7 @@ interface Company {
   seatsUsed: number;
   accountStatus: string;
   createdAt: string;
+  pendingRequestExpiryDays?: number;
   members: Array<{
     id: number;
     email: string;
@@ -81,6 +82,9 @@ export default function SkillsCompaniesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  // Pending-request-expiry per-company — keyed by company id
+  const [expiryEdits, setExpiryEdits] = useState<Record<number, string>>({});
+  const [savingExpiry, setSavingExpiry] = useState<Record<number, boolean>>({});
 
   const fetchData = useCallback(async () => {
     try {
@@ -253,6 +257,7 @@ export default function SkillsCompaniesPage() {
                     <TableHead>Credits Balance</TableHead>
                     <TableHead>Seats</TableHead>
                     <TableHead>Recruiters</TableHead>
+                    <TableHead>Pending Expiry (days)</TableHead>
                     <TableHead>Created</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -288,6 +293,73 @@ export default function SkillsCompaniesPage() {
                           <div className="flex items-center gap-1">
                             <Users className="size-3.5 text-muted-foreground" />
                             {recruiterCount}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="365"
+                              className="h-8 w-20"
+                              value={
+                                expiryEdits[company.id] ??
+                                String(company.pendingRequestExpiryDays ?? 7)
+                              }
+                              onChange={(e) =>
+                                setExpiryEdits((prev) => ({
+                                  ...prev,
+                                  [company.id]: e.target.value,
+                                }))
+                              }
+                              disabled={savingExpiry[company.id]}
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs"
+                              disabled={
+                                savingExpiry[company.id] ||
+                                !expiryEdits[company.id] ||
+                                expiryEdits[company.id] ===
+                                  String(company.pendingRequestExpiryDays ?? 7)
+                              }
+                              onClick={async () => {
+                                const n = Number(expiryEdits[company.id]);
+                                if (!Number.isFinite(n) || n < 1 || n > 365) {
+                                  toast.error("Expiry must be between 1 and 365 days");
+                                  return;
+                                }
+                                setSavingExpiry((p) => ({ ...p, [company.id]: true }));
+                                try {
+                                  const res = await fetch("/api/superadmin/companies", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      action: "edit",
+                                      organizationId: company.id,
+                                      pendingRequestExpiryDays: Math.floor(n),
+                                    }),
+                                  });
+                                  if (!res.ok) throw new Error("Failed to save");
+                                  toast.success(`${company.name} expiry updated`, {
+                                    description: `Pending checklist requests will expire after ${Math.floor(n)} days.`,
+                                  });
+                                  setExpiryEdits((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy[company.id];
+                                    return copy;
+                                  });
+                                  fetchData();
+                                } catch {
+                                  toast.error("Failed to update expiry");
+                                } finally {
+                                  setSavingExpiry((p) => ({ ...p, [company.id]: false }));
+                                }
+                              }}
+                            >
+                              {savingExpiry[company.id] ? "…" : "Save"}
+                            </Button>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDate(company.createdAt)}</TableCell>

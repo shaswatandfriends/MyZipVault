@@ -41,6 +41,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Save, ListChecks, Loader2 } from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface OverviewStats {
@@ -314,6 +317,11 @@ export default function SkillsOverviewPage() {
           </>
         ) : null}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          COMPLETED CHECKLIST VALIDITY — global config card
+      ═══════════════════════════════════════════════════════════════ */}
+      <CompletedChecklistValidityCard />
 
       {/* ═══════════════════════════════════════════════════════════════
           RECENT REQUESTS + FLAGS & ALERTS — Two-column layout
@@ -609,5 +617,116 @@ export default function SkillsOverviewPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// ─── Completed Checklist Validity Card ───────────────────────────────
+// Reads/writes the global `checklist_validity_days` PlatformSetting via
+// /api/superadmin/settings (uses the same update-setting action).
+function CompletedChecklistValidityCard() {
+  const [value, setValue] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchValue = useCallback(async () => {
+    try {
+      const res = await fetch("/api/superadmin/settings");
+      if (!res.ok) return;
+      const json = await res.json();
+      const setting = (json.settings ?? []).find(
+        (s: { settingKey: string; settingValue: string }) =>
+          s.settingKey === "checklist_validity_days"
+      );
+      setValue(setting?.settingValue ?? "365");
+    } catch {
+      /* ignore */
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchValue();
+  }, [fetchValue]);
+
+  const save = async () => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0 || n > 3650) {
+      toast.error("Please enter a number between 1 and 3650 days");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/superadmin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "update-setting",
+          settingKey: "checklist_validity_days",
+          settingValue: String(Math.floor(n)),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Checklist validity saved", {
+        description: `Completed checklists will remain valid for ${Math.floor(n)} days.`,
+      });
+      fetchValue();
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-lg bg-teal-50 flex items-center justify-center">
+            <ListChecks className="size-4 text-teal-600" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Completed Checklist Validity</CardTitle>
+            <CardDescription>
+              Global setting — how long a completed skills checklist stays valid before the candidate
+              must complete it again. Applies to all users across all organizations.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!loaded ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="checklist-validity-overview">Validity Window (days)</Label>
+              <Input
+                id="checklist-validity-overview"
+                type="number"
+                min="1"
+                max="3650"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="365"
+              />
+              <p className="text-xs text-muted-foreground">
+                Once a candidate submits a checklist, the response is valid for this many days. When a
+                recruiter requests the same checklist while a valid response exists, the candidate can
+                simply share the existing one instead of re-completing it.
+              </p>
+            </div>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              onClick={save}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

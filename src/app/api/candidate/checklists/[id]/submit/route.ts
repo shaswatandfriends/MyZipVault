@@ -62,6 +62,13 @@ export async function POST(
       );
     }
 
+    if (checklistRequest.status === "expired") {
+      return NextResponse.json(
+        { error: "This checklist request has expired" },
+        { status: 400 }
+      );
+    }
+
     if (!checklistRequest.candidate_response) {
       return NextResponse.json(
         { error: "No response found. Please rate at least one skill first." },

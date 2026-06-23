@@ -39,6 +39,9 @@ model Organization {
   allow_credit_requests    Boolean  @default(false) // Admin toggle — recruiters can request more credits
   allow_recruiter_csv_export Boolean @default(true)  // Admin toggle — recruiters can export BOB CSV
 
+  // Checklist request settings (per-company, set by superadmin)
+  pending_request_expiry_days Int @default(7)  // how many days a pending checklist request lives before auto-expiring
+
   users               User[]
   credit_transactions CreditTransaction[]
   invoices            Invoice[]
@@ -205,6 +208,7 @@ model ChecklistRequest {
   candidate_response_id  Int?
   opened_at              DateTime?
   created_at             DateTime               @default(now())
+  expires_at             DateTime?              // null = no expiry; set to now + org.pending_request_expiry_days on creation
 
   client_user            User                   @relation("ClientChecklistRequests", fields: [client_user_id], references: [id])
   candidate_user         User                   @relation("CandidateChecklistRequests", fields: [candidate_user_id], references: [id])
@@ -223,12 +227,15 @@ model CandidateChecklistResponse {
   digital_signature      String?
   candidate_name_signed  String?
   signature_date         DateTime?
+  superseded_by_id       Int?               // set when candidate completes a new response for the same template; old one is no longer shareable
 
   candidate_user         User               @relation(fields: [candidate_user_id], references: [id])
   checklist_template     ChecklistTemplate  @relation(fields: [checklist_template_id], references: [id])
   skill_ratings          SkillRating[]
   checklist_requests     ChecklistRequest[]
   consent_shares         ConsentShare[]
+  superseded_by          CandidateChecklistResponse? @relation("ChecklistResponseSupersede", fields: [superseded_by_id], references: [id], onDelete: SetNull)
+  supersedes             CandidateChecklistResponse? @relation("ChecklistResponseSupersede", references: [id])
 }
 
 // ─── 9. Skill Ratings ───────────────────────────────────────────────

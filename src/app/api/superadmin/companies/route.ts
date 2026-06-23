@@ -51,6 +51,7 @@ export async function GET() {
           companyPhone: org.company_phone,
           companyEmail: org.company_email,
           companyWebsite: org.company_website,
+          pendingRequestExpiryDays: org.pending_request_expiry_days,
           members: org.users
             .filter((u) => u.role === "client_recruiter" || u.role === "client_admin")
           .map((u) => ({
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
 
     switch (action) {
       case "create": {
-        const { name, initialCredits, seatLimit, customPricingNotes } = body;
+        const { name, initialCredits, seatLimit, customPricingNotes, pendingRequestExpiryDays } = body;
         if (!name) {
           return NextResponse.json({ error: "Company name is required" }, { status: 400 });
         }
@@ -111,6 +112,10 @@ export async function POST(request: Request) {
             credits_balance: initialCredits ?? 0,
             seat_limit: seatLimit ?? 5,
             custom_pricing_notes: customPricingNotes ?? null,
+            pending_request_expiry_days:
+              typeof pendingRequestExpiryDays === "number" && pendingRequestExpiryDays > 0
+                ? pendingRequestExpiryDays
+                : 7,
             account_status: "active", // Created by admin, set active immediately
           },
         });
@@ -136,7 +141,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, organizationId: org.id });
       }
       case "edit": {
-        const { organizationId, name, customPricingNotes, companyLogoUrl, companyAddress, companyPhone, companyEmail, companyWebsite } = body;
+        const { organizationId, name, customPricingNotes, companyLogoUrl, companyAddress, companyPhone, companyEmail, companyWebsite, pendingRequestExpiryDays } = body;
         if (!organizationId) {
           return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
         }
@@ -148,6 +153,12 @@ export async function POST(request: Request) {
         if (companyPhone !== undefined) data.company_phone = companyPhone || null;
         if (companyEmail !== undefined) data.company_email = companyEmail || null;
         if (companyWebsite !== undefined) data.company_website = companyWebsite || null;
+        if (pendingRequestExpiryDays !== undefined) {
+          const n = Number(pendingRequestExpiryDays);
+          if (Number.isFinite(n) && n > 0 && n <= 365) {
+            data.pending_request_expiry_days = Math.floor(n);
+          }
+        }
         await db.organization.update({
           where: { id: organizationId },
           data,

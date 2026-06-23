@@ -59,25 +59,35 @@ interface ExistingRating {
 
 interface ChecklistItem {
   id: number;
-  status: "sent" | "opened" | "completed";
+  status: "sent" | "opened" | "completed" | "in_progress" | "reuse_pending" | "expired" | "declined" | "cancelled";
   completionPct: number;
   openedAt: string | null;
   createdAt: string;
+  expiresAt: string | null;
   candidateResponseId: number | null;
   template: Template;
   recruiter: Recruiter;
   existingRatings: ExistingRating[];
-  responseStatus: "active" | "submitted" | null;
+  responseStatus: "active" | "submitted" | "expired" | null;
   submittedAt: string | null;
+  reusePending: boolean;
+  reuseExistingResponseId: number | null;
 }
 
 // ─── Status Helpers ───────────────────────────────────────────────────────
 
-type DisplayStatus = "pending" | "in_progress" | "completed";
+type DisplayStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "reuse_pending"
+  | "expired";
 
 function getDisplayStatus(item: ChecklistItem): DisplayStatus {
   if (item.status === "completed") return "completed";
-  if (item.status === "opened" || item.responseStatus === "active")
+  if (item.status === "expired") return "expired";
+  if (item.status === "reuse_pending") return "reuse_pending";
+  if (item.status === "opened" || item.status === "in_progress" || item.responseStatus === "active")
     return "in_progress";
   return "pending";
 }
@@ -107,6 +117,22 @@ function getStatusConfig(status: DisplayStatus) {
         badgeClass: "bg-badge-green-bg text-badge-green border-badge-green/20",
         dotClass: "bg-badge-green",
         ringClass: "ring-badge-green/30",
+      };
+    case "reuse_pending":
+      return {
+        label: "Share Request",
+        icon: Sparkles,
+        badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
+        dotClass: "bg-purple-500",
+        ringClass: "ring-purple-200",
+      };
+    case "expired":
+      return {
+        label: "Expired",
+        icon: Clock,
+        badgeClass: "bg-gray-100 text-gray-500 border-gray-200",
+        dotClass: "bg-gray-400",
+        ringClass: "ring-gray-200",
       };
   }
 }
@@ -445,8 +471,19 @@ export default function CandidateChecklistsPage() {
                     </div>
 
                     {/* Right: Action Buttons */}
-                    <div className="shrink-0 flex items-center gap-2.5">
-                      {displayStatus === "completed" ? (
+                    <div className="shrink-0 flex flex-col items-stretch sm:items-end gap-2.5">
+                      {displayStatus === "reuse_pending" ? (
+                        <ReusePendingActions checklist={checklist} onActionDone={fetchChecklists} />
+                      ) : displayStatus === "expired" ? (
+                        <div className="text-right">
+                          <Badge className="bg-gray-100 text-gray-500 border-gray-200">
+                            Expired {checklist.expiresAt ? new Date(checklist.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                          </Badge>
+                          <p className="text-xs text-text-muted mt-1.5 max-w-[200px]">
+                            This request has expired. Ask your recruiter to resend.
+                          </p>
+                        </div>
+                      ) : displayStatus === "completed" ? (
                         <>
                           <Link href={`/checklists/${checklist.id}`}>
                             <Button
@@ -492,6 +529,139 @@ export default function CandidateChecklistsPage() {
             );
           })}
         </StaggerChildren>
+      )}
+    </div>
+  );
+}
+
+// ─── Reuse-Pending Actions Component ────────────────────────────────────
+// Shown when a recruiter requested a checklist the candidate already has a
+// valid response for. Two options:
+//   1. "Approve Share" — creates a ConsentShare linking the existing
+//      response to the recruiter. Candidate picks an expiry (7/14/30/90
+//      days). No re-completion needed.
+//   2. "Complete New" — navigates to the assessment page. The rate
+//      endpoint will detect reuse_pending status + supersede the old
+//      response, creating a fresh one for the candidate to fill out.
+function ReusePendingActions({
+  checklist,
+  onActionDone,
+}: {
+  checklist: ChecklistItem;
+  onActionDone: () => void;
+}) {
+  const [approving, setApproving] = useState(false);
+  const [expiryDays, setExpiryDays] = useState(30);
+  const [showExpiryPicker, setShowExpiryPicker] = useState(false);
+
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      const res = await fetch(`/api/candidate/checklists/${checklist.id}/share-existing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiryDays }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to share");
+      toast.success("Checklist shared", {
+        description: `Valid for ${expiryDays} days. Recruiter can now view it.`,
+      });
+      onActionDone();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to share";
+      toast.error("Share failed", { description: msg });
+    } finally {
+      setApproving(false);
+      setShowExpiryPicker(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 min-w-[220px]">
+      <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-2.5 text-xs text-purple-700">
+        <Sparkles className="size-3 inline mr-1" />
+        You completed this on{" "}
+        <strong>
+          {checklist.submittedAt
+            ? new Date(checklist.submittedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "earlier"}
+        </strong>
+        . Share it?
+      </div>
+
+      {showExpiryPicker ? (
+        <div className="space-y-2 rounded-lg border p-2.5 bg-surface-2">
+          <label className="text-xs font-medium text-text-secondary">
+            Share expires in
+          </label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {[7, 14, 30, 90].map((d) => (
+              <button
+                key={d}
+                onClick={() => setExpiryDays(d)}
+                className={cn(
+                  "text-xs font-semibold py-1.5 rounded-md border transition-colors",
+                  expiryDays === d
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white border-border text-text-secondary hover:border-primary/40"
+                )}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              className="btn-gradient gap-1.5 h-8 flex-1 text-xs"
+              onClick={handleApprove}
+              disabled={approving}
+            >
+              {approving ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="size-3" />
+              )}
+              Confirm Share
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs"
+              onClick={() => setShowExpiryPicker(false)}
+              disabled={approving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <Button
+            size="sm"
+            className="btn-gradient gap-1.5 h-9"
+            onClick={() => setShowExpiryPicker(true)}
+            disabled={approving}
+          >
+            <ShieldCheck className="size-3.5" />
+            Approve Share
+          </Button>
+          <Link href={`/checklists/${checklist.id}`}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 h-9 w-full border-border text-text-secondary hover:bg-surface-2"
+            >
+              <ChevronRight className="size-3.5" />
+              Complete New
+            </Button>
+          </Link>
+        </div>
       )}
     </div>
   );

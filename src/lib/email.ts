@@ -343,3 +343,26 @@ export async function sendAccountSuspensionEmail(email: string, deletionDate: st
     bypassPreferences: true, // Critical — account deletion notice (legal requirement)
   });
 }
+
+export async function sendChecklistExpiryReminderEmail(
+  email: string,
+  candidateName: string,
+  checklistName: string,
+  recruiterName: string,
+  daysRemaining: string,
+  loginLink: string,
+  phone?: string
+) {
+  return sendEmail({
+    to: email,
+    templateKey: "checklist_expiry_reminder",
+    variables: {
+      candidate_name: candidateName,
+      checklist_name: checklistName,
+      recruiter_name: recruiterName,
+      days_remaining: daysRemaining,
+      login_link: loginLink,
+    },
+    phone,
+  });
+}

@@ -53,6 +53,7 @@ export async function GET() {
       completionPct: req.completion_pct,
       openedAt: req.opened_at,
       createdAt: req.created_at,
+      expiresAt: req.expires_at,
       candidateResponseId: req.candidate_response_id,
       template: {
         id: req.checklist_template.id,
@@ -82,6 +83,10 @@ export async function GET() {
       })) || [],
       responseStatus: req.candidate_response?.status || null,
       submittedAt: req.candidate_response?.submitted_at || null,
+      // Reuse-pending info: when status === "reuse_pending", the candidate
+      // sees a banner asking them to Approve Share or Complete New.
+      reusePending: req.status === "reuse_pending",
+      reuseExistingResponseId: req.status === "reuse_pending" ? req.candidate_response_id : null,
     }));
 
     return NextResponse.json({ checklists: formatted });

@@ -359,6 +359,110 @@ export default function SuperadminSettingsPage() {
             </CardContent>
           </Card>
 
+          {/* ── Checklist Reminder Notifications ────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                  <BellRing className="size-4 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Checklist Reminder Notifications</CardTitle>
+                  <CardDescription>
+                    Configure reminder notifications sent to candidates before pending checklist requests expire.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Master enable/disable */}
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="checklist-reminder-enabled">Enable reminders</Label>
+                  <p className="text-xs text-muted-foreground">
+                    When on, candidates receive a reminder before a pending checklist request expires.
+                  </p>
+                </div>
+                <Switch
+                  id="checklist-reminder-enabled"
+                  checked={getSettingValue(data?.settings ?? [], "checklist_reminder_enabled") === "true"}
+                  onCheckedChange={(checked) =>
+                    saveSetting("checklist_reminder_enabled", String(checked), "Reminder Enabled")
+                  }
+                />
+              </div>
+
+              {/* Days before expiry */}
+              <div className="space-y-2">
+                <Label htmlFor="reminder-days-before">Send reminder N days before expiry</Label>
+                <Input
+                  id="reminder-days-before"
+                  type="number"
+                  min="1"
+                  max="30"
+                  defaultValue={getSettingValue(data?.settings ?? [], "checklist_reminder_days_before") || "2"}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    if (v && Number(v) > 0 && Number(v) <= 30) {
+                      saveSetting("checklist_reminder_days_before", v, "Reminder Days");
+                    }
+                  }}
+                  placeholder="2"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Days before the request expires when the reminder fires. Default: 2 (so a 7-day request fires at day 5).
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Channel toggles */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Notification Channels</h4>
+                <div className="rounded-lg border divide-y">
+                  {/* Email */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="reminder-email">Email</Label>
+                      <p className="text-xs text-muted-foreground">Send reminder via email</p>
+                    </div>
+                    <Switch
+                      id="reminder-email"
+                      checked={getSettingValue(data?.settings ?? [], "checklist_reminder_email_enabled") === "true"}
+                      onCheckedChange={(c) => saveSetting("checklist_reminder_email_enabled", String(c), "Reminder Email")}
+                    />
+                  </div>
+                  {/* In-app */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="reminder-inapp">In-App</Label>
+                      <p className="text-xs text-muted-foreground">Show in candidate&apos;s notification bell</p>
+                    </div>
+                    <Switch
+                      id="reminder-inapp"
+                      checked={getSettingValue(data?.settings ?? [], "checklist_reminder_inapp_enabled") === "true"}
+                      onCheckedChange={(c) => saveSetting("checklist_reminder_inapp_enabled", String(c), "Reminder In-App")}
+                    />
+                  </div>
+                  {/* SMS */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="reminder-sms">SMS (future)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Architecture-only — no provider wired. Toggle has no effect until SMS is configured.
+                      </p>
+                    </div>
+                    <Switch
+                      id="reminder-sms"
+                      checked={getSettingValue(data?.settings ?? [], "checklist_reminder_sms_enabled") === "true"}
+                      onCheckedChange={(c) => saveSetting("checklist_reminder_sms_enabled", String(c), "Reminder SMS")}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* ── Call Notification Engine ───────────────────────────────── */}
           <Card>
             <CardHeader>
