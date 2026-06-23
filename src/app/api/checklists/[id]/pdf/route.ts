@@ -34,38 +34,45 @@ export async function GET(
     const mode = url.searchParams.get("mode") || "download"; // "download" or "preview"
 
     // Find the checklist request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: checklistRequestId },
-      include: {
-        candidate_user: {
-          select: {
-            id: true,
-            email: true,
-            first_name: true,
-            last_name: true,
-          },
-        },
-        checklist_template: {
-          select: { name: true, profession: true, specialty: true },
-        },
-        candidate_response: {
+    const checklistRequest = await (async () => {
+      try {
+        return await db.checklistRequest.findUnique({
+          where: { id: checklistRequestId },
           include: {
-            skill_ratings: {
+            candidate_user: {
+              select: {
+                id: true,
+                email: true,
+                first_name: true,
+                last_name: true,
+              },
+            },
+            checklist_template: {
+              select: { name: true, profession: true, specialty: true },
+            },
+            candidate_response: {
               include: {
-                skill: {
-                  select: {
-                    skill_name: true,
-                    category: true,
-                    question_type: true,
-                    sort_order: true,
+                skill_ratings: {
+                  include: {
+                    skill: {
+                      select: {
+                        skill_name: true,
+                        category: true,
+                        question_type: true,
+                        sort_order: true,
+                      },
+                    },
                   },
                 },
               },
             },
           },
-        },
-      },
-    });
+        });
+      } catch (e) {
+        console.error("[SCHEMA_DRIFT] query failed:", e);
+        return null;
+      }
+    })();
 
     if (!checklistRequest) {
       return NextResponse.json(

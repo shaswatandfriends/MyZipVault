@@ -59,15 +59,19 @@ export async function GET() {
         });
 
         // Get recent activity (last 5 actions)
-        const recentRequests = await db.checklistRequest.findMany({
-          where: { client_user_id: member.id },
-          orderBy: { created_at: "desc" },
-          take: 5,
-          include: {
-            candidate_user: { select: { first_name: true, last_name: true } },
-            checklist_template: { select: { name: true } },
-          },
-        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let recentRequests: any[] = [];
+        try {
+          recentRequests = await db.checklistRequest.findMany({
+            where: { client_user_id: member.id },
+            orderBy: { created_at: "desc" },
+            take: 5,
+            include: {
+              candidate_user: { select: { first_name: true, last_name: true } },
+              checklist_template: { select: { name: true } },
+            },
+          });
+        } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
         const recentUnlocks = await db.unlockedDocument.findMany({
           where: { client_user_id: member.id },

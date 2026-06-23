@@ -24,17 +24,31 @@ export async function GET(request: Request) {
       : {};
 
     const [organizations, total] = await Promise.all([
-      db.organization.findMany({
-        where,
-        include: {
-          users: { select: { id: true, role: true } },
-          _count: { select: { users: true, credit_transactions: true, invoices: true } },
-        },
-        orderBy: { created_at: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      db.organization.count({ where }),
+      (async () => {
+        try {
+          return await db.organization.findMany({
+            where,
+            include: {
+              users: { select: { id: true, role: true } },
+              _count: { select: { users: true, credit_transactions: true, invoices: true } },
+            },
+            orderBy: { created_at: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
+          });
+        } catch (e) {
+          console.error("[SCHEMA_DRIFT] query failed:", e);
+          return [];
+        }
+      })(),
+      (async () => {
+        try {
+          return await db.organization.count({ where });
+        } catch (e) {
+          console.error("[SCHEMA_DRIFT] query failed:", e);
+          return 0;
+        }
+      })(),
     ]);
 
     return NextResponse.json({ organizations, total, page, limit });

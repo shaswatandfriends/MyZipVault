@@ -30,7 +30,10 @@ export async function PUT(
       );
     }
 
-    const org = await db.organization.findUnique({ where: { id: orgId } });
+    let org: any = null;
+try {
+  db.organization.findUnique({ where: { id: orgId } });;
+} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }

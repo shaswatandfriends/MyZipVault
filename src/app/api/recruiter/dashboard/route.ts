@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
     // (e.g. new expires_at / superseded_by_id columns not yet migrated),
     // fall back to an empty list so the dashboard still loads.
-    let checklistRequests: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    let checklistRequests: any[] = [];
     try {
       checklistRequests = await db.checklistRequest.findMany({
         where: { client_user_id: { in: scopedUserIds } },

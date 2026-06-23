@@ -35,14 +35,17 @@ export async function POST(
       );
     }
 
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        candidate_response: {
-          include: { skill_ratings: true },
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          candidate_response: {
+            include: { skill_ratings: true },
+          },
         },
-      },
-    });
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(

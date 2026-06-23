@@ -42,10 +42,17 @@ export async function POST(request: Request) {
     }
 
     // Find the checklist request and verify ownership
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: Number(effectiveRequestId) },
-      include: { candidate_response: true },
-    });
+    const checklistRequest = await (async () => {
+      try {
+        return await db.checklistRequest.findUnique({
+          where: { id: Number(effectiveRequestId) },
+          include: { candidate_response: true },
+        });
+      } catch (e) {
+        console.error("[SCHEMA_DRIFT] query failed:", e);
+        return null;
+      }
+    })();
 
     if (!checklistRequest) {
       return NextResponse.json(

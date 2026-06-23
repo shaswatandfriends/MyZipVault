@@ -22,30 +22,33 @@ export async function GET(
     const { id } = await params;
     const requestId = Number(id);
 
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        checklist_template: {
-          include: {
-            skills: {
-              orderBy: { sort_order: "asc" },
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          checklist_template: {
+            include: {
+              skills: {
+                orderBy: { sort_order: "asc" },
+              },
+            },
+          },
+          client_user: {
+            select: {
+              first_name: true,
+              last_name: true,
+              organization: { select: { name: true } },
+            },
+          },
+          candidate_response: {
+            include: {
+              skill_ratings: true,
             },
           },
         },
-        client_user: {
-          select: {
-            first_name: true,
-            last_name: true,
-            organization: { select: { name: true } },
-          },
-        },
-        candidate_response: {
-          include: {
-            skill_ratings: true,
-          },
-        },
-      },
-    });
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(

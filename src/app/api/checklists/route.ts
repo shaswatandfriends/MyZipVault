@@ -36,30 +36,37 @@ export async function GET(request: Request) {
 
     // Get checklist requests for candidate
     if (userRole === "candidate") {
-      const checklists = await db.checklistRequest.findMany({
-        where: { candidate_user_id: userId },
-        include: {
-          checklist_template: {
-            select: { id: true, name: true, profession: true, specialty: true },
-          },
-          client_user: {
-            select: {
-              first_name: true,
-              last_name: true,
-              organization: { select: { name: true } },
+      const checklists = await (async () => {
+        try {
+          return await db.checklistRequest.findMany({
+            where: { candidate_user_id: userId },
+            include: {
+              checklist_template: {
+                select: { id: true, name: true, profession: true, specialty: true },
+              },
+              client_user: {
+                select: {
+                  first_name: true,
+                  last_name: true,
+                  organization: { select: { name: true } },
+                },
+              },
+              candidate_response: {
+                select: {
+                  id: true,
+                  status: true,
+                  submitted_at: true,
+                  digital_signature: true,
+                },
+              },
             },
-          },
-          candidate_response: {
-            select: {
-              id: true,
-              status: true,
-              submitted_at: true,
-              digital_signature: true,
-            },
-          },
-        },
-        orderBy: { created_at: "desc" },
-      });
+            orderBy: { created_at: "desc" },
+          });
+        } catch (e) {
+          console.error("[SCHEMA_DRIFT] query failed:", e);
+          return [];
+        }
+      })();
       return NextResponse.json({ checklists });
     }
 

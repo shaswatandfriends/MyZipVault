@@ -162,9 +162,12 @@ export async function POST(request: Request) {
     const checklistTemplateName = checklistTemplate?.name || "Unknown";
 
     // Fetch org early — needed for both pipeline-lock + reuse paths
-    const org = await db.organization.findUnique({
-      where: { id: organizationId },
-    });
+    let org: any = null;
+    try {
+      org = await db.organization.findUnique({
+        where: { id: organizationId },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     // ─── Gap 2: Pipeline lock within company ───────────────────────
     // If another recruiter in the same org already has an active checklist
@@ -195,22 +198,26 @@ export async function POST(request: Request) {
       // recruiter in the org (excluding the current recruiter)
       const otherRecruiterIds = orgRecruiterIds.filter((id) => id !== userId);
       if (otherRecruiterIds.length > 0) {
-        const existingRequest = await db.checklistRequest.findFirst({
-          where: {
-            candidate_user_id: candidateUserId,
-            client_user_id: { in: otherRecruiterIds },
-            // Exclude explicitly closed/cancelled/expired requests —
-            // expired requests no longer hold the pipeline lock
-            status: { notIn: ["declined", "cancelled", "expired"] },
-          },
-          select: {
-            id: true,
-            client_user_id: true,
-            status: true,
-            created_at: true,
-          },
-          orderBy: { created_at: "desc" },
-        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let existingRequest: any = null;
+        try {
+          existingRequest = await db.checklistRequest.findFirst({
+            where: {
+              candidate_user_id: candidateUserId,
+              client_user_id: { in: otherRecruiterIds },
+              // Exclude explicitly closed/cancelled/expired requests —
+              // expired requests no longer hold the pipeline lock
+              status: { notIn: ["declined", "cancelled", "expired"] },
+            },
+            select: {
+              id: true,
+              client_user_id: true,
+              status: true,
+              created_at: true,
+            },
+            orderBy: { created_at: "desc" },
+          });
+        } catch (e) { console.error("[SCHEMA_DRIFT]", e); }
 
         if (existingRequest) {
           const lockingRecruiter = orgRecruiterMap.get(existingRequest.client_user_id);
@@ -247,16 +254,19 @@ export async function POST(request: Request) {
 
     // Check if there's an existing active checklist response for this candidate + template
     // (excludes superseded responses — those have superseded_by_id set)
-    const existingResponse = await db.candidateChecklistResponse.findFirst({
-      where: {
-        candidate_user_id: candidateUserId,
-        checklist_template_id: Number(checklistTemplateId),
-        status: 'active',
-        valid_until: { gte: new Date() }, // still valid
-        superseded_by_id: null, // not superseded by a newer response
-      },
-      orderBy: { submitted_at: "desc" },
-    });
+    let existingResponse: any = null;
+    try {
+      existingResponse = await db.candidateChecklistResponse.findFirst({
+        where: {
+          candidate_user_id: candidateUserId,
+          checklist_template_id: Number(checklistTemplateId),
+          status: 'active',
+          valid_until: { gte: new Date() }, // still valid
+          superseded_by_id: null, // not superseded by a newer response
+        },
+        orderBy: { submitted_at: "desc" },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT]", e); }
 
     if (existingResponse) {
       // ─── Option B: explicit candidate consent ───────────────────────

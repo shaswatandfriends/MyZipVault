@@ -87,31 +87,35 @@ export async function GET(request: Request) {
 
     // ── Company Breakdown ──────────────────────────────────────────────
     // Get all organizations that have users who created checklist requests
-    const organizations = await db.organization.findMany({
-      where: {
-        is_active: true,
-        users: {
-          some: {
-            checklist_requests_as_client: {
-              some: createdWhere,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let organizations: any[] = [];
+    try {
+      organizations = await db.organization.findMany({
+        where: {
+          is_active: true,
+          users: {
+            some: {
+              checklist_requests_as_client: {
+                some: createdWhere,
+              },
             },
           },
         },
-      },
-      select: {
-        id: true,
-        name: true,
-        users: {
-          where: {
-            checklist_requests_as_client: { some: createdWhere },
-          },
-          select: {
-            id: true,
+        select: {
+          id: true,
+          name: true,
+          users: {
+            where: {
+              checklist_requests_as_client: { some: createdWhere },
+            },
+            select: {
+              id: true,
+            },
           },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] organization.findMany failed:", e); }
 
     const companyBreakdown = await Promise.all(
       organizations.map(async (org) => {

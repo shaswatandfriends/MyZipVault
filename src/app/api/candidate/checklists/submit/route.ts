@@ -26,14 +26,17 @@ export async function POST(request: Request) {
     }
 
     // Find the checklist request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        checklist_template: {
-          include: { skills: true },
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          checklist_template: {
+            include: { skills: true },
+          },
         },
-      },
-    });
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json({ error: "Checklist request not found" }, { status: 404 });
@@ -46,11 +49,14 @@ export async function POST(request: Request) {
     const isSubmitting = !!digitalSignature;
 
     // Find or create the candidate response
-    let response = checklistRequest.candidate_response_id
-      ? await db.candidateChecklistResponse.findUnique({
+    let response: any = null;
+    if (checklistRequest.candidate_response_id) {
+      try {
+        response = await db.candidateChecklistResponse.findUnique({
           where: { id: checklistRequest.candidate_response_id },
-        })
-      : null;
+        });
+      } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
+    }
 
     if (!response) {
       // Create new response

@@ -84,7 +84,10 @@ export async function GET(request: Request) {
       .map(([month, data]) => ({ month, ...data }));
 
     // Agency burn rates
-    const orgs = await db.organization.findMany();
+    let orgs: any[] = [];
+    try {
+      orgs = await db.organization.findMany();
+    } catch (e) { console.error("[SCHEMA_DRIFT] organization.findMany failed:", e); }
     const agencyBurnRates = await Promise.all(
       orgs.map(async (org) => {
         const purchased = await db.creditTransaction.aggregate({

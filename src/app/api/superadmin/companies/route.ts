@@ -19,7 +19,8 @@ export async function GET() {
     // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
     // (e.g. new pending_request_expiry_days column not yet migrated), fall
     // back to an empty list so the page still loads instead of 500ing.
-    let organizations: Awaited<ReturnType<typeof db.organization.findMany>> = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let organizations: any[] = [];
     try {
       organizations = await db.organization.findMany({
         orderBy: { created_at: "desc" },
@@ -187,7 +188,11 @@ export async function POST(request: Request) {
         if (!organizationId || creditAmount === undefined) {
           return NextResponse.json({ error: "Organization ID and credit amount are required" }, { status: 400 });
         }
-        const org = await db.organization.findUnique({ where: { id: organizationId } });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let org: any = null;
+try {
+  db.organization.findUnique({ where: { id: organizationId } });
+} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
         if (!org) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
@@ -300,10 +305,14 @@ export async function POST(request: Request) {
         const targetRole = memberRole === "client_admin" ? "client_admin" : "client_recruiter";
 
         // Check seat limit
-        const org = await db.organization.findUnique({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let org: any = null;
+try {
+  db.organization.findUnique({
           where: { id: organizationId },
           select: { seat_limit: true, name: true },
         });
+} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
         if (!org) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
@@ -598,7 +607,11 @@ export async function POST(request: Request) {
         }
         // Check seat limit before activating
         if (activateUser.organization_id) {
-          const org = await db.organization.findUnique({ where: { id: activateUser.organization_id } });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let org: any = null;
+try {
+  db.organization.findUnique({ where: { id: activateUser.organization_id } });
+} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
           if (org) {
             const activeMembers = await db.user.count({
               where: {
@@ -642,7 +655,11 @@ export async function POST(request: Request) {
         if (!["active", "suspended", "pending", "banned"].includes(accountStatus)) {
           return NextResponse.json({ error: "Invalid status. Must be active, suspended, pending, or banned" }, { status: 400 });
         }
-        const statusOrg = await db.organization.findUnique({ where: { id: statusOrgId } });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let statusOrg: any = null;
+try {
+  db.organization.findUnique({ where: { id: statusOrgId } });
+} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
         if (!statusOrg) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }

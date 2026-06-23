@@ -26,13 +26,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const checklistRequest = await db.checklistRequest.findFirst({
-      where: {
-        id: checklistRequestId,
-        candidate_user_id: userId,
-        status: "sent",
-      },
-    });
+    const checklistRequest = await (async () => {
+      try {
+        return await db.checklistRequest.findFirst({
+          where: {
+            id: checklistRequestId,
+            candidate_user_id: userId,
+            status: "sent",
+          },
+        });
+      } catch (e) {
+        console.error("[SCHEMA_DRIFT] query failed:", e);
+        return null;
+      }
+    })();
 
     if (!checklistRequest) {
       return NextResponse.json(

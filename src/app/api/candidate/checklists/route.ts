@@ -21,7 +21,7 @@ export async function GET() {
     // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
     // (new expires_at / superseded_by_id columns not yet migrated), fall back
     // to an empty list so the page still loads.
-    let requests: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    let requests: any[] = [];
     try {
       requests = await db.checklistRequest.findMany({
         where: { candidate_user_id: userId },

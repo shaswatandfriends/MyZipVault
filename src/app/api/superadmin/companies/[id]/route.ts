@@ -21,12 +21,16 @@ export async function GET(
     const { id } = await params;
     const orgId = parseInt(id);
 
-    const org = await db.organization.findUnique({
-      where: { id: orgId },
-      include: {
-        _count: { select: { users: true, credit_transactions: true, invoices: true } },
-      },
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let org: any = null;
+    try {
+      org = await db.organization.findUnique({
+        where: { id: orgId },
+        include: {
+          _count: { select: { users: true, credit_transactions: true, invoices: true } },
+        },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
 
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
@@ -61,7 +65,11 @@ export async function PUT(
     const orgId = parseInt(id);
     const body = await request.json();
 
-    const org = await db.organization.findUnique({ where: { id: orgId } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let org: any = null;
+    try {
+      org = await db.organization.findUnique({ where: { id: orgId } });
+    } catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
@@ -105,7 +113,11 @@ export async function DELETE(
     const { id } = await params;
     const orgId = parseInt(id);
 
-    const org = await db.organization.findUnique({ where: { id: orgId } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let org: any = null;
+    try {
+      org = await db.organization.findUnique({ where: { id: orgId } });
+    } catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }

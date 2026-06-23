@@ -41,12 +41,15 @@ export async function POST(
     );
 
     // Fetch the request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        candidate_response: true,
-      },
-    });
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          candidate_response: true,
+        },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(

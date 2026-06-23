@@ -43,9 +43,12 @@ export async function POST(request: Request) {
     const totalPrice = costPerCredit * amount;
 
     // Get organization details
-    const org = await db.organization.findUnique({
-      where: { id: organizationId },
-    });
+    let org: any = null;
+    try {
+      org = await db.organization.findUnique({
+        where: { id: organizationId },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     // ─── Block credit purchases when Stripe is not configured ───
     if (!isStripeConfigured()) {

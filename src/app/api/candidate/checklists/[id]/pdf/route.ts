@@ -29,47 +29,50 @@ export async function GET(
     const mode = url.searchParams.get("mode") || "download"; // "download" or "preview"
 
     // Find the checklist request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: checklistRequestId },
-      include: {
-        candidate_user: {
-          select: {
-            id: true,
-            email: true,
-            first_name: true,
-            last_name: true,
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: checklistRequestId },
+        include: {
+          candidate_user: {
+            select: {
+              id: true,
+              email: true,
+              first_name: true,
+              last_name: true,
+            },
           },
-        },
-        checklist_template: {
-          select: { name: true, profession: true, specialty: true },
-        },
-        candidate_response: {
-          include: {
-            skill_ratings: {
-              include: {
-                skill: {
-                  select: {
-                    skill_name: true,
-                    category: true,
-                    question_type: true,
-                    sort_order: true,
+          checklist_template: {
+            select: { name: true, profession: true, specialty: true },
+          },
+          candidate_response: {
+            include: {
+              skill_ratings: {
+                include: {
+                  skill: {
+                    select: {
+                      skill_name: true,
+                      category: true,
+                      question_type: true,
+                      sort_order: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        client_user: {
-          select: {
-            first_name: true,
-            last_name: true,
-            organization: {
-              select: { name: true },
+          client_user: {
+            select: {
+              first_name: true,
+              last_name: true,
+              organization: {
+                select: { name: true },
+              },
             },
           },
         },
-      },
-    });
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(

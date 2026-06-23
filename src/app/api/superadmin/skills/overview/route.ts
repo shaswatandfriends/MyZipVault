@@ -43,32 +43,38 @@ export async function GET() {
     const completionRate = totalRequests > 0 ? Math.round((completedRequests / totalRequests) * 100) : 0;
 
     // ─── Recent Activity ─────────────────────────────────────────────
-    const recentRequests = await db.checklistRequest.findMany({
-      orderBy: { created_at: "desc" },
-      take: 10,
-      include: {
-        client_user: { select: { id: true, first_name: true, last_name: true, email: true } },
-        candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
-        checklist_template: { select: { id: true, profession: true, specialty: true, name: true } },
-      },
-    });
+    let recentRequests: any[] = [];
+    try {
+      recentRequests = await db.checklistRequest.findMany({
+        orderBy: { created_at: "desc" },
+        take: 10,
+        include: {
+          client_user: { select: { id: true, first_name: true, last_name: true, email: true } },
+          candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
+          checklist_template: { select: { id: true, profession: true, specialty: true, name: true } },
+        },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     // ─── Flags / Alerts ──────────────────────────────────────────────
     // Candidates with expiring checklists (within 7 days)
-    const expiringChecklists = await db.candidateChecklistResponse.findMany({
-      where: {
-        valid_until: {
-          gte: new Date(),
-          lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    let expiringChecklists: any[] = [];
+    try {
+      expiringChecklists = await db.candidateChecklistResponse.findMany({
+        where: {
+          valid_until: {
+            gte: new Date(),
+            lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+          status: "active",
         },
-        status: "active",
-      },
-      include: {
-        candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
-        checklist_template: { select: { profession: true, specialty: true } },
-      },
-      take: 20,
-    });
+        include: {
+          candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
+          checklist_template: { select: { profession: true, specialty: true } },
+        },
+        take: 20,
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     // Templates with no skills
     const templatesWithNoSkills = await db.checklistTemplate.findMany({
@@ -112,11 +118,14 @@ export async function GET() {
       : [];
 
     // ─── Requests by Profession ──────────────────────────────────────
-    const requestsByProfessionRaw = await db.checklistRequest.findMany({
-      include: {
-        checklist_template: { select: { profession: true } },
-      },
-    });
+    let requestsByProfessionRaw: any[] = [];
+    try {
+      requestsByProfessionRaw = await db.checklistRequest.findMany({
+        include: {
+          checklist_template: { select: { profession: true } },
+        },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
     const professionMap = new Map<string, number>();
     for (const req of requestsByProfessionRaw) {
       const prof = req.checklist_template.profession;

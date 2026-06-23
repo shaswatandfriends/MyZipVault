@@ -24,17 +24,24 @@ export async function POST(
     const checklistRequestId = Number(id);
 
     // Find the checklist request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: checklistRequestId },
-      include: {
-        candidate_user: {
-          select: { id: true, email: true, first_name: true, last_name: true },
-        },
-        checklist_template: {
-          select: { name: true },
-        },
-      },
-    });
+    const checklistRequest = await (async () => {
+      try {
+        return await db.checklistRequest.findUnique({
+          where: { id: checklistRequestId },
+          include: {
+            candidate_user: {
+              select: { id: true, email: true, first_name: true, last_name: true },
+            },
+            checklist_template: {
+              select: { name: true },
+            },
+          },
+        });
+      } catch (e) {
+        console.error("[SCHEMA_DRIFT] query failed:", e);
+        return null;
+      }
+    })();
 
     if (!checklistRequest) {
       return NextResponse.json(

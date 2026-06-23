@@ -27,14 +27,17 @@ export async function GET() {
     }> = [];
 
     // ─── Checklist Request Deadlines ──────────────────────────────
-    const checklistRequests = await db.checklistRequest.findMany({
-      where: { candidate_user_id: userId, status: { not: "completed" } },
-      include: {
-        checklist_template: { select: { name: true, profession: true, specialty: true } },
-        client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
-      },
-      orderBy: { created_at: "asc" },
-    });
+    let checklistRequests: any[] = [];
+    try {
+      checklistRequests = await db.checklistRequest.findMany({
+        where: { candidate_user_id: userId, status: { not: "completed" } },
+        include: {
+          checklist_template: { select: { name: true, profession: true, specialty: true } },
+          client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
+        },
+        orderBy: { created_at: "asc" },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     for (const req of checklistRequests) {
       // Use created_at + 30 days as a soft deadline
@@ -110,17 +113,20 @@ export async function GET() {
     }
 
     // ─── Submitted Checklists (valid_until) ───────────────────────
-    const submittedResponses = await db.candidateChecklistResponse.findMany({
-      where: {
-        candidate_user_id: userId,
-        status: "submitted",
-        valid_until: { not: null },
-      },
-      include: {
-        checklist_template: { select: { name: true } },
-      },
-      orderBy: { valid_until: "asc" },
-    });
+    let submittedResponses: any[] = [];
+    try {
+      submittedResponses = await db.candidateChecklistResponse.findMany({
+        where: {
+          candidate_user_id: userId,
+          status: "submitted",
+          valid_until: { not: null },
+        },
+        include: {
+          checklist_template: { select: { name: true } },
+        },
+        orderBy: { valid_until: "asc" },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     for (const resp of submittedResponses) {
       if (resp.valid_until) {

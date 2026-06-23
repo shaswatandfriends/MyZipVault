@@ -33,9 +33,12 @@ export async function PUT(
     }
 
     // Get checklist request
-    const checklistRequest = await db.checklistRequest.findUnique({
-      where: { id: requestId },
-    });
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findUnique({
+        where: { id: requestId },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(

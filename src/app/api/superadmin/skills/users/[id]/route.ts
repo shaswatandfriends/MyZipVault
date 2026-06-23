@@ -25,19 +25,22 @@ export async function GET(
       return NextResponse.json({ error: "Invalid response ID" }, { status: 400 });
     }
 
-    const response = await db.candidateChecklistResponse.findUnique({
-      where: { id: responseId },
-      include: {
-        candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
-        checklist_template: {
-          select: { id: true, profession: true, specialty: true, name: true, job_title: true },
-          include: {
-            skills: { orderBy: { sort_order: "asc" } },
+    let response: any = null;
+    try {
+      response = await db.candidateChecklistResponse.findUnique({
+        where: { id: responseId },
+        include: {
+          candidate_user: { select: { id: true, first_name: true, last_name: true, email: true } },
+          checklist_template: {
+            select: { id: true, profession: true, specialty: true, name: true, job_title: true },
+            include: {
+              skills: { orderBy: { sort_order: "asc" } },
+            },
           },
+          skill_ratings: true,
         },
-        skill_ratings: true,
-      },
-    });
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!response) {
       return NextResponse.json({ error: "Response not found" }, { status: 404 });
@@ -125,9 +128,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid response ID" }, { status: 400 });
     }
 
-    const response = await db.candidateChecklistResponse.findUnique({
-      where: { id: responseId },
-    });
+    let response: any = null;
+    try {
+      response = await db.candidateChecklistResponse.findUnique({
+        where: { id: responseId },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
     if (!response) {
       return NextResponse.json({ error: "Response not found" }, { status: 404 });
     }

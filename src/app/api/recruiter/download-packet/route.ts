@@ -25,21 +25,25 @@ async function requireRecruiter() {
 
 // ─── Build checklist PDF data from DB ─────────────────────────────
 async function buildChecklistPdfData(entityId: number) {
-  const response = await db.candidateChecklistResponse.findUnique({
-    where: { id: entityId },
-    include: {
-      checklist_template: { select: { name: true, specialty: true } },
-      candidate_user: {
-        select: { first_name: true, last_name: true },
-      },
-      skill_ratings: {
-        include: {
-          skill: { select: { skill_name: true, category: true, sort_order: true } },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let response: any = null;
+  try {
+    response = await db.candidateChecklistResponse.findUnique({
+      where: { id: entityId },
+      include: {
+        checklist_template: { select: { name: true, specialty: true } },
+        candidate_user: {
+          select: { first_name: true, last_name: true },
         },
-        orderBy: { skill: { sort_order: "asc" } },
+        skill_ratings: {
+          include: {
+            skill: { select: { skill_name: true, category: true, sort_order: true } },
+          },
+          orderBy: { skill: { sort_order: "asc" } },
+        },
       },
-    },
-  });
+    });
+  } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
   if (!response) throw new Error("Checklist response not found");
 
@@ -481,9 +485,12 @@ export async function GET(request: Request) {
     });
     const orgUserIds = orgUsers.map((u) => u.id);
 
-    const checklistRequest = await db.checklistRequest.findFirst({
-      where: { candidate_user_id: candidateId, client_user_id: { in: orgUserIds } },
-    });
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = await db.checklistRequest.findFirst({
+        where: { candidate_user_id: candidateId, client_user_id: { in: orgUserIds } },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json({ error: "No access to this candidate" }, { status: 403 });

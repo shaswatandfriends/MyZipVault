@@ -137,7 +137,14 @@ export async function GET(request: Request) {
             pdfUrl: inv.pdf_url,
             createdAt: inv.created_at,
           })),
-          organizations: (await db.organization.findMany({ orderBy: { name: "asc" } })).map((o) => ({
+          organizations: (await (async () => {
+            try {
+              return await db.organization.findMany({ orderBy: { name: "asc" } });
+            } catch (e) {
+              console.error("[SCHEMA_DRIFT] organization.findMany failed:", e);
+              return [];
+            }
+          })()).map((o) => ({
             id: o.id,
             name: o.name,
           })),

@@ -42,7 +42,7 @@ export async function GET() {
     // Checklists — wrapped in its own try/catch so a schema mismatch
     // (e.g. new expires_at / superseded_by_id columns not yet migrated)
     // doesn't take down the entire dashboard. Falls back to empty list.
-    let checklists: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    let checklists: any[] = [];
     try {
       checklists = await db.checklistRequest.findMany({
         where: { candidate_user_id: userId },

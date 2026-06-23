@@ -63,27 +63,31 @@ export async function GET(
       );
     }
 
-    const checklistRequests = await db.checklistRequest.findMany({
-      where: {
-        candidate_user_id: candidateId,
-        client_user_id: { in: scope.clientUserIds },
-      },
-      include: {
-        checklist_template: {
-          select: { id: true, name: true, profession: true, specialty: true },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let checklistRequests: any[] = [];
+    try {
+      checklistRequests = await db.checklistRequest.findMany({
+        where: {
+          candidate_user_id: candidateId,
+          client_user_id: { in: scope.clientUserIds },
         },
-        candidate_response: {
-          include: {
-            skill_ratings: {
-              include: {
-                skill: { select: { skill_name: true, category: true, question_type: true, sort_order: true } },
+        include: {
+          checklist_template: {
+            select: { id: true, name: true, profession: true, specialty: true },
+          },
+          candidate_response: {
+            include: {
+              skill_ratings: {
+                include: {
+                  skill: { select: { skill_name: true, category: true, question_type: true, sort_order: true } },
+                },
               },
             },
           },
         },
-      },
-      orderBy: { created_at: "desc" },
-    });
+        orderBy: { created_at: "desc" },
+      });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (checklistRequests.length === 0) {
       return NextResponse.json({ error: "No access to this candidate" }, { status: 403 });

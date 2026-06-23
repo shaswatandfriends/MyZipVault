@@ -31,9 +31,12 @@ export async function PUT(
       return NextResponse.json({ error: "Extend days must be between 1 and 365" }, { status: 400 });
     }
 
-    const response = await db.candidateChecklistResponse.findUnique({
+    let response: any = null;
+try {
+  db.candidateChecklistResponse.findUnique({
       where: { id: responseId },
-    });
+    });;
+} catch (e) { console.error("[SCHEMA_DRIFT] candidateChecklistResponse.findUnique failed:", e); }
     if (!response) {
       return NextResponse.json({ error: "Response not found" }, { status: 404 });
     }

@@ -36,35 +36,39 @@ export async function POST(request: Request) {
     });
     const orgUserIds = orgUsers.map((u) => u.id);
 
-    const checklistRequest = checklistRequestId
-      ? await db.checklistRequest.findFirst({
-          where: {
-            id: checklistRequestId,
-            candidate_user_id: candidateId,
-            client_user_id: { in: orgUserIds },
-            status: { in: ["sent", "opened", "in_progress"] },
-          },
-          include: {
-            checklist_template: { select: { name: true } },
-            candidate_user: {
-              select: { first_name: true, last_name: true, email: true },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let checklistRequest: any = null;
+    try {
+      checklistRequest = checklistRequestId
+        ? await db.checklistRequest.findFirst({
+            where: {
+              id: checklistRequestId,
+              candidate_user_id: candidateId,
+              client_user_id: { in: orgUserIds },
+              status: { in: ["sent", "opened", "in_progress"] },
             },
-          },
-        })
-      : await db.checklistRequest.findFirst({
-          where: {
-            candidate_user_id: candidateId,
-            client_user_id: { in: orgUserIds },
-            status: { in: ["sent", "opened", "in_progress"] },
-          },
-          include: {
-            checklist_template: { select: { name: true } },
-            candidate_user: {
-              select: { first_name: true, last_name: true, email: true },
+            include: {
+              checklist_template: { select: { name: true } },
+              candidate_user: {
+                select: { first_name: true, last_name: true, email: true },
+              },
             },
-          },
-          orderBy: { created_at: "desc" },
-        });
+          })
+        : await db.checklistRequest.findFirst({
+            where: {
+              candidate_user_id: candidateId,
+              client_user_id: { in: orgUserIds },
+              status: { in: ["sent", "opened", "in_progress"] },
+            },
+            include: {
+              checklist_template: { select: { name: true } },
+              candidate_user: {
+                select: { first_name: true, last_name: true, email: true },
+              },
+            },
+            orderBy: { created_at: "desc" },
+          });
+    } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     if (!checklistRequest) {
       return NextResponse.json(
