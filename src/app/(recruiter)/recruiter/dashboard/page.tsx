@@ -66,6 +66,14 @@ interface Candidate {
   latestRequestStatus: string | null;
   latestRequestDate: string | null;
   hasCompletedRequest?: boolean;
+  checklistRequests?: {
+    id: number;
+    status: string;
+    completion_pct: number;
+    created_at: string;
+    opened_at: string | null;
+    checklist_template: { id: number; name: string; profession: string; specialty: string };
+  }[];
 }
 
 interface DashboardStats {

@@ -93,7 +93,33 @@ export async function GET(request: Request) {
       console.error("[RECRUITER_DASHBOARD] ConsentShare query failed (schema mismatch?):", shareErr);
     }
 
+    // ─── Fetch ALL recruiter leads (for total candidate count + table) ───
+    // This is fetched early because we need it to build the candidate map
+    // (leads without checklist requests still appear in the table).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allLeads: any[] = [];
+    try {
+      allLeads = await db.recruiterLead.findMany({
+        where: {
+          recruiter_user_id: { in: scopedUserIds },
+          is_active: true,
+        },
+        select: {
+          id: true,
+          candidate_user_id: true,
+          first_name: true,
+          last_name: true,
+          specialty: true,
+          pipeline_stage: true,
+          tag: true,
+        },
+      });
+    } catch (leadErr) {
+      console.error("[RECRUITER_DASHBOARD] Lead query failed:", leadErr);
+    }
+
     // Build candidate map with compliance status
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const candidateMap = new Map<number, {
       id: number;
       firstName: string | null;
@@ -102,10 +128,13 @@ export async function GET(request: Request) {
       phone: string | null;
       lastActivity: Date | null;
       specialty: string;
-      checklistRequests: typeof checklistRequests;
-      sharedDocuments: typeof consentShares;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      checklistRequests: any[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sharedDocuments: any[];
     }>();
 
+    // First, populate from checklist requests (candidates who have requests)
     for (const cr of checklistRequests) {
       const cId = cr.candidate_user_id;
       if (!candidateMap.has(cId)) {
@@ -124,6 +153,44 @@ export async function GET(request: Request) {
       candidateMap.get(cId)!.checklistRequests.push(cr);
     }
 
+    // Then, add leads who DON'T have checklist requests yet (so they appear
+    // in the candidates table). This ensures Total Candidates stat matches
+    // the table count.
+    for (const lead of allLeads) {
+      if (lead.candidate_user_id && !candidateMap.has(lead.candidate_user_id)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let leadUser: any = null;
+        try {
+          leadUser = await db.user.findUnique({
+            where: { id: lead.candidate_user_id },
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              last_activity_at: true,
+              candidate_profile: { select: { phone: true } },
+            },
+          });
+        } catch (e) {
+          console.error("[RECRUITER_DASHBOARD] Lead user fetch failed:", e);
+        }
+        if (leadUser) {
+          candidateMap.set(lead.candidate_user_id, {
+            id: lead.candidate_user_id,
+            firstName: leadUser.first_name,
+            lastName: leadUser.last_name,
+            email: leadUser.email,
+            phone: leadUser.candidate_profile?.phone ?? null,
+            lastActivity: leadUser.last_activity_at,
+            specialty: lead.specialty ?? "—",
+            checklistRequests: [],
+            sharedDocuments: [],
+          });
+        }
+      }
+    }
+
     // Attach shared documents to candidates
     for (const share of consentShares) {
       const candidate = candidateMap.get(share.candidate_user_id);
@@ -138,7 +205,9 @@ export async function GET(request: Request) {
       let complianceStatus: "compliant" | "pending" | "non_compliant" = "pending";
 
       if (requests.length === 0) {
-        complianceStatus = "non_compliant";
+        // New lead with no checklist requests yet — treat as "pending" (new)
+        // rather than "non_compliant" (which implies they failed to comply)
+        complianceStatus = "pending";
       } else {
         const allCompleted = requests.every((r) => r.status === "completed");
         const anyInProgress = requests.some((r) => ["in_progress", "opened"].includes(r.status));
@@ -188,31 +257,18 @@ export async function GET(request: Request) {
         // True if candidate has at least one completed checklist request
         // (different from complianceStatus === "compliant" which requires ALL to be completed)
         hasCompletedRequest: requests.some((r) => r.status === "completed"),
+        // Full checklist requests array — used by the "All Requests" page
+        // to flatten all requests across all candidates into a single list.
+        checklistRequests: requests.map((r: any) => ({
+          id: r.id,
+          status: r.status,
+          completion_pct: r.completion_pct,
+          created_at: r.created_at,
+          opened_at: r.opened_at,
+          checklist_template: r.checklist_template,
+        })),
       };
     });
-
-    // ─── Fetch ALL recruiter leads (for total candidate count) ───
-    // Total Candidates = all leads in the recruiter's pipeline (any stage)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let allLeads: any[] = [];
-    try {
-      allLeads = await db.recruiterLead.findMany({
-        where: {
-          recruiter_user_id: { in: scopedUserIds },
-          is_active: true,
-        },
-        select: {
-          id: true,
-          candidate_user_id: true,
-          first_name: true,
-          last_name: true,
-          pipeline_stage: true,
-          tag: true,
-        },
-      });
-    } catch (leadErr) {
-      console.error("[RECRUITER_DASHBOARD] Lead query failed:", leadErr);
-    }
 
     // ─── Fetch share requests (what was requested from each candidate) ───
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
