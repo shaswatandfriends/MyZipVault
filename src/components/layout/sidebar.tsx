@@ -494,37 +494,65 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="relative z-[1] shrink-0 space-y-2 p-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
-          {/* Theme Toggle + Notification Bell (all roles) */}
-          <div className="flex items-center gap-1.5">
+        <div className="relative z-[1] shrink-0 space-y-3 p-3 group-data-[collapsible=icon]:space-y-2 group-data-[collapsible=icon]:p-2" style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+          {/* Theme Toggle + Notification Bell */}
+          <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
             <ThemeToggle />
             <NotificationBell variant="sidebar" />
           </div>
 
-          {/* User Info */}
-          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.06] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full">
-            <div className="flex size-8 items-center justify-center rounded-full shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
+          {/* Divider */}
+          <div className="h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
+
+          {/* User Info — glass container */}
+          <div
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-[12px] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.06)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+            }}
+          >
+            <div
+              className="flex size-8 items-center justify-center rounded-full shrink-0"
+              style={{
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
+              }}
+            >
               <span className="text-[10px] font-semibold text-white">{initials}</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-white/75">
+            <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+              <p className="truncate text-xs font-medium text-white/80 leading-tight">
                 {displayName}
               </p>
-              <p
-                className="truncate text-[10px] text-white/30"
-                title={user?.email ?? ""}
-              >
+              <p className="truncate text-[9px] text-white/30 leading-tight" title={user?.email ?? ""}>
                 {user?.email}
               </p>
             </div>
           </div>
 
-          {/* Logout Button with Confirmation */}
+          {/* Logout Button */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="spatial-nav-item w-full text-white/42 hover:text-white/80 hover:bg-white/[0.06]">
-                <LogOut className="size-4" />
-                <span>Sign Out</span>
+              <button
+                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/40 hover:text-white/80 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(184,64,64,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <LogOut className="size-4 shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">Sign Out</span>
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent className="border-border bg-surface !fixed !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2 shadow-2xl">
