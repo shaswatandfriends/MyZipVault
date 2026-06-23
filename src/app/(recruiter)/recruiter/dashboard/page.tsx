@@ -74,7 +74,6 @@ interface DashboardStats {
   completedPackets: number;
   creditsUsedThisMonth: number;
   creditsBalance: number;
-  baaStatus: string;
 }
 
 interface DashboardData {
@@ -380,16 +379,6 @@ export default function RecruiterDashboardPage() {
               icon={CreditCard}
               iconVariant="terra"
               onClick={() => router.push("/recruiter/billing")}
-            />
-
-            {/* BAA Status — clickable: navigates to BAA page */}
-            <SpatialStatCard
-              title="BAA Status"
-              value={getBaaBadge(stats?.baaStatus ?? "pending")}
-              subtitle="Business Associate Agreement"
-              icon={FileCheck}
-              iconVariant="primary"
-              onClick={() => router.push("/recruiter/baa")}
             />
           </>
         )}

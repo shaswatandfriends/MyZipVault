@@ -191,10 +191,124 @@ export async function GET(request: Request) {
       };
     });
 
+    // ─── Fetch ALL recruiter leads (for total candidate count) ───
+    // Total Candidates = all leads in the recruiter's pipeline (any stage)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allLeads: any[] = [];
+    try {
+      allLeads = await db.recruiterLead.findMany({
+        where: {
+          recruiter_user_id: { in: scopedUserIds },
+          is_active: true,
+        },
+        select: {
+          id: true,
+          candidate_user_id: true,
+          first_name: true,
+          last_name: true,
+          pipeline_stage: true,
+          tag: true,
+        },
+      });
+    } catch (leadErr) {
+      console.error("[RECRUITER_DASHBOARD] Lead query failed:", leadErr);
+    }
+
+    // ─── Fetch share requests (what was requested from each candidate) ───
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let shareRequests: any[] = [];
+    try {
+      shareRequests = await db.shareRequest.findMany({
+        where: {
+          client_user_id: { in: scopedUserIds },
+          status: "pending", // only pending requests matter for fulfillment
+        },
+        select: {
+          id: true,
+          candidate_user_id: true,
+          request_checklists: true,
+          request_credentials: true,
+          request_resume: true,
+          request_references: true,
+        },
+      });
+    } catch (srErr) {
+      console.error("[RECRUITER_DASHBOARD] ShareRequest query failed:", srErr);
+    }
+
+    // ─── Fetch consent shares (what candidates have shared) ───
+    // Already fetched above as `consentShares`
+
+    // ─── Compute fulfillment status per candidate ───
+    // A candidate is "completed" if ALL requested items (checklist, credential,
+    // resume, reference) have at least one active ConsentShare.
+    // A candidate is "pending" if they have ANY unfulfilled requested item.
+    const candidateFulfillment = new Map<number, {
+      hasPendingRequests: boolean;
+      isFullyFulfilled: boolean;
+    }>();
+
+    // Build a map of candidate -> shared items
+    const candidateSharedItems = new Map<number, {
+      checklist: boolean;
+      credential: boolean;
+      resume: boolean;
+      reference: boolean;
+    }>();
+
+    for (const share of consentShares) {
+      if (share.is_deleted) continue;
+      const cId = share.candidate_user_id;
+      if (!candidateSharedItems.has(cId)) {
+        candidateSharedItems.set(cId, {
+          checklist: false, credential: false, resume: false, reference: false,
+        });
+      }
+      const items = candidateSharedItems.get(cId)!;
+      if (share.checklist_response_id) items.checklist = true;
+      if (share.credential_id) items.credential = true;
+      if (share.resume_id) items.resume = true;
+      if (share.reference_id) items.reference = true;
+    }
+
+    // Check each candidate's share requests against what they've shared
+    const candidatesWithShareRequests = new Set(shareRequests.map(sr => sr.candidate_user_id));
+    for (const sr of shareRequests) {
+      const cId = sr.candidate_user_id;
+      const shared = candidateSharedItems.get(cId) ?? {
+        checklist: false, credential: false, resume: false, reference: false,
+      };
+
+      // Check if ALL requested items are fulfilled
+      const checklistFulfilled = !sr.request_checklists || shared.checklist;
+      const credentialFulfilled = !sr.request_credentials || shared.credential;
+      const resumeFulfilled = !sr.request_resume || shared.resume;
+      const referenceFulfilled = !sr.request_references || shared.reference;
+      const allFulfilled = checklistFulfilled && credentialFulfilled && resumeFulfilled && referenceFulfilled;
+
+      if (!candidateFulfillment.has(cId)) {
+        candidateFulfillment.set(cId, { hasPendingRequests: false, isFullyFulfilled: true });
+      }
+      const fulfillment = candidateFulfillment.get(cId)!;
+      if (!allFulfilled) {
+        fulfillment.hasPendingRequests = true;
+        fulfillment.isFullyFulfilled = false;
+      }
+    }
+
     // Stats
-    const totalCandidates = candidates.length;
-    const pendingRequests = checklistRequests.filter((r) => r.status === "sent").length;
-    const completedPackets = checklistRequests.filter((r) => r.status === "completed").length;
+    // Total Candidates = all leads in pipeline (new_lead, doc_pending, interested, etc.)
+    const totalCandidates = allLeads.length;
+
+    // Pending = candidates who have at least one unfulfilled request item
+    // (requested something but haven't shared all of it yet)
+    const pendingRequests = Array.from(candidateFulfillment.values())
+      .filter(f => f.hasPendingRequests).length;
+
+    // Completed = candidates who have fulfilled ALL requested items
+    // (they had requests, and all are fulfilled)
+    const completedPackets = Array.from(candidateFulfillment.values())
+      .filter(f => f.isFullyFulfilled && candidatesWithShareRequests.size > 0).length;
 
     // Credits used based on period
     const now = new Date();
@@ -251,10 +365,16 @@ export async function GET(request: Request) {
       .map(([month, used]) => ({ month, used }));
 
     // Organization info
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { credits_balance: true, baa_status: true, name: true },
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let organization: any = null;
+    try {
+      organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { credits_balance: true, name: true },
+      });
+    } catch (e) {
+      console.error("[RECRUITER_DASHBOARD] Organization query failed:", e);
+    }
 
     return NextResponse.json({
       candidates,
@@ -264,7 +384,6 @@ export async function GET(request: Request) {
         completedPackets,
         creditsUsedThisMonth: Math.abs(creditsUsedThisPeriod._sum.credit_amount ?? 0),
         creditsBalance: organization?.credits_balance ?? 0,
-        baaStatus: organization?.baa_status ?? "pending",
       },
       creditsByMonth,
       organization: {
