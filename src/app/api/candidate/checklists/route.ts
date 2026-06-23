@@ -18,34 +18,42 @@ export async function GET() {
     const userId = Number((session.user as Record<string, unknown>).id);
 
     // Fetch all checklist requests for this candidate with template + skills
-    const requests = await db.checklistRequest.findMany({
-      where: { candidate_user_id: userId },
-      include: {
-        checklist_template: {
-          include: {
-            skills: {
-              orderBy: { sort_order: "asc" },
+    // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
+    // (new expires_at / superseded_by_id columns not yet migrated), fall back
+    // to an empty list so the page still loads.
+    let requests: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    try {
+      requests = await db.checklistRequest.findMany({
+        where: { candidate_user_id: userId },
+        include: {
+          checklist_template: {
+            include: {
+              skills: {
+                orderBy: { sort_order: "asc" },
+              },
+            },
+          },
+          client_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              organization: {
+                select: { name: true },
+              },
+            },
+          },
+          candidate_response: {
+            include: {
+              skill_ratings: true,
             },
           },
         },
-        client_user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            organization: {
-              select: { name: true },
-            },
-          },
-        },
-        candidate_response: {
-          include: {
-            skill_ratings: true,
-          },
-        },
-      },
-      orderBy: { created_at: "desc" },
-    });
+        orderBy: { created_at: "desc" },
+      });
+    } catch (checklistErr) {
+      console.error("[CANDIDATE_CHECKLISTS] Query failed (schema mismatch?):", checklistErr);
+    }
 
     const formatted = requests.map((req) => ({
       id: req.id,
