@@ -352,7 +352,7 @@ export default function RecruiterDashboardPage() {
               }}
             />
 
-            {/* Completed Packets — clickable: filters candidates to compliant */}
+            {/* Completed Packets — clickable: scrolls to candidate table (no filter) */}
             <SpatialStatCard
               title="Completed Packets"
               value={stats?.completedPackets ?? 0}
@@ -360,7 +360,7 @@ export default function RecruiterDashboardPage() {
               icon={CheckCircle2}
               iconVariant="primary"
               onClick={() => {
-                setComplianceFilter("compliant");
+                setComplianceFilter("all");
                 setTimeout(() => {
                   const el = document.getElementById("candidate-table-section");
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
