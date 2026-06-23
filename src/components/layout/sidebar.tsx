@@ -368,12 +368,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
         {/* ── Top Section: Logo + Brand + Collapse Button ── */}
-        <div className="relative z-[1] flex shrink-0 flex-col items-center gap-2 px-2 py-3" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
-          <div className="flex items-center gap-2.5 w-full justify-center group-data-[collapsible=icon]:justify-center px-2">
+        <div className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
+          {/* Logo + Brand */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-7 items-center justify-center rounded-[6px] shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
               <span className="text-[12px] font-bold text-white">M</span>
             </div>
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+            <div className="flex flex-col gap-0.5 min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="text-sm font-medium leading-tight text-white" style={{ fontFamily: "'Lora', serif" }}>
                 MyZipVault
               </span>
@@ -382,17 +383,17 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          {/* Collapse/Expand button — below logo, always visible */}
+          {/* Collapse/Expand button — right side of header, always visible */}
           {!isMobile && (
             <button
               onClick={toggleSidebar}
-              className="shrink-0 flex items-center justify-center size-7 rounded-[8px] transition-all hover:bg-white/10"
+              className="shrink-0 flex items-center justify-center size-8 rounded-[8px] transition-all hover:bg-white/10 group-data-[collapsible=icon]:mx-auto"
               title={state === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
             >
               {state === "expanded" ? (
-                <ChevronLeft className="size-4 text-white/40 hover:text-white/80" />
+                <ChevronLeft className="size-4 text-white/50 hover:text-white/90" />
               ) : (
-                <ChevronRight className="size-5 text-white/60 hover:text-white/90" />
+                <ChevronRight className="size-5 text-white/70 hover:text-white" />
               )}
             </button>
           )}
