@@ -383,14 +383,14 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          {/* Collapse/Expand button — right side when expanded, centered glass pill when collapsed */}
+          {/* Collapse/Expand button — right side when expanded, centered below logo when collapsed */}
           {!isMobile && (
             <button
               onClick={toggleSidebar}
-              className="shrink-0 flex items-center justify-center rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:bottom-4 group-data-[collapsible=icon]:left-1/2 group-data-[collapsible=icon]:-translate-x-1/2"
+              className="shrink-0 flex items-center justify-center rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
               style={{
-                width: state === "expanded" ? "32px" : "40px",
-                height: state === "expanded" ? "32px" : "40px",
+                width: state === "expanded" ? "32px" : "36px",
+                height: state === "expanded" ? "32px" : "36px",
                 background: state === "expanded"
                   ? "transparent"
                   : "rgba(255,255,255,0.12)",
@@ -400,11 +400,14 @@ export function AppSidebar() {
                 boxShadow: state === "collapsed"
                   ? "inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.15)"
                   : "none",
+                marginLeft: state === "expanded" ? "0" : "auto",
+                marginRight: state === "expanded" ? "0" : "auto",
+                marginTop: state === "collapsed" ? "8px" : "0",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = state === "expanded"
                   ? "rgba(255,255,255,0.08)"
-                  : "rgba(255,255,255,0.18)";
+                  : "rgba(255,255,255,0.2)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = state === "expanded"
