@@ -39,20 +39,28 @@ export async function GET() {
       (c) => c.verification_status === "verified" || c.verification_status === "pending_review"
     );
 
-    const checklists = await db.checklistRequest.findMany({
-      where: { candidate_user_id: userId },
-      include: {
-        checklist_template: { select: { name: true } },
-        client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
-        candidate_response: {
-          include: { skill_ratings: true },
+    // Checklists — wrapped in its own try/catch so a schema mismatch
+    // (e.g. new expires_at / superseded_by_id columns not yet migrated)
+    // doesn't take down the entire dashboard. Falls back to empty list.
+    let checklists: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    try {
+      checklists = await db.checklistRequest.findMany({
+        where: { candidate_user_id: userId },
+        include: {
+          checklist_template: { select: { name: true } },
+          client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
+          candidate_response: {
+            include: { skill_ratings: true },
+          },
         },
-      },
-      orderBy: { created_at: "desc" },
-    });
+        orderBy: { created_at: "desc" },
+      });
+    } catch (checklistErr) {
+      console.error("[DASHBOARD] Checklist query failed (schema mismatch?):", checklistErr);
+    }
 
     const completedChecklists = checklists.filter((c) => c.status === "completed");
-    const pendingChecklists = checklists.filter((c) => c.status === "sent");
+    const pendingChecklists = checklists.filter((c) => c.status === "sent" || c.status === "reuse_pending");
 
     const references = await db.candidateReference.findMany({
       where: { candidate_user_id: userId },
