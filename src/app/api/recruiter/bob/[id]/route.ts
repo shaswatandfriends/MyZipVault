@@ -35,74 +35,156 @@ export async function GET(
       return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
     }
 
-    const lead = await db.recruiterLead.findUnique({
-      where: { id: leadId },
-      include: {
-        recruiter_user: {
-          select: { id: true, first_name: true, last_name: true, email: true },
-        },
-        candidate_user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-            phone: true,
-            email_verified_at: true,
-            candidate_profile: true,
+    // The URL param can be either a RecruiterLead ID or a candidate user ID
+    // (the recruiter dashboard links to /recruiter/candidates/{candidateUserId}).
+    // Try finding by lead ID first, then fall back to candidate_user_id.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lead: any = null;
+    try {
+      // First try: find by lead ID
+      lead = await db.recruiterLead.findUnique({
+        where: { id: leadId },
+        include: {
+          recruiter_user: {
+            select: { id: true, first_name: true, last_name: true, email: true },
           },
-        },
-        blacklisted_by: {
-          select: { id: true, first_name: true, last_name: true, email: true },
-        },
-        activities: {
-          orderBy: { created_at: "desc" },
-          take: 100,
-          include: {
-            actor: {
-              select: { id: true, first_name: true, last_name: true, email: true },
+          candidate_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              email_verified_at: true,
+              candidate_profile: true,
             },
           },
-        },
-        vault_sign_documents: {
-          orderBy: { created_at: "desc" },
-          select: {
-            id: true,
-            document_name: true,
-            document_type: true,
-            status: true,
-            created_at: true,
-            updated_at: true,
-            expiry_date: true,
-            signers: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                status: true,
-                signed_at: true,
-                declined_at: true,
+          blacklisted_by: {
+            select: { id: true, first_name: true, last_name: true, email: true },
+          },
+          activities: {
+            orderBy: { created_at: "desc" },
+            take: 100,
+            include: {
+              actor: {
+                select: { id: true, first_name: true, last_name: true, email: true },
               },
             },
           },
-        },
-        call_schedules: {
-          orderBy: { created_at: "desc" },
-          take: 10,
-        },
-        call_logs: {
-          orderBy: { created_at: "desc" },
-          take: 10,
-        },
-        _count: {
-          select: {
-            activities: true,
-            vault_sign_documents: true,
+          vault_sign_documents: {
+            orderBy: { created_at: "desc" },
+            select: {
+              id: true,
+              document_name: true,
+              document_type: true,
+              status: true,
+              created_at: true,
+              updated_at: true,
+              expiry_date: true,
+              signers: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                  status: true,
+                  signed_at: true,
+                  declined_at: true,
+                },
+              },
+            },
+          },
+          call_schedules: {
+            orderBy: { created_at: "desc" },
+            take: 10,
+          },
+          call_logs: {
+            orderBy: { created_at: "desc" },
+            take: 10,
+          },
+          _count: {
+            select: {
+              activities: true,
+              vault_sign_documents: true,
+            },
           },
         },
-      },
-    });
+      });
+
+      // Fallback: if not found by lead ID, try finding by candidate_user_id
+      if (!lead) {
+        lead = await db.recruiterLead.findFirst({
+          where: { candidate_user_id: leadId },
+          include: {
+            recruiter_user: {
+              select: { id: true, first_name: true, last_name: true, email: true },
+            },
+            candidate_user: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                phone: true,
+                email_verified_at: true,
+                candidate_profile: true,
+              },
+            },
+            blacklisted_by: {
+              select: { id: true, first_name: true, last_name: true, email: true },
+            },
+            activities: {
+              orderBy: { created_at: "desc" },
+              take: 100,
+              include: {
+                actor: {
+                  select: { id: true, first_name: true, last_name: true, email: true },
+                },
+              },
+            },
+            vault_sign_documents: {
+              orderBy: { created_at: "desc" },
+              select: {
+                id: true,
+                document_name: true,
+                document_type: true,
+                status: true,
+                created_at: true,
+                updated_at: true,
+                expiry_date: true,
+                signers: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    status: true,
+                    signed_at: true,
+                    declined_at: true,
+                  },
+                },
+              },
+            },
+            call_schedules: {
+              orderBy: { created_at: "desc" },
+              take: 10,
+            },
+            call_logs: {
+              orderBy: { created_at: "desc" },
+              take: 10,
+            },
+            _count: {
+              select: {
+                activities: true,
+                vault_sign_documents: true,
+              },
+            },
+          },
+        });
+      }
+    } catch (e) {
+      console.error("[BOB_GET] Lead query failed (schema mismatch?):", e);
+    }
 
     if (!lead) {
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
