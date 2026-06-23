@@ -296,6 +296,40 @@ export async function POST(request: Request) {
         },
       });
 
+      // ─── Auto-create a RecruiterLead so the candidate appears in BOB ──
+      // (same as fresh request path — ensures candidate detail page works)
+      try {
+        const existingLead = await db.recruiterLead.findFirst({
+          where: {
+            candidate_user_id: candidateUserId,
+            organization_id: organizationId,
+          },
+          select: { id: true },
+        });
+        if (!existingLead) {
+          await db.recruiterLead.create({
+            data: {
+              recruiter_user_id: userId,
+              organization_id: organizationId,
+              candidate_user_id: candidateUserId,
+              first_name: firstName,
+              last_name: lastName,
+              email: email,
+              phone: phone ?? null,
+              specialty: specialty ?? null,
+              job_title: jobTitle ?? null,
+              source: "other",
+              pipeline_stage: "doc_pending",
+              tag: "warm",
+              last_activity_at: new Date(),
+              last_activity_type: "checklist_request_sent",
+            },
+          });
+        }
+      } catch (leadErr) {
+        console.error("[SEND_REQUEST] Failed to auto-create RecruiterLead (reuse path):", leadErr);
+      }
+
       // Notify candidate: consent prompt
       try {
         const recruiterName = (session.user as Record<string, unknown>).name as string || "A recruiter";
@@ -365,6 +399,43 @@ export async function POST(request: Request) {
         expires_at: expiresAt,
       },
     });
+
+    // ─── Auto-create a RecruiterLead so the candidate appears in BOB ──
+    // Without this, the candidate detail page (/recruiter/candidates/[id])
+    // fails with "Lead not found" because it looks up by RecruiterLead.
+    // Only create if no lead already exists for this candidate + recruiter.
+    try {
+      const existingLead = await db.recruiterLead.findFirst({
+        where: {
+          candidate_user_id: candidateUserId,
+          organization_id: organizationId,
+        },
+        select: { id: true },
+      });
+      if (!existingLead) {
+        await db.recruiterLead.create({
+          data: {
+            recruiter_user_id: userId,
+            organization_id: organizationId,
+            candidate_user_id: candidateUserId,
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone ?? null,
+            specialty: specialty ?? null,
+            job_title: jobTitle ?? null,
+            source: "other",
+            pipeline_stage: "doc_pending",
+            tag: "warm",
+            last_activity_at: new Date(),
+            last_activity_type: "checklist_request_sent",
+          },
+        });
+      }
+    } catch (leadErr) {
+      console.error("[SEND_REQUEST] Failed to auto-create RecruiterLead:", leadErr);
+      // Non-fatal — the checklist request was already created successfully
+    }
 
     // Create share request if documents are requested
     if (documents && Array.isArray(documents) && documents.length > 0) {
