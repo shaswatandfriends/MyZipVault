@@ -49,6 +49,19 @@ BEGIN
   END IF;
 END $$;
 
+-- Unique constraint — 1:1 relation (each response can be superseded by at most one newer response)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'CandidateChecklistResponse_superseded_by_id_key'
+  ) THEN
+    ALTER TABLE "CandidateChecklistResponse"
+      ADD CONSTRAINT "CandidateChecklistResponse_superseded_by_id_key"
+      UNIQUE ("superseded_by_id");
+  END IF;
+END $$;
+
 -- Index for fast "is this response superseded?" lookups
 CREATE INDEX IF NOT EXISTS "CandidateChecklistResponse_superseded_by_id_idx"
   ON "CandidateChecklistResponse"("superseded_by_id");

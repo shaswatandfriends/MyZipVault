@@ -227,7 +227,7 @@ model CandidateChecklistResponse {
   digital_signature      String?
   candidate_name_signed  String?
   signature_date         DateTime?
-  superseded_by_id       Int?               // set when candidate completes a new response for the same template; old one is no longer shareable
+  superseded_by_id       Int? @unique        // set when candidate completes a new response for the same template; old one is no longer shareable
 
   candidate_user         User               @relation(fields: [candidate_user_id], references: [id])
   checklist_template     ChecklistTemplate  @relation(fields: [checklist_template_id], references: [id])
@@ -235,7 +235,7 @@ model CandidateChecklistResponse {
   checklist_requests     ChecklistRequest[]
   consent_shares         ConsentShare[]
   superseded_by          CandidateChecklistResponse? @relation("ChecklistResponseSupersede", fields: [superseded_by_id], references: [id], onDelete: SetNull)
-  supersedes             CandidateChecklistResponse? @relation("ChecklistResponseSupersede", references: [id])
+  supersedes             CandidateChecklistResponse? @relation("ChecklistResponseSupersede")
 }
 
 // ─── 9. Skill Ratings ───────────────────────────────────────────────
