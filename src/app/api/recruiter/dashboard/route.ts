@@ -185,6 +185,9 @@ export async function GET(request: Request) {
         checklistRequestCount: requests.length,
         latestRequestStatus: requests[0]?.status ?? null,
         latestRequestDate: requests[0]?.created_at ?? null,
+        // True if candidate has at least one completed checklist request
+        // (different from complianceStatus === "compliant" which requires ALL to be completed)
+        hasCompletedRequest: requests.some((r) => r.status === "completed"),
       };
     });
 

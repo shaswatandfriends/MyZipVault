@@ -65,6 +65,7 @@ interface Candidate {
   checklistRequestCount: number;
   latestRequestStatus: string | null;
   latestRequestDate: string | null;
+  hasCompletedRequest?: boolean;
 }
 
 interface DashboardStats {
@@ -85,7 +86,7 @@ interface DashboardData {
   };
 }
 
-type ComplianceFilter = "all" | "compliant" | "pending" | "non_compliant";
+type ComplianceFilter = "all" | "compliant" | "pending" | "non_compliant" | "has_completed";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 function formatDate(dateStr: string | null): string {
@@ -217,8 +218,11 @@ export default function RecruiterDashboardPage() {
           .includes(searchQuery.toLowerCase()) ||
         c.email.toLowerCase().includes(searchQuery.toLowerCase());
 
+      // "has_completed" = candidate has at least one completed checklist request
+      // (different from "compliant" which requires ALL requests to be completed)
       const matchesCompliance =
-        complianceFilter === "all" || c.complianceStatus === complianceFilter;
+        complianceFilter === "all" ||
+        (complianceFilter === "has_completed" ? c.hasCompletedRequest : c.complianceStatus === complianceFilter);
 
       return matchesSearch && matchesCompliance;
     });
@@ -352,7 +356,7 @@ export default function RecruiterDashboardPage() {
               }}
             />
 
-            {/* Completed Packets — clickable: scrolls to candidate table (no filter) */}
+            {/* Completed Packets — clickable: filters to candidates with at least one completed checklist */}
             <SpatialStatCard
               title="Completed Packets"
               value={stats?.completedPackets ?? 0}
@@ -360,7 +364,7 @@ export default function RecruiterDashboardPage() {
               icon={CheckCircle2}
               iconVariant="primary"
               onClick={() => {
-                setComplianceFilter("all");
+                setComplianceFilter("has_completed");
                 setTimeout(() => {
                   const el = document.getElementById("candidate-table-section");
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -421,6 +425,12 @@ export default function RecruiterDashboardPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="has_completed">
+                    <span className="flex items-center gap-2">
+                      <span className="size-2 rounded-full" style={{ background: "var(--primary)" }} />
+                      Has Completed
+                    </span>
+                  </SelectItem>
                   <SelectItem value="compliant">
                     <span className="flex items-center gap-2">
                       <span className="size-2 rounded-full" style={{ background: "var(--primary)" }} />
