@@ -16,18 +16,26 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const organizations = await db.organization.findMany({
-      orderBy: { created_at: "desc" },
-      include: {
-        users: {
-          select: { id: true, email: true, first_name: true, last_name: true, role: true, account_status: true, last_activity_at: true, created_at: true, must_change_pass: true },
+    // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
+    // (e.g. new pending_request_expiry_days column not yet migrated), fall
+    // back to an empty list so the page still loads instead of 500ing.
+    let organizations: Awaited<ReturnType<typeof db.organization.findMany>> = [];
+    try {
+      organizations = await db.organization.findMany({
+        orderBy: { created_at: "desc" },
+        include: {
+          users: {
+            select: { id: true, email: true, first_name: true, last_name: true, role: true, account_status: true, last_activity_at: true, created_at: true, must_change_pass: true },
+          },
+          credit_transactions: {
+            orderBy: { created_at: "desc" },
+            take: 50,
+          },
         },
-        credit_transactions: {
-          orderBy: { created_at: "desc" },
-          take: 50,
-        },
-      },
-    });
+      });
+    } catch (orgErr) {
+      console.error("[SUPERADMIN_COMPANIES] Organization query failed (schema mismatch?):", orgErr);
+    }
 
     return NextResponse.json({
       companies: organizations.map((org) => {

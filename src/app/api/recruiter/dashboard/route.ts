@@ -37,28 +37,36 @@ export async function GET(request: Request) {
     }
     const scopedUserIds = scope.clientUserIds;
 
-    const checklistRequests = await db.checklistRequest.findMany({
-      where: { client_user_id: { in: scopedUserIds } },
-      include: {
-        candidate_user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-            last_activity_at: true,
-            candidate_profile: { select: { phone: true } },
+    // Wrapped in try/catch — if the Prisma client is ahead of the DB schema
+    // (e.g. new expires_at / superseded_by_id columns not yet migrated),
+    // fall back to an empty list so the dashboard still loads.
+    let checklistRequests: Awaited<ReturnType<typeof db.checklistRequest.findMany>> = [];
+    try {
+      checklistRequests = await db.checklistRequest.findMany({
+        where: { client_user_id: { in: scopedUserIds } },
+        include: {
+          candidate_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              last_activity_at: true,
+              candidate_profile: { select: { phone: true } },
+            },
+          },
+          checklist_template: {
+            select: { id: true, name: true, profession: true, specialty: true },
+          },
+          candidate_response: {
+            select: { id: true, status: true, submitted_at: true },
           },
         },
-        checklist_template: {
-          select: { id: true, name: true, profession: true, specialty: true },
-        },
-        candidate_response: {
-          select: { id: true, status: true, submitted_at: true },
-        },
-      },
-      orderBy: { created_at: "desc" },
-    });
+        orderBy: { created_at: "desc" },
+      });
+    } catch (checklistErr) {
+      console.error("[RECRUITER_DASHBOARD] Checklist query failed (schema mismatch?):", checklistErr);
+    }
 
     // Get consent shares for these candidates — scoped to this recruiter/admin's users
     const candidateIds = [...new Set(checklistRequests.map((cr) => cr.candidate_user_id))];
