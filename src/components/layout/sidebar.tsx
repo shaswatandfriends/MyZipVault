@@ -368,10 +368,19 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
         {/* ── Top Section: Logo + Brand + Collapse Button ── */}
-        <div className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
+        <div
+          className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:py-4"
+          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
+        >
           {/* Logo + Brand */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-7 items-center justify-center rounded-[6px] shrink-0" style={{ background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)" }}>
+          <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
+            <div
+              className="flex size-7 items-center justify-center rounded-[6px] shrink-0"
+              style={{
+                background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
+              }}
+            >
               <span className="text-[12px] font-bold text-white">M</span>
             </div>
             <div className="flex flex-col gap-0.5 min-w-0 group-data-[collapsible=icon]:hidden">
@@ -383,43 +392,32 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          {/* Collapse/Expand button — right side when expanded, centered below logo when collapsed */}
+
+          {/* Collapse/Expand button */}
           {!isMobile && (
             <button
               onClick={toggleSidebar}
-              className="shrink-0 flex items-center justify-center rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              className="flex items-center justify-center rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:order-2"
               style={{
-                width: state === "expanded" ? "32px" : "36px",
-                height: state === "expanded" ? "32px" : "36px",
-                background: state === "expanded"
-                  ? "transparent"
-                  : "rgba(255,255,255,0.12)",
-                border: state === "expanded"
-                  ? "none"
-                  : "0.5px solid rgba(255,255,255,0.2)",
-                boxShadow: state === "collapsed"
-                  ? "inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.15)"
-                  : "none",
-                marginLeft: state === "expanded" ? "0" : "auto",
-                marginRight: state === "expanded" ? "0" : "auto",
-                marginTop: state === "collapsed" ? "8px" : "0",
+                width: "32px",
+                height: "32px",
+                background: "transparent",
+                border: "none",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = state === "expanded"
-                  ? "rgba(255,255,255,0.08)"
-                  : "rgba(255,255,255,0.2)";
+                e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.transform = "scale(1.05)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = state === "expanded"
-                  ? "transparent"
-                  : "rgba(255,255,255,0.12)";
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.transform = "scale(1)";
               }}
               title={state === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
             >
               {state === "expanded" ? (
                 <ChevronLeft className="size-4 text-white/50" />
               ) : (
-                <ChevronRight className="size-5 text-white/90" />
+                <ChevronRight className="size-5 text-white/80" />
               )}
             </button>
           )}
