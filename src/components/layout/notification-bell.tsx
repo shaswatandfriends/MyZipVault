@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, BellRing } from "@/lib/icons";
 import { useAuth } from "@/components/providers/auth-provider";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -242,11 +243,18 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <button className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 ease-in-out hover:bg-surface-2 hover:text-foreground">
-            <BellIcon className="size-5 shrink-0" />
-            <span>Notifications</span>
+          <button
+            className={cn(
+              "relative flex items-center gap-3 rounded-xl text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 ease-in-out hover:bg-surface-2 hover:text-foreground",
+              "w-full px-3 py-2.5",
+              "group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:w-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:mx-auto"
+            )}
+            title="Notifications"
+          >
+            <BellIcon className="size-5 shrink-0 group-data-[collapsible=icon]:mx-auto" />
+            <span className="group-data-[collapsible=icon]:hidden">Notifications</span>
             {unreadCount > 0 && (
-              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-bold text-white">
+              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-bold text-white group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-0.5 group-data-[collapsible=icon]:-right-0.5 group-data-[collapsible=icon]:size-4 group-data-[collapsible=icon]:text-[8px] group-data-[collapsible=icon]:ml-0">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}

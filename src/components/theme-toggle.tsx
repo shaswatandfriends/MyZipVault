@@ -19,7 +19,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="size-9 rounded-xl">
+      <Button variant="ghost" size="icon" className="size-9 rounded-xl group-data-[collapsible=icon]:mx-auto">
         <Sun className="size-4" />
       </Button>
     );
@@ -31,7 +31,8 @@ export function ThemeToggle() {
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 rounded-xl hover:bg-surface-2 transition-colors"
+          className="size-9 rounded-xl hover:bg-surface-2 transition-colors group-data-[collapsible=icon]:mx-auto"
+          title="Toggle theme"
         >
           <Sun className="size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />

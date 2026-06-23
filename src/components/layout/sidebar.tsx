@@ -272,21 +272,22 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
           "spatial-nav-item w-full",
           isAnyActive && "spatial-nav-item-active"
         )}
+        title={group.title}
       >
         <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#E8A882" : "rgba(255,255,255,0.35)" }} />
-        <span className="flex-1 text-left">{group.title}</span>
+        <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">{group.title}</span>
         <ChevronDown
           className={cn(
-            "size-3.5 shrink-0 transition-transform duration-200",
+            "size-3.5 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden",
             isExpanded ? "rotate-180" : "rotate-0"
           )}
           style={{ color: "rgba(255,255,255,0.35)" }}
         />
       </button>
 
-      {/* Collapsible content */}
+      {/* Collapsible content — hidden when sidebar is collapsed */}
       {isExpanded && (
-        <div className="ml-2 pl-3 space-y-1.5" style={{ borderLeft: "0.5px solid rgba(255,255,255,0.08)" }}>
+        <div className="ml-2 pl-3 space-y-1.5 group-data-[collapsible=icon]:hidden" style={{ borderLeft: "0.5px solid rgba(255,255,255,0.08)" }}>
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
@@ -369,7 +370,7 @@ export function AppSidebar() {
       <div className="spatial-sidebar flex h-full w-full flex-col overflow-hidden">
         {/* ── Top Section: Logo + Brand + Collapse Button ── */}
         <div
-          className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:py-4"
+          className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-4"
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           {/* Logo + Brand */}
@@ -449,7 +450,7 @@ export function AppSidebar() {
             {/* Superadmin: Collapsible Groups */}
             {isSuperAdmin && (
               <>
-                <div className="my-2 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
+                <div className="my-2 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
                 {superAdminGroups.map((group) => (
                   <NavGroupSection
                     key={group.title}
@@ -457,7 +458,7 @@ export function AppSidebar() {
                     pathname={pathname}
                   />
                 ))}
-                <div className="my-2 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
+                <div className="my-2 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
 
                 {/* Bottom nav items for superadmin with section dividers */}
                 {superAdminBottomNav.map((item, index) => {
@@ -469,8 +470,8 @@ export function AppSidebar() {
                     <React.Fragment key={item.href}>
                       {sectionLabel && (
                         <>
-                          {index > 0 && <div className="my-1.5 h-px mx-2" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
-                          <p className="px-3.5 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase">
+                          {index > 0 && <div className="my-1.5 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
+                          <p className="px-3.5 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase group-data-[collapsible=icon]:hidden">
                             {sectionLabel}
                           </p>
                         </>
@@ -494,19 +495,25 @@ export function AppSidebar() {
         </ScrollArea>
 
         {/* ── Bottom Section: User + Sign Out ── */}
-        <div className="relative z-[1] shrink-0 space-y-3 p-3 group-data-[collapsible=icon]:space-y-2 group-data-[collapsible=icon]:p-2" style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+        <div
+          className="relative z-[1] shrink-0 space-y-3 p-3 group-data-[collapsible=icon]:space-y-2 group-data-[collapsible=icon]:p-1.5"
+          style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}
+        >
           {/* Theme Toggle + Notification Bell */}
-          <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
+          <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2">
             <ThemeToggle />
             <NotificationBell variant="sidebar" />
           </div>
 
-          {/* Divider */}
-          <div className="h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
+          {/* Divider — hidden when collapsed */}
+          <div
+            className="h-px group-data-[collapsible=icon]:hidden"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }}
+          />
 
           {/* User Info — glass container */}
           <div
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-[12px] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-[12px] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9"
             style={{
               background: "rgba(255,255,255,0.04)",
               border: "0.5px solid rgba(255,255,255,0.06)",
@@ -519,9 +526,10 @@ export function AppSidebar() {
               e.currentTarget.style.background = "rgba(255,255,255,0.04)";
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
             }}
+            title={state === "collapsed" ? displayName : undefined}
           >
             <div
-              className="flex size-8 items-center justify-center rounded-full shrink-0"
+              className="flex size-8 items-center justify-center rounded-full shrink-0 group-data-[collapsible=icon]:size-7"
               style={{
                 background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
@@ -543,15 +551,16 @@ export function AppSidebar() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button
-                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/40 hover:text-white/80 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5"
+                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/40 hover:text-white/80 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "rgba(184,64,64,0.08)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
                 }}
+                title={state === "collapsed" ? "Sign Out" : undefined}
               >
-                <LogOut className="size-4 shrink-0" />
+                <LogOut className="size-4 shrink-0 group-data-[collapsible=icon]:mx-auto" />
                 <span className="group-data-[collapsible=icon]:hidden">Sign Out</span>
               </button>
             </AlertDialogTrigger>

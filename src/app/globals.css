@@ -1028,6 +1028,28 @@
   box-shadow: 0 0 8px rgba(201, 123, 84, 0.6);
 }
 
+/* ─── Collapsed sidebar nav items — icon only, centered ─────────── */
+.group[data-collapsible="icon"] .spatial-nav-item {
+  justify-content: center;
+  padding: 0.5rem 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0 auto;
+  gap: 0;
+}
+
+.group[data-collapsible="icon"] .spatial-nav-item > span {
+  display: none;
+}
+
+.group[data-collapsible="icon"] .spatial-nav-item-active::before {
+  display: none;
+}
+
+.group[data-collapsible="icon"] .spatial-nav-item-active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(201, 123, 84, 0.3), 0 2px 8px rgba(201, 123, 84, 0.18);
+}
+
 /* ─── Spatial Badge — pill with vibrant fill ──────────────────────── */
 .spatial-badge {
   display: inline-flex;
