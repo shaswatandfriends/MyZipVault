@@ -102,15 +102,45 @@ const candidateNav: NavItem[] = [
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
-// ─── Recruiter Nav Items ─────────────────────────────────────────────
+// ─── Recruiter Nav Items (flat — non-grouped) ─────────────────────────
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
-  { title: "Book of Business", href: "/recruiter/candidates", icon: Users },
-  { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
+];
+
+// ─── Recruiter: Book of Business Group ─────────────────────────────────
+const bobGroup: NavGroup = {
+  title: "Book of Business",
+  icon: Users,
+  sections: [
+    {
+      title: "PIPELINE",
+      items: [
+        { title: "My BOB", href: "/recruiter/candidates", icon: Users },
+        { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
+        { title: "Candidate Pools", href: "/recruiter/pools", icon: FolderOpen },
+      ],
+    },
+  ],
+};
+
+// ─── Recruiter: Send Request Group ─────────────────────────────────────
+const sendRequestGroup: NavGroup = {
+  title: "Send Request",
+  icon: Send,
+  sections: [
+    {
+      title: "REQUESTS",
+      items: [
+        { title: "New Request", href: "/recruiter/send", icon: Send },
+        { title: "Compliance Bundles", href: "/recruiter/bundles", icon: Layers },
+      ],
+    },
+  ],
+};
+
+// ─── Recruiter: Bottom Nav Items (after groups) ────────────────────────
+const recruiterBottomNav: NavItem[] = [
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
-  { title: "Send Request", href: "/recruiter/send", icon: Send },
-  { title: "Bundles", href: "/recruiter/bundles", icon: Layers },
-  { title: "Pools", href: "/recruiter/pools", icon: FolderOpen },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
   { title: "Notifications", href: "/recruiter/notifications", icon: Bell },
   { title: "Org Settings", href: "/recruiter/settings", icon: Settings },
@@ -341,6 +371,7 @@ export function AppSidebar() {
   if (!role) return null;
 
   const isSuperAdmin = role === "super_admin";
+  const isRecruiter = role === "client_recruiter" || role === "client_admin";
   let navItems = isSuperAdmin ? superAdminFlatNav : getNavItems(role);
 
   // Filter out Billing for recruiters if org setting is off
@@ -352,6 +383,24 @@ export function AppSidebar() {
       navItems = navItems.filter((item) => item.href !== "/recruiter/billing");
     }
   }
+
+  // Recruiter groups — filter adminOnly items for client_recruiter
+  const recruiterGroups = isRecruiter ? [bobGroup, sendRequestGroup] : [];
+  const recruiterBottom = isRecruiter
+    ? role === "client_recruiter"
+      ? recruiterBottomNav.filter((item) => !item.adminOnly)
+      : recruiterBottomNav
+    : [];
+
+  // Apply billing filter to bottom nav too
+  const recruiterBottomFiltered = role === "client_recruiter"
+    ? recruiterBottom.filter((item) => {
+        if (item.href === "/recruiter/billing") {
+          return orgSettings?.show_billing_to_recruiters === true;
+        }
+        return true;
+      })
+    : recruiterBottom;
 
   const label = roleLabels[role];
 
@@ -429,6 +478,51 @@ export function AppSidebar() {
           <nav className="flex flex-col gap-1 px-2.5">
             {/* Flat nav items */}
             {navItems.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "spatial-nav-item",
+                    isActive && "spatial-nav-item-active"
+                  )}
+                >
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
+
+            {/* Recruiter: Collapsible Groups (BOB + Send Request) */}
+            {isRecruiter && recruiterGroups.length > 0 && (
+              <>
+                <div className="my-2 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
+                {recruiterGroups.map((group) => {
+                  // Filter adminOnly items from group sections for client_recruiter
+                  const filteredGroup: NavGroup = {
+                    ...group,
+                    sections: group.sections.map((s) => ({
+                      ...s,
+                      items: s.items.filter((item) => role === "client_admin" || !item.adminOnly),
+                    })),
+                  };
+                  return (
+                    <NavGroupSection
+                      key={group.title}
+                      group={filteredGroup}
+                      pathname={pathname}
+                    />
+                  );
+                })}
+                <div className="my-2 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
+              </>
+            )}
+
+            {/* Recruiter: Bottom nav items (Calendar, VaultSign, etc.) */}
+            {isRecruiter && recruiterBottomFiltered.map((item) => {
               const isActive =
                 pathname === item.href ||
                 pathname.startsWith(item.href + "/");

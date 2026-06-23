@@ -119,14 +119,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template from document
+    // Ensure all required fields have fallback values to prevent Prisma errors
     const template = await db.vaultSignTemplate.create({
       data: {
-        name: template_name || document.document_name,
+        name: template_name || document.document_name || "Untitled Template",
         description: `Template saved from: ${document.document_name}`,
-        document_type: document.document_type,
-        source_type: document.source_type,
+        document_type: document.document_type || "custom",
+        source_type: document.source_type || "word",
         original_file_url: document.original_file_url || "",
-        tiptap_content: document.tiptap_content,
+        tiptap_content: document.tiptap_content || null,
         predefined_sign_fields: document.sign_fields || "[]",
         placeholder_variables: document.placeholder_values
           ? (() => {
@@ -136,6 +137,8 @@ export async function POST(request: NextRequest) {
               } catch { return "[]"; }
             })()
           : "[]",
+        header_config: (document as any).header_config || "{}",
+        footer_config: (document as any).footer_config || "{}",
         show_header_footer: (document as any).show_header_footer !== false,
         created_by: userId,
       },

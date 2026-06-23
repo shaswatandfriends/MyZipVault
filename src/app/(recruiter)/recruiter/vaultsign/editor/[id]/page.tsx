@@ -1423,14 +1423,16 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       {/* Main Content — Three Column Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel — Variables (desktop only) */}
-        <div className="hidden lg:flex w-64 border-r border-[#E8E2D4] bg-white flex-col">
-          <div className="p-3 border-b border-[#E8E2D4]">
+        <div className="hidden lg:flex w-64 border-r border-[#E8E2D4] bg-white flex-col overflow-hidden">
+          <div className="p-3 border-b border-[#E8E2D4] shrink-0">
             <h3 className="font-semibold text-sm text-[#1A1A1A] flex items-center gap-2">
               <Variable className="h-4 w-4 text-[#B8924A]" /> Variables
             </h3>
             <p className="text-xs text-[#5B5A56] mt-1">Click to insert at cursor</p>
           </div>
-          {variablesPanelContent}
+          <div className="flex-1 overflow-y-auto">
+            {variablesPanelContent}
+          </div>
         </div>
 
         {/* Center — Editor or PDF Preview */}
@@ -1563,11 +1565,13 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Right Panel — Signers & Fields (desktop only) */}
-        <div className="hidden lg:flex w-72 border-l border-[#E8E2D4] bg-white flex-col">
-          <div className="p-3 border-b border-[#E8E2D4]">
+        <div className="hidden lg:flex w-72 border-l border-[#E8E2D4] bg-white flex-col overflow-hidden">
+          <div className="p-3 border-b border-[#E8E2D4] shrink-0">
             <h3 className="font-semibold text-sm text-[#1A1A1A]">Signers & Fields</h3>
           </div>
-          {signersPanelContent}
+          <div className="flex-1 overflow-y-auto">
+            {signersPanelContent}
+          </div>
         </div>
       </div>
 
