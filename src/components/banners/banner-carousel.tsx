@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, Pin } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -40,13 +40,28 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
           setBanners(data.banners || []);
         }
       } catch {
-        // silently fail
+        // silently fail — banners are non-critical
       }
     };
     fetchBanners();
   }, []);
 
-  const visibleBanners = banners;
+  // Filter out expired banners + sort pinned first
+  const visibleBanners = useMemo(() => {
+    const now = new Date();
+    return banners
+      .filter((b) => {
+        // Keep banners with no expiry OR expiry in the future
+        if (!b.expiresAt) return true;
+        return new Date(b.expiresAt) > now;
+      })
+      .sort((a, b) => {
+        // Pinned banners first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+  }, [banners]);
 
   // Auto-advance carousel
   const currentBanner = visibleBanners[currentIndex];
@@ -85,15 +100,34 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
     setIsPaused(false);
   };
 
-  // Auto-advance timer
+  // Auto-advance timer — pauses when tab is hidden to save CPU
   useEffect(() => {
     if (isPaused || visibleBanners.length <= 1) return;
 
+    // Don't auto-advance if the tab is hidden (background)
+    if (typeof document !== "undefined" && document.hidden) return;
+
     const duration = currentBanner?.carouselDuration || 5;
-    const timer = setInterval(goToNext, duration * 1000);
+    const timer = setInterval(() => {
+      // Double-check visibility before advancing (tab may have been hidden mid-interval)
+      if (typeof document !== "undefined" && document.hidden) return;
+      goToNext();
+    }, duration * 1000);
 
     return () => clearInterval(timer);
   }, [isPaused, visibleBanners.length, currentBanner?.carouselDuration, goToNext]);
+
+  // Listen for visibility changes to reset the timer when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Tab is visible again — trigger a re-render so the timer effect re-runs
+        setIsPaused((prev) => prev);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   // Reset index when banners change
   useEffect(() => {
@@ -155,8 +189,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
                 )}
 
                 <h3
-                  className="text-lg font-semibold text-white sm:text-xl line-clamp-2 drop-shadow-sm"
-                  style={{ fontFamily: "'Satoshi', sans-serif" }}
+                  className="text-lg font-semibold text-white sm:text-xl line-clamp-2 drop-shadow-sm font-heading"
                 >
                   {currentBanner?.title}
                 </h3>
@@ -197,8 +230,7 @@ export function BannerCarousel({ className }: BannerCarouselProps) {
               )}
 
               <h3
-                className="text-base font-semibold text-[var(--foreground)] sm:text-lg"
-                style={{ fontFamily: "'Satoshi', sans-serif" }}
+                className="text-base font-semibold text-[var(--foreground)] sm:text-lg font-heading"
               >
                 {currentBanner?.title}
               </h3>

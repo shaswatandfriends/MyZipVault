@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   CheckCircle2, Sparkles, CalendarDays, FileSignature,
   ClipboardList, ArrowRight, Bell, Lock, Zap, TrendingUp,
   Upload, Share2, Settings, FolderOpen, AlertTriangle,
+  FileCheck, CreditCard, Clock,
 } from "@/lib/icons";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -19,22 +20,35 @@ import { BannerCarousel } from "@/components/banners/banner-carousel";
 interface CredentialItem {
   id: number; documentName: string; status: string; verificationStatus: string; expirationDate: string | null;
 }
+interface NotificationItem {
+  id: number;
+  title: string | null;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+  relatedEntityType: string | null;
+}
 interface DashboardData {
-  profile: { firstName: string; lastName: string; phone: string; profileCompletionPct: number } | null;
-  resume: { id: number; fileUrl: string | null } | null;
-  credentials: { total: number; active: number; topItems: CredentialItem[] };
+  profile: { firstName: string; profileCompletionPct: number } | null;
+  resume: { fileUrl: string | null } | null;
+  credentials: { total: number; active: number; verified: number; topItems: CredentialItem[] };
   checklists: { total: number; completed: number; pending: number };
-  references: { total: number; completed: number };
+  references: { total: number; completed: number; pending: number };
   vaultsign: { pending: number; signed: number; total: number };
   pendingChecklistRequests: { id: number; checklistName: string; status: string; createdAt: string; assignedBy: string }[];
   shareRequestCount: number;
-  notifications: { id: number; message: string; type: string; isRead: boolean; createdAt: string }[];
+  notifications: NotificationItem[];
   emailVerified: boolean;
+  hasCalendar: boolean;
+  hasActiveChecklistResponse: boolean;
+  pendingItemCount: number;
 }
 
+// ─── Helpers ───────────────────────────────────────────────────────
 function statIconStyle(variant: "primary" | "terra") {
-  if (variant === "terra") return { background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)", color: "#fff" };
-  return { background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)", color: "#fff" };
+  if (variant === "terra") return { background: "linear-gradient(180deg, var(--terra-light) 0%, var(--terra) 60%, var(--terra-dark) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)", color: "#fff" };
+  return { background: "linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 60%, var(--primary-dark) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)", color: "#fff" };
 }
 
 function getTimeGreeting() {
@@ -53,61 +67,149 @@ function formatExpiry(dateStr: string | null): { text: string; isExpiring: boole
   return { text: `Expires ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`, isExpiring: false };
 }
 
+function getNotificationIcon(type: string) {
+  switch (type) {
+    case "checklist_reminder":
+    case "checklist_share_request":
+      return ClipboardCheck;
+    case "vaultsign_invitation":
+    case "vaultsign_reminder":
+      return FileSignature;
+    case "credential_expiry":
+      return ShieldCheck;
+    case "reference_request":
+      return Users;
+    case "share_request":
+      return Share2;
+    case "call_scheduled":
+    case "call_reminder":
+      return CalendarDays;
+    default:
+      return Bell;
+  }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// ─── Main Component ────────────────────────────────────────────────
 export default function CandidateDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const fetchDashboard = useCallback(async () => {
+  // Initial load — sets isLoading + error
+  const initialLoad = useCallback(async () => {
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      const res = await fetch("/api/candidate/dashboard");
+      const res = await fetch("/api/candidate/dashboard", { signal: controller.signal });
       if (!res.ok) throw new Error("Failed to fetch");
-      setData(await res.json());
+      const json = await res.json();
+      setData(json);
       setError("");
-    } catch {
+    } catch (err: unknown) {
+      // Don't show error if this was an abort (request was superseded)
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError("Failed to load dashboard. Please refresh.");
-      toast.error("Failed to load dashboard");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
-  useEffect(() => {
-    pollingRef.current = setInterval(() => fetchDashboard(), 60_000);
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
-  }, [fetchDashboard]);
+  // Polling — never hides loaded data, only shows non-blocking toast on failure
+  const poll = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
+    try {
+      const res = await fetch("/api/candidate/dashboard", { signal: controller.signal });
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
+      setData(json);
+      // Note: do NOT set error or isLoading here — polling failures
+      // should not hide the existing dashboard. Just toast silently.
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      // Silent failure — keep existing data visible. Only toast once per
+      // minute (the poll interval) so the user isn't spammed.
+      // Note: we intentionally do NOT setError here.
+      console.warn("[DASHBOARD] Poll failed, keeping existing data");
+    }
+  }, []);
+
+  // Initial load on mount
+  useEffect(() => { initialLoad(); }, [initialLoad]);
+
+  // Polling interval — every 60s, never hides dashboard on failure
+  useEffect(() => {
+    pollingRef.current = setInterval(() => poll(), 60_000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      abortRef.current?.abort();
+    };
+  }, [poll]);
+
+  // ─── Derived data (memoized) ──────────────────────────────────────
   const hasResume = !!data?.resume?.fileUrl;
   const pct = data?.profile?.profileCompletionPct ?? 0;
   const firstName = data?.profile?.firstName ?? "there";
 
-  const steps = [
+  const steps = useMemo(() => [
     { label: "Account Created", done: true },
     { label: "Email Verified", done: data?.emailVerified ?? false },
     { label: "Upload Resume", done: hasResume },
     { label: "Add Credentials", done: (data?.credentials?.total ?? 0) > 0 },
     { label: "Complete References", done: (data?.references?.completed ?? 0) > 0 },
-  ];
+  ], [data, hasResume]);
 
-  const nextAction = !hasResume
-    ? { label: "Upload Resume", desc: "Unlock AI Resume, ATS Scoring & Job Matching", href: "/vault/resume", btn: "Upload Resume" }
-    : (data?.credentials?.total ?? 0) === 0
-    ? { label: "Add Credentials", desc: "Add your licenses and certifications", href: "/vault/credentials", btn: "Add Credentials" }
-    : (data?.references?.completed ?? 0) === 0
-    ? { label: "Request Reference", desc: "Build trust with verified references", href: "/references", btn: "Request Reference" }
-    : { label: "Complete Profile", desc: "Finish setup to unlock recruiter visibility", href: "/profile-completion", btn: "Continue Setup" };
+  const nextAction = useMemo(() => {
+    if (!data) return { label: "Loading...", desc: "", href: "/dashboard", btn: "..." };
+    if (!hasResume)
+      return { label: "Upload Resume", desc: "Unlock AI Resume, ATS Scoring & Job Matching", href: "/vault/resume", btn: "Upload Resume" };
+    if ((data.credentials?.total ?? 0) === 0)
+      return { label: "Add Credentials", desc: "Add your licenses and certifications", href: "/vault/credentials", btn: "Add Credentials" };
+    if ((data.references?.completed ?? 0) === 0)
+      return { label: "Request Reference", desc: "Build trust with verified references", href: "/references", btn: "Request Reference" };
+    return { label: "Complete Profile", desc: "Finish setup to unlock recruiter visibility", href: "/profile-completion", btn: "Continue Setup" };
+  }, [data, hasResume]);
 
-  // Action center items
-  const actionItems = [];
-  if (data?.checklists?.pending && data.checklists.pending > 0) actionItems.push({ label: `${data.checklists.pending} Checklist${data.checklists.pending > 1 ? "s" : ""} Assigned`, sub: "Complete your assigned skill checklists", btn: "Continue", href: "/checklists" });
-  if (data?.vaultsign?.pending && data.vaultsign.pending > 0) actionItems.push({ label: `${data.vaultsign.pending} Documents to Sign`, sub: "VaultSign requests pending your signature", btn: "Review", href: "/vaultsign" });
-  if ((data?.references?.total ?? 0) - (data?.references?.completed ?? 0) > 0) actionItems.push({ label: `${(data?.references?.total ?? 0) - (data?.references?.completed ?? 0)} Reference Requests Pending`, sub: "Follow up on your reference requests", btn: "Respond", href: "/references" });
-  if (data?.shareRequestCount && data.shareRequestCount > 0) actionItems.push({ label: `${data.shareRequestCount} Share Requests`, sub: "Recruiters want to access your documents", btn: "Review", href: "/sharing" });
+  // Action center items — counts actual items, not categories
+  const actionItems = useMemo(() => {
+    if (!data) return [];
+    const items: { label: string; sub: string; btn: string; href: string; count: number }[] = [];
+    if (data.checklists?.pending > 0)
+      items.push({ label: `${data.checklists.pending} Checklist${data.checklists.pending > 1 ? "s" : ""} Assigned`, sub: "Complete your assigned skill checklists", btn: "Continue", href: "/checklists", count: data.checklists.pending });
+    if (data.vaultsign?.pending > 0)
+      items.push({ label: `${data.vaultsign.pending} Document${data.vaultsign.pending > 1 ? "s" : ""} to Sign`, sub: "VaultSign requests pending your signature", btn: "Review", href: "/vaultsign", count: data.vaultsign.pending });
+    if (data.references?.pending > 0)
+      items.push({ label: `${data.references.pending} Reference Request${data.references.pending > 1 ? "s" : ""} Pending`, sub: "Follow up on your reference requests", btn: "Respond", href: "/references", count: data.references.pending });
+    if (data.shareRequestCount > 0)
+      items.push({ label: `${data.shareRequestCount} Share Request${data.shareRequestCount > 1 ? "s" : ""}`, sub: "Recruiters want to access your documents", btn: "Review", href: "/sharing", count: data.shareRequestCount });
+    return items;
+  }, [data]);
 
-  const pendingCount = actionItems.length;
+  const pendingItemCount = data?.pendingItemCount ?? 0;
 
+  // ─── Loading state ────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -119,8 +221,9 @@ export default function CandidateDashboardPage() {
     );
   }
 
-  if (error) {
-    return <Card><CardContent className="p-6 text-center"><p className="mb-4" style={{ color: "var(--status-red)" }}>{error}</p><Button onClick={fetchDashboard} variant="outline">Try Again</Button></CardContent></Card>;
+  // ─── Error state (only on initial load) ───────────────────────────
+  if (error && !data) {
+    return <Card><CardContent className="p-6 text-center"><p className="mb-4" style={{ color: "var(--status-red)" }}>{error}</p><Button onClick={initialLoad} variant="outline">Try Again</Button></CardContent></Card>;
   }
 
   return (
@@ -133,7 +236,7 @@ export default function CandidateDashboardPage() {
           <div className="absolute rounded-full pointer-events-none" style={{ width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle, rgba(74,124,89,0.4) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }} />
           <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(201,123,84,0.3) 0%, rgba(201,123,84,0) 70%)", filter: "blur(30px)" }} />
           <div className="relative z-10">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#E8A882" }}>Dashboard</p>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--terra-light)" }}>Dashboard</p>
             <h1 className="text-2xl font-bold text-white mt-1 font-heading">{getTimeGreeting()}, {firstName} 👋</h1>
             <p className="text-sm text-white/70 mt-1">Complete your profile to unlock recruiter visibility</p>
 
@@ -143,7 +246,7 @@ export default function CandidateDashboardPage() {
                 <span className="text-sm font-bold text-white">{pct}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-white/15 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #E8A882, #C97B54)" }} />
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--terra-light), var(--terra))" }} />
               </div>
               {pct < 100 && <p className="text-xs text-white/50 mt-1.5">{pct < 50 ? "Keep going! You're just getting started." : "Almost there! Complete the remaining steps."}</p>}
             </div>
@@ -151,7 +254,7 @@ export default function CandidateDashboardPage() {
             <div className="flex flex-wrap gap-3 mt-4">
               {steps.map((step, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  {step.done ? <CheckCircle2 className="size-4" style={{ color: "#86EFAC" }} /> : <div className="size-4 rounded-full border-2 border-white/30" />}
+                  {step.done ? <CheckCircle2 className="size-4" style={{ color: "var(--badge-green)" }} /> : <div className="size-4 rounded-full border-2 border-white/30" />}
                   <span className={`text-xs ${step.done ? "text-white/90" : "text-white/50"}`}>{step.label}</span>
                 </div>
               ))}
@@ -160,7 +263,7 @@ export default function CandidateDashboardPage() {
         </div>
 
         {/* Next Best Action */}
-        <div className="lg:w-[280px] shrink-0 rounded-[20px] p-5" style={{ background: "rgba(255,252,248,0.72)", backdropFilter: "blur(30px) saturate(1.8) brightness(1.04)", WebkitBackdropFilter: "blur(30px) saturate(1.8) brightness(1.04)", border: "0.5px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85), 0 8px 24px rgba(45,90,61,0.08)" }}>
+        <div className="lg:w-[280px] shrink-0 rounded-[20px] p-5" style={{ background: "var(--material-regular-bg)", backdropFilter: "var(--material-regular-blur)", WebkitBackdropFilter: "var(--material-regular-blur)", border: "0.5px solid var(--material-regular-border)", boxShadow: "var(--specular-top), var(--depth-floating)" }}>
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--terra)" }}>Next Best Action</p>
           <h3 className="text-base font-bold mt-1 font-heading" style={{ color: "var(--text-primary)" }}>{nextAction.label}</h3>
           <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{nextAction.desc}</p>
@@ -177,7 +280,7 @@ export default function CandidateDashboardPage() {
                 <div className="size-7 rounded-[8px] flex items-center justify-center" style={statIconStyle("terra")}><Bell className="size-3.5" /></div>
                 <h3 className="text-sm font-bold font-heading">Action Center</h3>
               </div>
-              <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
+              <Badge variant="destructive" className="text-xs">{pendingItemCount}</Badge>
             </div>
             <div className="space-y-2">
               {actionItems.map((item, i) => (
@@ -198,9 +301,9 @@ export default function CandidateDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { value: `${pct}%`, label: "Profile", color: "var(--primary)", sub: pct < 100 ? "Keep going!" : "Complete!" },
-          { value: data?.credentials?.total ?? 0, label: "Documents", color: "var(--primary)", sub: "Uploaded" },
-          { value: pendingCount, label: "Requests", color: "var(--terra)", sub: "Pending" },
-          { value: data?.vaultsign?.pending ?? 0, label: "To Sign", color: "var(--status-red)", sub: "VaultSign" },
+          { value: data?.credentials?.total ?? 0, label: "Documents", color: "var(--primary)", sub: `${data?.credentials?.verified ?? 0} verified` },
+          { value: pendingItemCount, label: "Requests", color: "var(--terra)", sub: "Pending" },
+          { value: data?.vaultsign?.pending ?? 0, label: "To Sign", color: "var(--status-amber)", sub: "VaultSign" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center justify-center p-3 rounded-[14px]" style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)", border: "0.5px solid var(--material-thin-border)", boxShadow: "var(--specular-top), var(--depth-1)" }}>
             <span className="text-2xl font-bold tabular-nums" style={{ color: stat.color }}>{stat.value}</span>
@@ -233,7 +336,6 @@ export default function CandidateDashboardPage() {
                   <Button asChild size="sm"><Link href="/vault/resume"><Upload className="size-3.5" /> Upload Resume</Link></Button>
                   <Button asChild variant="outline" size="sm"><Link href="/vault/resume"><Sparkles className="size-3.5" /> Build with AI</Link></Button>
                 </div>
-                <Link href="/vault/resume" className="block text-xs text-center mt-3" style={{ color: "var(--primary)" }}>View All Resumes →</Link>
               </>
             )}
           </CardContent>
@@ -286,12 +388,12 @@ export default function CandidateDashboardPage() {
             {(data?.references?.total ?? 0) > 0 ? (
               <>
                 <p className="text-sm font-medium">{data?.references?.completed ?? 0} verified references</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{(data?.references?.total ?? 0) - (data?.references?.completed ?? 0)} pending</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{data?.references?.pending ?? 0} pending</p>
                 <Link href="/references" className="block text-xs text-center mt-3" style={{ color: "var(--primary)" }}>View All References →</Link>
               </>
             ) : (
               <>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>0 Verified, 0 Pending</p>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No references yet</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Request references to build trust with employers</p>
                 <Button asChild size="sm" className="w-full mt-3"><Link href="/references"><Users className="size-3.5" /> Request Reference</Link></Button>
               </>
@@ -309,30 +411,34 @@ export default function CandidateDashboardPage() {
           { icon: Share2, label: "Sharing", href: "/sharing", sub: data?.shareRequestCount ? `${data.shareRequestCount} Requests` : "0 Shared" },
           { icon: Settings, label: "Settings", href: "/settings", sub: "Manage profile" },
         ].map((item, i) => (
-          <Link key={i} href={item.href} className="flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-[14px] shrink-0 min-w-[110px]" style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)", border: "0.5px solid var(--material-thin-border)", boxShadow: "var(--specular-top), var(--depth-1)" }}>
-            <div className="relative">
-              <item.icon className="size-5" style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--terra)" }} />
-              {item.badge && item.badge > 0 ? <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: "var(--status-red)" }}>{item.badge}</span> : null}
-            </div>
-            <span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>{item.label}</span>
-            <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>{item.sub}</span>
-          </Link>
+          <Button key={i} asChild variant="ghost" className="flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-[14px] shrink-0 min-w-[110px] h-auto" style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)", border: "0.5px solid var(--material-thin-border)", boxShadow: "var(--specular-top), var(--depth-1)" }}>
+            <Link href={item.href}>
+              <div className="relative">
+                <item.icon className="size-5" style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--terra)" }} />
+                {item.badge && item.badge > 0 ? <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: "var(--status-red)" }} aria-label={`${item.badge} pending`}>{item.badge}</span> : null}
+              </div>
+              <span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>{item.label}</span>
+              <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>{item.sub}</span>
+            </Link>
+          </Button>
         ))}
       </div>
 
       {/* ════ SECTION 6 & 7: PENDING TASKS + ACTIVITY (2-col) ════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Pending Tasks */}
-        {data?.pendingChecklistRequests && data.pendingChecklistRequests.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="size-4" style={{ color: "var(--primary)" }} />
-                  <h3 className="text-sm font-bold font-heading">Pending Checklists</h3>
-                </div>
-                <Badge variant="destructive" className="text-xs">{data.pendingChecklistRequests.length}</Badge>
+        {/* Pending Tasks — always render, show empty state if none */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="size-4" style={{ color: "var(--primary)" }} />
+                <h3 className="text-sm font-bold font-heading">Pending Checklists</h3>
               </div>
+              {data?.pendingChecklistRequests && data.pendingChecklistRequests.length > 0 && (
+                <Badge variant="destructive" className="text-xs">{data.pendingChecklistRequests.length}</Badge>
+              )}
+            </div>
+            {data?.pendingChecklistRequests && data.pendingChecklistRequests.length > 0 ? (
               <div className="space-y-2">
                 {data.pendingChecklistRequests.slice(0, 5).map((req) => (
                   <div key={req.id} className="flex items-center justify-between gap-3 p-2.5 rounded-[10px]" style={{ background: "var(--material-thin-bg)" }}>
@@ -343,31 +449,58 @@ export default function CandidateDashboardPage() {
                     <Button asChild size="sm" variant="outline" className="shrink-0 h-7 text-xs"><Link href="/checklists">Continue <ArrowRight className="size-3" /></Link></Button>
                   </div>
                 ))}
+                {data.pendingChecklistRequests.length > 5 && <Link href="/checklists" className="block text-xs text-center mt-2" style={{ color: "var(--primary)" }}>View All Checklists →</Link>}
               </div>
-              {data.pendingChecklistRequests.length > 5 && <Link href="/checklists" className="block text-xs text-center mt-2" style={{ color: "var(--primary)" }}>View All Checklists →</Link>}
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <CheckCircle2 className="size-8 mb-2" style={{ color: "var(--primary)" }} />
+                <p className="text-sm font-medium">You're all caught up!</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>No pending checklist requests</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Recent Activity */}
-        {data?.notifications && data.notifications.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="text-sm font-bold mb-3 font-heading">Recent Activity</h3>
+        {/* Recent Activity — always render, show empty state if none */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold font-heading">Recent Activity</h3>
+              {data?.notifications && data.notifications.some(n => !n.isRead) && (
+                <Badge variant="secondary" className="text-xs">
+                  {data.notifications.filter(n => !n.isRead).length} new
+                </Badge>
+              )}
+            </div>
+            {data?.notifications && data.notifications.length > 0 ? (
               <div className="space-y-2">
-                {data.notifications.slice(0, 6).map((n) => (
-                  <div key={n.id} className="flex items-start gap-3 p-2 rounded-[10px] text-sm" style={n.isRead ? {} : { background: "var(--material-thin-bg)" }}>
-                    <div className="size-2 rounded-full shrink-0 mt-1.5" style={{ background: n.isRead ? "var(--text-muted)" : "var(--primary)" }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate">{n.message}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{new Date(n.createdAt).toLocaleDateString()}</p>
+                {data.notifications.slice(0, 6).map((n) => {
+                  const NotifIcon = getNotificationIcon(n.type);
+                  return (
+                    <div key={n.id} className="flex items-start gap-3 p-2 rounded-[10px] text-sm" style={n.isRead ? {} : { background: "var(--material-thin-bg)" }}>
+                      <div className="size-7 rounded-[8px] flex items-center justify-center shrink-0" style={{ background: "var(--material-thin-bg)", border: "0.5px solid var(--material-thin-border)" }}>
+                        <NotifIcon className="size-3.5" style={{ color: n.isRead ? "var(--text-muted)" : "var(--primary)" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {n.title && <p className="text-xs font-semibold truncate">{n.title}</p>}
+                        <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{n.message}</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{formatRelativeTime(n.createdAt)}</p>
+                      </div>
+                      {!n.isRead && <div className="size-2 rounded-full shrink-0 mt-2" style={{ background: "var(--primary)" }} />}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+                <Link href="/notifications" className="block text-xs text-center mt-2" style={{ color: "var(--primary)" }}>View All Notifications →</Link>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Bell className="size-8 mb-2" style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm font-medium">No recent activity</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Notifications will appear here</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* ════ SECTION 8: VALUE PROPOSITION FOOTER ════ */}

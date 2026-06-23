@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { recalcProfileCompletion } from "@/lib/profile-completion";
 
 export async function GET() {
   try {
@@ -16,32 +17,89 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // ─── Fetch user first (needed for email in VaultSign query) ──────
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { email_verified_at: true, email: true, first_name: true, last_name: true },
     });
 
-    const profile = await db.candidateProfile.findUnique({
-      where: { user_id: userId },
-    });
+    // ─── Parallelize independent queries ──────────────────────────────
+    // All of these are independent — fetch them in a single round-trip
+    // via Promise.all to cut dashboard latency significantly.
+    const [
+      profile,
+      allCredentials,
+      references,
+      resume,
+      notifications,
+      vaultSignSigners,
+      shareRequests,
+      calendarAvailabilities,
+      checklistResponses,
+    ] = await Promise.all([
+      db.candidateProfile.findUnique({
+        where: { user_id: userId },
+      }),
+      db.credential.findMany({
+        where: { candidate_user_id: userId },
+        orderBy: { uploaded_at: "desc" },
+      }),
+      db.candidateReference.findMany({
+        where: { candidate_user_id: userId },
+      }),
+      db.resume.findFirst({
+        where: { candidate_user_id: userId },
+      }),
+      db.notification.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: "desc" },
+        take: 8,
+      }),
+      db.vaultSignSigner.findMany({
+        where: { OR: [{ user_id: userId }, { email: user?.email ?? "" }] },
+        select: { status: true },
+      }),
+      db.shareRequest.findMany({
+        where: { candidate_user_id: userId, status: "pending" },
+        select: { id: true, request_checklists: true, request_credentials: true, request_resume: true, request_references: true },
+      }),
+      db.calendarAvailability.findMany({
+        where: { candidate_user_id: userId },
+        take: 1,
+        select: { id: true },
+      }),
+      db.candidateChecklistResponse.count({
+        where: {
+          candidate_user_id: userId,
+          status: "active",
+          valid_until: { gte: new Date() },
+        },
+      }),
+    ]);
 
-    const credentials = await db.credential.findMany({
-      where: { candidate_user_id: userId },
-      orderBy: { uploaded_at: "desc" },
-      take: 4,
-    });
-
-    const allCredentials = await db.credential.findMany({
-      where: { candidate_user_id: userId },
-    });
-
+    // ─── Derived data ─────────────────────────────────────────────────
     const activeCredentials = allCredentials.filter(
       (c) => c.verification_status === "verified" || c.verification_status === "pending_review"
     );
+    const topCredentialItems = allCredentials.slice(0, 4).map((c) => ({
+      id: c.id,
+      documentName: c.document_name,
+      status: c.status,
+      verificationStatus: c.verification_status,
+      expirationDate: c.expiration_date,
+    }));
+    const completedReferences = references.filter((r) => r.status === "completed");
+    const pendingReferences = references.filter((r) => r.status === "pending" || r.status === "pending_request");
+    const vaultSignPending = vaultSignSigners.filter(
+      (s) => s.status === "sent" || s.status === "viewed" || s.status === "pending"
+    ).length;
+    const vaultSignSigned = vaultSignSigners.filter((s) => s.status === "signed").length;
+    const hasCalendar = calendarAvailabilities.length > 0;
 
-    // Checklists — wrapped in its own try/catch so a schema mismatch
-    // (e.g. new expires_at / superseded_by_id columns not yet migrated)
-    // doesn't take down the entire dashboard. Falls back to empty list.
+    // ─── Checklists — separate query (includes relations) ─────────────
+    // Kept separate from Promise.all because it has nested includes that
+    // benefit from Prisma's join optimization.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let checklists: any[] = [];
     try {
       checklists = await db.checklistRequest.findMany({
@@ -49,86 +107,54 @@ export async function GET() {
         include: {
           checklist_template: { select: { name: true } },
           client_user: { select: { first_name: true, last_name: true, organization: { select: { name: true } } } },
-          candidate_response: {
-            include: { skill_ratings: true },
-          },
         },
         orderBy: { created_at: "desc" },
       });
     } catch (checklistErr) {
-      console.error("[DASHBOARD] Checklist query failed (schema mismatch?):", checklistErr);
+      console.error("[DASHBOARD] Checklist query failed:", checklistErr);
     }
 
     const completedChecklists = checklists.filter((c) => c.status === "completed");
-    const pendingChecklists = checklists.filter((c) => c.status === "sent" || c.status === "reuse_pending");
+    const pendingChecklists = checklists.filter(
+      (c) => c.status === "sent" || c.status === "reuse_pending" || c.status === "opened" || c.status === "in_progress"
+    );
 
-    const references = await db.candidateReference.findMany({
-      where: { candidate_user_id: userId },
-    });
-    const completedReferences = references.filter((r) => r.status === "completed");
+    // ─── Profile completion — use the CANONICAL source of truth ──────
+    // recalcProfileCompletion() is the single source of truth used across
+    // the entire app. It also updates the stored profile_completion_pct
+    // column so other pages see the same value.
+    let profileCompletionPct = profile?.profile_completion_pct ?? 0;
+    try {
+      const recalced = await recalcProfileCompletion(userId);
+      if (recalced !== null) profileCompletionPct = recalced;
+    } catch (e) {
+      console.error("[DASHBOARD] recalcProfileCompletion failed:", e);
+      // Fall back to the stored column value
+    }
 
-    const resume = await db.resume.findFirst({
-      where: { candidate_user_id: userId },
-    });
-
-    const notifications = await db.notification.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-      take: 8,
-    });
-
-    // Profile completion
-    const hasProfileInfo = !!(profile?.first_name && profile?.last_name && profile?.phone);
-    const hasEmailVerified = !!user?.email_verified_at;
-    const hasResume = !!resume?.file_url;
-    const hasCredential = allCredentials.length > 0;
-    const hasReference = completedReferences.length > 0;
-    const calendarAvailabilities = await db.calendarAvailability.findMany({
-      where: { candidate_user_id: userId },
-      take: 1,
-      select: { id: true },
-    });
-    const hasCalendar = calendarAvailabilities.length > 0;
-
-    const profileCompletion =
-      (hasProfileInfo ? 20 : 0) +
-      (hasEmailVerified ? 15 : 0) +
-      (hasResume ? 25 : 0) +
-      (hasCredential ? 15 : 0) +
-      (hasReference ? 15 : 0) +
-      (hasCalendar ? 10 : 0);
-
-    // VaultSign
-    const vaultSignSigners = await db.vaultSignSigner.findMany({
-      where: { OR: [{ user_id: userId }, { email: user?.email }] },
-      select: { status: true },
-    });
-    const vaultSignPending = vaultSignSigners.filter(
-      (s) => s.status === "sent" || s.status === "viewed" || s.status === "pending"
-    ).length;
-    const vaultSignSigned = vaultSignSigners.filter((s) => s.status === "signed").length;
-
-    // Share requests (pending)
-    const shareRequests = await db.shareRequest.findMany({
-      where: { candidate_user_id: userId, status: "pending" },
-      select: { id: true },
-    });
+    // ─── Pending item count (actual items, not categories) ───────────
+    // This counts the real number of actionable items the candidate needs
+    // to address: each pending checklist + each VaultSign doc + each
+    // pending reference + each pending share request.
+    const pendingItemCount =
+      pendingChecklists.length +
+      vaultSignPending +
+      pendingReferences.length +
+      shareRequests.length;
 
     return NextResponse.json({
       profile: profile
-        ? { firstName: profile.first_name, lastName: profile.last_name, phone: profile.phone, profileCompletionPct: profileCompletion }
+        ? {
+            firstName: profile.first_name,
+            profileCompletionPct,
+          }
         : null,
-      resume: resume ? { id: resume.id, fileUrl: resume.file_url } : null,
+      resume: resume ? { fileUrl: resume.file_url } : null,
       credentials: {
         total: allCredentials.length,
         active: activeCredentials.length,
-        topItems: credentials.map((c) => ({
-          id: c.id,
-          documentName: c.document_name,
-          status: c.status,
-          verificationStatus: c.verification_status,
-          expirationDate: c.expiration_date,
-        })),
+        verified: allCredentials.filter((c) => c.verification_status === "verified").length,
+        topItems: topCredentialItems,
       },
       checklists: {
         total: checklists.length,
@@ -138,6 +164,7 @@ export async function GET() {
       references: {
         total: references.length,
         completed: completedReferences.length,
+        pending: pendingReferences.length,
       },
       vaultsign: {
         pending: vaultSignPending,
@@ -158,12 +185,17 @@ export async function GET() {
       shareRequestCount: shareRequests.length,
       notifications: notifications.map((n) => ({
         id: n.id,
+        title: n.title,
         message: n.message,
         type: n.type,
         isRead: n.is_read,
         createdAt: n.created_at,
+        relatedEntityType: n.related_entity_type,
       })),
       emailVerified: !!user?.email_verified_at,
+      hasCalendar,
+      hasActiveChecklistResponse: checklistResponses > 0,
+      pendingItemCount, // actual count of actionable items (not categories)
     });
   } catch (error) {
     console.error("Dashboard error:", error);
