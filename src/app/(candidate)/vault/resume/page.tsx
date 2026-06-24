@@ -651,8 +651,12 @@ export default function CandidateResumePage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        toast.error("Upload failed", { description: data.error });
+        if (res.status === 413) {
+          toast.error("File too large", { description: "Maximum file size is 3MB for uploads. Try a smaller file." });
+        } else {
+          const data = await res.json().catch(() => ({ error: "Upload failed" }));
+          toast.error("Upload failed", { description: data.error });
+        }
         return;
       }
 

@@ -66,6 +66,9 @@ const nextConfig: NextConfig = {
   // "Cannot access 'ey' before initialization" (TDZ error) with Turbopack + React 19.
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns"],
+    serverActions: {
+      bodySizeLimit: "15mb",
+    },
   },
   transpilePackages: ["lucide-react", "signature_pad"],
 
