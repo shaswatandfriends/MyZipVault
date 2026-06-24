@@ -127,29 +127,70 @@ export async function GET() {
     }
   }
 
+  // ─── Gemini status ────────────────────────────────────────────────
+  const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  let geminiApiStatus = "not_tested";
+
+  if (geminiApiKey) {
+    try {
+      const { geminiChatCompletion } = await import("@/lib/gemini");
+      const result = await geminiChatCompletion({
+        messages: [{ role: "user", content: "Say OK" }],
+        max_tokens: 5,
+      });
+      const content = result.choices?.[0]?.message?.content;
+      geminiApiStatus = `success: "${content}"`;
+    } catch (err: any) {
+      geminiApiStatus = `failed: ${err.message || String(err)}`;
+    }
+  } else {
+    geminiApiStatus = "skipped: GOOGLE_GEMINI_API_KEY not set";
+  }
+
+  // ─── AI Provider status ───────────────────────────────────────────
+  let providerStatus = "not_tested";
+  try {
+    const { getAIProviderStatus } = await import("@/lib/ai-provider");
+    const status = await getAIProviderStatus();
+    providerStatus = `primary=${status.primary}, gemini=${status.geminiConfigured}, glm=${status.glmConfigured}, anyAvailable=${status.anyAvailable}`;
+  } catch (err: any) {
+    providerStatus = `failed: ${err.message || String(err)}`;
+  }
+
   return NextResponse.json({
     zai: {
       envVars: zaiEnvStatus,
       apiCall: zaiApiStatus,
       dnsResolution: dnsStatus,
       note: !baseUrl || !apiKey
-        ? "ZAI env vars not set. Add ZAI_BASE_URL, ZAI_API_KEY, ZAI_CHAT_ID, ZAI_TOKEN, ZAI_USER_ID to enable AI generation."
+        ? "ZAI_API_KEY not set. Add ZAI_API_KEY and ZAI_BASE_URL to enable GLM."
         : zaiApiStatus.startsWith("failed")
-        ? "ZAI API call failed. Check the error message above — could be network, auth, or private IP issue."
+        ? "ZAI API call failed. Check the error message above."
         : zaiApiStatus.startsWith("http_error")
-        ? "ZAI API returned an HTTP error. Check the status code above."
+        ? "ZAI API returned an HTTP error."
         : "ZAI API is reachable and responding.",
     },
+    gemini: {
+      configured: !!geminiApiKey,
+      apiKeyPrefix: geminiApiKey ? geminiApiKey.substring(0, 10) + "..." : "NOT SET",
+      apiCall: geminiApiStatus,
+      note: !geminiApiKey
+        ? "GOOGLE_GEMINI_API_KEY not set. Get one from https://aistudio.google.com/apikey"
+        : geminiApiStatus.startsWith("failed")
+        ? "Gemini API call failed. Check the error above."
+        : "Gemini API is reachable and responding.",
+    },
+    aiProvider: providerStatus,
     affinda: {
       ...affindaStatus,
       apiCall: affindaApiStatus,
       note: isAffindaConfigured()
-        ? "Affinda is configured and publicly accessible — resume parsing and skill suggestions will work on Vercel."
+        ? "Affinda is configured — resume parsing and skill suggestions will work."
         : "Affinda is not configured. Add AFFINDA_API_KEY env var to enable resume parsing.",
     },
-    recommendation: !isAffindaConfigured()
-      ? "Set AFFINDA_API_KEY to enable resume parsing and AI suggestions that work on Vercel."
-      : "Affinda is configured. Use it for resume parsing and skill suggestions on Vercel.",
+    recommendation: !geminiApiKey && !apiKey && !isAffindaConfigured()
+      ? "No AI providers configured. Set GOOGLE_GEMINI_API_KEY and/or ZAI_API_KEY."
+      : "AI providers configured. The dual-provider system will use the primary provider with automatic fallback.",
     timestamp: new Date().toISOString(),
   });
 }
