@@ -1,19 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { zaiChatCompletion } from "@/lib/zai";
+import { aiGenerateText, getAIProviderStatus } from "@/lib/ai-provider";
 import { isAffindaConfigured, suggestSkills as affindaSuggestSkills } from "@/lib/affinda";
 
 export async function POST(request: Request) {
   try {
-    // Try to get session, but don't block if auth is misconfigured
-    let session;
-    try {
-      session = await getServerSession(authOptions);
-    } catch {
-      console.warn("[AI_RESUME] Could not verify session, proceeding without auth check");
-    }
-
+    const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized — please log in again" }, { status: 401 });
     }
@@ -25,9 +18,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
     }
 
-    // ── Affinda-backed actions (work on Vercel) ──────────────────────
+    // ── Affinda-backed actions (resume parsing — always works) ────────
     if (action === "suggest_skills") {
-      // Try Affinda first (works on Vercel since it's a public API)
       if (isAffindaConfigured()) {
         try {
           const existingSkills = context?.skills?.map((s: { skill: string }) => s.skill) || [];
@@ -42,46 +34,30 @@ export async function POST(request: Request) {
             });
           }
         } catch (err) {
-          console.warn("[AI_RESUME] Affinda skill suggestion failed, trying ZAI:", err);
+          console.warn("[AI_RESUME] Affinda skill suggestion failed, trying AI:", err);
         }
       }
 
-      // Fallback to ZAI (only works in local dev)
-      const systemPrompt = `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare skills that the candidate should include in their resume. Return a JSON array of objects with "skill" (string) and "proficiency" (one of: Beginner, Intermediate, Advanced, Expert) fields. Return ONLY the JSON array, no additional text.`;
-      const userPrompt = context
-        ? `Suggest healthcare skills for this professional:\n\n${JSON.stringify(context, null, 2)}`
-        : "Suggest common healthcare skills for an experienced nurse or healthcare professional.";
+      // Fallback to AI provider (Groq → Gemini → GLM)
+      const result = await aiGenerateText({
+        systemPrompt: `You are a healthcare staffing expert. Based on the provided context, suggest relevant healthcare skills that the candidate should include in their resume. Return a JSON array of objects with "skill" (string) and "proficiency" (one of: Beginner, Intermediate, Advanced, Expert) fields. Return ONLY the JSON array, no additional text.`,
+        userPrompt: context
+          ? `Suggest healthcare skills for this professional:\n\n${JSON.stringify(context, null, 2)}`
+          : "Suggest common healthcare skills for an experienced nurse or healthcare professional.",
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
 
       try {
-        const completion = await zaiChatCompletion({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        });
-        const result = completion.choices?.[0]?.message?.content || "";
-        if (result) {
-          try {
-            const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result];
-            const jsonStr = jsonMatch[1].trim();
-            const parsed = JSON.parse(jsonStr);
-            return NextResponse.json({ result: parsed, raw: result, source: "zai" });
-          } catch {
-            return NextResponse.json({ result: null, raw: result, source: "zai" });
-          }
-        }
-      } catch (apiErr) {
-        const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
-        return NextResponse.json(
-          { error: "AI skill suggestions are currently unavailable. The AI service is not reachable from this hosting environment.", details: errMsg },
-          { status: 502 }
-        );
+        const jsonMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result.content];
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        return NextResponse.json({ result: parsed, raw: result.content, source: result.provider });
+      } catch {
+        return NextResponse.json({ result: null, raw: result.content, source: result.provider });
       }
     }
 
-    // ── ZAI-backed actions (generative AI — only works in local dev) ──
+    // ── AI-backed actions (using triple-provider system) ──────────────
     let systemPrompt = "";
     let userPrompt = "";
 
@@ -129,6 +105,25 @@ Return ONLY valid JSON, no additional text or markdown.`;
         break;
       }
 
+      case "ats_score": {
+        systemPrompt = `You are an ATS (Applicant Tracking System) expert. Analyze the provided resume data and job description. Return a JSON object with:
+{
+  "score": <number 0-100>,
+  "matched_keywords": ["keyword1", "keyword2"],
+  "missing_keywords": ["keyword1", "keyword2"],
+  "suggestions": ["suggestion1", "suggestion2"]
+}
+Return ONLY valid JSON.`;
+        userPrompt = `Analyze this resume against this job description:\n\nResume:\n${JSON.stringify(context?.resume, null, 2)}\n\nJob Description:\n${context?.jobDescription || "No job description provided"}`;
+        break;
+      }
+
+      case "tailor_resume": {
+        systemPrompt = `You are a professional resume writer specializing in healthcare staffing. Create a tailored version of the resume for the specific job description provided. Modify the summary, experience descriptions, and skills to match the job requirements. Return a JSON object with the same structure as the input resume data. Return ONLY valid JSON.`;
+        userPrompt = `Tailor this resume for the job description:\n\nResume:\n${JSON.stringify(context?.resume, null, 2)}\n\nJob Description:\n${context?.jobDescription}`;
+        break;
+      }
+
       case "chat": {
         systemPrompt = `You are an AI resume assistant for MyZipVault, a healthcare staffing compliance platform. You help candidates improve their resumes, suggest content, and answer questions about resume best practices for healthcare positions. Be helpful, concise, and professional. If asked about something unrelated to resumes or healthcare careers, politely redirect. Format your responses clearly with bullet points or paragraphs as appropriate.`;
         userPrompt = currentContent || "How can you help me with my resume?";
@@ -143,36 +138,25 @@ Return ONLY valid JSON, no additional text or markdown.`;
       }
     }
 
-    let completion;
+    // Call the triple-provider AI system (Groq → Gemini → GLM)
+    let result;
     try {
-      completion = await zaiChatCompletion({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+      result = await aiGenerateText({
+        systemPrompt,
+        userPrompt,
         temperature: 0.7,
-        max_tokens: 2000,
+        maxTokens: 2000,
       });
     } catch (apiErr) {
-      console.error("[AI_RESUME] AI API call failed:", apiErr);
+      console.error("[AI_RESUME] All AI providers failed:", apiErr);
       const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
-      // Provide more specific error messages
-      if (errMsg.includes("fetch failed") || errMsg.includes("unreachable") || errMsg.includes("ECONNREFUSED")) {
-        return NextResponse.json(
-          { error: "AI generation is currently unavailable on this hosting environment. The AI provider uses an internal network address that is not publicly accessible. Resume parsing via Affinda still works — try uploading your resume for automatic data extraction.", details: errMsg },
-          { status: 502 }
-        );
-      }
       return NextResponse.json(
-        { error: "AI service call failed. Please try again.", details: errMsg },
+        { error: "AI generation failed. All providers unavailable. Please try again later.", details: errMsg },
         { status: 502 }
       );
     }
 
-    const result = completion.choices?.[0]?.message?.content || "";
-
-    if (!result) {
-      console.error("[AI_RESUME] Empty AI response");
+    if (!result.content) {
       return NextResponse.json(
         { error: "AI returned an empty response. Please try again." },
         { status: 502 }
@@ -180,23 +164,41 @@ Return ONLY valid JSON, no additional text or markdown.`;
     }
 
     // For actions that return structured data, try to parse JSON
-    if (["suggest_skills", "suggest_certifications", "generate_full_resume"].includes(action)) {
+    if (["suggest_skills", "suggest_certifications", "generate_full_resume", "ats_score", "tailor_resume"].includes(action)) {
       try {
-        const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result];
-        const jsonStr = jsonMatch[1].trim();
-        const parsed = JSON.parse(jsonStr);
-        return NextResponse.json({ result: parsed, raw: result });
+        const jsonMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, result.content];
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        return NextResponse.json({ result: parsed, raw: result.content, provider: result.provider });
       } catch {
-        return NextResponse.json({ result: null, raw: result });
+        return NextResponse.json({ result: null, raw: result.content, provider: result.provider });
       }
     }
 
-    return NextResponse.json({ result, raw: result });
+    return NextResponse.json({ result: result.content, raw: result.content, provider: result.provider });
   } catch (error) {
     console.error("[AI_RESUME] Unhandled Error:", error);
     return NextResponse.json(
       { error: "AI assistance unavailable. Please try again later.", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
+  }
+}
+
+// GET: Check AI provider status
+export async function GET() {
+  try {
+    const status = await getAIProviderStatus();
+    return NextResponse.json({
+      primary: status.primary,
+      providers: {
+        groq: status.groqConfigured,
+        gemini: status.geminiConfigured,
+        glm: status.glmConfigured,
+      },
+      anyAvailable: status.anyAvailable,
+      affinda: isAffindaConfigured(),
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to check AI status" }, { status: 500 });
   }
 }

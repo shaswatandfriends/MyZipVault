@@ -283,7 +283,12 @@ model Resume {
   file_url            String?
   parsed_data         String?
   is_builder_resume   Boolean           @default(false)
+  version_name        String            @default("Master Resume") // e.g., "ICU Resume", "Travel Nurse Resume"
+  is_active           Boolean           @default(true) // which version is currently active
+  template_id         String?           // reference to template used (clinical, rn, icu, er, etc.)
+  ats_score           Int?              // ATS compatibility score (0-100)
   created_at          DateTime          @default(now())
+  updated_at          DateTime          @default(now())
 
   candidate_user      User              @relation(fields: [candidate_user_id], references: [id])
   candidate_profile   CandidateProfile? @relation("CandidateProfileResume")
