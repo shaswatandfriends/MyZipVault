@@ -13,7 +13,7 @@
  */
 
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_MODEL = "gemini-2.0-flash";
+const DEFAULT_MODEL = "gemini-flash-latest";
 
 interface GeminiPart {
   text?: string;
@@ -106,7 +106,10 @@ export async function geminiChatCompletion(options: {
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-goog-api-key": apiKey,
+    },
     body: JSON.stringify(requestBody),
   });
 
@@ -188,7 +191,10 @@ export async function geminiVisionCompletion(options: {
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-goog-api-key": apiKey,
+    },
     body: JSON.stringify(requestBody),
   });
 
