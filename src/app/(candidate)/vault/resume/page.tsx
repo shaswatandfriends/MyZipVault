@@ -49,9 +49,14 @@ import {
   Bot,
   Copy,
   Check,
+  Clock,
+  TrendingUp,
+  FileCheck,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { clientZaiChatCompletion } from "@/lib/ai-client";
+import Link from "next/link";
 
 interface ResumeData {
   id: number;
@@ -97,7 +102,7 @@ interface ChatMessage {
   content: string;
 }
 
-type PageMode = "loading" | "no-resume" | "builder" | "view";
+type PageMode = "loading" | "hub" | "no-resume" | "builder" | "view";
 
 // ---------- AI Assist Button Component ----------
 function AiAssistButton({
@@ -581,7 +586,7 @@ export default function CandidateResumePage() {
       const data = await res.json();
       if (data.resume) {
         setResume(data.resume);
-        setMode("view");
+        setMode("hub");
       } else {
         setMode("no-resume");
       }
@@ -794,6 +799,217 @@ export default function CandidateResumePage() {
     );
   }
 
+  // ── Hub Mode (Resume Hub Overview) ──────────────────────────────────
+  if (mode === "hub" && resume) {
+    const parsed = resume.parsedData || {} as ResumeParsedData;
+    const completeness = calcCompleteness(parsed);
+    const lastUpdated = new Date(resume.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const resumeName = resume.isBuilderResume ? "Builder Resume" : "Uploaded Resume";
+
+    return (
+      <div className="space-y-6">
+        {/* Hub Header */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Resume Hub</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Your single source of truth for professional identity.
+          </p>
+        </div>
+
+        {/* Current Resume Overview */}
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60">Current Resume</p>
+                <h2 className="text-xl font-bold mt-1">{resumeName}</h2>
+                <p className="text-sm text-white/70 mt-1">
+                  Last updated: {lastUpdated}
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 max-w-[200px] h-2 rounded-full bg-white/20 overflow-hidden">
+                    <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${completeness}%` }} />
+                  </div>
+                  <span className="text-sm font-bold">{completeness}% Complete</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 shrink-0">
+                <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => setMode("view")}>
+                  <Eye className="size-4" /> View Resume
+                </Button>
+                <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => setMode("builder")}>
+                  <Pencil className="size-4" /> Edit Resume
+                </Button>
+              </div>
+            </div>
+          </div>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1.5" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="size-5 text-primary" />
+                <span className="text-xs font-medium">Upload</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1.5" onClick={() => setMode("builder")}>
+                <Pencil className="size-5 text-emerald-600" />
+                <span className="text-xs font-medium">Build</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1.5" onClick={() => { setMode("builder"); setShowAiChat(true); }}>
+                <Sparkles className="size-5 text-violet-600" />
+                <span className="text-xs font-medium">AI Assist</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1.5" onClick={handleExportPdf} disabled={isExporting}>
+                <Download className="size-5 text-blue-600" />
+                <span className="text-xs font-medium">{isExporting ? "Exporting..." : "Export PDF"}</span>
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileSelect}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Completeness", value: `${completeness}%`, icon: TrendingUp, color: "text-emerald-600" },
+            { label: "Experience", value: `${parsed.experience?.length || 0} entries`, icon: Briefcase, color: "text-blue-600" },
+            { label: "Certifications", value: `${parsed.certifications?.length || 0} listed`, icon: Award, color: "text-amber-600" },
+            { label: "Skills", value: `${parsed.skills?.length || 0} skills`, icon: Wrench, color: "text-violet-600" },
+          ].map((stat, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <stat.icon className={`size-5 ${stat.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold tabular-nums">{stat.value}</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Resume Sections Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Quick Edit Sections */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="size-4 text-primary" />
+                Resume Sections
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                { label: "Contact Info", filled: !!(parsed.contact?.fullName), href: "builder" },
+                { label: "Professional Summary", filled: !!parsed.summary, href: "builder" },
+                { label: "Work Experience", filled: (parsed.experience?.length || 0) > 0, href: "builder" },
+                { label: "Education", filled: (parsed.education?.length || 0) > 0, href: "builder" },
+                { label: "Certifications", filled: (parsed.certifications?.length || 0) > 0, href: "builder" },
+                { label: "Skills", filled: (parsed.skills?.length || 0) > 0, href: "builder" },
+              ].map((section, i) => (
+                <button
+                  key={i}
+                  onClick={() => setMode("builder")}
+                  className="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`size-2 rounded-full ${section.filled ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+                    <span className="text-sm font-medium">{section.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {section.filled ? (
+                      <Check className="size-4 text-emerald-500" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Empty</span>
+                    )}
+                    <ChevronRight className="size-4 text-muted-foreground" />
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* AI Features */}
+          <Card className="border-violet-200 dark:border-violet-800">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="size-4 text-violet-600" />
+                AI Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <button
+                onClick={() => { setMode("builder"); setShowAiChat(true); }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+              >
+                <div className="size-9 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                  <Sparkles className="size-4 text-violet-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">AI Resume Assistant</p>
+                  <p className="text-xs text-muted-foreground">Chat with AI to improve your resume</p>
+                </div>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => { setMode("builder"); setShowAiChat(true); }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+              >
+                <div className="size-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                  <FileCheck className="size-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">ATS Score Check</p>
+                  <p className="text-xs text-muted-foreground">Check resume compatibility with ATS</p>
+                </div>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => { setMode("builder"); setShowAiChat(true); }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+              >
+                <div className="size-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                  <TrendingUp className="size-4 text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Tailor for Job</p>
+                  <p className="text-xs text-muted-foreground">Create a job-specific resume version</p>
+                </div>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Credential Integration */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileCheck className="size-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Sync with Vault</p>
+                  <p className="text-xs text-muted-foreground">Pull licenses & certifications from your credential vault</p>
+                </div>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/vault/credentials">View Vault <ChevronRight className="size-3" /></Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // No Resume State
   if (mode === "no-resume") {
     return (
@@ -896,6 +1112,12 @@ export default function CandidateResumePage() {
 
     return (
       <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setMode("hub")} className="gap-1.5">
+            <ChevronRight className="size-4 rotate-180" />
+            Hub
+          </Button>
+        </div>
         <PageHeader
           title="Resume Builder"
           description="Build your professional healthcare resume"
@@ -1499,6 +1721,12 @@ export default function CandidateResumePage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={() => setMode("hub")} className="gap-1.5">
+          <ChevronRight className="size-4 rotate-180" />
+          Hub
+        </Button>
+      </div>
       <PageHeader
         title="Resume"
         description="Your professional resume on file"
