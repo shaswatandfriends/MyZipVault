@@ -11,6 +11,8 @@
  */
 
 const DEFAULT_BASE_URL = "https://api.z.ai/api/paas/v4";
+const DEFAULT_MODEL = "glm-4.7-flash"; // FREE text model
+const DEFAULT_VISION_MODEL = "glm-4.6v-flash"; // FREE vision model
 
 interface ChatCompletionOptions {
   messages: { role: string; content: string }[];
@@ -57,11 +59,14 @@ export async function zaiChatCompletion(
   };
 
   const requestBody = {
+    model: DEFAULT_MODEL,
     messages: options.messages,
     temperature: options.temperature ?? 0.7,
     max_tokens: options.max_tokens ?? 2000,
     thinking: { type: "disabled" },
   };
+
+  console.log(`[ZAI] Direct fetch to ${url} with model ${DEFAULT_MODEL}`);
 
   const response = await fetch(url, {
     method: "POST",
@@ -124,6 +129,7 @@ export async function zaiVisionCompletion(
   };
 
   const requestBody = {
+    model: DEFAULT_VISION_MODEL,
     messages: options.messages,
     temperature: options.temperature ?? 0.7,
     max_tokens: options.max_tokens ?? 2000,
