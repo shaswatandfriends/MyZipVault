@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadFile } from "@/lib/storage";
 
 export async function GET() {
   try {
@@ -108,15 +107,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Save file with sanitized name using UUID to prevent path traversal
+    // Upload to Supabase Storage (works on Vercel)
+    // Falls back to base64 data URL if Supabase is not configured
     const { v4: uuidv4 } = await import("uuid");
     const uniqueFileName = `${uuidv4()}${fileExtension}`;
-    const uploadDir = path.join(process.cwd(), "public", "upload", "credentials");
-    await mkdir(uploadDir, { recursive: true });
-    const filePath = path.join(uploadDir, uniqueFileName);
-    await writeFile(filePath, buffer);
+    const uploadResult = await uploadFile(
+      "credentials",
+      `candidate-${userId}`,
+      buffer,
+      uniqueFileName,
+      detectedMime
+    );
 
-    const fileUrl = `/upload/credentials/${uniqueFileName}`;
+    const fileUrl = uploadResult.url;
 
     // Create credential record
     const credential = await db.credential.create({

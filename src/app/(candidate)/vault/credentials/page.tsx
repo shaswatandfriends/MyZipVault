@@ -272,15 +272,29 @@ export default function CandidateCredentialsPage() {
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("documentName", documentName.trim());
-      if (expirationDate) formData.append("expirationDate", expirationDate);
-      formData.append("reminderEnabled", String(reminderEnabled));
-      if (selectedFile) formData.append("file", selectedFile);
+      // Convert file to base64 for JSON API (Vercel-compatible)
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64 = result.split(",")[1] || result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile as Blob);
+      });
 
-      const res = await fetch("/api/credentials/upload", {
+      const res = await fetch("/api/candidate/credentials", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_name: documentName.trim(),
+          file_base64: fileBase64,
+          file_name: selectedFile.name,
+          expiration_date: expirationDate || null,
+          reminder_enabled: reminderEnabled,
+        }),
       });
 
       if (!res.ok) {

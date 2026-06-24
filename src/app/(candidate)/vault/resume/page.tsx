@@ -624,12 +624,25 @@ export default function CandidateResumePage() {
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Convert file to base64 for JSON API (Vercel-compatible)
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(",")[1] || result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
       const res = await fetch("/api/candidate/resume/upload", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_base64: fileBase64,
+          file_name: file.name,
+        }),
       });
 
       if (!res.ok) {
