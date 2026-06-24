@@ -209,8 +209,8 @@ export default function RecruiterBillingPage() {
   }, [fetchBilling]);
 
   const handleBuyCredits = (pkg: CreditPackage) => {
-    toast.info("Stripe integration coming soon", {
-      description: `${pkg.credits} credits for ${formatCurrency(pkg.totalPrice)} — payment integration is under development.`,
+    toast.info("Payment setup in progress", {
+      description: `Credit purchases (${pkg.credits} for ${formatCurrency(pkg.totalPrice)}) require Stripe configuration. Please contact your administrator or check back shortly.`,
     });
   };
 

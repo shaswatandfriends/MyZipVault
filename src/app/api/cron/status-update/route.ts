@@ -177,11 +177,27 @@ export async function GET(request: Request) {
           }
         }
 
-        // SMS — architecture-only stub (no provider wired). Log intent.
+        // SMS — send via Twilio if enabled and candidate has phone
         if (reminderConfig.smsEnabled) {
-          console.log(
-            `[CRON] SMS reminder queued (no provider) for request ${req.id} → candidate ${req.candidate_user.id}`
-          );
+          try {
+            const { isTwilioConfigured, sendSMS } = await import("@/lib/twilio");
+            if (isTwilioConfigured() && req.candidate_user.phone) {
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://my-zip-vault.vercel.app";
+              const smsBody = `MyZipVault: Your "${checklistName}" checklist requested by ${recruiterName} expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}. ${appUrl}/checklists`;
+              const result = await sendSMS(req.candidate_user.phone, smsBody);
+              if (result.success) {
+                console.log(`[CRON] SMS reminder sent for request ${req.id} → candidate ${req.candidate_user.id}`);
+              } else {
+                console.error(`[CRON] SMS reminder failed for request ${req.id}:`, result.error);
+              }
+            } else if (!req.candidate_user.phone) {
+              console.log(`[CRON] SMS skipped — no phone on file for candidate ${req.candidate_user.id}`);
+            } else {
+              console.log(`[CRON] SMS skipped — Twilio not configured`);
+            }
+          } catch (e) {
+            console.error(`[CRON] SMS reminder error for request ${req.id}:`, e);
+          }
         }
 
         // Mark as sent (dedup marker — persists for 30 days then cleaned up)

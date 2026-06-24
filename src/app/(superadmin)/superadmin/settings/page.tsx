@@ -447,9 +447,9 @@ export default function SuperadminSettingsPage() {
                   {/* SMS */}
                   <div className="flex items-center justify-between p-3">
                     <div className="space-y-0.5">
-                      <Label htmlFor="reminder-sms">SMS (future)</Label>
+                      <Label htmlFor="reminder-sms">SMS</Label>
                       <p className="text-xs text-muted-foreground">
-                        Architecture-only — no provider wired. Toggle has no effect until SMS is configured.
+                        Send SMS via Twilio. Active only when Twilio credentials are configured in API Vault.
                       </p>
                     </div>
                     <Switch
@@ -702,7 +702,7 @@ function NotificationDefaultsPanel() {
                   <th className="py-2 px-3 font-medium text-muted-foreground">Category</th>
                   <th className="py-2 px-3 font-medium text-muted-foreground text-center">Email</th>
                   <th className="py-2 px-3 font-medium text-muted-foreground text-center">In-App</th>
-                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">SMS (future)</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">SMS</th>
                 </tr>
               </thead>
               <tbody>
@@ -735,7 +735,7 @@ function NotificationDefaultsPanel() {
               </tbody>
             </table>
             <p className="text-xs text-muted-foreground mt-3">
-              Note: SMS is architecture-only and not currently wired to any provider. Toggling SMS will have no effect until a provider (e.g. Twilio) is configured.
+              Note: SMS sends via Twilio. Configure Twilio credentials in API Vault to activate. Urgent notifications always send SMS regardless of these toggles.
             </p>
           </div>
         )}

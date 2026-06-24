@@ -365,7 +365,7 @@ export default function SuperadminTemplatesPage() {
                 </div>
                 {!smsEnabled && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    SMS notifications will be available in a future release.
+                    SMS sends via Twilio — configure credentials in API Vault to activate.
                   </p>
                 )}
               </div>

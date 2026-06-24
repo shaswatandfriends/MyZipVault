@@ -6,7 +6,7 @@
  *   1. Creating the in-app notification with proper category + priority
  *   2. Checking super admin defaults to decide if email should be sent
  *   3. Sending email via Brevo (if enabled for this category)
- *   4. SMS architecture (not implemented yet — placeholder for future)
+ *   4. Sending SMS via Twilio (if enabled for this category or priority=urgent)
  *
  * Usage:
  *   import { createNotification } from "@/lib/notifications/create";
@@ -24,9 +24,10 @@
  *   });
  *
  * Rules:
- *   - Urgent notifications ALWAYS send email, regardless of defaults
+ *   - Urgent notifications ALWAYS send email AND SMS (if Twilio configured)
  *   - Important + Info check NotificationDefault for the category
- *   - SMS is architecture-only (not wired to any provider yet)
+ *   - SMS only sends if user has a phone number on file
+ *   - SMS silently skips if Twilio is not configured (no error)
  */
 
 import { db } from "@/lib/db";
@@ -220,11 +221,22 @@ export async function createNotification(params: CreateNotificationParams): Prom
       });
     }
 
-    // 4. SMS — architecture only, not implemented
-    // When we add Twilio, this is where the SMS call would go:
-    // if (categoryDefault.sms_enabled || params.priority === 'urgent') {
-    //   sendSMS(params).catch(...)
-    // }
+    // 4. SMS — send via Twilio if enabled for this category or if urgent
+    // Rules:
+    //   - Urgent → ALWAYS SMS (if Twilio is configured + user has phone)
+    //   - Important/Info → SMS if category default has sms_enabled = true
+    let shouldSms = false;
+    if (params.priority === "urgent") {
+      shouldSms = true; // Urgent always SMS
+    } else {
+      shouldSms = categoryDefault.sms_enabled;
+    }
+
+    if (shouldSms && notificationId) {
+      sendNotificationSMS(params).catch((err) => {
+        console.error("[NOTIFICATION] Failed to send SMS:", err);
+      });
+    }
 
   } catch (err) {
     console.error("[NOTIFICATION] Failed to create notification:", err);
@@ -304,6 +316,35 @@ async function sendNotificationEmail(params: CreateNotificationParams): Promise<
     const errText = await response.text();
     console.error("[NOTIFICATION] Brevo API error:", response.status, errText);
   }
+}
+
+/**
+ * Send a notification SMS via Twilio.
+ * Fire-and-forget — called from createNotification, doesn't block.
+ * Gracefully skips if Twilio is not configured or user has no phone.
+ */
+async function sendNotificationSMS(params: CreateNotificationParams): Promise<void> {
+  const { isTwilioConfigured, sendSMS } = await import("@/lib/twilio");
+
+  if (!isTwilioConfigured()) {
+    // Silent skip — Twilio not set up yet. Not an error.
+    return;
+  }
+
+  // Fetch the user's phone number
+  const user = await db.user.findUnique({
+    where: { id: params.userId },
+    select: { phone: true, first_name: true, last_name: true },
+  });
+
+  if (!user?.phone) return; // No phone on file — skip SMS
+
+  // Build the SMS message (keep under 160 chars for single-segment SMS)
+  const appUrl = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
+  const actionUrl = params.actionUrl ? `${appUrl}${params.actionUrl}` : appUrl;
+  const smsBody = `MyZipVault: ${params.title}\n${params.message}\n${actionUrl}`;
+
+  await sendSMS(user.phone, smsBody);
 }
 
 /**

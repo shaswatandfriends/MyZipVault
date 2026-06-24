@@ -132,9 +132,13 @@ export async function GET() {
       envVars: zaiEnvStatus,
       apiCall: zaiApiStatus,
       dnsResolution: dnsStatus,
-      note: zaiApiStatus.startsWith("failed")
-        ? "ZAI API is unreachable — it resolves to private IPs (172.25.x.x) that Vercel's serverless functions cannot access. AI generation features will not work on Vercel."
-        : "ZAI API is reachable from this server.",
+      note: !baseUrl || !apiKey
+        ? "ZAI env vars not set. Add ZAI_BASE_URL, ZAI_API_KEY, ZAI_CHAT_ID, ZAI_TOKEN, ZAI_USER_ID to enable AI generation."
+        : zaiApiStatus.startsWith("failed")
+        ? "ZAI API call failed. Check the error message above — could be network, auth, or private IP issue."
+        : zaiApiStatus.startsWith("http_error")
+        ? "ZAI API returned an HTTP error. Check the status code above."
+        : "ZAI API is reachable and responding.",
     },
     affinda: {
       ...affindaStatus,
