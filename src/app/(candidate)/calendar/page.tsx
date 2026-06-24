@@ -768,7 +768,7 @@ export default function CalendarPage() {
         </TabsList>
 
         {/* ═══════════════════════════════════════════════════════════════
-            TAB 1: My Calendar
+            TAB 1: Availability
         ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="availability" className="space-y-6">
 
@@ -1283,81 +1283,76 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
 
+            </div>
+          </div>
+
         </TabsContent>
 
         {/* ═══════════════════════════════════════════════════════════════
             TAB 2: Appointments — Upcoming Calls & Meetings
         ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="appointments" className="space-y-6">
-              {/* Upcoming Calls / Meetings */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Phone className="size-5 text-accent-teal" />
-                    Upcoming Calls & Meetings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* We check if there are any accepted shift requests that could be upcoming */}
-                  {(() => {
-                    const upcoming = shiftRequests.filter(
-                      (r) => r.status === "accepted" && new Date(r.shift_date) >= new Date(new Date().toDateString())
-                    );
-                    if (upcoming.length === 0) {
-                      return (
-                        <div className="text-center py-6">
-                          <div className="size-10 rounded-full bg-background flex items-center justify-center mx-auto mb-2">
-                            <Phone className="size-5 text-muted-foreground" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="space-y-2">
-                        {upcoming
-                          .sort((a, b) => new Date(a.shift_date).getTime() - new Date(b.shift_date).getTime())
-                          .map((req) => {
-                            const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
-                            const agency = req.recruiter_user.organization?.name;
-                            const isToday = new Date(req.shift_date).toDateString() === new Date().toDateString();
-                            return (
-                              <div
-                                key={req.id}
-                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors"
-                              >
-                                <div className="size-8 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
-                                  <Phone className="size-4 text-accent-teal" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium">
-                                    {req.position || "Shift"} at {req.facility_name || "TBD"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {recruiterName}{agency ? ` (${agency})` : ""}
-                                    {" · "}
-                                    {isToday ? "Today" : new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                                    {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
-                                  </p>
-                                </div>
-                                <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
-                                  {isToday ? "Today" : "Upcoming"}
-                                </Badge>
-                              </div>
-                            );
-                          })}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Phone className="size-5 text-accent-teal" />
+                Upcoming Calls & Meetings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const upcoming = shiftRequests.filter(
+                  (r) => r.status === "accepted" && new Date(r.shift_date) >= new Date(new Date().toDateString())
+                );
+                if (upcoming.length === 0) {
+                  return (
+                    <div className="text-center py-6">
+                      <div className="size-10 rounded-full bg-background flex items-center justify-center mx-auto mb-2">
+                        <Phone className="size-5 text-muted-foreground" />
                       </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        
+                      <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {upcoming
+                      .sort((a, b) => new Date(a.shift_date).getTime() - new Date(b.shift_date).getTime())
+                      .map((req) => {
+                        const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
+                        const agency = req.recruiter_user.organization?.name;
+                        const isToday = new Date(req.shift_date).toDateString() === new Date().toDateString();
+                        return (
+                          <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors">
+                            <div className="size-8 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
+                              <Phone className="size-4 text-accent-teal" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">
+                                {req.position || "Shift"} at {req.facility_name || "TBD"}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {recruiterName}{agency ? ` (${agency})` : ""}
+                                {" · "}
+                                {isToday ? "Today" : new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                                {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
+                              </p>
+                            </div>
+                            <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
+                              {isToday ? "Today" : "Upcoming"}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ═══════════════════════════════════════════════════════════════
-            TAB 3: Shift Requests — Manage incoming shift requests
+            TAB 3: Shift Requests
         ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="shift-requests" className="space-y-6">
           <Card>
@@ -1632,8 +1627,6 @@ export default function CalendarPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </div>
 
           {/* ── Shift Requests Section ──────────────────────────────── */}
           <Card>
@@ -1781,9 +1774,10 @@ export default function CalendarPage() {
               )}
             </CardContent>
           </Card>
-        
 
-
+        {/* ═══════════════════════════════════════════════════════════════
+            Recruiter availability (merged into shared-calendars tab)
+        ═══════════════════════════════════════════════════════════════ */}
 
           {/* Recruiter filter */}
           <Card>
@@ -1903,9 +1897,11 @@ export default function CalendarPage() {
                                           : "bg-surface-2"
                                       }`}
                                     >
-                                      {matching.length > 0 && matching[0].label && (
-                                        <span className="truncate px-0.5">{matching[0].label}</span>
-                                      )}
+                                      {matching.length > 0
+                                        ? matching.some((s) => s.is_available)
+                                          ? "✓"
+                                          : "✗"
+                                        : ""}
                                     </div>
                                   );
                                 })}
@@ -1916,46 +1912,34 @@ export default function CalendarPage() {
                       </div>
 
                       {/* Slots detail */}
-                      {recruiterSlots.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-border">
-                          <div className="flex flex-wrap gap-2">
-                            {recruiterSlots.map((slot) => {
-                              const dayLabel = slot.day_of_week !== null
-                                ? DAYS_OF_WEEK[DAY_VALUES.indexOf(slot.day_of_week)]
-                                : slot.specific_date
-                                  ? new Date(slot.specific_date).toLocaleDateString()
-                                  : "Unset";
-                              return (
-                                <Badge
-                                  key={slot.id}
-                                  variant="outline"
-                                  className={`text-[10px] ${
-                                    slot.is_available
-                                      ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                                      : "border-red-300 text-red-700 bg-red-50"
-                                  }`}
-                                >
-                                  {dayLabel} {slot.start_time && slot.end_time
-                                    ? `${formatTimeDisplay(slot.start_time)}–${formatTimeDisplay(slot.end_time)}`
-                                    : "All day"}
-                                  {slot.label && ` · ${slot.label}`}
-                                </Badge>
-                              );
-                            })}
-                          </div>
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {recruiterSlots.map((slot, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs">
+                              <div className={`size-2 rounded-full ${slot.is_available ? "bg-teal-500" : "bg-red-500"}`} />
+                              <span className="font-medium">
+                                {slot.specific_date
+                                  ? new Date(slot.specific_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                                  : DAYS_OF_WEEK[slot.day_of_week || 0]}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {slot.start_time || "—"} - {slot.end_time || "—"}
+                              </span>
+                              {slot.label && (
+                                <span className="text-muted-foreground italic">({slot.label})</span>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      )}
+                      </div>
                     </CardContent>
                   </Card>
                 );
               })}
-
-
+            </div>
+          )}
         </TabsContent>
-
       </Tabs>
     </div>
   );
 }
-
-

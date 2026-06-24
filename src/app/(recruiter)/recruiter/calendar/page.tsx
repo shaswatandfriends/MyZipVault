@@ -30,6 +30,7 @@ import {
   Printer,
   FileDown,
   GripVertical,
+  ClipboardList,
 } from "@/lib/icons";
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
