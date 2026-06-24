@@ -179,7 +179,7 @@ Return ONLY valid JSON, no additional text or markdown.`;
         }
       }
 
-      // Call AI directly from the browser (bypasses Vercel server network issues)
+      // Call AI through the proxy (uses triple-provider: Groq → Gemini → GLM)
       const completion = await clientZaiChatCompletion({
         messages: [
           { role: "system", content: systemPrompt },
@@ -410,7 +410,7 @@ function AiChatPanel({
         userPrompt += `\n\nCandidate's current resume data for context:\n${JSON.stringify(resumeContext, null, 2)}`;
       }
 
-      // Call AI directly from the browser (bypasses Vercel server network issues)
+      // Call AI through the proxy (uses triple-provider: Groq → Gemini → GLM)
       const completion = await clientZaiChatCompletion({
         messages: [
           { role: "system", content: systemPrompt },

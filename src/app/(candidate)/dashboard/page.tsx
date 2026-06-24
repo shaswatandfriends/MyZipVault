@@ -195,15 +195,15 @@ export default function CandidateDashboardPage() {
   // Action center items — counts actual items, not categories
   const actionItems = useMemo(() => {
     if (!data) return [];
-    const items: { label: string; sub: string; btn: string; href: string; count: number }[] = [];
+    const items: { label: string; sub: string; btn: string; href: string; count: number; dueBadge?: string; dueColor?: string }[] = [];
     if (data.checklists?.pending > 0)
-      items.push({ label: `${data.checklists.pending} Checklist${data.checklists.pending > 1 ? "s" : ""} Assigned`, sub: "Complete your assigned skill checklists", btn: "Continue", href: "/checklists", count: data.checklists.pending });
+      items.push({ label: `${data.checklists.pending} Checklist${data.checklists.pending > 1 ? "s" : ""} Assigned`, sub: "Complete your assigned skill checklists", btn: "Continue", href: "/checklists", count: data.checklists.pending, dueBadge: "Action needed", dueColor: "bg-red-100 text-red-700" });
     if (data.vaultsign?.pending > 0)
-      items.push({ label: `${data.vaultsign.pending} Document${data.vaultsign.pending > 1 ? "s" : ""} to Sign`, sub: "VaultSign requests pending your signature", btn: "Review", href: "/vaultsign", count: data.vaultsign.pending });
+      items.push({ label: `${data.vaultsign.pending} Document${data.vaultsign.pending > 1 ? "s" : ""} to Sign`, sub: "VaultSign requests pending your signature", btn: "Review", href: "/vaultsign", count: data.vaultsign.pending, dueBadge: "Pending", dueColor: "bg-amber-100 text-amber-700" });
     if (data.references?.pending > 0)
-      items.push({ label: `${data.references.pending} Reference Request${data.references.pending > 1 ? "s" : ""} Pending`, sub: "Follow up on your reference requests", btn: "Respond", href: "/references", count: data.references.pending });
+      items.push({ label: `${data.references.pending} Reference Request${data.references.pending > 1 ? "s" : ""} Pending`, sub: "Follow up on your reference requests", btn: "Respond", href: "/references", count: data.references.pending, dueBadge: "Follow up", dueColor: "bg-blue-100 text-blue-700" });
     if (data.shareRequestCount > 0)
-      items.push({ label: `${data.shareRequestCount} Share Request${data.shareRequestCount > 1 ? "s" : ""}`, sub: "Recruiters want to access your documents", btn: "Review", href: "/sharing", count: data.shareRequestCount });
+      items.push({ label: `${data.shareRequestCount} Share Request${data.shareRequestCount > 1 ? "s" : ""}`, sub: "Recruiters want to access your documents", btn: "Review", href: "/sharing", count: data.shareRequestCount, dueBadge: "Review", dueColor: "bg-violet-100 text-violet-700" });
     return items;
   }, [data]);
 
@@ -235,6 +235,10 @@ export default function CandidateDashboardPage() {
         <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(45,90,61,0.95) 0%, rgba(30,58,38,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(45,90,61,0.22)", minHeight: "220px" }}>
           <div className="absolute rounded-full pointer-events-none" style={{ width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle, rgba(74,124,89,0.4) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }} />
           <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(201,123,84,0.3) 0%, rgba(201,123,84,0) 70%)", filter: "blur(30px)" }} />
+          {/* Hero image — right side of banner */}
+          <div className="absolute right-0 bottom-0 top-0 w-[40%] hidden lg:flex items-center justify-end pointer-events-none">
+            <div className="h-full w-full opacity-30" style={{ background: "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop') center/cover", maskImage: "linear-gradient(to left, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to left, black 40%, transparent 100%)" }} />
+          </div>
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--terra-light)" }}>Dashboard</p>
             <h1 className="text-2xl font-bold text-white mt-1 font-heading">{getTimeGreeting()}, {firstName} 👋</h1>
@@ -285,8 +289,15 @@ export default function CandidateDashboardPage() {
             <div className="space-y-2">
               {actionItems.map((item, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-[10px]" style={{ background: "var(--material-thin-bg)" }}>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{item.label}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{item.label}</p>
+                      {item.dueBadge && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.dueColor}`}>
+                          {item.dueBadge}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{item.sub}</p>
                   </div>
                   <Button asChild size="sm" variant="outline" className="shrink-0 h-7 text-xs"><Link href={item.href}>{item.btn}</Link></Button>
@@ -297,8 +308,7 @@ export default function CandidateDashboardPage() {
         </Card>
       )}
 
-      {/* ════ SECTION 3: AT A GLANCE ════ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ════ SECTION 3: AT A GLANCE ════ */}      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { value: `${pct}%`, label: "Profile", color: "var(--primary)", sub: pct < 100 ? "Keep going!" : "Complete!" },
           { value: data?.credentials?.total ?? 0, label: "Documents", color: "var(--primary)", sub: `${data?.credentials?.verified ?? 0} verified` },
