@@ -23,61 +23,28 @@ export async function GET() {
     vercelEnv: process.env.VERCEL_ENV || "not on vercel",
   };
 
-  // Test ZAI API connectivity
+  // Test ZAI API connectivity — uses the updated zaiChatCompletion function
   let zaiApiStatus = "not_tested";
   const baseUrl = process.env.ZAI_BASE_URL;
   const apiKey = process.env.ZAI_API_KEY;
 
   if (baseUrl && apiKey) {
-    const chatId = process.env.ZAI_CHAT_ID || "";
-    const token = process.env.ZAI_TOKEN || "";
-    const userId = process.env.ZAI_USER_ID || "";
-    const url = `${baseUrl}/chat/completions`;
-
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "X-Z-AI-From": "Z",
-      };
-      if (chatId) headers["X-Chat-Id"] = chatId;
-      if (userId) headers["X-User-Id"] = userId;
-      if (token) headers["X-Token"] = token;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          messages: [{ role: "user", content: "Say OK" }],
-          max_tokens: 5,
-          thinking: { type: "disabled" },
-        }),
-        signal: AbortSignal.timeout(15000),
+      const { zaiChatCompletion } = await import("@/lib/zai");
+      const result = await zaiChatCompletion({
+        messages: [{ role: "user", content: "Say OK" }],
+        max_tokens: 5,
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        zaiApiStatus = `http_error_${response.status}: ${errorBody.substring(0, 200)}`;
-      } else {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        zaiApiStatus = `success: "${content}"`;
-      }
-    } catch (err) {
-      const errorInfo: Record<string, string> = {
-        message: err instanceof Error ? err.message : String(err),
-        name: err instanceof Error ? err.name : "Unknown",
-      };
-      if (err instanceof Error && "cause" in err && err.cause) {
-        errorInfo.cause = err.cause instanceof Error ? err.cause.message : String(err.cause);
-      }
-      zaiApiStatus = `failed: ${JSON.stringify(errorInfo)}`;
+      const content = result.choices?.[0]?.message?.content;
+      zaiApiStatus = `success: "${content}"`;
+    } catch (err: any) {
+      zaiApiStatus = `failed: ${err.message || String(err)}`;
     }
   } else {
-    zaiApiStatus = "skipped: missing env vars";
+    zaiApiStatus = "skipped: ZAI_API_KEY or ZAI_BASE_URL not set";
   }
 
-  // DNS resolution check
+  // DNS resolution check (for debugging connectivity issues)
   let dnsStatus = "not_tested";
   if (baseUrl) {
     try {
@@ -86,15 +53,7 @@ export async function GET() {
       const hostname = new URL(baseUrl).hostname;
       const addresses = await resolver.resolve4(hostname).catch(() => []);
       const addressesV6 = await resolver.resolve6(hostname).catch(() => []);
-      const isPrivate = addresses.some((ip) => {
-        const parts = ip.split(".").map(Number);
-        return (
-          parts[0] === 10 ||
-          (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-          (parts[0] === 192 && parts[1] === 168)
-        );
-      });
-      dnsStatus = `resolved: ipv4=${addresses.join(",") || "none"}, ipv6=${addressesV6.join(",") || "none"}, isPrivate=${isPrivate}`;
+      dnsStatus = `resolved: ipv4=${addresses.join(",") || "none"}, ipv6=${addressesV6.join(",") || "none"}`;
     } catch (err) {
       dnsStatus = `failed: ${err instanceof Error ? err.message : String(err)}`;
     }
