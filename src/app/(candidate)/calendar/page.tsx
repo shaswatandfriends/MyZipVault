@@ -747,22 +747,30 @@ export default function CalendarPage() {
         description="Manage your availability, share your calendar, and handle shift requests."
       />
 
-      <Tabs defaultValue="my-calendar" className="space-y-6">
+      <Tabs defaultValue="availability" className="space-y-6">
         <TabsList className="bg-surface-2">
-          <TabsTrigger value="my-calendar" className="gap-1.5 data-[state=active]:bg-white">
+          <TabsTrigger value="availability" className="gap-1.5 data-[state=active]:bg-white">
             <CalendarDays className="size-4" />
-            My Calendar
+            Availability
           </TabsTrigger>
-          <TabsTrigger value="others-calendar" className="gap-1.5 data-[state=active]:bg-white">
+          <TabsTrigger value="appointments" className="gap-1.5 data-[state=active]:bg-white">
+            <Phone className="size-4" />
+            Appointments
+          </TabsTrigger>
+          <TabsTrigger value="shift-requests" className="gap-1.5 data-[state=active]:bg-white">
+            <ClipboardList className="size-4" />
+            Shift Requests
+          </TabsTrigger>
+          <TabsTrigger value="shared-calendars" className="gap-1.5 data-[state=active]:bg-white">
             <Users className="size-4" />
-            Others Calendar
+            Shared Calendars
           </TabsTrigger>
         </TabsList>
 
         {/* ═══════════════════════════════════════════════════════════════
             TAB 1: My Calendar
         ═══════════════════════════════════════════════════════════════ */}
-        <TabsContent value="my-calendar" className="space-y-6">
+        <TabsContent value="availability" className="space-y-6">
 
           {/* ── Availability Status Toggle ──────────────────────────── */}
           <Card
@@ -1275,6 +1283,143 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
 
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            TAB 2: Appointments — Upcoming Calls & Meetings
+        ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="appointments" className="space-y-6">
+              {/* Upcoming Calls / Meetings */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Phone className="size-5 text-accent-teal" />
+                    Upcoming Calls & Meetings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* We check if there are any accepted shift requests that could be upcoming */}
+                  {(() => {
+                    const upcoming = shiftRequests.filter(
+                      (r) => r.status === "accepted" && new Date(r.shift_date) >= new Date(new Date().toDateString())
+                    );
+                    if (upcoming.length === 0) {
+                      return (
+                        <div className="text-center py-6">
+                          <div className="size-10 rounded-full bg-background flex items-center justify-center mx-auto mb-2">
+                            <Phone className="size-5 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-2">
+                        {upcoming
+                          .sort((a, b) => new Date(a.shift_date).getTime() - new Date(b.shift_date).getTime())
+                          .map((req) => {
+                            const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
+                            const agency = req.recruiter_user.organization?.name;
+                            const isToday = new Date(req.shift_date).toDateString() === new Date().toDateString();
+                            return (
+                              <div
+                                key={req.id}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors"
+                              >
+                                <div className="size-8 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
+                                  <Phone className="size-4 text-accent-teal" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium">
+                                    {req.position || "Shift"} at {req.facility_name || "TBD"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {recruiterName}{agency ? ` (${agency})` : ""}
+                                    {" · "}
+                                    {isToday ? "Today" : new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                                    {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
+                                  </p>
+                                </div>
+                                <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
+                                  {isToday ? "Today" : "Upcoming"}
+                                </Badge>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            TAB 3: Shift Requests — Manage incoming shift requests
+        ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="shift-requests" className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ClipboardList className="size-5 text-accent-teal" />
+                Shift Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {shiftRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="size-12 rounded-full bg-background flex items-center justify-center mx-auto mb-3">
+                    <ClipboardList className="size-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium">No shift requests</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When recruiters send you shift requests, they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {shiftRequests.map((req) => {
+                    const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
+                    const agency = req.recruiter_user.organization?.name;
+                    return (
+                      <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors">
+                        <div className="size-9 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
+                          <ClipboardList className="size-4 text-accent-teal" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            {req.position || "Shift"} at {req.facility_name || "TBD"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {recruiterName}{agency ? ` (${agency})` : ""}
+                            {" · "}
+                            {new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                            {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
+                          </p>
+                        </div>
+                        <Badge className={
+                          req.status === "accepted" ? "bg-green-100 text-green-800" :
+                          req.status === "declined" ? "bg-red-100 text-red-800" :
+                          "bg-amber-100 text-amber-800"
+                        }>
+                          {req.status}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            TAB 4: Shared Calendars — Share yours + view recruiters'
+        ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="shared-calendars" className="space-y-6">
+
               {/* Share Calendar */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1636,12 +1781,9 @@ export default function CalendarPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        
 
-        {/* ═══════════════════════════════════════════════════════════════
-            TAB 2: Others Calendar
-        ═══════════════════════════════════════════════════════════════ */}
-        <TabsContent value="others-calendar" className="space-y-6">
+
 
           {/* Recruiter filter */}
           <Card>
@@ -1808,71 +1950,9 @@ export default function CalendarPage() {
                 );
               })}
 
-              {/* Upcoming Calls / Meetings */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Phone className="size-5 text-accent-teal" />
-                    Upcoming Calls & Meetings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* We check if there are any accepted shift requests that could be upcoming */}
-                  {(() => {
-                    const upcoming = shiftRequests.filter(
-                      (r) => r.status === "accepted" && new Date(r.shift_date) >= new Date(new Date().toDateString())
-                    );
-                    if (upcoming.length === 0) {
-                      return (
-                        <div className="text-center py-6">
-                          <div className="size-10 rounded-full bg-background flex items-center justify-center mx-auto mb-2">
-                            <Phone className="size-5 text-muted-foreground" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">No upcoming calls or meetings</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="space-y-2">
-                        {upcoming
-                          .sort((a, b) => new Date(a.shift_date).getTime() - new Date(b.shift_date).getTime())
-                          .map((req) => {
-                            const recruiterName = `${req.recruiter_user.first_name || ""} ${req.recruiter_user.last_name || ""}`.trim();
-                            const agency = req.recruiter_user.organization?.name;
-                            const isToday = new Date(req.shift_date).toDateString() === new Date().toDateString();
-                            return (
-                              <div
-                                key={req.id}
-                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-background transition-colors"
-                              >
-                                <div className="size-8 rounded-lg bg-accent-teal/10 flex items-center justify-center shrink-0">
-                                  <Phone className="size-4 text-accent-teal" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium">
-                                    {req.position || "Shift"} at {req.facility_name || "TBD"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {recruiterName}{agency ? ` (${agency})` : ""}
-                                    {" · "}
-                                    {isToday ? "Today" : new Date(req.shift_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                                    {req.start_time && ` · ${formatTimeDisplay(req.start_time)}`}
-                                  </p>
-                                </div>
-                                <Badge className="text-[10px] bg-accent-teal/10 text-accent-teal border-accent-teal/20">
-                                  {isToday ? "Today" : "Upcoming"}
-                                </Badge>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+
         </TabsContent>
+
       </Tabs>
     </div>
   );

@@ -3302,9 +3302,17 @@ export default function RecruiterCalendarPage() {
             <Calendar className="size-4 mr-1.5" />
             My Calendar
           </TabsTrigger>
-          <TabsTrigger value="candidates">
+          <TabsTrigger value="candidate-availability">
             <UserCheck className="size-4 mr-1.5" />
-            Candidates
+            Candidate Availability
+          </TabsTrigger>
+          <TabsTrigger value="appointments">
+            <Phone className="size-4 mr-1.5" />
+            Appointments
+          </TabsTrigger>
+          <TabsTrigger value="shift-requests">
+            <ClipboardList className="size-4 mr-1.5" />
+            Shift Requests
           </TabsTrigger>
         </TabsList>
 
@@ -3330,8 +3338,88 @@ export default function RecruiterCalendarPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="candidates" className="mt-4">
+        <TabsContent value="candidate-availability" className="mt-4">
           <CandidatesCalendarTab refreshKey={refreshKey} />
+        </TabsContent>
+
+        <TabsContent value="appointments" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Phone className="size-5 text-primary" />
+                Upcoming Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const upcoming = schedules
+                  .filter((s: any) => s.status === "scheduled" && new Date(s.scheduled_date) >= new Date(new Date().toDateString()))
+                  .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+                if (upcoming.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                        <Phone className="size-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium">No upcoming appointments</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Schedule calls with candidates from My Calendar tab.
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {upcoming.map((appt: any) => {
+                      const lead = leads.find((l: any) => l.id === appt.lead_id);
+                      const leadName = lead ? `${lead.first_name} ${lead.last_name}` : "Unknown";
+                      const isToday = new Date(appt.scheduled_date).toDateString() === new Date().toDateString();
+                      return (
+                        <div key={appt.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                          <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Phone className="size-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{leadName}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {isToday ? "Today" : new Date(appt.scheduled_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                              {appt.scheduled_time && ` · ${appt.scheduled_time}`}
+                            </p>
+                          </div>
+                          <Badge className={isToday ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                            {isToday ? "Today" : "Upcoming"}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="shift-requests" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ClipboardList className="size-5 text-primary" />
+                Shift Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                  <ClipboardList className="size-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium">No shift requests</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shift requests from candidates will appear here once the feature is active.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
