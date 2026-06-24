@@ -13,7 +13,10 @@ import {
   Bell,
   BellRing,
   Loader2,
+  Sparkles,
 } from "@/lib/icons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -458,6 +461,81 @@ export default function SuperadminSettingsPage() {
                       onCheckedChange={(c) => saveSetting("checklist_reminder_sms_enabled", String(c), "Reminder SMS")}
                     />
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── AI Provider Configuration ──────────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                  <Sparkles className="size-4 text-violet-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">AI Provider Configuration</CardTitle>
+                  <CardDescription>
+                    Choose which AI provider to use as primary for resume building, parsing, and AI features.
+                    If the primary fails, the system automatically falls back to the other provider.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+                <div>
+                  <p className="text-sm font-medium">Primary AI Provider</p>
+                  <p className="text-xs text-muted-foreground">
+                    Currently: <strong>{getSettingValue(data?.settings ?? [], "ai_primary_provider") || "gemini"}</strong>
+                  </p>
+                </div>
+                <Select
+                  defaultValue={getSettingValue(data?.settings ?? [], "ai_primary_provider") || "gemini"}
+                  onValueChange={(val) => saveSetting("ai_primary_provider", val, "AI Provider")}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini">
+                      <span className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-blue-500" />
+                        Google Gemini (Primary)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="glm">
+                      <span className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-green-500" />
+                        GLM / ZAI (Primary)
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg border border-border bg-background">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Google Gemini</p>
+                  <p className="text-sm mt-1">
+                    Status: <Badge variant={getSettingValue(data?.settings ?? [], "google_gemini_configured") === "true" ? "default" : "secondary"}>
+                      {getSettingValue(data?.settings ?? [], "google_gemini_configured") === "true" ? "Connected" : "Not Configured"}
+                    </Badge>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set GOOGLE_GEMINI_API_KEY in Vercel env vars to activate.
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border bg-background">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">GLM / ZAI</p>
+                  <p className="text-sm mt-1">
+                    Status: <Badge variant={getSettingValue(data?.settings ?? [], "zai_configured") === "true" ? "default" : "secondary"}>
+                      {getSettingValue(data?.settings ?? [], "zai_configured") === "true" ? "Connected" : "Not Configured"}
+                    </Badge>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set ZAI_API_KEY in Vercel env vars to activate.
+                  </p>
                 </div>
               </div>
             </CardContent>
