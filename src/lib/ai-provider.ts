@@ -31,7 +31,7 @@
 
 import { db } from "@/lib/db";
 
-export type AIProvider = "gemini" | "glm";
+export type AIProvider = "groq" | "gemini" | "glm";
 
 export interface AIGenerateOptions {
   systemPrompt?: string;
@@ -79,47 +79,59 @@ export async function getPrimaryProvider(): Promise<AIProvider> {
     const setting = await db.platformSetting.findUnique({
       where: { setting_key: "ai_primary_provider" },
     });
-    primaryProviderCache = (setting?.setting_value as AIProvider) || "gemini";
+    primaryProviderCache = (setting?.setting_value as AIProvider) || "groq";
   } catch {
-    primaryProviderCache = "gemini";
+    primaryProviderCache = "groq";
   }
 
   cacheTime = now;
 
-  // If primary provider's key is not configured, try fallback
+  // If primary provider's key is not set, try others in priority order: groq > gemini > glm
+  const { isGroqConfigured } = await import("@/lib/groq");
   const { isGeminiConfigured } = await import("@/lib/gemini");
   const { isZaiConfigured } = await import("@/lib/zai");
 
-  if (primaryProviderCache === "gemini" && !isGeminiConfigured()) {
-    if (isZaiConfigured()) return "glm";
-  }
-  if (primaryProviderCache === "glm" && !isZaiConfigured()) {
-    if (isGeminiConfigured()) return "gemini";
+  const isConfigured: Record<AIProvider, boolean> = {
+    groq: isGroqConfigured(),
+    gemini: isGeminiConfigured(),
+    glm: isZaiConfigured(),
+  };
+
+  if (!isConfigured[primaryProviderCache]) {
+    // Find first configured provider in priority order
+    for (const p of ["groq", "gemini", "glm"] as AIProvider[]) {
+      if (isConfigured[p]) {
+        primaryProviderCache = p;
+        break;
+      }
+    }
   }
 
   return primaryProviderCache;
 }
 
 /**
- * Get the fallback provider (the opposite of primary).
+ * Get fallback providers in priority order (excluding primary).
  */
-export function getFallbackProvider(primary: AIProvider): AIProvider {
-  return primary === "gemini" ? "glm" : "gemini";
+export function getFallbackProviders(primary: AIProvider): AIProvider[] {
+  const all: AIProvider[] = ["groq", "gemini", "glm"];
+  return all.filter((p) => p !== primary);
 }
 
 // ─── Text generation ────────────────────────────────────────────────
 
 /**
- * Generate text using the dual-provider AI system.
+ * Generate text using the multi-provider AI system.
  *
- * Tries primary provider first. If it fails (timeout, API error, etc.),
- * falls back to the secondary provider. If both fail, throws an error.
+ * Tries providers in order: primary → fallback 1 → fallback 2.
+ * Returns the first successful result. If all fail, throws an error.
  */
 export async function aiGenerateText(
   options: AIGenerateOptions
 ): Promise<AIGenerateResult> {
   const primary = await getPrimaryProvider();
-  const fallback = getFallbackProvider(primary);
+  const fallbacks = getFallbackProviders(primary);
+  const providersToTry = [primary, ...fallbacks];
 
   const messages: { role: string; content: string }[] = [];
   if (options.systemPrompt) {
@@ -127,27 +139,26 @@ export async function aiGenerateText(
   }
   messages.push({ role: "user", content: options.userPrompt });
 
-  // Try primary provider
-  try {
-    const result = await generateWithProvider(primary, messages, options);
-    return result;
-  } catch (primaryErr) {
-    console.warn(`[AI_PROVIDER] Primary (${primary}) failed:`, primaryErr);
+  const errors: string[] = [];
 
-    // Try fallback provider
+  for (const provider of providersToTry) {
     try {
-      const result = await generateWithProvider(fallback, messages, options);
-      console.log(`[AI_PROVIDER] Fallback (${fallback}) succeeded`);
+      const result = await generateWithProvider(provider, messages, options);
+      if (provider !== primary) {
+        console.log(`[AI_PROVIDER] Fallback (${provider}) succeeded after (${primary}) failed`);
+      }
       return result;
-    } catch (fallbackErr) {
-      console.error(`[AI_PROVIDER] Both providers failed. Primary: ${primary}, Fallback: ${fallback}`);
-      throw new Error(
-        `AI generation failed. Both providers unavailable. ` +
-        `Primary (${primary}): ${primaryErr instanceof Error ? primaryErr.message : "unknown"}. ` +
-        `Fallback (${fallback}): ${fallbackErr instanceof Error ? fallbackErr.message : "unknown"}.`
-      );
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`[AI_PROVIDER] ${provider} failed: ${errMsg}`);
+      errors.push(`${provider}: ${errMsg}`);
     }
   }
+
+  throw new Error(
+    `AI generation failed. All providers unavailable. ` +
+    errors.join("; ")
+  );
 }
 
 async function generateWithProvider(
@@ -155,7 +166,25 @@ async function generateWithProvider(
   messages: { role: string; content: string }[],
   options: AIGenerateOptions
 ): Promise<AIGenerateResult> {
-  if (provider === "gemini") {
+  if (provider === "groq") {
+    const { groqChatCompletion } = await import("@/lib/groq");
+    const result = await groqChatCompletion({
+      messages,
+      temperature: options.temperature,
+      max_tokens: options.maxTokens,
+    });
+    return {
+      content: result.choices[0]?.message?.content || "",
+      provider: "groq",
+      usage: result.usage
+        ? {
+            promptTokens: result.usage.prompt_tokens,
+            completionTokens: result.usage.completion_tokens,
+            totalTokens: result.usage.total_tokens,
+          }
+        : undefined,
+    };
+  } else if (provider === "gemini") {
     const { geminiChatCompletion } = await import("@/lib/gemini");
     const result = await geminiChatCompletion({
       messages,
@@ -197,36 +226,36 @@ async function generateWithProvider(
 // ─── Document analysis (vision) ─────────────────────────────────────
 
 /**
- * Analyze a document (PDF, image) using the dual-provider AI system.
- * Tries primary first, falls back to secondary.
+ * Analyze a document (PDF, image) using the multi-provider AI system.
+ * Tries providers in order: primary → fallback 1 → fallback 2.
  */
 export async function aiAnalyzeDocument(
   options: AIAnalyzeDocumentOptions
 ): Promise<AIAnalyzeDocumentResult> {
   const primary = await getPrimaryProvider();
-  const fallback = getFallbackProvider(primary);
+  const fallbacks = getFallbackProviders(primary);
+  const providersToTry = [primary, ...fallbacks];
 
-  // Try primary provider
-  try {
-    const result = await analyzeWithProvider(primary, options);
-    return result;
-  } catch (primaryErr) {
-    console.warn(`[AI_PROVIDER] Primary (${primary}) vision failed:`, primaryErr);
+  const errors: string[] = [];
 
-    // Try fallback provider
+  for (const provider of providersToTry) {
     try {
-      const result = await analyzeWithProvider(fallback, options);
-      console.log(`[AI_PROVIDER] Fallback (${fallback}) vision succeeded`);
+      const result = await analyzeWithProvider(provider, options);
+      if (provider !== primary) {
+        console.log(`[AI_PROVIDER] Vision fallback (${provider}) succeeded`);
+      }
       return result;
-    } catch (fallbackErr) {
-      console.error(`[AI_PROVIDER] Both vision providers failed.`);
-      throw new Error(
-        `AI document analysis failed. Both providers unavailable. ` +
-        `Primary (${primary}): ${primaryErr instanceof Error ? primaryErr.message : "unknown"}. ` +
-        `Fallback (${fallback}): ${fallbackErr instanceof Error ? fallbackErr.message : "unknown"}.`
-      );
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`[AI_PROVIDER] ${provider} vision failed: ${errMsg}`);
+      errors.push(`${provider}: ${errMsg}`);
     }
   }
+
+  throw new Error(
+    `AI document analysis failed. All providers unavailable. ` +
+    errors.join("; ")
+  );
 }
 
 async function analyzeWithProvider(
@@ -275,18 +304,21 @@ async function analyzeWithProvider(
  */
 export async function getAIProviderStatus(): Promise<{
   primary: AIProvider;
+  groqConfigured: boolean;
   geminiConfigured: boolean;
   glmConfigured: boolean;
   anyAvailable: boolean;
 }> {
+  const { isGroqConfigured } = await import("@/lib/groq");
   const { isGeminiConfigured } = await import("@/lib/gemini");
   const { isZaiConfigured } = await import("@/lib/zai");
   const primary = await getPrimaryProvider();
 
   return {
     primary,
+    groqConfigured: isGroqConfigured(),
     geminiConfigured: isGeminiConfigured(),
     glmConfigured: isZaiConfigured(),
-    anyAvailable: isGeminiConfigured() || isZaiConfigured(),
+    anyAvailable: isGroqConfigured() || isGeminiConfigured() || isZaiConfigured(),
   };
 }

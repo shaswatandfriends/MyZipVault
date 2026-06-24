@@ -491,30 +491,47 @@ export default function SuperadminSettingsPage() {
                   </p>
                 </div>
                 <Select
-                  defaultValue={getSettingValue(data?.settings ?? [], "ai_primary_provider") || "gemini"}
+                  defaultValue={getSettingValue(data?.settings ?? [], "ai_primary_provider") || "groq"}
                   onValueChange={(val) => saveSetting("ai_primary_provider", val, "AI Provider")}
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="groq">
+                      <span className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-orange-500" />
+                        Groq (Primary) — Fastest
+                      </span>
+                    </SelectItem>
                     <SelectItem value="gemini">
                       <span className="flex items-center gap-2">
                         <span className="size-2 rounded-full bg-blue-500" />
-                        Google Gemini (Primary)
+                        Google Gemini
                       </span>
                     </SelectItem>
                     <SelectItem value="glm">
                       <span className="flex items-center gap-2">
                         <span className="size-2 rounded-full bg-green-500" />
-                        GLM / ZAI (Primary)
+                        GLM / ZAI
                       </span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg border border-border bg-background">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Groq</p>
+                  <p className="text-sm mt-1">
+                    Status: <Badge variant={getSettingValue(data?.settings ?? [], "groq_configured") === "true" ? "default" : "secondary"}>
+                      {getSettingValue(data?.settings ?? [], "groq_configured") === "true" ? "Connected" : "Not Configured"}
+                    </Badge>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set GROQ_API_KEY in Vercel. Fastest (LPU).
+                  </p>
+                </div>
                 <div className="p-3 rounded-lg border border-border bg-background">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Google Gemini</p>
                   <p className="text-sm mt-1">

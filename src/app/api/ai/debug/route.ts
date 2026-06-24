@@ -106,6 +106,26 @@ export async function GET() {
     geminiApiStatus = "skipped: GOOGLE_GEMINI_API_KEY not set";
   }
 
+  // ─── Groq status ──────────────────────────────────────────────────
+  const groqApiKey = process.env.GROQ_API_KEY;
+  let groqApiStatus = "not_tested";
+
+  if (groqApiKey) {
+    try {
+      const { groqChatCompletion } = await import("@/lib/groq");
+      const result = await groqChatCompletion({
+        messages: [{ role: "user", content: "Say OK" }],
+        max_tokens: 5,
+      });
+      const content = result.choices?.[0]?.message?.content;
+      groqApiStatus = `success: "${content}"`;
+    } catch (err: any) {
+      groqApiStatus = `failed: ${err.message || String(err)}`;
+    }
+  } else {
+    groqApiStatus = "skipped: GROQ_API_KEY not set";
+  }
+
   // ─── AI Provider status ───────────────────────────────────────────
   let providerStatus = "not_tested";
   try {
@@ -138,6 +158,16 @@ export async function GET() {
         : geminiApiStatus.startsWith("failed")
         ? "Gemini API call failed. Check the error above."
         : "Gemini API is reachable and responding.",
+    },
+    groq: {
+      configured: !!groqApiKey,
+      apiKeyPrefix: groqApiKey ? groqApiKey.substring(0, 8) + "..." : "NOT SET",
+      apiCall: groqApiStatus,
+      note: !groqApiKey
+        ? "GROQ_API_KEY not set. Get one from https://console.groq.com"
+        : groqApiStatus.startsWith("failed")
+        ? "Groq API call failed. Check the error above."
+        : "Groq API is reachable and responding.",
     },
     aiProvider: providerStatus,
     affinda: {
