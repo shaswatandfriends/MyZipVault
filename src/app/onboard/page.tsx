@@ -322,9 +322,9 @@ function OnboardPageInner() {
               <label htmlFor="password" className={sharedLabelClass} style={sharedLabelStyle}>
                 Password
               </label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
+
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => {
@@ -351,9 +351,9 @@ function OnboardPageInner() {
               <label htmlFor="confirmPassword" className={sharedLabelClass} style={sharedLabelStyle}>
                 Confirm Password
               </label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
+
                 placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => {

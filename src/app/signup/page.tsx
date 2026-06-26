@@ -204,9 +204,9 @@ export default function SignupPage() {
               >
                 Password
               </label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
+
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => {
@@ -239,9 +239,9 @@ export default function SignupPage() {
               >
                 Confirm Password
               </label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
+
                 placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => {
