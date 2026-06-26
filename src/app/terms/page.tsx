@@ -171,7 +171,7 @@ export default function TermsOfService() {
               className="text-[24px] font-bold text-foreground"
               style={{ fontFamily: "'Satoshi', sans-serif" }}
             >
-              9. Disclaimers
+              9. disclaimers
             </h2>
             <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
               MYZIPVAULT IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE PLATFORM WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS. WE DO NOT GUARANTEE THE ACCURACY, COMPLETENESS, OR RELIABILITY OF ANY USER-UPLOADED CONTENT.
@@ -184,7 +184,7 @@ export default function TermsOfService() {
               className="text-[24px] font-bold text-foreground"
               style={{ fontFamily: "'Satoshi', sans-serif" }}
             >
-              10. Limitation of Liability
+              10. limitation of liability
             </h2>
             <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
               TO THE MAXIMUM EXTENT PERMITTED BY LAW, MYZIPVAULT, INC. SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR USE OF THE PLATFORM, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR BUSINESS OPPORTUNITIES. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE CLAIM, OR ONE HUNDRED DOLLARS ($100), WHICHEVER IS GREATER.

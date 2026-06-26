@@ -2323,3 +2323,20 @@ blockquote {
 .dark .glass-modal {
   background: rgba(36, 53, 48, 0.92);
 }
+
+
+/* ─── Fix: Input placeholder + autofill styling ─────────────────── */
+input[data-slot="input"]::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Fix: Browser autofill dark background */
+input[data-slot="input"]:-webkit-autofill,
+input[data-slot="input"]:-webkit-autofill:hover,
+input[data-slot="input"]:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset !important;
+  caret-color: var(--text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}

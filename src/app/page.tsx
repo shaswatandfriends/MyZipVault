@@ -759,12 +759,12 @@ export default function LandingPage() {
           >
             {isCandidate ? (
               <>
-                Build your vault.{" "}
+                <span style={{ color: "#FFFFFF" }}>Build your vault.</span>{" "}
                 <span style={{ fontStyle: "italic", color: "#E8A882" }}>Free forever.</span>
               </>
             ) : (
               <>
-                Place talent faster.{" "}
+                <span style={{ color: "#FFFFFF" }}>Place talent faster.</span>{" "}
                 <span style={{ fontStyle: "italic", color: "#E8A882" }}>Pay only for what you use.</span>
               </>
             )}
