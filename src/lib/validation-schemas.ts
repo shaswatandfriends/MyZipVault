@@ -65,7 +65,11 @@ export const signupSchema = z.object({
 export const agencySignupSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  companyName: nameSchema,
+  // companyName is sent as `agencyName` by the agency-signup page for
+  // agency accounts. Recruiters don't send it. Make it optional here
+  // and enforce it server-side when accountType === "agency".
+  companyName: nameSchema.optional(),
+  agencyName: nameSchema.optional(),
   firstName: nameSchema,
   lastName: nameSchema,
   phone: phoneSchema,

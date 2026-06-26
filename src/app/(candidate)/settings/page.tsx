@@ -478,6 +478,9 @@ export default function CandidateSettingsPage() {
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={isChangingPassword}
                   className="pr-10"
+                  autoComplete="current-password"
+                  maxLength={128}
+                  required
                 />
                 <Button
                   type="button"
@@ -506,6 +509,10 @@ export default function CandidateSettingsPage() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     disabled={isChangingPassword}
                     className="pr-10"
+                    autoComplete="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    required
                   />
                   <Button
                     type="button"
@@ -530,6 +537,10 @@ export default function CandidateSettingsPage() {
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   disabled={isChangingPassword}
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={128}
+                  required
                 />
               </div>
             </div>

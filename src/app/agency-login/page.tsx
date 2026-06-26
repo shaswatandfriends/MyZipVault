@@ -219,6 +219,7 @@ export default function AgencyLoginPage() {
                 disabled={isLoading}
                 aria-invalid={!!errors.password}
                 autoComplete="current-password"
+                maxLength={128}
               />
               {errors.password && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>

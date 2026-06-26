@@ -1,37 +1,32 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { resetPasswordSchema, validateBody } from "@/lib/validation-schemas";
 
 /**
  * POST /api/auth/reset-password
  *
  * Validates the reset token and updates the user's password.
+ *
+ * Uses the shared Zod `resetPasswordSchema` which enforces:
+ *   - token: required string
+ *   - password: 8–128 chars, ≥1 uppercase, ≥1 lowercase, ≥1 digit
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { token, newPassword } = body;
 
-    if (!token || typeof token !== "string") {
-      return NextResponse.json(
-        { error: "Reset token is required" },
-        { status: 400 }
-      );
+    // ── Zod validation (replaces the old manual length-only check) ──
+    // Note: the page sends `password`, not `newPassword` — keep the
+    // schema field name aligned with the request body.
+    const schema = resetPasswordSchema.extend({
+      password: resetPasswordSchema.shape.password,
+    });
+    const validation = validateBody(schema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-
-    if (!newPassword || typeof newPassword !== "string") {
-      return NextResponse.json(
-        { error: "New password is required" },
-        { status: 400 }
-      );
-    }
-
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
+    const { token, password: newPassword } = validation.data;
 
     // Look up the token in PlatformSetting
     const tokenRecord = await db.platformSetting.findUnique({

@@ -216,6 +216,9 @@ export default function SignupPage() {
                 disabled={isLoading}
                 aria-invalid={!!errors.password && !allPasswordChecks}
                 autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
               />
               {errors.password && !allPasswordChecks && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>
@@ -251,6 +254,9 @@ export default function SignupPage() {
                 disabled={isLoading}
                 aria-invalid={!!errors.confirmPassword}
                 autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
               />
               {errors.confirmPassword && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>

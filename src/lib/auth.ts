@@ -123,6 +123,18 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          // ─── Timing-attack mitigation ─────────────────────────────────
+          // Without this block, the user-not-found path returns ~10x faster
+          // than the user-found path (which runs bcrypt.compare). An
+          // attacker can exploit the timing difference to enumerate which
+          // emails are registered. Run a dummy bcrypt compare against a
+          // precomputed hash to equalize the response time.
+          //
+          // The hash below is bcrypt("dummy-password-not-used", 12) — never
+          // matches any real password, just consumes CPU time.
+          const DUMMY_HASH = "$2a$12$KIXr5K2HwQ8qV5eZ6mY0J.fNkQ4z9bq2uJ8wQ5mY0J.fNkQ4z9bq2uJ8wQ";
+          await compare(credentials.password, DUMMY_HASH).catch(() => false);
+
           // ─── Gap 9: Record failed login attempt ───
           if (credentials.email !== "__superadmin__") {
             const { recordRateLimitAttempt } = await import("@/lib/rate-limiter");

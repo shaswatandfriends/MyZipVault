@@ -1,59 +1,56 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { agencySignupSchema, validateBody } from "@/lib/validation-schemas";
 
+/**
+ * POST /api/auth/agency-signup
+ *
+ * Agency / recruiter self-signup. Creates a pending organization + user
+ * account that requires superadmin approval before login is allowed.
+ *
+ * Uses the shared Zod `agencySignupSchema` which enforces:
+ *   - email: valid email, max 255 chars, lowercased
+ *   - password: 8–128 chars, ≥1 uppercase, ≥1 lowercase, ≥1 digit
+ *   - companyName: required, max 100 chars
+ *   - firstName / lastName: required, max 100 chars
+ *   - phone: optional, max 30 chars
+ *   - companyAddress / companyWebsite: optional
+ *
+ * The frontend sends an additional `accountType` field ("agency" or
+ * "recruiter") which we validate separately (not part of the Zod schema
+ * because it controls whether an Organization is created).
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, accountType, agencyName } = body;
 
-    // ── Validation ──
-    if (!email || !password || !firstName || !lastName || !accountType) {
-      return NextResponse.json(
-        { error: "All required fields must be filled" },
-        { status: 400 }
-      );
-    }
+    // ── Validate accountType separately (controls org creation logic) ──
+    const { accountType, ...schemaFields } = body;
 
-    if (!["agency", "recruiter"].includes(accountType)) {
+    if (!accountType || !["agency", "recruiter"].includes(accountType)) {
       return NextResponse.json(
         { error: "Invalid account type" },
         { status: 400 }
       );
     }
 
-    if (accountType === "agency" && !agencyName?.trim()) {
+    if (accountType === "agency" && !body.agencyName?.trim() && !body.companyName?.trim()) {
       return NextResponse.json(
         { error: "Agency name is required for agency accounts" },
         { status: 400 }
       );
     }
 
-    // Password strength
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 }
-      );
+    // ── Zod validation (replaces the hand-rolled regex checks) ──
+    // We pass schemaFields to skip accountType, which isn't in the schema.
+    const validation = validateBody(agencySignupSchema, schemaFields);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one uppercase letter" },
-        { status: 400 }
-      );
-    }
-    if (!/[a-z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one lowercase letter" },
-        { status: 400 }
-      );
-    }
-    if (!/[0-9]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one number" },
-        { status: 400 }
-      );
-    }
+    const { email, password, firstName, lastName, phone, companyAddress, companyWebsite } = validation.data;
+    // Page sends `agencyName` for agency accounts; fall back to `companyName`.
+    const companyName = validation.data.agencyName || validation.data.companyName || "";
 
     // Check for existing user
     const existing = await db.user.findUnique({ where: { email } });
@@ -73,7 +70,7 @@ export async function POST(request: Request) {
     if (accountType === "agency") {
       const organization = await db.organization.create({
         data: {
-          name: agencyName.trim(),
+          name: companyName, // agencySignupSchema requires companyName
           credits_balance: 0,
           baa_status: "pending",
           seat_limit: 5,
@@ -89,8 +86,8 @@ export async function POST(request: Request) {
         email,
         password_hash: passwordHash,
         role,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
+        first_name: firstName,
+        last_name: lastName,
         organization_id: organizationId,
         is_approved: false, // Requires admin approval
         account_status: "pending", // Admin must activate from admin panel

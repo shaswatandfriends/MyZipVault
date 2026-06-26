@@ -173,6 +173,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                maxLength={128}
               />
             </div>
 

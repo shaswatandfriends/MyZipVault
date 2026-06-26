@@ -334,6 +334,9 @@ function OnboardPageInner() {
                 disabled={isLoading}
                 aria-invalid={!!errors.password}
                 autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
               />
               {errors.password && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.password}</p>
@@ -363,6 +366,9 @@ function OnboardPageInner() {
                 disabled={isLoading}
                 aria-invalid={!!errors.confirmPassword}
                 autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
               />
               {errors.confirmPassword && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--status-red)" }}>{errors.confirmPassword}</p>

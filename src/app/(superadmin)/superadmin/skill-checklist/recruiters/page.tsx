@@ -251,8 +251,8 @@ export default function AllRecruitersPage() {
   // ── Reset Password ────────────────────────────────────────────────
   const handleResetPassword = async () => {
     if (!resetPasswordUser) return;
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -595,9 +595,12 @@ export default function AllRecruitersPage() {
               <PasswordInput
                 id="new-password"
 
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 8 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                minLength={8}
+                maxLength={128}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -608,6 +611,9 @@ export default function AllRecruitersPage() {
                 placeholder="Re-enter the password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={8}
+                maxLength={128}
+                required
               />
               {confirmPassword && newPassword !== confirmPassword && (
                 <p className="text-xs text-red-600">Passwords do not match</p>
