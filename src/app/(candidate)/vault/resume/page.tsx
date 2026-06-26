@@ -556,6 +556,39 @@ export default function CandidateResumePage() {
   const [activeBuilderTab, setActiveBuilderTab] = useState("contact");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Resume Versions state
+  const [versions, setVersions] = useState<Array<{
+    id: number;
+    version_name: string;
+    is_active: boolean;
+    is_builder_resume: boolean;
+    template_id: string | null;
+    ats_score: number | null;
+    created_at: string;
+    updated_at: string;
+  }>>([]);
+  const [showVersionDialog, setShowVersionDialog] = useState(false);
+  const [newVersionName, setNewVersionName] = useState("");
+  const [copyFromId, setCopyFromId] = useState<number | null>(null);
+
+  // ATS Scoring state
+  const [atsJobDescription, setAtsJobDescription] = useState("");
+  const [atsResult, setAtsResult] = useState<{
+    score: number;
+    matched_keywords: string[];
+    missing_keywords: string[];
+    suggestions: string[];
+  } | null>(null);
+  const [atsLoading, setAtsLoading] = useState(false);
+
+  // Resume Tailoring state
+  const [tailorJobDescription, setTailorJobDescription] = useState("");
+  const [tailorVersionName, setTailorVersionName] = useState("");
+  const [tailorLoading, setTailorLoading] = useState(false);
+
+  // Hub sub-tab
+  const [hubTab, setHubTab] = useState<"overview" | "versions" | "ai-tools">("overview");
+
   // Builder state
   const [contact, setContact] = useState({
     fullName: "",
@@ -596,9 +629,189 @@ export default function CandidateResumePage() {
     }
   }, []);
 
+  // Fetch resume versions
+  const fetchVersions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/candidate/resume/versions");
+      if (res.ok) {
+        const data = await res.json();
+        setVersions(data.versions || []);
+      }
+    } catch {
+      // Silent fail — versions are non-critical
+    }
+  }, []);
+
   useEffect(() => {
     fetchResume();
-  }, [fetchResume]);
+    fetchVersions();
+  }, [fetchResume, fetchVersions]);
+
+  // ─── Version Actions ───────────────────────────────────────────────
+  const handleCreateVersion = async () => {
+    if (!newVersionName.trim()) {
+      toast.error("Please enter a version name");
+      return;
+    }
+    try {
+      const res = await fetch("/api/candidate/resume/versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version_name: newVersionName.trim(),
+          from_resume_id: copyFromId,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create version");
+      toast.success("Version created");
+      setShowVersionDialog(false);
+      setNewVersionName("");
+      setCopyFromId(null);
+      fetchVersions();
+      fetchResume();
+    } catch {
+      toast.error("Failed to create version");
+    }
+  };
+
+  const handleSetActive = async (id: number) => {
+    try {
+      const res = await fetch(`/api/candidate/resume/versions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: true }),
+      });
+      if (!res.ok) throw new Error("Failed to set active");
+      toast.success("Active version updated");
+      fetchVersions();
+      fetchResume();
+    } catch {
+      toast.error("Failed to set active version");
+    }
+  };
+
+  const handleDeleteVersion = async (id: number, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/candidate/resume/versions/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete");
+      }
+      toast.success("Version deleted");
+      fetchVersions();
+      fetchResume();
+    } catch (err) {
+      toast.error("Failed to delete version", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  };
+
+  // ─── ATS Scoring ───────────────────────────────────────────────────
+  const handleAtsScore = async () => {
+    if (!atsJobDescription.trim()) {
+      toast.error("Please paste a job description");
+      return;
+    }
+    setAtsLoading(true);
+    setAtsResult(null);
+    try {
+      const res = await fetch("/api/ai/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ats_score",
+          context: {
+            resume: resume?.parsedData,
+            jobDescription: atsJobDescription.trim(),
+          },
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "ATS scoring failed");
+      }
+      const data = await res.json();
+      if (data.result) {
+        setAtsResult(data.result);
+        toast.success(`ATS Score: ${data.result.score}%`, {
+          description: `Provider: ${data.provider || "AI"}`,
+        });
+      } else {
+        toast.error("AI could not analyze the resume. Try again.");
+      }
+    } catch (err) {
+      toast.error("ATS scoring failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setAtsLoading(false);
+    }
+  };
+
+  // ─── Resume Tailoring ──────────────────────────────────────────────
+  const handleTailorResume = async () => {
+    if (!tailorJobDescription.trim()) {
+      toast.error("Please paste a job description");
+      return;
+    }
+    if (!tailorVersionName.trim()) {
+      toast.error("Please enter a name for the tailored version");
+      return;
+    }
+    setTailorLoading(true);
+    try {
+      // Step 1: Generate tailored resume data via AI
+      const aiRes = await fetch("/api/ai/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "tailor_resume",
+          context: {
+            resume: resume?.parsedData,
+            jobDescription: tailorJobDescription.trim(),
+          },
+        }),
+      });
+      if (!aiRes.ok) {
+        const data = await aiRes.json().catch(() => ({}));
+        throw new Error(data.error || "AI tailoring failed");
+      }
+      const aiData = await aiRes.json();
+      if (!aiData.result) {
+        throw new Error("AI returned no result");
+      }
+
+      // Step 2: Create a new resume version with the tailored data
+      const versionRes = await fetch("/api/candidate/resume/versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version_name: tailorVersionName.trim(),
+          parsed_data: JSON.stringify(aiData.result),
+          from_resume_id: resume?.id,
+        }),
+      });
+      if (!versionRes.ok) throw new Error("Failed to save tailored version");
+
+      toast.success("Tailored resume created!", {
+        description: `"${tailorVersionName}" is now saved as a new version.`,
+      });
+      setTailorJobDescription("");
+      setTailorVersionName("");
+      fetchVersions();
+      fetchResume();
+    } catch (err) {
+      toast.error("Resume tailoring failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setTailorLoading(false);
+    }
+  };
 
   const populateBuilderFromResume = (data: ResumeParsedData) => {
     if (data.contact) {
@@ -820,6 +1033,30 @@ export default function CandidateResumePage() {
           </p>
         </div>
 
+        {/* Hub Tabs */}
+        <div className="flex items-center gap-1 border-b">
+          {[
+            { key: "overview" as const, label: "Overview" },
+            { key: "versions" as const, label: `Versions (${versions.length})` },
+            { key: "ai-tools" as const, label: "AI Tools" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setHubTab(tab.key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                hubTab === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ════ OVERVIEW TAB ════ */}
+        {hubTab === "overview" && (
+          <>
         {/* Current Resume Overview */}
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white">
@@ -1010,6 +1247,285 @@ export default function CandidateResumePage() {
             </div>
           </CardContent>
         </Card>
+          </>
+        )}
+
+        {/* ════ VERSIONS TAB ════ */}
+        {hubTab === "versions" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Resume Versions</h2>
+              <Button size="sm" className="gap-1.5" onClick={() => setShowVersionDialog(true)}>
+                <Plus className="size-4" />
+                New Version
+              </Button>
+            </div>
+
+            {versions.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                    <FileText className="size-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium">No additional versions</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create multiple versions of your resume for different positions (ICU, Travel Nurse, Case Manager, etc.)
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {versions.map((v) => (
+                  <Card key={v.id} className={v.is_active ? "border-primary border-2" : ""}>
+                    <CardContent className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          v.is_active ? "bg-primary/10" : "bg-muted"
+                        }`}>
+                          <FileText className={`size-5 ${v.is_active ? "text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{v.version_name}</p>
+                            {v.is_active && (
+                              <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Active</Badge>
+                            )}
+                            {v.ats_score !== null && (
+                              <Badge variant="outline" className="text-[10px]">
+                                ATS: {v.ats_score}%
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {v.is_builder_resume ? "Builder" : "Uploaded"} · Updated {new Date(v.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!v.is_active && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleSetActive(v.id)}>
+                            Set Active
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setCopyFromId(v.id); setMode("builder"); }}>
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-600" onClick={() => handleDeleteVersion(v.id, v.version_name)}>
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Create Version Dialog */}
+            {showVersionDialog && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowVersionDialog(false)}>
+                <div className="bg-background rounded-lg shadow-lg p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-lg font-semibold">Create New Resume Version</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Version Name</Label>
+                      <Input
+                        placeholder="e.g., ICU Resume, Travel Nurse Resume"
+                        value={newVersionName}
+                        onChange={(e) => setNewVersionName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCreateVersion()}
+                      />
+                    </div>
+                    <div>
+                      <Label>Copy from (optional)</Label>
+                      <Select value={copyFromId ? String(copyFromId) : ""} onValueChange={(v) => setCopyFromId(Number(v))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Start from scratch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Start from scratch</SelectItem>
+                          {versions.map((v) => (
+                            <SelectItem key={v.id} value={String(v.id)}>
+                              {v.version_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowVersionDialog(false)}>Cancel</Button>
+                    <Button onClick={handleCreateVersion} className="gap-1.5">
+                      <Plus className="size-4" />
+                      Create
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════ AI TOOLS TAB ════ */}
+        {hubTab === "ai-tools" && (
+          <div className="space-y-6">
+            {/* ATS Score Check */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileCheck className="size-4 text-blue-600" />
+                  ATS Score Check
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Paste a job description to see how well your resume matches. AI will analyze keywords, skills, and formatting.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  placeholder="Paste the job description here..."
+                  value={atsJobDescription}
+                  onChange={(e) => setAtsJobDescription(e.target.value)}
+                  rows={5}
+                  className="resize-none"
+                />
+                <Button
+                  className="gap-1.5"
+                  onClick={handleAtsScore}
+                  disabled={atsLoading || !atsJobDescription.trim()}
+                >
+                  {atsLoading ? <Loader2 className="size-4 animate-spin" /> : <FileCheck className="size-4" />}
+                  {atsLoading ? "Analyzing..." : "Check ATS Score"}
+                </Button>
+
+                {atsResult && (
+                  <div className="mt-4 space-y-3 p-4 rounded-lg border bg-muted/30">
+                    {/* Score */}
+                    <div className="flex items-center gap-3">
+                      <div className={`size-16 rounded-full flex items-center justify-center text-2xl font-bold ${
+                        atsResult.score >= 80 ? "bg-green-100 text-green-700" :
+                        atsResult.score >= 60 ? "bg-amber-100 text-amber-700" :
+                        "bg-red-100 text-red-700"
+                      }`}>
+                        {atsResult.score}%
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">ATS Compatibility Score</p>
+                        <p className="text-xs text-muted-foreground">
+                          {atsResult.score >= 80 ? "Excellent — your resume matches well!" :
+                           atsResult.score >= 60 ? "Good — some improvements needed." :
+                           "Low — significant changes recommended."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Matched Keywords */}
+                    {atsResult.matched_keywords && atsResult.matched_keywords.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-green-600 mb-1.5">✓ Matched Keywords</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {atsResult.matched_keywords.map((kw, i) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Missing Keywords */}
+                    {atsResult.missing_keywords && atsResult.missing_keywords.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-red-600 mb-1.5">✗ Missing Keywords</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {atsResult.missing_keywords.map((kw, i) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions */}
+                    {atsResult.suggestions && atsResult.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-blue-600 mb-1.5">💡 Suggestions</p>
+                        <ul className="space-y-1">
+                          {atsResult.suggestions.map((s, i) => (
+                            <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                              <span className="text-blue-500 mt-0.5">•</span>
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Resume Tailoring */}
+            <Card className="border-violet-200 dark:border-violet-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="size-4 text-violet-600" />
+                  Tailor Resume for Job
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Paste a job description and AI will create a new resume version tailored to that specific position. Your original resume stays unchanged.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Version Name</Label>
+                  <Input
+                    placeholder="e.g., ICU Nurse — Riverside Hospital"
+                    value={tailorVersionName}
+                    onChange={(e) => setTailorVersionName(e.target.value)}
+                  />
+                </div>
+                <Textarea
+                  placeholder="Paste the job description here..."
+                  value={tailorJobDescription}
+                  onChange={(e) => setTailorJobDescription(e.target.value)}
+                  rows={5}
+                  className="resize-none"
+                />
+                <Button
+                  className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+                  onClick={handleTailorResume}
+                  disabled={tailorLoading || !tailorJobDescription.trim() || !tailorVersionName.trim()}
+                >
+                  {tailorLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                  {tailorLoading ? "Generating tailored resume..." : "Generate Tailored Version"}
+                </Button>
+                {tailorLoading && (
+                  <p className="text-xs text-muted-foreground">
+                    This may take 10-20 seconds. AI is creating a new resume version based on the job description.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* AI Chat */}
+            <Card className="border-violet-200 dark:border-violet-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="size-4 text-violet-600" />
+                  AI Resume Assistant
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Chat with AI for personalized resume advice, content suggestions, and best practices.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+                  onClick={() => { setMode("builder"); setShowAiChat(true); }}
+                >
+                  <Sparkles className="size-4" />
+                  Open AI Assistant
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     );
   }
