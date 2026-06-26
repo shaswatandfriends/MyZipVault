@@ -4,11 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Search,
-  Eye,
   KeyRound,
   Trash2,
   Users,
-  EyeOff,
   ChevronLeft,
   ChevronRight,
   Building2,
@@ -174,12 +172,6 @@ export default function AllRecruitersPage() {
   const [page, setPage] = useState(1);
   const [companies, setCompanies] = useState<Company[]>([]);
 
-  // View password dialog
-  const [viewPasswordUser, setViewPasswordUser] = useState<RecruiterRow | null>(null);
-  const [passwordValue, setPasswordValue] = useState<string | null>(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
-
   // Reset password dialog
   const [resetPasswordUser, setResetPasswordUser] = useState<RecruiterRow | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -252,30 +244,9 @@ export default function AllRecruitersPage() {
     setPage(1);
   }, [searchQuery, companyFilter]);
 
-  // ── View Password ─────────────────────────────────────────────────
-  const handleViewPassword = async (recruiter: RecruiterRow) => {
-    setViewPasswordUser(recruiter);
-    setPasswordValue(null);
-    setPasswordVisible(false);
-    setPasswordLoading(true);
-
-    try {
-      const res = await fetch(
-        `/api/superadmin/skill-checklist/recruiters/${recruiter.id}/password`
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to fetch password");
-      }
-      const json = await res.json();
-      setPasswordValue(json.password);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Failed to fetch password", { description: message });
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
+  // ── View Password (removed) ─────────────────────────────────────
+  // Plaintext password retrieval has been deprecated. Use Reset Password
+  // to issue a new one-time temporary password instead.
 
   // ── Reset Password ────────────────────────────────────────────────
   const handleResetPassword = async () => {
@@ -302,9 +273,23 @@ export default function AllRecruitersPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to reset password");
 
-      toast.success("Password reset successfully", {
-        description: `${resetPasswordUser.email} will be required to change their password on next login.`,
-      });
+      // Backend returns the one-time temp password (no longer stored in DB).
+      // Show it in a copyable toast for the admin to share out-of-band.
+      if (json.temporary_password) {
+        toast.success("Password reset — copy this temp password", {
+          duration: 12000,
+          description: `Temp password: ${json.temporary_password} (user must change on next login)`,
+        });
+        try {
+          await navigator.clipboard.writeText(json.temporary_password);
+        } catch {
+          // clipboard may be blocked — user can copy from the toast
+        }
+      } else {
+        toast.success("Password reset successfully", {
+          description: `${resetPasswordUser.email} will be required to change their password on next login.`,
+        });
+      }
       setResetPasswordUser(null);
       setNewPassword("");
       setConfirmPassword("");
@@ -496,19 +481,7 @@ export default function AllRecruitersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {/* View Password */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="size-8 p-0"
-                              title="View Password"
-                              onClick={() => handleViewPassword(recruiter)}
-                            >
-                              <Eye className="size-4 text-emerald-600" />
-                              <span className="sr-only">View Password</span>
-                            </Button>
-
-                            {/* Reset Password */}
+                            {/* Reset Password (View Password removed — plaintext storage no longer supported) */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -591,100 +564,6 @@ export default function AllRecruitersPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* ── View Password Dialog ──────────────────────────────────────── */}
-      <Dialog
-        open={!!viewPasswordUser}
-        onOpenChange={(open) => {
-          if (!open) {
-            setViewPasswordUser(null);
-            setPasswordValue(null);
-            setPasswordVisible(false);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="size-5 text-emerald-600" />
-              View Password
-            </DialogTitle>
-            <DialogDescription>
-              View the stored password for this recruiter account.
-            </DialogDescription>
-          </DialogHeader>
-
-          {viewPasswordUser && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Email</Label>
-                <p className="text-sm font-medium break-all">
-                  {viewPasswordUser.email}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Password</Label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm font-mono">
-                    {passwordLoading ? (
-                      <Skeleton className="h-5 w-32" />
-                    ) : passwordVisible ? (
-                      passwordValue ?? "No password stored"
-                    ) : (
-                      "••••••••"
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPasswordVisible(!passwordVisible)}
-                    disabled={passwordLoading || !passwordValue}
-                  >
-                    {passwordVisible ? (
-                      <>
-                        <EyeOff className="size-4 mr-1" />
-                        Hide
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="size-4 mr-1" />
-                        Show
-                      </>
-                    )}
-                  </Button>
-                </div>
-                {passwordValue === null && !passwordLoading && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    No plain password is stored for this account.
-                  </p>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-xs text-amber-800">
-                  <strong>Security Notice:</strong> This password is stored in
-                  plaintext for admin convenience. Handle with care and never
-                  share it via insecure channels.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setViewPasswordUser(null);
-                setPasswordValue(null);
-                setPasswordVisible(false);
-              }}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ── Reset Password Dialog ──────────────────────────────────────── */}
       <Dialog

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hash } from "bcryptjs";
+import { generateSecurePassword } from "@/lib/password-generator";
 
 const ALL_PERMISSIONS = [
   "can_manage_credits",
@@ -106,8 +107,8 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Email already exists" }, { status: 400 });
         }
 
-        // Generate a temporary password
-        const tempPassword = `Tmp${Math.random().toString(36).slice(2, 10)}!`;
+        // Generate a cryptographically-secure temporary password
+        const tempPassword = generateSecurePassword(12);
         const passwordHash = await hash(tempPassword, 12);
 
         const admin = await db.user.create({

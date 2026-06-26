@@ -3,7 +3,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { generateSecurePassword } from "@/lib/password-generator";
 
+/**
+ * POST /api/superadmin/skill-checklist/recruiters/[id]/reset-password
+ *
+ * Admin-initiated password reset for a recruiter or client_admin.
+ *
+ * Security notes:
+ *   - The new password is generated using `crypto.randomBytes` (CSPRNG),
+ *     never `Math.random()`.
+ *   - The plaintext is NOT stored anywhere — only the bcrypt hash is
+ *     persisted. Previous versions stored the plaintext in a `plain_password`
+ *     column; that practice has been removed.
+ *   - The plaintext is returned ONCE in the API response so the admin
+ *     can share it out-of-band (Slack, phone) with the user. The user
+ *     is forced to change it on next login via `must_change_pass: true`.
+ *   - An audit log entry is written.
+ */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -23,14 +40,7 @@ export async function POST(
     const userId = parseInt(id, 10);
 
     const body = await request.json();
-    const { newPassword } = body as { newPassword: string };
-
-    if (!newPassword || newPassword.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
-    }
+    const { newPassword } = body as { newPassword?: string };
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -45,14 +55,24 @@ export async function POST(
       );
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    // Use admin-supplied password if provided (must meet schema),
+    // otherwise generate a cryptographically-secure one.
+    let finalPassword: string;
+    if (newPassword && newPassword.length >= 8) {
+      finalPassword = newPassword;
+    } else {
+      finalPassword = generateSecurePassword(12);
+    }
+
+    const hashedPassword = await bcrypt.hash(finalPassword, 12);
 
     await db.user.update({
       where: { id: userId },
       data: {
         password_hash: hashedPassword,
-        plain_password: newPassword,
         must_change_pass: true,
+        // NOTE: plain_password column is intentionally NOT written.
+        // The column should be dropped from the DB in a follow-up migration.
       },
     });
 
@@ -68,7 +88,13 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ success: true });
+    // Return the plaintext ONCE — admin must share it out-of-band.
+    // It is never persisted to the database.
+    return NextResponse.json({
+      success: true,
+      temporary_password: finalPassword,
+      message: "Password reset. The user must change it on next login.",
+    });
   } catch (error) {
     console.error("[SUPERADMIN_SKILLCHECKLIST_RECRUITER_RESET_PASSWORD]", error);
     return NextResponse.json(

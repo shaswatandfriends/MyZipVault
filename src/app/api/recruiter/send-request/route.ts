@@ -79,8 +79,10 @@ export async function POST(request: Request) {
       candidateUserId = existingUser.id;
     } else {
       // Create new candidate user
-      const bcrypt = await import("bcryptjs");
-      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(-12), 12);
+      // Password hash is a CSPRNG placeholder — the candidate sets their
+      // real password via the /onboard invite-token flow (see below).
+      const { generatePlaceholderPasswordHash } = await import("@/lib/password-generator");
+      const tempPassword = await generatePlaceholderPasswordHash();
 
       const newUser = await db.user.create({
         data: {

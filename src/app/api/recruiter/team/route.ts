@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import { generateSecurePassword } from "@/lib/password-generator";
 
 export async function GET() {
   try {
@@ -215,7 +216,7 @@ export async function POST(request: Request) {
 
       // Create user with selected role
       const bcrypt = await import("bcryptjs");
-      const rawPassword = Math.random().toString(36).slice(-10) + "Aa1!";
+      const rawPassword = generateSecurePassword(12);
       const tempPassword = await bcrypt.hash(rawPassword, 12);
 
       const newUser = await db.user.create({

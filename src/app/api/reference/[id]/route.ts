@@ -207,11 +207,10 @@ export async function POST(
         }
       } else {
         // No existing account — create a free candidate vault
-        const bcrypt = await import("bcryptjs");
-        const tempPassword = await bcrypt.hash(
-          Math.random().toString(36).slice(-12),
-          12
-        );
+        // Password hash is a CSPRNG placeholder — the manager sets their
+        // real password via the /onboard invite-token flow (see below).
+        const { generatePlaceholderPasswordHash } = await import("@/lib/password-generator");
+        const tempPassword = await generatePlaceholderPasswordHash();
 
         const newManagerUser = await db.user.create({
           data: {

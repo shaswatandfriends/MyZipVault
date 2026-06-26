@@ -1,56 +1,43 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
 
+/**
+ * GET /api/superadmin/skill-checklist/recruiters/[id]/password
+ *
+ * @deprecated Plaintext password retrieval is no longer supported.
+ *   This endpoint previously returned the stored `plain_password` for
+ *   a recruiter. Storing recoverable plaintext passwords is a critical
+ *   security violation (HIPAA 164.312(a)(2)(iv) and NIST 800-63B 5.1.1.2).
+ *
+ *   Use POST /api/superadmin/skill-checklist/recruiters/[id]/reset-password
+ *   to issue a new one-time temporary password instead.
+ *
+ * Returns 410 Gone with a clear message for any legacy callers.
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "super_admin" && userRole !== "platform_admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const { id } = await params;
-    const userId = parseInt(id, 10);
-
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        plain_password: true,
-        role: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Only allow viewing passwords for recruiter/client_admin roles
-    if (user.role !== "client_recruiter" && user.role !== "client_admin") {
-      return NextResponse.json(
-        { error: "Cannot view password for this user type" },
-        { status: 403 }
-      );
-    }
-
-    return NextResponse.json({
-      password: user.plain_password ?? null,
-    });
-  } catch (error) {
-    console.error("[SUPERADMIN_SKILLCHECKLIST_RECRUITER_PASSWORD]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch password" },
-      { status: 500 }
-    );
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const userRole = (session.user as Record<string, unknown>).role as string;
+  if (userRole !== "super_admin" && userRole !== "platform_admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Touch `params` so Next.js doesn't warn about unused param
+  await params;
+
+  return NextResponse.json(
+    {
+      error:
+        "Plaintext password retrieval is no longer supported. Use POST /api/superadmin/skill-checklist/recruiters/[id]/reset-password to issue a new one-time temporary password.",
+      deprecated: true,
+    },
+    { status: 410 }
+  );
 }
