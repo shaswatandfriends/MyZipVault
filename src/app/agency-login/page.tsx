@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import AuthSlideshowPanel from "@/components/auth/AuthSlideshowPanel";
 
 const trustPoints = [
@@ -206,9 +207,9 @@ export default function AgencyLoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
+
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => {

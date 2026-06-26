@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -523,9 +524,8 @@ export default function CandidateSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
-                <Input
+                <PasswordInput
                   id="confirmNewPassword"
-                  type="password"
                   placeholder="Confirm new password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
