@@ -133,8 +133,15 @@ export const authOptions: NextAuthOptions = {
           //
           // The hash below is bcrypt("dummy-password-not-used", 12) — never
           // matches any real password, just consumes CPU time.
-          const DUMMY_HASH = "$2a$12$KIXr5K2HwQ8qV5eZ6mY0J.fNkQ4z9bq2uJ8wQ5mY0J.fNkQ4z9bq2uJ8wQ";
-          await compare(credentials.password, DUMMY_HASH).catch(() => false);
+          // Generated with: bcrypt.hashSync("dummy-password-not-used", 12)
+          const DUMMY_HASH = "$2b$12$pxaYtNjUJXIySh6b47ly5.LG/A2HokJGmUE5KGZTbLVMxPqqAIxNS";
+          try {
+            await compare(credentials.password, DUMMY_HASH);
+          } catch {
+            // Ignore — the dummy compare is best-effort. If it fails (e.g.
+            // malformed hash, bcryptjs internal error), we still want to
+            // proceed to the "Invalid email or password" throw below.
+          }
 
           // ─── Gap 9: Record failed login attempt ───
           if (credentials.email !== "__superadmin__") {
