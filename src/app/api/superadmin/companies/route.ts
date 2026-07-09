@@ -189,11 +189,10 @@ export async function POST(request: Request) {
         if (!organizationId || creditAmount === undefined) {
           return NextResponse.json({ error: "Organization ID and credit amount are required" }, { status: 400 });
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let org: any = null;
-try {
-  db.organization.findUnique({ where: { id: organizationId } });
-} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
+        const org = await db.organization.findUnique({
+          where: { id: organizationId },
+          select: { id: true, credits_balance: true, name: true },
+        });
         if (!org) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
@@ -306,14 +305,10 @@ try {
         const targetRole = memberRole === "client_admin" ? "client_admin" : "client_recruiter";
 
         // Check seat limit
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let org: any = null;
-try {
-  db.organization.findUnique({
+        const org = await db.organization.findUnique({
           where: { id: organizationId },
           select: { seat_limit: true, name: true },
         });
-} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
         if (!org) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
@@ -608,11 +603,10 @@ try {
         }
         // Check seat limit before activating
         if (activateUser.organization_id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let org: any = null;
-try {
-  db.organization.findUnique({ where: { id: activateUser.organization_id } });
-} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
+          const org = await db.organization.findUnique({
+            where: { id: activateUser.organization_id },
+            select: { id: true, seat_limit: true, name: true },
+          });
           if (org) {
             const activeMembers = await db.user.count({
               where: {
@@ -656,11 +650,10 @@ try {
         if (!["active", "suspended", "pending", "banned"].includes(accountStatus)) {
           return NextResponse.json({ error: "Invalid status. Must be active, suspended, pending, or banned" }, { status: 400 });
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let statusOrg: any = null;
-try {
-  db.organization.findUnique({ where: { id: statusOrgId } });
-} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
+        const statusOrg = await db.organization.findUnique({
+          where: { id: statusOrgId },
+          select: { id: true, account_status: true, seat_limit: true, name: true },
+        });
         if (!statusOrg) {
           return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
