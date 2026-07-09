@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { passwordSchema, validateBody } from "@/lib/validation-schemas";
+import { logAuthError } from "@/lib/auth-logger";
 
 // Reuse check: disallow setting the new password to the current password.
 // NIST 800-63B 5.1.1.2 recommends blocking reuse of recently-used passwords;
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[CANDIDATE_CHANGE_PASSWORD]", error);
+    logAuthError("[CANDIDATE_CHANGE_PASSWORD]", error);
     return NextResponse.json(
       { error: "Failed to change password" },
       { status: 500 }

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
 import { signupSchema, validateBody } from "@/lib/validation-schemas";
+import { logAuthError } from "@/lib/auth-logger";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
       await sendVerificationEmail(user.email, verificationLink);
       console.log(`[AUDIT] Verification email sent on signup — user: ${user.id}, email: ${user.email}`);
     } catch (emailError) {
-      console.error("[SIGNUP] Failed to send verification email:", emailError);
+      logAuthError("[SIGNUP] Failed to send verification email", emailError);
       // Don't fail signup if email sending fails
     }
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Signup error:", error);
+    logAuthError("[SIGNUP]", error);
     return NextResponse.json(
       { error: "Failed to create account. Please try again." },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { logAuthError } from "@/lib/auth-logger";
 
 export async function POST(request: Request) {
   try {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
           relatedEntityType: "user",
         });
       } catch (notifErr) {
-        console.error("[ONBOARD] Failed to notify inviter:", notifErr);
+        logAuthError("[ONBOARD] Failed to notify inviter", notifErr);
         // Non-blocking
       }
     }
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Onboard error:", error);
+    logAuthError("[ONBOARD]", error);
     return NextResponse.json(
       { error: "Failed to complete onboarding. Please try again." },
       { status: 500 }
@@ -182,7 +183,7 @@ export async function GET(request: Request) {
       nurseName: inviteToken.nurse_name,
     });
   } catch (error) {
-    console.error("Token validation error:", error);
+    logAuthError("[ONBOARD] Token validation", error);
     return NextResponse.json(
       { error: "Failed to validate token" },
       { status: 500 }

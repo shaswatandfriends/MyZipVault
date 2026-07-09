@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { agencySignupSchema, validateBody } from "@/lib/validation-schemas";
+import { logAuthError } from "@/lib/auth-logger";
 
 /**
  * POST /api/auth/agency-signup
@@ -135,11 +136,11 @@ export async function POST(request: Request) {
               relatedEntityType: "organization",
             });
           } catch (err) {
-            console.error("[AGENCY_SIGNUP] Failed to notify super admin:", admin.id, err);
+            logAuthError(`[AGENCY_SIGNUP] Failed to notify super admin: ${admin.id}`, err);
           }
         }
       } catch (notifErr) {
-        console.error("[AGENCY_SIGNUP] Failed to send signup notifications:", notifErr);
+        logAuthError("[AGENCY_SIGNUP] Failed to send signup notifications", notifErr);
         // Non-blocking
       }
     }
@@ -154,7 +155,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Agency signup error:", error);
+    logAuthError("[AGENCY_SIGNUP]", error);
     return NextResponse.json(
       { error: "Failed to create account. Please try again." },
       { status: 500 }

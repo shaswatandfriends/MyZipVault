@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
+import { logAuthError } from "@/lib/auth-logger";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
           await sendPasswordResetEmail(user.email, resetLink);
           console.log(`[AUDIT] Password reset email sent — user: ${user.id}, email: ${user.email}, timestamp: ${new Date().toISOString()}`);
         } catch (emailError) {
-          console.error("[FORGOT PASSWORD] Failed to send reset email:", emailError);
+          logAuthError("[FORGOT_PASSWORD] Failed to send reset email", emailError);
           // Clean up the token since email failed
           await db.platformSetting.deleteMany({
             where: { setting_key: `reset_${token}` },
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
       message: "If an account with that email exists, we've sent a reset link.",
     });
   } catch (error) {
-    console.error("[FORGOT PASSWORD] Error:", error);
+    logAuthError("[FORGOT_PASSWORD]", error);
     // Still return success to avoid leaking information
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import { logAuthError } from "@/lib/auth-logger";
 
 // Server-side superadmin email — never exposed to the client
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
@@ -285,7 +286,7 @@ export const authOptions: NextAuthOptions = {
       } catch (error) {
         // DB error — don't kill the session, just log and keep stale token
         // (next refresh attempt will retry)
-        console.error("[AUTH] Failed to refresh JWT from DB:", error);
+        logAuthError("[AUTH] Failed to refresh JWT from DB", error);
       }
 
       return token;

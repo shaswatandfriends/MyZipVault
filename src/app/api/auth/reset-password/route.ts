@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { resetPasswordSchema, validateBody } from "@/lib/validation-schemas";
+import { logAuthError } from "@/lib/auth-logger";
 
 /**
  * POST /api/auth/reset-password
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
       message: "Password has been reset successfully.",
     });
   } catch (error) {
-    console.error("[RESET PASSWORD] Error:", error);
+    logAuthError("[RESET_PASSWORD]", error);
     return NextResponse.json(
       { error: "Failed to reset password. Please try again." },
       { status: 500 }
