@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "@/components/providers/session-provider";
@@ -73,6 +74,24 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${satoshi.variable} ${playfair.variable} antialiased bg-background text-foreground font-sans`}
       >
+        {/* ─── Privacy-friendly analytics (Plausible) ───────────────────────
+            Loads ONLY when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set.
+            - No cookies, no PII collected → aligns with HIPAA positioning
+            - GDPR-compliant out of the box
+            - Script is deferred so it never blocks page render
+            - To enable: create a site at plausible.io (or self-host),
+              set NEXT_PUBLIC_PLAUSIBLE_DOMAIN=myzipvault.com and
+              NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL=https://plausible.io/js/script.js
+              in Vercel env vars.
+        ──────────────────────────────────────────────────────────────────── */}
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <Script
+            src={process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL || "https://plausible.io/js/script.js"}
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            strategy="afterInteractive"
+          />
+        )}
+
         <ProxyModeBanner />
         <ThemeProvider
           attribute="class"
