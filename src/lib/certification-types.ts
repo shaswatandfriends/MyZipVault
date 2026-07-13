@@ -360,11 +360,8 @@ export const CERTIFICATION_CATEGORIES: CertificationCategory[] = [
     ],
   },
   {
-    category: "Licenses & Immunizations",
+    category: "Immunizations & Other Documents",
     certifications: [
-      { label: "RN License (Registered Nurse License)", code: "RN" },
-      { label: "LPN License (Licensed Practical Nurse License)", code: "LPN" },
-      { label: "APRN License (Advanced Practice RN License)", code: "APRN" },
       { label: "Immunization Records", code: "IMM" },
       { label: "TB Test / PPD", code: "TB" },
       { label: "Flu Vaccine", code: "FLU" },
