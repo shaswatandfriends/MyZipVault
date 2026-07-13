@@ -176,13 +176,13 @@ export function CertificationMultiSelect({
         {isOpen && (
           <div
             className={cn(
-              "absolute z-50 w-full rounded-md border bg-popover shadow-lg flex flex-col",
+              "absolute z-50 w-full rounded-md border bg-background shadow-lg flex flex-col",
               dropUp ? "bottom-full mb-1" : "top-full mt-1"
             )}
             style={{ maxHeight: `${availableHeight}px` }}
           >
             {/* Search */}
-            <div className="p-2 border-b sticky top-0 bg-popover z-10 shrink-0">
+            <div className="p-2 border-b sticky top-0 bg-background z-10 shrink-0">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -206,7 +206,7 @@ export function CertificationMultiSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b sticky top-0">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b sticky top-0">
                     {cat.category}
                   </div>
                   {cat.certifications.map((cert) => {

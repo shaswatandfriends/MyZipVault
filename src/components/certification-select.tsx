@@ -168,13 +168,13 @@ export function CertificationSelect({
         {isOpen && (
           <div
             className={cn(
-              "absolute z-50 w-full rounded-md border bg-popover shadow-lg flex flex-col",
+              "absolute z-50 w-full rounded-md border bg-background shadow-lg flex flex-col",
               dropUp ? "bottom-full mb-1" : "top-full mt-1"
             )}
             style={{ maxHeight: `${availableHeight}px` }}
           >
-            {/* Search input (sticky at top) */}
-            <div className="p-2 border-b bg-popover sticky top-0 z-10 shrink-0">
+            {/* Search input (sticky at top, fully opaque) */}
+            <div className="p-2 border-b bg-background sticky top-0 z-10 shrink-0">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -199,8 +199,8 @@ export function CertificationSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  {/* Category heading — larger + bolder for readability */}
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b sticky top-0">
+                  {/* Category heading — fully opaque so items don't show through when scrolling */}
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b sticky top-0">
                     {cat.category}
                   </div>
                   {/* Certifications in this category */}
@@ -224,8 +224,8 @@ export function CertificationSelect({
                 </div>
               ))}
 
-              {/* Other option — always visible at bottom */}
-              <div className="border-t sticky bottom-0 bg-popover">
+              {/* Other option — always visible at bottom, fully opaque */}
+              <div className="border-t sticky bottom-0 bg-background">
                 <button
                   type="button"
                   className={cn(
