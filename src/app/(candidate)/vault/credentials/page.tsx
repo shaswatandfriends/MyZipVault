@@ -51,6 +51,8 @@ import {
   Pencil,
 } from "@/lib/icons";
 import { toast } from "sonner";
+import { CertificationSelect } from "@/components/certification-select";
+import { OTHER_CERTIFICATION_VALUE } from "@/lib/certification-types";
 
 interface CredentialItem {
   id: number;
@@ -264,46 +266,38 @@ export default function CandidateCredentialsPage() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!documentName.trim()) {
-      toast.error("Please enter a document name");
+    // ── Resolve the effective document name ──
+    // The CertificationSelect component sets documentName to either:
+    //   - a real certification label (e.g., "BLS (Basic Life Support)")
+    //   - the OTHER_CERTIFICATION_VALUE sentinel ("__other__")
+    //   - a free-text string the user typed after picking "Other"
+    // If the sentinel is still set, the user picked "Other" but hasn't
+    // typed anything yet — treat that as empty.
+    const effectiveName =
+      documentName === OTHER_CERTIFICATION_VALUE ? "" : documentName.trim();
+
+    if (!effectiveName) {
+      toast.error("Please select or enter a document name");
       return;
     }
 
     setIsUploading(true);
 
     try {
-      // Convert file to base64 for JSON API (Vercel-compatible)
-      const fileBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Strip the data URL prefix (e.g., "data:application/pdf;base64,")
-          const base64 = result.split(",")[1] || result;
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile as Blob);
-      });
+      const formData = new FormData();
+      formData.append("documentName", effectiveName);
+      if (expirationDate) formData.append("expirationDate", expirationDate);
+      formData.append("reminderEnabled", String(reminderEnabled));
+      if (selectedFile) formData.append("file", selectedFile);
 
       const res = await fetch("/api/candidate/credentials", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          document_name: documentName.trim(),
-          file_base64: fileBase64,
-          file_name: selectedFile.name,
-          expiration_date: expirationDate || null,
-          reminder_enabled: reminderEnabled,
-        }),
+        body: formData,
       });
 
       if (!res.ok) {
-        if (res.status === 413) {
-          toast.error("File too large", { description: "Maximum file size is 3MB for uploads. Try a smaller file." });
-        } else {
-          const data = await res.json().catch(() => ({ error: "Upload failed" }));
-          toast.error("Upload failed", { description: data.error });
-        }
+        const data = await res.json();
+        toast.error("Upload failed", { description: data.error });
         return;
       }
 
@@ -394,7 +388,13 @@ export default function CandidateCredentialsPage() {
     e.preventDefault();
     if (!editingCredential) return;
 
-    if (!editDocumentName.trim()) {
+    // ── Resolve effective name (handle OTHER sentinel) ──
+    const effectiveEditName =
+      editDocumentName === OTHER_CERTIFICATION_VALUE
+        ? ""
+        : editDocumentName.trim();
+
+    if (!effectiveEditName) {
       toast.error("Document name cannot be empty");
       return;
     }
@@ -405,7 +405,7 @@ export default function CandidateCredentialsPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          document_name: editDocumentName.trim(),
+          document_name: effectiveEditName,
           expiration_date: editExpirationDate || null,
           reminder_enabled: editReminderEnabled,
         }),
@@ -531,17 +531,13 @@ export default function CandidateCredentialsPage() {
                     </div>
                   </div>
 
-                  {/* Document name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="docName">Document Name</Label>
-                    <Input
-                      id="docName"
-                      placeholder="e.g., RN License, BLS Certification"
-                      value={documentName}
-                      onChange={(e) => setDocumentName(e.target.value)}
-                      required
-                    />
-                  </div>
+                  {/* Document name — searchable certification dropdown */}
+                  <CertificationSelect
+                    id="docName"
+                    value={documentName}
+                    onChange={setDocumentName}
+                    required
+                  />
 
                   {/* Expiration date */}
                   <div className="space-y-2">
@@ -774,16 +770,12 @@ export default function CandidateCredentialsPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editDocName">Document Name</Label>
-                <Input
-                  id="editDocName"
-                  placeholder="e.g., RN License, BLS Certification"
-                  value={editDocumentName}
-                  onChange={(e) => setEditDocumentName(e.target.value)}
-                  required
-                />
-              </div>
+              <CertificationSelect
+                id="editDocName"
+                value={editDocumentName}
+                onChange={setEditDocumentName}
+                required
+              />
               <div className="space-y-2">
                 <Label htmlFor="editExpDate">Expiration Date (Optional)</Label>
                 <Input
