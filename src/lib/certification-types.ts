@@ -389,6 +389,7 @@ export const CERTIFICATION_CATEGORIES: CertificationCategory[] = [
       { label: "Passport", code: "PASSPORT" },
       { label: "Social Security Card / SSN Verification", code: "SSN" },
       { label: "Work Authorization (I-9, EAD, Green Card, Visa)", code: "I9" },
+      { label: "Professional Photo", code: "PHOTO" },
     ],
   },
   {
@@ -399,16 +400,6 @@ export const CERTIFICATION_CATEGORIES: CertificationCategory[] = [
       { label: "SAM Exclusion Check", code: "SAM" },
       { label: "National Sex Offender Registry Check", code: "NSOR" },
       { label: "Fingerprinting", code: "FINGERPRINT" },
-    ],
-  },
-  {
-    category: "Professional Documents",
-    certifications: [
-      { label: "Resume/CV", code: "RESUME" },
-      { label: "References", code: "REFS" },
-      { label: "Skills Checklist", code: "SKILLS" },
-      { label: "Competency Assessment", code: "COMP" },
-      { label: "Professional Photo", code: "PHOTO" },
     ],
   },
 ];
