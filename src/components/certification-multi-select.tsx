@@ -165,7 +165,7 @@ export function CertificationMultiSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b">
                     {cat.category}
                   </div>
                   {cat.certifications.map((cert) => {

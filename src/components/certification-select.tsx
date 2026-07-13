@@ -170,8 +170,8 @@ export function CertificationSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  {/* Category heading (NOT sticky — simpler + more reliable in modals) */}
-                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground">
+                  {/* Category heading — larger + bolder for readability */}
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b">
                     {cat.category}
                   </div>
                   {/* Certifications in this category */}
