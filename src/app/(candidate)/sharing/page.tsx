@@ -42,10 +42,19 @@ import {
   User,
   Loader2,
   Ban,
+  AlertTriangle,
   Pencil,
   Calendar,
 } from "@/lib/icons";
 import { toast } from "sonner";
+
+interface RequestedDocMatch {
+  documentName: string;
+  matched: boolean;
+  credentialId: number | null;
+  uploadedAt: string | null;
+  status: string | null;
+}
 
 interface ShareRequestItem {
   id: number;
@@ -55,6 +64,8 @@ interface ShareRequestItem {
   request_credentials: boolean;
   request_resume: boolean;
   request_references: boolean;
+  requested_documents: string[];
+  requestedDocumentMatches: RequestedDocMatch[];
   status: string;
   message: string | null;
   created_at: string;
@@ -388,6 +399,91 @@ export default function CandidateSharingPage() {
                         </div>
                       );
                     })}
+
+                    {/* ── Auto-matched specific credentials ── */}
+                    {request.requestedDocumentMatches &&
+                      request.requestedDocumentMatches.length > 0 && (
+                        <div className="pt-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                            Specific Credentials Requested
+                          </p>
+                          {request.requestedDocumentMatches.map((match) => {
+                            const key = `${request.id}-cred-${match.documentName}`;
+                            const isActioning = actioningId === key;
+
+                            return (
+                              <div key={key} className="mb-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <ShieldCheck className="size-4 shrink-0 text-primary" />
+                                    <div className="min-w-0">
+                                      <span className="text-sm font-medium block truncate">
+                                        {match.documentName}
+                                      </span>
+                                      {match.matched ? (
+                                        <span className="text-xs text-emerald-600 flex items-center gap-1">
+                                          <Check className="size-3" />
+                                          Found in your vault
+                                          {match.uploadedAt &&
+                                            ` · uploaded ${new Date(match.uploadedAt).toLocaleDateString()}`}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-amber-600 flex items-center gap-1">
+                                          <AlertTriangle className="size-3" />
+                                          Not in your vault —
+                                          <a
+                                            href="/vault/credentials"
+                                            className="underline hover:text-amber-700"
+                                          >
+                                            upload now
+                                          </a>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {match.matched && match.credentialId && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <RadioGroup
+                                        value={expirySelections[key] || "14"}
+                                        onValueChange={(val) =>
+                                          setExpirySelections((prev) => ({ ...prev, [key]: val }))
+                                        }
+                                        className="flex items-center gap-2"
+                                      >
+                                        {[7, 14, 30].map((days) => (
+                                          <div key={days} className="flex items-center gap-1">
+                                            <RadioGroupItem value={String(days)} id={`${key}-${days}`} className="size-3" />
+                                            <Label htmlFor={`${key}-${days}`} className="text-xs text-muted-foreground cursor-pointer">
+                                              {days}d
+                                            </Label>
+                                          </div>
+                                        ))}
+                                      </RadioGroup>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="gap-1 h-7 text-xs"
+                                        disabled={isActioning}
+                                        onClick={() =>
+                                          handleApprove(request.id, "credential", match.credentialId ?? undefined)
+                                        }
+                                      >
+                                        {isActioning ? (
+                                          <Loader2 className="size-3 animate-spin" />
+                                        ) : (
+                                          <Check className="size-3" />
+                                        )}
+                                        Approve
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                                <Separator className="mt-3" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                   </div>
                 </CardContent>
               </Card>

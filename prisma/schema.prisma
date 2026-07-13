@@ -618,6 +618,11 @@ model ShareRequest {
   request_credentials   Boolean   @default(false)
   request_resume        Boolean   @default(false)
   request_references    Boolean   @default(false)
+  // JSON array of specific credential names the recruiter requested
+  // (e.g. ["BLS (Basic Life Support)", "ACLS (Advanced Cardiovascular Life Support)"]).
+  // Used for auto-matching against the candidate's credential vault.
+  // Null = legacy request (only broad categories), empty array = no specific docs.
+  requested_documents   String?
   status                String    @default("pending")
   message               String?
   created_at            DateTime  @default(now())

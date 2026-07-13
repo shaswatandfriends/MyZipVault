@@ -110,6 +110,9 @@ export const sendRequestSchema = z.object({
   specialty: z.string().max(200).optional().nullable(),
   checklistTemplateId: positiveIntSchema,
   documents: z.array(z.string().max(50)).max(20, "Too many documents selected").optional(),
+  // Specific credential names (e.g. "BLS (Basic Life Support)") for auto-matching.
+  // Each entry should match a label from the certification-types list.
+  requestedDocuments: z.array(z.string().max(200)).max(20, "Too many specific documents selected").optional(),
 });
 
 export const bundleCreateSchema = z.object({

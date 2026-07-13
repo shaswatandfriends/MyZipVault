@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       specialty,
       checklistTemplateId,
       documents,
+      requestedDocuments,
     } = validation.data;
 
     // Check if candidate already exists
@@ -439,24 +440,29 @@ export async function POST(request: Request) {
       // Non-fatal — the checklist request was already created successfully
     }
 
-    // Create share request if documents are requested
-    if (documents && Array.isArray(documents) && documents.length > 0) {
+    // Create share request if documents are requested OR specific credentials are requested
+    const hasBroadDocs = documents && Array.isArray(documents) && documents.length > 0;
+    const hasSpecificDocs = requestedDocuments && requestedDocuments.length > 0;
+    if (hasBroadDocs || hasSpecificDocs) {
       await db.shareRequest.create({
         data: {
           candidate_user_id: candidateUserId,
           client_user_id: userId,
-          request_checklists: documents.includes("checklist"),
-          request_credentials: documents.includes("credential"),
-          request_resume: documents.includes("resume"),
-          request_references: documents.includes("reference"),
+          request_checklists: documents?.includes("checklist") ?? false,
+          request_credentials: documents?.includes("credential") ?? false,
+          request_resume: documents?.includes("resume") ?? false,
+          request_references: documents?.includes("reference") ?? false,
+          requested_documents: hasSpecificDocs
+            ? JSON.stringify(requestedDocuments)
+            : null,
           status: "pending",
-          message: `Please share your ${documents.join(", ")} documents with us.`,
+          message: `Please share your ${documents?.join(", ") || "documents"} with us.`,
         },
       });
     }
 
     // Deduct credits for the request (1 credit per document requested)
-    const docCount = documents?.length ?? 0;
+    const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
     const totalCredits = 1 + docCount; // 1 for checklist request + 1 per document
 
     if (org && org.credits_balance < totalCredits) {

@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CertificationMultiSelect } from "@/components/certification-multi-select";
 import {
   Select,
   SelectContent,
@@ -49,6 +50,7 @@ import {
   Stethoscope,
   Layers,
   Plus,
+  ShieldCheck,
 } from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -80,23 +82,17 @@ interface CandidateInfo {
   specialty: string;
 }
 
-type DocumentOption = "resume" | "bls" | "acls" | "references" | "other_credentials";
+type DocumentOption = "resume" | "references";
 
 const DOCUMENT_OPTIONS: { key: DocumentOption; label: string }[] = [
   { key: "resume", label: "Resume" },
-  { key: "bls", label: "BLS" },
-  { key: "acls", label: "ACLS" },
   { key: "references", label: "References" },
-  { key: "other_credentials", label: "Other Credentials" },
 ];
 
 // Map frontend document keys to API-expected values
 const DOCUMENT_API_MAP: Record<DocumentOption, string> = {
   resume: "resume",
-  bls: "credential",
-  acls: "credential",
   references: "reference",
-  other_credentials: "credential",
 };
 
 const STEPS = ["Candidate Info", "Checklist", "Documents", "Review"];
@@ -189,6 +185,8 @@ function RecruiterSendPage() {
 
   // Step 3 — Document Selection
   const [selectedDocuments, setSelectedDocuments] = useState<DocumentOption[]>([]);
+  // Specific credential names for auto-matching (e.g. "BLS (Basic Life Support)")
+  const [requestedDocuments, setRequestedDocuments] = useState<string[]>([]);
 
   // ─── Debounced Email Check ──────────────────────────────────────────────
 
@@ -296,8 +294,9 @@ function RecruiterSendPage() {
 
     const mappedDocs: DocumentOption[] = [];
     if (docs.includes("resume")) mappedDocs.push("resume");
-    if (docs.includes("credential")) mappedDocs.push("other_credentials");
     if (docs.includes("reference")) mappedDocs.push("references");
+    // Note: "credential" type in bundles no longer maps to a broad checkbox.
+    // Specific credentials are now picked via the CertificationMultiSelect.
 
     setSelectedDocuments(mappedDocs);
   };
@@ -364,6 +363,7 @@ function RecruiterSendPage() {
           specialty: candidateInfo.specialty || undefined,
           checklistTemplateId: selectedTemplateId,
           documents,
+          requestedDocuments: requestedDocuments.length > 0 ? requestedDocuments : undefined,
         }),
       });
 
@@ -392,7 +392,7 @@ function RecruiterSendPage() {
 
   // ─── Credit Calculation ────────────────────────────────────────────────
 
-  const totalCredits = 1 + selectedDocuments.length; // 1 for checklist + 1 per doc
+  const totalCredits = 1 + selectedDocuments.length + requestedDocuments.length;
 
   // ─── Selected Template ─────────────────────────────────────────────────
 
@@ -412,6 +412,7 @@ function RecruiterSendPage() {
     });
     setSelectedTemplateId(null);
     setSelectedDocuments([]);
+    setRequestedDocuments([]);
     setIsSuccess(false);
     setSuccessCandidateName("");
     setEmailCheckStatus("idle");
@@ -558,6 +559,8 @@ function RecruiterSendPage() {
         <Step3DocumentSelection
           selectedDocuments={selectedDocuments}
           toggleDocument={toggleDocument}
+          requestedDocuments={requestedDocuments}
+          setRequestedDocuments={setRequestedDocuments}
           totalCredits={totalCredits}
         />
       )}
@@ -567,6 +570,7 @@ function RecruiterSendPage() {
           candidateInfo={candidateInfo}
           selectedTemplate={selectedTemplate}
           selectedDocuments={selectedDocuments}
+          requestedDocuments={requestedDocuments}
           totalCredits={totalCredits}
         />
       )}
@@ -1087,10 +1091,14 @@ function Step2ChecklistSelection({
 function Step3DocumentSelection({
   selectedDocuments,
   toggleDocument,
+  requestedDocuments,
+  setRequestedDocuments,
   totalCredits,
 }: {
   selectedDocuments: DocumentOption[];
   toggleDocument: (doc: DocumentOption) => void;
+  requestedDocuments: string[];
+  setRequestedDocuments: (value: string[]) => void;
   totalCredits: number;
 }) {
   return (
@@ -1101,10 +1109,11 @@ function Step3DocumentSelection({
           Document Selection
         </CardTitle>
         <CardDescription>
-          Select which documents to request from the candidate. Each document costs 1 credit.
+          Select which documents to request from the candidate. Each item costs 1 credit.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Broad document types (Resume / References) */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {DOCUMENT_OPTIONS.map((doc) => {
             const isSelected = selectedDocuments.includes(doc.key);
@@ -1133,13 +1142,20 @@ function Step3DocumentSelection({
           })}
         </div>
 
+        {/* Specific credentials — searchable multi-select with auto-match */}
+        <CertificationMultiSelect
+          id="requested-docs"
+          value={requestedDocuments}
+          onChange={setRequestedDocuments}
+        />
+
         {/* Credit Deduction Preview */}
         <div className="rounded-lg border bg-gradient-to-r from-emerald-50 to-teal-50 p-4 dark:from-emerald-950/30 dark:to-teal-950/30">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-semibold text-sm">Credit Deduction Preview</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                1 credit for checklist + {selectedDocuments.length} credit{selectedDocuments.length !== 1 ? "s" : ""} for documents
+                1 for checklist + {selectedDocuments.length} broad doc{selectedDocuments.length !== 1 ? "s" : ""} + {requestedDocuments.length} specific credential{requestedDocuments.length !== 1 ? "s" : ""}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1162,11 +1178,13 @@ function Step4ReviewConfirm({
   candidateInfo,
   selectedTemplate,
   selectedDocuments,
+  requestedDocuments,
   totalCredits,
 }: {
   candidateInfo: CandidateInfo;
   selectedTemplate: ChecklistTemplate | undefined;
   selectedDocuments: DocumentOption[];
+  requestedDocuments: string[];
   totalCredits: number;
 }) {
   return (
@@ -1268,6 +1286,21 @@ function Step4ReviewConfirm({
               No additional documents selected
             </p>
           )}
+
+          {/* Specific credentials */}
+          {requestedDocuments.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs text-muted-foreground mb-2">Specific credentials (auto-matched against candidate vault):</p>
+              <div className="flex flex-wrap gap-2">
+                {requestedDocuments.map((doc) => (
+                  <Badge key={doc} variant="outline" className="gap-1 text-xs">
+                    <ShieldCheck className="size-3 text-emerald-600" />
+                    {doc}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1283,6 +1316,8 @@ function Step4ReviewConfirm({
                 1 for checklist
                 {selectedDocuments.length > 0 &&
                   ` + ${selectedDocuments.length} for document${selectedDocuments.length > 1 ? "s" : ""}`}
+                {requestedDocuments.length > 0 &&
+                  ` + ${requestedDocuments.length} for credential${requestedDocuments.length > 1 ? "s" : ""}`}
               </p>
             </div>
             <div className="flex items-center gap-2">
