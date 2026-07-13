@@ -7,6 +7,7 @@ import { ChevronDown, Search, X } from "@/lib/icons";
 import {
   CERTIFICATION_CATEGORIES,
   OTHER_CERTIFICATION_VALUE,
+  type CertificationOption,
 } from "@/lib/certification-types";
 import { cn } from "@/lib/utils";
 
@@ -27,21 +28,20 @@ interface CertificationSelectProps {
  * Searchable combobox for picking a healthcare certification.
  *
  * Features:
- *   - Search-as-you-type filtering on both label AND code (e.g. typing
- *     "CCRN" surfaces all CCRN variants; typing "Critical" surfaces
- *     critical-care certs)
- *   - Grouped by category headings so users can browse visually
- *   - "Other" option at the bottom — selecting it reveals a free-text
- *     input so candidates can name a credential that isn't in our list
- *   - Keyboard accessible (arrow keys + enter + escape)
+ *   - Search-as-you-type filtering on both label AND code
+ *   - Grouped by category headings (non-sticky, simple scroll)
+ *   - "Other" option at the bottom — reveals a free-text input
  *   - Click-outside to close
  *
- * State model:
- *   - `value` = the selected certification label string (e.g.
- *     "BLS (Basic Life Support)"), or OTHER_CERTIFICATION_VALUE if the
- *     user picked "Other".
- *   - When value === OTHER_CERTIFICATION_VALUE, the parent form should
- *     render a free-text input for the actual document name.
+ * Layout note: the dropdown is taller (max-h-[320px] on the list itself)
+ * and the category headers are NOT sticky — sticky headers inside a
+ * scrolling container inside a modal (which has its own overflow:hidden)
+ * cause rendering glitches on some browsers. Simple scroll is more
+ * reliable.
+ *
+ * Display note: certification labels already include the code (e.g.
+ * "BLS (Basic Life Support)"), so we do NOT render a separate code
+ * badge in the list — that caused "BLS BLS (Basic Life Support)".
  */
 export function CertificationSelect({
   id,
@@ -87,15 +87,17 @@ export function CertificationSelect({
     }
   }, [isOpen]);
 
-  // ── Determine the display value ──
-  // If the user picked "Other", the input shows the OTHER sentinel text.
-  // Otherwise, the input shows the selected label.
-  // The parent form is responsible for rendering a separate free-text
-  // input when value === OTHER_CERTIFICATION_VALUE.
   const displayValue =
     value === OTHER_CERTIFICATION_VALUE ? "Other (specify below)" : value;
 
   const isOtherSelected = value === OTHER_CERTIFICATION_VALUE;
+
+  // Helper: extract the human-readable name from a label that includes
+  // the code in parentheses, e.g. "BLS (Basic Life Support)" → "Basic Life Support"
+  const formatLabel = (label: string): string => {
+    const match = label.match(/^[A-Z0-9-]+\s*\((.+)\)$/i);
+    return match ? match[1] : label;
+  };
 
   return (
     <div className="space-y-2" ref={containerRef}>
@@ -141,9 +143,9 @@ export function CertificationSelect({
 
         {/* ── Dropdown ── */}
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[400px] overflow-hidden flex flex-col">
-            {/* Search input */}
-            <div className="p-2 border-b sticky top-0 bg-popover">
+          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md flex flex-col">
+            {/* Search input (sticky at top) */}
+            <div className="p-2 border-b bg-popover sticky top-0 z-10">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -159,7 +161,7 @@ export function CertificationSelect({
             </div>
 
             {/* List (scrollable) */}
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto max-h-[320px]">
               {filteredCategories.length === 0 && (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                   No certifications found. Try &quot;Other&quot; to specify your own.
@@ -168,17 +170,17 @@ export function CertificationSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  {/* Category heading */}
-                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground sticky top-0">
+                  {/* Category heading (NOT sticky — simpler + more reliable in modals) */}
+                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground">
                     {cat.category}
                   </div>
                   {/* Certifications in this category */}
-                  {cat.certifications.map((cert) => (
+                  {cat.certifications.map((cert: CertificationOption) => (
                     <button
                       key={`${cat.category}-${cert.code}`}
                       type="button"
                       className={cn(
-                        "w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-2",
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
                         value === cert.label && "bg-accent text-accent-foreground"
                       )}
                       onClick={() => {
@@ -187,17 +189,14 @@ export function CertificationSelect({
                         setSearch("");
                       }}
                     >
-                      <span className="font-mono text-xs font-semibold text-primary shrink-0 mt-0.5">
-                        {cert.code}
-                      </span>
-                      <span className="flex-1">{cert.label}</span>
+                      {cert.label}
                     </button>
                   ))}
                 </div>
               ))}
 
               {/* Other option — always visible at bottom */}
-              <div className="border-t">
+              <div className="border-t sticky bottom-0 bg-popover">
                 <button
                   type="button"
                   className={cn(
@@ -229,11 +228,6 @@ export function CertificationSelect({
             id={`${id}-other`}
             type="text"
             placeholder="e.g., Hospital-specific credential, state license, etc."
-            // We piggy-back on the same `value` prop — when user types here,
-            // the parent receives the typed text instead of the sentinel.
-            // To support both modes, the parent must check: if value ===
-            // OTHER_CERTIFICATION_VALUE, the free-text hasn't been filled yet.
-            // Once the user types, value becomes their custom text.
             value={value === OTHER_CERTIFICATION_VALUE ? "" : value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
