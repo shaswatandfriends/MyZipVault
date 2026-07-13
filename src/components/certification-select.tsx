@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, Search, X } from "@/lib/icons";
@@ -29,19 +29,14 @@ interface CertificationSelectProps {
  *
  * Features:
  *   - Search-as-you-type filtering on both label AND code
- *   - Grouped by category headings (non-sticky, simple scroll)
+ *   - Grouped by category headings (larger + bolder for readability)
  *   - "Other" option at the bottom — reveals a free-text input
  *   - Click-outside to close
- *
- * Layout note: the dropdown is taller (max-h-[320px] on the list itself)
- * and the category headers are NOT sticky — sticky headers inside a
- * scrolling container inside a modal (which has its own overflow:hidden)
- * cause rendering glitches on some browsers. Simple scroll is more
- * reliable.
- *
- * Display note: certification labels already include the code (e.g.
- * "BLS (Basic Life Support)"), so we do NOT render a separate code
- * badge in the list — that caused "BLS BLS (Basic Life Support)".
+ *   - Smart positioning: if there's not enough space below the trigger,
+ *     the dropdown opens UPWARD instead of downward. This prevents the
+ *     dropdown from being cut off by the bottom of a modal dialog.
+ *   - Height-adaptive: max height is capped so the dropdown never
+ *     exceeds the available viewport space.
  */
 export function CertificationSelect({
   id,
@@ -52,7 +47,10 @@ export function CertificationSelect({
 }: CertificationSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dropUp, setDropUp] = useState(false);
+  const [availableHeight, setAvailableHeight] = useState(320);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Filter categories by search term ──
@@ -87,17 +85,40 @@ export function CertificationSelect({
     }
   }, [isOpen]);
 
+  // ── Smart positioning: measure available space and flip if needed ──
+  useLayoutEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const measure = () => {
+      const triggerRect = triggerRef.current!.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+
+      // If less than 250px below AND more space above, flip up
+      const shouldFlipUp = spaceBelow < 250 && spaceAbove > spaceBelow;
+      setDropUp(shouldFlipUp);
+
+      // Cap max height to available space (minus 16px margin)
+      const maxH = shouldFlipUp
+        ? Math.min(spaceAbove - 16, 400)
+        : Math.min(spaceBelow - 16, 400);
+      setAvailableHeight(Math.max(200, maxH));
+    };
+
+    measure();
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+    };
+  }, [isOpen]);
+
   const displayValue =
     value === OTHER_CERTIFICATION_VALUE ? "Other (specify below)" : value;
 
   const isOtherSelected = value === OTHER_CERTIFICATION_VALUE;
-
-  // Helper: extract the human-readable name from a label that includes
-  // the code in parentheses, e.g. "BLS (Basic Life Support)" → "Basic Life Support"
-  const formatLabel = (label: string): string => {
-    const match = label.match(/^[A-Z0-9-]+\s*\((.+)\)$/i);
-    return match ? match[1] : label;
-  };
 
   return (
     <div className="space-y-2" ref={containerRef}>
@@ -108,6 +129,7 @@ export function CertificationSelect({
       {/* ── Combobox trigger ── */}
       <div className="relative">
         <div
+          ref={triggerRef}
           className={cn(
             "flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer transition-colors",
             "hover:border-ring focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
@@ -136,16 +158,23 @@ export function CertificationSelect({
           <ChevronDown
             className={cn(
               "ml-2 size-4 shrink-0 opacity-50 transition-transform",
-              isOpen && "rotate-180"
+              isOpen && !dropUp && "rotate-180",
+              isOpen && dropUp && "rotate-0"
             )}
           />
         </div>
 
         {/* ── Dropdown ── */}
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md flex flex-col">
+          <div
+            className={cn(
+              "absolute z-50 w-full rounded-md border bg-popover shadow-lg flex flex-col",
+              dropUp ? "bottom-full mb-1" : "top-full mt-1"
+            )}
+            style={{ maxHeight: `${availableHeight}px` }}
+          >
             {/* Search input (sticky at top) */}
-            <div className="p-2 border-b bg-popover sticky top-0 z-10">
+            <div className="p-2 border-b bg-popover sticky top-0 z-10 shrink-0">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -161,7 +190,7 @@ export function CertificationSelect({
             </div>
 
             {/* List (scrollable) */}
-            <div className="overflow-y-auto max-h-[320px]">
+            <div className="overflow-y-auto flex-1 overscroll-contain">
               {filteredCategories.length === 0 && (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                   No certifications found. Try &quot;Other&quot; to specify your own.
@@ -171,7 +200,7 @@ export function CertificationSelect({
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
                   {/* Category heading — larger + bolder for readability */}
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b sticky top-0">
                     {cat.category}
                   </div>
                   {/* Certifications in this category */}

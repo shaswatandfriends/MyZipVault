@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,9 @@ interface CertificationMultiSelectProps {
  * Shows selected items as removable tags/badges. Used on the recruiter
  * send-request page to pick specific credentials to request from the
  * candidate (enables auto-matching on the candidate side).
+ *
+ * Smart positioning: if there's not enough space below the trigger,
+ * the dropdown opens UPWARD. Height-adaptive: never exceeds viewport.
  */
 export function CertificationMultiSelect({
   id,
@@ -36,7 +39,10 @@ export function CertificationMultiSelect({
 }: CertificationMultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dropUp, setDropUp] = useState(false);
+  const [availableHeight, setAvailableHeight] = useState(300);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const filteredCategories = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -66,6 +72,34 @@ export function CertificationMultiSelect({
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }
+  }, [isOpen]);
+
+  // ── Smart positioning ──
+  useLayoutEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const measure = () => {
+      const triggerRect = triggerRef.current!.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+
+      const shouldFlipUp = spaceBelow < 250 && spaceAbove > spaceBelow;
+      setDropUp(shouldFlipUp);
+
+      const maxH = shouldFlipUp
+        ? Math.min(spaceAbove - 16, 400)
+        : Math.min(spaceBelow - 16, 400);
+      setAvailableHeight(Math.max(200, maxH));
+    };
+
+    measure();
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+    };
   }, [isOpen]);
 
   const toggleCert = (label: string) => {
@@ -111,9 +145,10 @@ export function CertificationMultiSelect({
         </div>
       )}
 
-      {/* Trigger button */}
+      {/* Trigger button + dropdown */}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen(!isOpen)}
@@ -132,16 +167,22 @@ export function CertificationMultiSelect({
           <ChevronDown
             className={cn(
               "size-4 shrink-0 opacity-50 transition-transform",
-              isOpen && "rotate-180"
+              isOpen && !dropUp && "rotate-180"
             )}
           />
         </button>
 
         {/* Dropdown */}
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md flex flex-col">
+          <div
+            className={cn(
+              "absolute z-50 w-full rounded-md border bg-popover shadow-lg flex flex-col",
+              dropUp ? "bottom-full mb-1" : "top-full mt-1"
+            )}
+            style={{ maxHeight: `${availableHeight}px` }}
+          >
             {/* Search */}
-            <div className="p-2 border-b sticky top-0 bg-popover z-10">
+            <div className="p-2 border-b sticky top-0 bg-popover z-10 shrink-0">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -156,7 +197,7 @@ export function CertificationMultiSelect({
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto max-h-[300px]">
+            <div className="overflow-y-auto flex-1 overscroll-contain">
               {filteredCategories.length === 0 && (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                   No certifications found.
@@ -165,7 +206,7 @@ export function CertificationMultiSelect({
 
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted/60 text-foreground border-b sticky top-0">
                     {cat.category}
                   </div>
                   {cat.certifications.map((cert) => {
