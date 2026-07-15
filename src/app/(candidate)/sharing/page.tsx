@@ -100,6 +100,8 @@ export default function CandidateSharingPage() {
   const [expirySelections, setExpirySelections] = useState<Record<string, string>>({});
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [resumeVersions, setResumeVersions] = useState<{ id: number; isBuilderResume: boolean; createdAt: string }[]>([]);
+  const [resumeSelections, setResumeSelections] = useState<Record<string, number>>({});
 
   // Modify expiry dialog state
   const [isExpiryDialogOpen, setIsExpiryDialogOpen] = useState(false);
@@ -110,11 +112,21 @@ export default function CandidateSharingPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/sharing");
-      if (!res.ok) throw new Error("Failed to fetch sharing data");
-      const data = await res.json();
-      setShareRequests(data.shareRequests || []);
-      setActiveShares(data.activeShares || []);
+      const [sharingRes, resumeRes] = await Promise.all([
+        fetch("/api/sharing"),
+        fetch("/api/candidate/resume/versions"),
+      ]);
+
+      if (sharingRes.ok) {
+        const data = await sharingRes.json();
+        setShareRequests(data.shareRequests || []);
+        setActiveShares(data.activeShares || []);
+      }
+
+      if (resumeRes.ok) {
+        const resumeData = await resumeRes.json();
+        setResumeVersions(resumeData.resumes || []);
+      }
     } catch {
       toast.error("Failed to load sharing data");
     } finally {
@@ -130,6 +142,16 @@ export default function CandidateSharingPage() {
     const key = `${shareRequestId}-${itemType}`;
     const expiryDays = parseInt(expirySelections[key] || "14");
 
+    // For resumes, use the candidate's selected resume version
+    let finalItemId = itemId;
+    if (itemType === "resume" && !itemId) {
+      finalItemId = resumeSelections[key];
+      if (!finalItemId) {
+        toast.error("Please select which resume to share");
+        return;
+      }
+    }
+
     setActioningId(key);
     try {
       const res = await fetch("/api/sharing/approve", {
@@ -138,7 +160,7 @@ export default function CandidateSharingPage() {
         body: JSON.stringify({
           shareRequestId,
           itemType,
-          itemId,
+          itemId: finalItemId,
           expiryDays,
         }),
       });
@@ -395,6 +417,38 @@ export default function CandidateSharingPage() {
                               </Button>
                             </div>
                           </div>
+
+                          {/* Resume version picker — shown when recruiter requests resume */}
+                          {item.type === "resume" && resumeVersions.length > 0 && (
+                            <div className="mt-2 mb-1 pl-6">
+                              <label className="text-xs text-muted-foreground mb-1 block">
+                                Choose which resume to share:
+                              </label>
+                              <select
+                                value={resumeSelections[key] || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value ? parseInt(e.target.value) : undefined;
+                                  setResumeSelections((prev) => ({
+                                    ...prev,
+                                    [key]: val as number,
+                                  }));
+                                }}
+                                className="w-full max-w-xs text-xs rounded-md border border-input bg-background px-2 py-1.5 h-8"
+                              >
+                                <option value="">— Select a resume —</option>
+                                {resumeVersions.map((rv) => (
+                                  <option key={rv.id} value={rv.id}>
+                                    {rv.isBuilderResume ? "AI-Built" : "Uploaded"} · {new Date(rv.createdAt).toLocaleDateString()}
+                                  </option>
+                                ))}
+                              </select>
+                              {resumeVersions.length > 1 && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  You have {resumeVersions.length} resume versions. Pick which one to share.
+                                </p>
+                              )}
+                            </div>
+                          )}
                           <Separator className="mt-3" />
                         </div>
                       );
