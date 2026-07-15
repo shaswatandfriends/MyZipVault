@@ -767,7 +767,6 @@ function OverviewTab({
               </Card>
             )}
           </div>
-        </div>
           {/* ─── Right: AI Tools sidebar ─── */}
           <div className="space-y-3 lg:sticky lg:top-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
@@ -856,7 +855,7 @@ function OverviewTab({
             )}
           </div>
 
-
+        </div>
       ) : (
         /* ─── No resume selected — show all cards ─── */
         resumes.map((resume) => (
