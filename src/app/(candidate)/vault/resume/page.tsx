@@ -447,14 +447,10 @@ export default function ResumePage() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
             <TabsTrigger value="overview" className="gap-1.5">
               <FileText className="size-4" />
               Overview
-            </TabsTrigger>
-            <TabsTrigger value="ats" className="gap-1.5">
-              <Zap className="size-4" />
-              ATS Tools
             </TabsTrigger>
             <TabsTrigger value="tedo" className="gap-1.5">
               <Bot className="size-4" />
@@ -462,22 +458,19 @@ export default function ResumePage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* ─── Tab 1: Overview ─────────────────────────────────── */}
+          {/* ─── Tab 1: Overview (with integrated ATS tools) ────── */}
           <TabsContent value="overview" className="mt-6 data-[state=inactive]:hidden" forceMount>
             <OverviewTab
               resumes={resumes}
               selectedResumeId={selectedResumeId}
               onSelect={setSelectedResumeId}
               onDelete={handleDelete}
+              selectedResume={selectedResume}
+              onResumeChanged={fetchResumes}
             />
           </TabsContent>
 
-          {/* ─── Tab 2: ATS Tools ────────────────────────────────── */}
-          <TabsContent value="ats" className="mt-6 data-[state=inactive]:hidden" forceMount>
-            <ATSToolsTab resume={selectedResume} onResumeChanged={fetchResumes} />
-          </TabsContent>
-
-          {/* ─── Tab 3: Tedo AI Chat ─────────────────────────────── */}
+          {/* ─── Tab 2: Tedo AI Chat ─────────────────────────────── */}
           <TabsContent value="tedo" className="mt-6 data-[state=inactive]:hidden" forceMount>
             <TedoChatTab onResumeCreated={fetchResumes} canAddMore={canAddMore} />
           </TabsContent>
@@ -502,14 +495,22 @@ function OverviewTab({
   selectedResumeId,
   onSelect,
   onDelete,
+  selectedResume,
+  onResumeChanged,
 }: {
   resumes: ResumeVersion[];
   selectedResumeId: number | null;
   onSelect: (id: number) => void;
   onDelete: (id: number) => void;
+  selectedResume: ResumeVersion | undefined;
+  onResumeChanged: () => void;
 }) {
   const [exportResume, setExportResume] = useState<ResumeVersion | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [atsScore, setAtsScore] = useState<ATSScore | null>(null);
 
   const handleExport = async (format: "pdf" | "txt") => {
     if (!exportResume) return;
@@ -538,6 +539,80 @@ function OverviewTab({
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // ── ATS Tool handlers ──
+  const handleParse = async () => {
+    if (!selectedResume?.fileUrl) {
+      toast.error("No file to parse");
+      return;
+    }
+    setIsParsing(true);
+    try {
+      const parseRes = await fetch("/api/candidate/resume/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeId: selectedResume.id }),
+      });
+      const data = await parseRes.json();
+      if (!parseRes.ok) throw new Error(data.error);
+      toast.success("Resume parsed with AI");
+      onResumeChanged();
+    } catch (err) {
+      toast.error("Parse failed", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleScore = async () => {
+    if (!selectedResume) return;
+    setIsScoring(true);
+    setAtsScore(null);
+    try {
+      const res = await fetch("/api/candidate/resume/ats-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeId: selectedResume.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAtsScore(data);
+    } catch (err) {
+      toast.error("ATS score failed", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsScoring(false);
+    }
+  };
+
+  const handleOptimize = async () => {
+    if (!selectedResume) return;
+    setIsOptimizing(true);
+    try {
+      const res = await fetch("/api/candidate/resume/ats-optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeId: selectedResume.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success("Resume optimized for ATS", {
+        description: data.changes?.length
+          ? `${data.changes.length} improvements made`
+          : undefined,
+      });
+      onResumeChanged();
+    } catch (err) {
+      toast.error("Optimization failed", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsOptimizing(false);
     }
   };
 
@@ -623,6 +698,178 @@ function OverviewTab({
           </CardContent>
         </Card>
       ))}
+
+      {/* ─── ATS Tools (integrated into Overview) ─────────────── */}
+      {selectedResume && (
+        <>
+          <div className="pt-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+              <Zap className="size-4" />
+              AI Tools
+            </h3>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Parse */}
+            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isParsing && selectedResume.fileUrl && handleParse()}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="size-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <Sparkles className="size-4 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-sm">Parse with AI</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Extract structured data from your uploaded resume.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleParse(); }}
+                  disabled={isParsing || !selectedResume.fileUrl}
+                  className="w-full gap-2"
+                  size="sm"
+                >
+                  {isParsing ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-4" />
+                  )}
+                  {isParsing ? "Parsing..." : "Parse Now"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Score */}
+            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isScoring && selectedResume.hasParsedData && handleScore()}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="size-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <Zap className="size-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-sm">ATS Score</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Check how ATS-friendly your resume is.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleScore(); }}
+                  disabled={isScoring || !selectedResume.hasParsedData}
+                  variant="outline"
+                  className="w-full gap-2 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  size="sm"
+                >
+                  {isScoring ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Zap className="size-4" />
+                  )}
+                  {isScoring ? "Scoring..." : "Check Score"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Optimize */}
+            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isOptimizing && selectedResume.hasParsedData && handleOptimize()}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="size-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                    <CheckCircle2 className="size-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-sm">Optimize for ATS</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  AI-rewrite to maximize ATS compatibility.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleOptimize(); }}
+                  disabled={isOptimizing || !selectedResume.hasParsedData}
+                  className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                  size="sm"
+                >
+                  {isOptimizing ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-4" />
+                  )}
+                  {isOptimizing ? "Optimizing..." : "Optimize"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {!selectedResume.hasParsedData && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+              <AlertCircle className="size-4 shrink-0" />
+              Parse your resume first to unlock ATS Score + Optimize tools.
+            </div>
+          )}
+
+          {/* ATS Score Result */}
+          {atsScore && (
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-b">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <TrendingUp className="size-5 text-blue-600" />
+                  ATS Compatibility Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center gap-6">
+                  <ScoreGauge score={atsScore.score} size={120} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold mb-2">
+                      {atsScore.score >= 80 ? "Excellent! Your resume is highly ATS-friendly." :
+                       atsScore.score >= 60 ? "Good — with a few tweaks it'll be excellent." :
+                       atsScore.score >= 40 ? "Needs work — several sections need attention." :
+                       "Poor — major improvements needed for ATS compatibility."}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Based on {atsScore.breakdown?.length || 0} categories including contact info, keywords, formatting, and content.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category Breakdown</p>
+                  {atsScore.breakdown?.map((item, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{item.category}</span>
+                        <span className={`text-sm font-bold ${
+                          item.score >= 80 ? "text-emerald-600" :
+                          item.score >= 60 ? "text-amber-600" :
+                          "text-red-500"
+                        }`}>{item.score}/100</span>
+                      </div>
+                      <Progress value={item.score} className={`h-1.5 ${
+                        item.score >= 80 ? "[&>div]:bg-emerald-500" :
+                        item.score >= 60 ? "[&>div]:bg-amber-500" :
+                        "[&>div]:bg-red-500"
+                      }`} />
+                      <p className="text-xs text-muted-foreground">{item.feedback}</p>
+                    </div>
+                  ))}
+                </div>
+                {atsScore.suggestions && atsScore.suggestions.length > 0 && (
+                  <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                    <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                      <Sparkles className="size-4" />
+                      Suggestions to improve:
+                    </p>
+                    <ul className="space-y-1.5">
+                      {atsScore.suggestions.map((s, i) => (
+                        <li key={i} className="text-xs text-blue-700 flex items-start gap-1.5">
+                          <CheckCircle2 className="size-3 shrink-0 mt-0.5 text-blue-400" />
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Export Dialog */}
       <Dialog open={!!exportResume} onOpenChange={(open) => !open && setExportResume(null)}>
