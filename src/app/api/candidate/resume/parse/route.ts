@@ -134,8 +134,49 @@ export async function POST(request: Request) {
       );
     }
 
+    // ── Step 2b: Clean up extracted text ──
+    // PDF text extraction often produces artifacts:
+    //   - Letters with spaces between them: "S W A T I" → "SWATI"
+    //   - Multiple consecutive spaces: "name    email" → "name email"
+    //   - Line breaks in the middle of words
+    // These confuse the AI parser, so we normalize the text first.
+    
+    // Fix single-letter-spaced words (e.g., "S W A T I" → "SWATI")
+    // Must loop because a single regex pass only merges pairs —
+    // "S W A T I" → "SW AT I" → "SWAT I" → "SWATI"
+    let prevText: string;
+    do {
+      prevText = rawText;
+      rawText = rawText.replace(/([A-Z])\s([A-Z])(?=\s|[^\w])/g, "$1$2");
+    } while (rawText !== prevText);
+
+    // Second pass: merge remaining pairs like "SW AT" → "SWAT"
+    do {
+      prevText = rawText;
+      rawText = rawText.replace(/([A-Z]{2,})\s([A-Z]{2,})(?=\s|[^\w])/g, (match, p1, p2) => {
+        // Only merge if the combined word looks like a name (not two separate words)
+        // Heuristic: if combined length is ≤ 15 chars, merge them
+        if ((p1 + p2).length <= 15) return p1 + p2;
+        return match;
+      });
+    } while (rawText !== prevText);
+
+    rawText = rawText
+      // Collapse multiple spaces into one
+      .replace(/ {2,}/g, " ")
+      // Remove spaces before/after common punctuation
+      .replace(/\s+,/g, ",")
+      .replace(/\s+\./g, ".")
+      .replace(/\(\s+/g, "(")
+      .replace(/\s+\)/g, ")")
+      // Normalize line breaks — collapse 3+ newlines to 2
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
     // ── Step 3: AI parse ──
-    const systemPrompt = `You are an expert resume parser specializing in healthcare resumes. Extract structured data from the raw resume text. Return ONLY valid JSON (no markdown, no explanations) matching this exact schema:
+    const systemPrompt = `You are an expert resume parser. Extract structured data from the raw resume text. This could be a nurse, doctor, healthcare recruiter, or any healthcare professional's resume.
+
+Return ONLY valid JSON (no markdown, no explanations) matching this exact schema:
 
 {
   "contact": { "fullName": "", "phone": "", "email": "", "address": "" },
@@ -146,7 +187,20 @@ export async function POST(request: Request) {
   "skills": [""]
 }
 
-Rules: Use empty strings for missing fields. For dates use "YYYY-MM" if parseable. For "unit" infer the hospital unit (ICU, ER, Med-Surg). Include ALL experience entries. Skills are short strings. Return ONLY the JSON.`;
+Critical extraction rules:
+- Contact: Look for name at the top of the resume, email (contains @), phone (numbers with dashes/spaces), and address/location.
+- Summary: This might be labeled "Profile", "Summary", "Objective", or "About". Extract the full text.
+- Experience: Look for job titles + company names + dates. Map company → "facility", department/specialty → "unit". Include ALL jobs found. The "description" should include bullet points and responsibilities.
+- Education: Look for school/university names, degrees, and graduation years.
+- Certifications: Look for any certifications, licenses, or training (BLS, ACLS, RN License, etc.). If none found, return empty array [].
+- Skills: Extract ALL skills mentioned (clinical skills, software, languages, etc.). Return as array of short strings. If the resume has a "Skills" section, parse each skill listed there.
+
+IMPORTANT:
+- Use empty strings for missing fields, never null.
+- For dates use "YYYY-MM" if parseable, otherwise the original text.
+- Do NOT leave fields empty if the information is present in the text.
+- Look carefully — names might have unusual spacing from PDF extraction.
+- Return ONLY the JSON object, no surrounding text or markdown.`;
 
     const completion = await zaiChatCompletion({
       messages: [
@@ -154,7 +208,7 @@ Rules: Use empty strings for missing fields. For dates use "YYYY-MM" if parseabl
         { role: "user", content: rawText.slice(0, 8000) },
       ],
       temperature: 0.1,
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
 
     const rawResponse = completion.choices[0]?.message?.content?.trim() || "";
