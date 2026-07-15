@@ -1431,7 +1431,7 @@ export async function generateResumePdf(data: {
       },
 
       // ─── Green divider ───
-      { canvas: [{ type: 'rect', x: 0, y: 0, w: '100%', h: 2, color: GREEN }], margin: [0, 0, 0, 18] },
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: 500, h: 2, color: GREEN }], margin: [0, 0, 0, 18] },
 
       // ─── Professional Summary ───
       ...(data.summary ? [
@@ -1439,17 +1439,21 @@ export async function generateResumePdf(data: {
         { text: data.summary, fontSize: 9.5, color: MEDIUM, lineHeight: 1.65, margin: [0, 0, 0, 18] },
       ] : []),
 
-      // ─── Skills (green pill tags) ───
+      // ─── Skills (green pill tags using table) ───
       ...(data.skills.length > 0 ? [
         sectionLabel('SKILLS'),
         {
-          stack: data.skills.map((skill) => ({
-            text: skill,
-            fontSize: 8.5,
-            color: GREEN,
-            background: GREEN_BG,
-            margin: [7, 2.5, 7, 2.5],
-          })),
+          table: {
+            widths: data.skills.map(() => 'auto'),
+            body: [data.skills.map((skill) => ({
+              text: ` ${skill} `,
+              fontSize: 8.5,
+              color: GREEN,
+              fillColor: GREEN_BG,
+              margin: [7, 2.5, 7, 2.5],
+            }))],
+          },
+          layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 4, paddingTop: () => 2.5, paddingBottom: () => 2.5 },
           margin: [0, 0, 0, 18],
         },
       ] : []),
@@ -1476,7 +1480,7 @@ export async function generateResumePdf(data: {
           // Add divider between jobs (not after last)
           if (idx < data.experience.length - 1) {
             jobBlock.push({
-              canvas: [{ type: 'line', x1: 0, y1: 0, x2: '100%', y2: 0, lineWidth: 0.5, lineColor: DIVIDER }],
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 500, y2: 0, lineWidth: 0.5, lineColor: DIVIDER }],
               margin: [0, 10, 0, 10],
             });
           } else {
@@ -1538,7 +1542,7 @@ function sectionLabel(label: string): any {
         font: 'Roboto',
         margin: [0, 0, 0, 5],
       },
-      { canvas: [{ type: 'rect', x: 0, y: 0, w: '100%', h: 0.5, color: '#E5E7EB' }], margin: [0, 0, 0, 10] },
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: 500, h: 0.5, color: '#E5E7EB' }], margin: [0, 0, 0, 10] },
     ],
     margin: [0, 0, 0, 0],
   };
