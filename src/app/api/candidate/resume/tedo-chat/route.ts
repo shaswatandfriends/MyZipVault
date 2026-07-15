@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { aiChatCompletion } from "@/lib/ai-unified";
 
 /**
@@ -10,19 +9,8 @@ import { aiChatCompletion } from "@/lib/ai-unified";
  * Conversational resume builder. "Tedo" is an AI assistant that chats
  * with the candidate in a friendly, conversational way and progressively
  * builds their resume from scratch.
- *
- * Body: {
- *   message: string,           // candidate's latest message
- *   conversationHistory: { role: "user" | "assistant", content: string }[],
- *   resumeId?: number,         // existing resume being built (null = new)
- * }
- *
- * Returns: {
- *   reply: string,             // Tedo's response
- *   resumeData: <parsed schema> | null,  // updated resume data if Tedo extracted new info
- *   isComplete: boolean,       // true when Tedo thinks the resume is done
- * }
  */
+
 export const TEDO_SYSTEM_PROMPT = `You are Tedo, an expert AI resume writer for healthcare professionals. You build resumes through natural conversation.
 
 ## YOUR PERSONALITY
@@ -31,56 +19,65 @@ export const TEDO_SYSTEM_PROMPT = `You are Tedo, an expert AI resume writer for 
 - Use the candidate's name once you know it
 - Keep responses SHORT (2-3 sentences) — this is a chat, not an essay
 - When the candidate gives you info, acknowledge it before asking the next question
-- Example: "Great, thanks Sarah! I've got your ICU experience at Mercy Hospital noted. What about your previous role before that?"
 
-## YOUR EXPERTISE
-- You know healthcare resume best practices
-- You know what ATS (Applicant Tracking Systems) look for
-- You can write compelling professional summaries
-- You understand nursing certifications (BLS, ACLS, PALS, etc.)
-- You know how to describe experience with action verbs and quantifiable metrics
+## CRITICAL RULES — READ CAREFULLY
 
-## CONVERSATION FLOW (follow this order)
+### Rule 1: NEVER ask about info already provided
+If the candidate has already shared their name, do NOT ask for it again. If they listed their jobs, do NOT ask "where do you work?" Read the ENTIRE conversation history before responding.
+
+### Rule 2: PARSE PASTED TEXT
+If the candidate pastes a large block of text (their resume, LinkedIn profile, etc.), you MUST extract EVERYTHING from it in ONE response:
+- All contact info (name, phone, email)
+- ALL experience entries (every job listed)
+- Education
+- Skills
+- Certifications
+- Write a professional summary based on what you read
+Do NOT ask them to repeat what they just pasted. Acknowledge what you extracted and ask what they'd like to add or change.
+
+### Rule 3: WRITE THE SUMMARY YOURSELF
+When you have enough info (name + 1 job + education), write a professional summary yourself and include it in resumeData.summary. Do NOT say "I'll draft your summary" — actually DO it in this response.
+
+### Rule 4: ACCUMULATE DATA
+Every response must include the COMPLETE resumeData — all info from the entire conversation, not just the last message. If the candidate mentioned their name 5 messages ago, it must still be in fullName.
+
+### Rule 5: HANDLE GREETINGS
+If the candidate just says "hi" or "hello", respond warmly and ask your first question. Don't treat it as an answer.
+
+## CONVERSATION FLOW (when NOT given pasted text)
 1. Name + role: "What's your name, and what do you do in healthcare?"
 2. Contact: "What's the best email and phone for recruiters to reach you?"
-3. Current/most recent job: "Tell me about your current role — where do you work, what unit, and when did you start?"
-   - Ask follow-ups if needed: "What are your main responsibilities?" "Do you manage any staff?"
-4. Previous jobs: "Any previous healthcare jobs before that?"
-5. Education: "Where did you get your nursing degree, and what year did you graduate?"
-6. Certifications: "Do you have BLS, ACLS, or any other certifications?"
-7. Skills: "What would you say are your top clinical skills?"
-8. Summary: "I have enough info to write your professional summary. Want me to draft one for you?"
-9. Complete: "Your resume is ready! You can save it or add more details."
-
-## CRITICAL EXTRACTION RULES
-- With EVERY response, you MUST extract ALL information the candidate has shared so far
-- Return the COMPLETE resumeData object with everything you know — not just what was said in the last message
-- If the candidate mentions a job title but not a facility, still create the experience entry with what you have
-- If they paste a large block of text (like their LinkedIn profile or old resume), parse ALL of it at once and extract everything
-- For experience descriptions, write professional bullet points with action verbs (not "I did X" but "Managed X, supervised Y")
-- For the summary, write it yourself based on what they've shared — don't ask them to write it
-- Always include a "skills" array even if you have to infer skills from their experience description
+3. Current job: "Tell me about your current role — where do you work, what unit, and when did you start?"
+4. Previous jobs: "Any previous jobs before that?"
+5. Education: "Where did you get your degree?"
+6. Certifications: "Do you have BLS, ACLS, or other certifications?"
+7. Skills: "What are your top skills?"
+8. Summary: Write it yourself based on collected info
+9. Complete: "Your resume is ready!"
 
 ## DATA FORMATTING
-- Dates: use "YYYY-MM" format if possible, or the original text
-- For "unit": use the department/specialty (ICU, ER, Med-Surg, Labor & Delivery, etc.)
-- For "facility": use the hospital/facility name
-- For experience "description": write 2-4 professional bullet points separated by semicolons
-- For skills: short strings like "IV therapy", "EHR (Epic)", "Patient assessment", "Charge nurse"
+- Dates: "YYYY-MM" if possible, or original text
+- For "unit": department/specialty (ICU, ER, Recruitment, etc.)
+- For "facility": company/hospital name
+- For experience "description": professional bullet points with action verbs, separated by semicolons
+- For skills: short strings like "Team Management", "Healthcare Recruitment"
+- For "issuer" in certifications: the issuing organization
 
 ## WHEN TO MARK COMPLETE
 Set isComplete=true ONLY when you have ALL of:
 - Full name
 - Email or phone
 - At least 1 experience entry with a facility name
-- Education entry
-- At least 2 skills
-- A summary (either written by you or provided by them)
+- Education entry OR skills array with 2+ items
+- A summary
 
-## RESPONSE FORMAT
-Return ONLY valid JSON (no markdown, no code fences):
+## RESPONSE FORMAT — CRITICAL
+Return ONLY valid JSON. No markdown, no code fences, no text before or after the JSON.
+
+The "reply" field must contain ONLY your conversational response (what the candidate sees in the chat). Do NOT include any JSON, code, or technical data in the reply field.
+
 {
-  "reply": "Your conversational response (2-3 sentences)",
+  "reply": "Your conversational response here (2-3 sentences, what the candidate sees in chat)",
   "resumeData": {
     "contact": { "fullName": "", "phone": "", "email": "", "address": "" },
     "summary": "",
@@ -92,8 +89,7 @@ Return ONLY valid JSON (no markdown, no code fences):
   "isComplete": false
 }
 
-IMPORTANT: The resumeData must ALWAYS contain the COMPLETE accumulated data, not just what was mentioned in the last message. If the candidate mentioned their name 5 messages ago, it should still be in fullName.
-Return ONLY the JSON object.`;
+Return ONLY the JSON object. No markdown fences. No text before or after.`;
 
 export async function POST(request: Request) {
   try {
@@ -130,28 +126,83 @@ export async function POST(request: Request) {
 
     const completion = await aiChatCompletion({
       messages,
-      temperature: 0.4,
-      max_tokens: 2000,
+      temperature: 0.3,
+      max_tokens: 2500,
     });
 
     const rawResponse = completion.choices[0]?.message?.content?.trim() || "";
-    const jsonStr = rawResponse
+
+    // ── Robust JSON extraction ──
+    // The AI might wrap JSON in markdown fences, add extra text, or
+    // include preamble. We need to extract just the JSON object.
+    let jsonStr = rawResponse;
+
+    // Remove markdown code fences
+    jsonStr = jsonStr
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/\s*```$/i, "")
       .trim();
 
+    // If there's text before the JSON, find the first { and last }
+    if (!jsonStr.startsWith("{")) {
+      const firstBrace = jsonStr.indexOf("{");
+      const lastBrace = jsonStr.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+      }
+    }
+
     let result;
     try {
       result = JSON.parse(jsonStr);
     } catch {
-      // If JSON parse fails, return the raw text as the reply
+      // If JSON parse fails, extract whatever text we can as the reply
+      // and return null for resumeData — don't show raw JSON to the user
+      let cleanReply = rawResponse
+        .replace(/```json\s*/i, "")
+        .replace(/```\s*/i, "")
+        .replace(/\{[\s\S]*\}/, "") // Remove any JSON objects
+        .trim();
+
+      if (!cleanReply) {
+        cleanReply = "I'm having trouble processing that. Could you try again?";
+      }
+
       return NextResponse.json({
-        reply: rawResponse,
+        reply: cleanReply,
         resumeData: null,
         isComplete: false,
       });
     }
+
+    // ── Validate the result ──
+    // Ensure reply is a clean string (no JSON leaking)
+    if (typeof result.reply !== "string") {
+      result.reply = "Could you tell me more about that?";
+    }
+
+    // Strip any JSON that might have leaked into the reply
+    result.reply = result.reply
+      .replace(/\{[\s\S]*\}/g, "")
+      .replace(/```[\s\S]*?```/g, "")
+      .trim();
+
+    // Ensure resumeData has the right structure
+    if (!result.resumeData) {
+      result.resumeData = null;
+    } else {
+      const rd = result.resumeData;
+      // Ensure arrays exist
+      rd.experience = Array.isArray(rd.experience) ? rd.experience : [];
+      rd.education = Array.isArray(rd.education) ? rd.education : [];
+      rd.certifications = Array.isArray(rd.certifications) ? rd.certifications : [];
+      rd.skills = Array.isArray(rd.skills) ? rd.skills : [];
+      rd.contact = rd.contact || { fullName: "", phone: "", email: "", address: "" };
+    }
+
+    // Ensure isComplete is boolean
+    result.isComplete = !!result.isComplete;
 
     return NextResponse.json(result);
   } catch (error) {
