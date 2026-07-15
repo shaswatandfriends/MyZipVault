@@ -1076,13 +1076,51 @@ function TedoChatTab({
   onResumeCreated: () => void;
   canAddMore: boolean;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const TEDO_STORAGE_KEY = "tedo-chat-state";
+
+  // Load from sessionStorage on mount — survives page navigation
+  const loadSavedState = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const saved = sessionStorage.getItem(TEDO_STORAGE_KEY);
+      if (!saved) return null;
+      return JSON.parse(saved) as {
+        messages: ChatMessage[];
+        resumeData: ResumeParsedData | null;
+        isComplete: boolean;
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const savedState = loadSavedState();
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    savedState?.messages ?? []
+  );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [resumeData, setResumeData] = useState<ResumeParsedData | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const [resumeData, setResumeData] = useState<ResumeParsedData | null>(
+    savedState?.resumeData ?? null
+  );
+  const [isComplete, setIsComplete] = useState(savedState?.isComplete ?? false);
+  const [showQuickReplies, setShowQuickReplies] = useState(
+    !savedState || savedState.messages.length <= 1
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Save to sessionStorage whenever messages or resumeData change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem(
+        TEDO_STORAGE_KEY,
+        JSON.stringify({ messages, resumeData, isComplete })
+      );
+    } catch {
+      // Storage full or unavailable — non-critical
+    }
+  }, [messages, resumeData, isComplete]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1101,6 +1139,10 @@ function TedoChatTab({
     setIsComplete(false);
     setResumeData(null);
     setShowQuickReplies(true);
+    // Clear saved state — starting fresh
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(TEDO_STORAGE_KEY);
+    }
   };
 
   useEffect(() => {
@@ -1163,6 +1205,10 @@ function TedoChatTab({
       setIsComplete(false);
       setMessages([]);
       setResumeData(null);
+      // Clear saved chat state
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(TEDO_STORAGE_KEY);
+      }
       setTimeout(startChat, 100);
     } catch (err) {
       toast.error("Failed to save resume", {

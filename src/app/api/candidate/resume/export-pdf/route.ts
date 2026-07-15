@@ -67,37 +67,41 @@ export async function GET() {
       description: exp.description || "",
     }));
 
-    // Map education
+    // Map education — Tedo returns graduationYear, uploaded resumes may use year
     const rawEducation = (parsedData.education || []) as Array<{
       school?: string;
       degree?: string;
       year?: string;
+      graduationYear?: string;
     }>;
     const education = rawEducation.map((edu) => ({
       degree: edu.degree || "",
       school: edu.school || "",
-      year: edu.year || "",
+      year: edu.graduationYear || edu.year || "",
     }));
 
-    // Map skills
-    const rawSkills = (parsedData.skills || []) as Array<{
-      skill?: string;
-      proficiency?: string;
-    }>;
+    // Map skills — handle BOTH formats:
+    //   1. Plain strings: ["IV therapy", "EHR"] (from Tedo AI builder)
+    //   2. Objects: { skill: "IV therapy", proficiency: "Expert" } (from upload parse)
+    const rawSkills = (parsedData.skills || []) as Array<
+      string | { skill?: string; proficiency?: string }
+    >;
     const skills = rawSkills.map((s) => {
+      if (typeof s === "string") return s;
       const skillName = s.skill || "";
       const proficiency = s.proficiency || "";
       return proficiency ? `${skillName} (${proficiency})` : skillName;
-    });
+    }).filter(Boolean);
 
-    // Map certifications
+    // Map certifications — Tedo returns issuer, uploaded resumes may use issuingOrg
     const rawCerts = (parsedData.certifications || []) as Array<{
       name?: string;
+      issuer?: string;
       issuingOrg?: string;
       year?: string;
     }>;
     const certifications = rawCerts.map((cert) => {
-      const parts = [cert.name, cert.issuingOrg, cert.year].filter(Boolean);
+      const parts = [cert.name, cert.issuer || cert.issuingOrg, cert.year].filter(Boolean);
       return parts.join(" — ");
     });
 
