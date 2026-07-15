@@ -302,18 +302,40 @@ IMPORTANT:
 
 /**
  * Extract text from a PDF Buffer using pdfjs-dist.
- * Runs in Node.js with the worker disabled (fake worker mode).
+ *
+ * CRITICAL: Must set workerSrc to the actual worker file, OR use the
+ * getDocument({ disableWorker: true }) option. Setting workerSrc to ""
+ * does NOT work — pdfjs still tries to spawn a worker and fails with
+ * "Setting up fake worker failed: No GlobalWorkerOptions.workerSrc".
+ *
+ * The reliable approach in Node.js serverless:
+ *   1. Set workerSrc to a valid path (even if we disable the worker)
+ *   2. Pass disableWorker: true to getDocument
+ *   3. Use the legacy build (no DOM dependencies)
  */
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
     // Use legacy build for Node.js compatibility
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjs.GlobalWorkerOptions.workerSrc = "";
+
+    // Set the worker source to the bundled worker file.
+    // In Node.js serverless, we can't actually spawn a web worker,
+    // but pdfjs requires this to be set before getDocument() is called.
+    // The disableWorker option below ensures the worker is never used.
+    try {
+      const workerModule = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = workerModule;
+      pdfjs.GlobalWorkerOptions.workerPort = null;
+    } catch {
+      // Fallback: set to a dummy URL — disableWorker will prevent it from loading
+      pdfjs.GlobalWorkerOptions.workerSrc = "data:application/javascript;base64,";
+    }
 
     const doc = await pdfjs.getDocument({
       data: new Uint8Array(buffer),
-      // Disable worker — run in main thread (required for Node.js)
+      // CRITICAL: disables the worker entirely — runs in main thread
+      disableWorker: true,
       useWorkerFetch: false,
       isEvalSupported: false,
       useSystemFonts: true,
