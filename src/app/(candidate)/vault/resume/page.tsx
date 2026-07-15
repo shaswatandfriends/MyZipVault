@@ -641,96 +641,8 @@ function OverviewTab({
 
       {/* ─── Two-column layout: AI Tools (left) + Resume (right) ─── */}
       {selectedResume ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 items-start">
-          {/* ─── Left: AI Tools sidebar ─── */}
-          <div className="space-y-3 lg:sticky lg:top-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
-              <Zap className="size-4" />
-              AI Tools
-            </h3>
-
-            {/* Parse */}
-            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isParsing && selectedResume.fileUrl && handleParse()}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
-                    <Sparkles className="size-4 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-sm">Parse with AI</h3>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Extract structured data from your resume.
-                </p>
-                <Button
-                  onClick={(e) => { e.stopPropagation(); handleParse(); }}
-                  disabled={isParsing || !selectedResume.fileUrl}
-                  className="w-full gap-2"
-                  size="sm"
-                >
-                  {isParsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  {isParsing ? "Parsing..." : "Parse Now"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Score */}
-            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isScoring && selectedResume.hasParsedData && handleScore()}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
-                    <Zap className="size-4 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm">ATS Score</h3>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Check ATS compatibility.
-                </p>
-                <Button
-                  onClick={(e) => { e.stopPropagation(); handleScore(); }}
-                  disabled={isScoring || !selectedResume.hasParsedData}
-                  variant="outline"
-                  className="w-full gap-2 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                  size="sm"
-                >
-                  {isScoring ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
-                  {isScoring ? "Scoring..." : "Check Score"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Optimize */}
-            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isOptimizing && selectedResume.hasParsedData && handleOptimize()}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="size-4 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm">Optimize for ATS</h3>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  AI-rewrite for max compatibility.
-                </p>
-                <Button
-                  onClick={(e) => { e.stopPropagation(); handleOptimize(); }}
-                  disabled={isOptimizing || !selectedResume.hasParsedData}
-                  className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-                  size="sm"
-                >
-                  {isOptimizing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  {isOptimizing ? "Optimizing..." : "Optimize"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {!selectedResume.hasParsedData && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
-                <span>Parse first to unlock Score + Optimize.</span>
-              </div>
-            )}
-          </div>
-
-          {/* ─── Right: Resume preview + Score results ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
+          {/* ─── Left: Resume preview + Score results ─── */}
           <div className="space-y-4 min-w-0">
             {/* Resume card */}
             <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -856,6 +768,95 @@ function OverviewTab({
             )}
           </div>
         </div>
+          {/* ─── Right: AI Tools sidebar ─── */}
+          <div className="space-y-3 lg:sticky lg:top-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
+              <Zap className="size-4" />
+              AI Tools
+            </h3>
+
+            {/* Parse */}
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isParsing && selectedResume.fileUrl && handleParse()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
+                    <Sparkles className="size-4 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-sm">Parse with AI</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Extract structured data from your resume.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleParse(); }}
+                  disabled={isParsing || !selectedResume.fileUrl}
+                  className="w-full gap-2"
+                  size="sm"
+                >
+                  {isParsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                  {isParsing ? "Parsing..." : "Parse Now"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Score */}
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isScoring && selectedResume.hasParsedData && handleScore()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
+                    <Zap className="size-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-sm">ATS Score</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Check ATS compatibility.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleScore(); }}
+                  disabled={isScoring || !selectedResume.hasParsedData}
+                  variant="outline"
+                  className="w-full gap-2 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  size="sm"
+                >
+                  {isScoring ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+                  {isScoring ? "Scoring..." : "Check Score"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Optimize */}
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isOptimizing && selectedResume.hasParsedData && handleOptimize()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="size-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-sm">Optimize for ATS</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  AI-rewrite for max compatibility.
+                </p>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleOptimize(); }}
+                  disabled={isOptimizing || !selectedResume.hasParsedData}
+                  className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                  size="sm"
+                >
+                  {isOptimizing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                  {isOptimizing ? "Optimizing..." : "Optimize"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {!selectedResume.hasParsedData && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                <span>Parse first to unlock Score + Optimize.</span>
+              </div>
+            )}
+          </div>
+
+
       ) : (
         /* ─── No resume selected — show all cards ─── */
         resumes.map((resume) => (
