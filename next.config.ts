@@ -73,12 +73,13 @@ const nextConfig: NextConfig = {
   transpilePackages: ["lucide-react", "signature_pad"],
 
   // pdfmake uses dynamic requires that break with Vercel's bundler.
-  // Marking as external ensures the serverless function loads it correctly.
-  serverExternalPackages: ["pdfmake", "pdfkit"],
+  // pdfjs-dist uses workers internally — marking as external ensures
+  // the serverless function loads it correctly.
+  // mammoth uses dynamic requires for DOCX parsing.
+  serverExternalPackages: ["pdfmake", "pdfkit", "pdfjs-dist", "mammoth"],
 
-  // Include pdfkit's font data files and pdfmake's full package in the
-  // serverless function bundle. Vercel's bundler doesn't detect dynamic
-  // file reads (__dirname + '/data/...') or subpath imports.
+  // Include pdfkit's font data files, pdfmake's full package, and
+  // pdfjs-dist's legacy build in the serverless function bundle.
   outputFileTracingIncludes: {
     "/*": [
       "./node_modules/pdfkit/js/data/**/*",
@@ -86,6 +87,8 @@ const nextConfig: NextConfig = {
       "./node_modules/pdfmake/js/**/*",
       "./node_modules/pdfmake/src/**/*",
       "./node_modules/pdfmake/fonts/**/*",
+      "./node_modules/pdfjs-dist/legacy/build/**/*",
+      "./node_modules/mammoth/**/*",
     ],
   },
 };

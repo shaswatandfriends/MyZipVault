@@ -741,14 +741,11 @@ function ATSToolsTab({
         toast.error("No file to parse");
         return;
       }
-      const fileRes = await fetch(resume.fileUrl);
-      const blob = await fileRes.blob();
-      const text = await blob.text();
 
       const parseRes = await fetch("/api/candidate/resume/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId: resume.id, rawText: text.slice(0, 8000) }),
+        body: JSON.stringify({ resumeId: resume.id }),
       });
       const data = await parseRes.json();
       if (!parseRes.ok) throw new Error(data.error);
