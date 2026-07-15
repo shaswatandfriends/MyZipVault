@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { zaiChatCompletion } from "@/lib/zai";
+import { groqChatCompletion } from "@/lib/groq";
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         ? `Enhance this professional summary for a healthcare resume:\n\n${content}`
         : `Enhance this ${section} section for a healthcare resume:\n\n${content}`;
 
-    const completion = await zaiChatCompletion({
+    const completion = await groqChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

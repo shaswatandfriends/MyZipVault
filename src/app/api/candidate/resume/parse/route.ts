@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { zaiChatCompletion } from "@/lib/zai";
+import { groqChatCompletion } from "@/lib/groq";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabase";
 
 /**
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
       .trim();
 
     // ── Step 3: AI parse ──
-    console.log("[RESUME_PARSE] Step 3: Calling AI. Text length:", rawText.length, "ZAI_API_KEY set:", !!process.env.ZAI_API_KEY);
+    console.log("[RESUME_PARSE] Step 3: Calling AI. Text length:", rawText.length, "GROQ_API_KEY set:", !!process.env.GROQ_API_KEY);
     const systemPrompt = `You are an expert resume parser. Extract structured data from the raw resume text. This could be a nurse, doctor, healthcare recruiter, or any healthcare professional's resume.
 
 Return ONLY valid JSON (no markdown, no explanations) matching this exact schema:
@@ -214,8 +214,8 @@ IMPORTANT:
 - Look carefully — names might have unusual spacing from PDF extraction.
 - Return ONLY the JSON object, no surrounding text or markdown.`;
 
-    console.log("[RESUME_PARSE] Sending request to ZAI API...");
-    const completion = await zaiChatCompletion({
+    console.log("[RESUME_PARSE] Sending request to Groq API...");
+    const completion = await groqChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: rawText.slice(0, 8000) },
@@ -258,17 +258,17 @@ IMPORTANT:
       error instanceof Error ? error.message : "Unknown error";
 
     // Check for common configuration issues
-    if (errorMessage.includes("ZAI_API_KEY not configured")) {
+    if (errorMessage.includes("GROQ_API_KEY not configured")) {
       return NextResponse.json(
         {
           error:
-            "AI service is not configured. Please contact support to set up the ZAI_API_KEY environment variable.",
+            "AI service is not configured. Please contact support to set up the GROQ_API_KEY environment variable.",
         },
         { status: 503 }
       );
     }
 
-    if (errorMessage.includes("ZAI API error")) {
+    if (errorMessage.includes("Groq API error")) {
       return NextResponse.json(
         {
           error: `AI service error: ${errorMessage}. Please try again in a moment.`,

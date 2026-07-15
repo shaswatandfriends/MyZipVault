@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { zaiChatCompletion } from "@/lib/zai";
+import { groqChatCompletion } from "@/lib/groq";
 
 /**
  * POST /api/candidate/resume/ats-optimize
@@ -69,7 +69,7 @@ Return ONLY valid JSON:
 Do NOT invent experience, certifications, or education. Only enhance existing content.
 Return ONLY the JSON.`;
 
-    const completion = await zaiChatCompletion({
+    const completion = await groqChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(resumeData).slice(0, 6000) },
