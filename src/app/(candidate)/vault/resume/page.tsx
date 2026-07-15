@@ -508,6 +508,39 @@ function OverviewTab({
   onSelect: (id: number) => void;
   onDelete: (id: number) => void;
 }) {
+  const [exportResume, setExportResume] = useState<ResumeVersion | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (format: "pdf" | "txt") => {
+    if (!exportResume) return;
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/candidate/resume/export-pdf");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Export failed");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const name = exportResume.parsedData?.contact?.fullName || "resume";
+      a.download = `${name.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Resume downloaded");
+      setExportResume(null);
+    } catch (err) {
+      toast.error("Export failed", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Resume selector */}
@@ -554,14 +587,16 @@ function OverviewTab({
                 <Badge variant="outline" className="text-xs">
                   {new Date(resume.createdAt).toLocaleDateString()}
                 </Badge>
-                {resume.fileUrl && (
-                  <Button size="sm" variant="ghost" className="gap-1 h-8" asChild>
-                    <a href={resume.fileUrl} target="_blank" rel="noopener noreferrer">
-                      <Download className="size-3.5" />
-                      Download
-                    </a>
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 h-8"
+                  onClick={() => setExportResume(resume)}
+                  disabled={!resume.hasParsedData}
+                >
+                  <Download className="size-3.5" />
+                  Download
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -588,6 +623,52 @@ function OverviewTab({
           </CardContent>
         </Card>
       ))}
+
+      {/* Export Dialog */}
+      <Dialog open={!!exportResume} onOpenChange={(open) => !open && setExportResume(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="size-5 text-primary" />
+              Download Resume
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Choose a format to download your resume:
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={() => handleExport("pdf")}
+                disabled={isExporting}
+                className="flex items-center gap-3 p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:bg-red-50 transition-colors text-left disabled:opacity-50"
+              >
+                <div className="size-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                  <FileText className="size-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">PDF Document</p>
+                  <p className="text-xs text-muted-foreground">Best for printing and sharing</p>
+                </div>
+                {isExporting && <Loader2 className="size-4 animate-spin ml-auto" />}
+              </button>
+              <button
+                onClick={() => handleExport("txt")}
+                disabled={isExporting}
+                className="flex items-center gap-3 p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-colors text-left disabled:opacity-50"
+              >
+                <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <FileText className="size-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Plain Text</p>
+                  <p className="text-xs text-muted-foreground">For pasting into online forms</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
