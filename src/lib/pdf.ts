@@ -1375,39 +1375,27 @@ export async function generateResumePdf(data: {
     pageSize: 'LETTER',
     pageMargins: [56, 52, 56, 48],
     defaultStyle: { font: 'Roboto', fontSize: 10, color: DARK, lineHeight: 1.4 },
-    header: (currentPage: number, pageSize: number) => {
+    header: (currentPage: number) => {
       if (currentPage !== 1) return {};
       return {
-        margin: [0, 0, 0, 0],
+        margin: [-56, -52, -56, 0],
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: pageSize.width, h: 6, color: GREEN, lineColor: GREEN },
+          { type: 'rect', x: 0, y: 0, w: 612, h: 6, color: GREEN, lineColor: GREEN },
         ],
       };
     },
     footer: (currentPage: number, pageCount: number) => ({
-      margin: [56, 0, 56, 0],
+      margin: [56, 12, 56, 0],
       columns: [
         { text: `${data.name} — Resume`, fontSize: 7.5, color: LIGHTER, width: '*' },
         {
-          table: {
-            widths: ['auto'],
-            body: [[
-              {
-                columns: [
-                  { width: 6, height: 6, canvas: [{ type: 'rect', x: 0, y: 0, w: 6, h: 6, r: 3, color: GREEN }] },
-                  { text: 'myzipvault.com', fontSize: 7.5, color: GREEN, margin: [4, 0, 0, 0] },
-                ],
-                margin: [0, 0, 0, 0],
-              },
-            ]],
-          },
-          layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
+          text: 'myzipvault.com',
+          fontSize: 7.5,
+          color: GREEN,
           width: 'auto',
-          margin: [0, 0, 0, 0],
         },
         { text: `Page ${currentPage} of ${pageCount}`, fontSize: 7.5, color: LIGHTER, alignment: 'right', width: '*' },
       ],
-      margin: [56, 12, 56, 0],
     }),
     content: [
       // ─── Name ───
