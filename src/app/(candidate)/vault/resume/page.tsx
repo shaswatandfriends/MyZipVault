@@ -639,89 +639,27 @@ function OverviewTab({
         </div>
       )}
 
-      {/* Resume cards */}
-      {resumes.map((resume) => (
-        <Card key={resume.id} className="overflow-hidden hover:shadow-md transition-shadow">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <div className={`size-9 rounded-lg flex items-center justify-center ${
-                  resume.isBuilderResume
-                    ? "bg-gradient-to-br from-emerald-500 to-teal-500"
-                    : "bg-blue-500/10"
-                }`}>
-                  {resume.isBuilderResume ? (
-                    <Bot className="size-5 text-white" />
-                  ) : (
-                    <FileText className="size-5 text-blue-500" />
-                  )}
-                </div>
-                {resume.isBuilderResume ? "AI-Built Resume" : "Uploaded Resume"}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {new Date(resume.createdAt).toLocaleDateString()}
-                </Badge>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="gap-1 h-8"
-                  onClick={() => setExportResume(resume)}
-                  disabled={!resume.hasParsedData}
-                >
-                  <Download className="size-3.5" />
-                  Download
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="gap-1 h-8 text-destructive hover:text-destructive"
-                  onClick={() => onDelete(resume.id)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {resume.parsedData ? (
-              <ParsedResumePreview data={resume.parsedData} />
-            ) : (
-              <div className="flex items-center justify-between p-4 rounded-lg bg-amber-50 border border-amber-200">
-                <div className="flex items-center gap-2 text-sm text-amber-800">
-                  <AlertCircle className="size-4 shrink-0" />
-                  Not parsed yet — go to ATS Tools to parse with AI
-                </div>
-                <Badge variant="outline" className="text-amber-600 border-amber-300">Raw upload</Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-
-      {/* ─── ATS Tools (integrated into Overview) ─────────────── */}
-      {selectedResume && (
-        <>
-          <div className="pt-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+      {/* ─── Two-column layout: AI Tools (left) + Resume (right) ─── */}
+      {selectedResume ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 items-start">
+          {/* ─── Left: AI Tools sidebar ─── */}
+          <div className="space-y-3 lg:sticky lg:top-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
               <Zap className="size-4" />
               AI Tools
             </h3>
-          </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Parse */}
-            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isParsing && selectedResume.fileUrl && handleParse()}>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="size-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isParsing && selectedResume.fileUrl && handleParse()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
                     <Sparkles className="size-4 text-primary-foreground" />
                   </div>
                   <h3 className="font-semibold text-sm">Parse with AI</h3>
                 </div>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Extract structured data from your uploaded resume.
+                <p className="text-xs text-muted-foreground mb-3">
+                  Extract structured data from your resume.
                 </p>
                 <Button
                   onClick={(e) => { e.stopPropagation(); handleParse(); }}
@@ -729,27 +667,23 @@ function OverviewTab({
                   className="w-full gap-2"
                   size="sm"
                 >
-                  {isParsing ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-4" />
-                  )}
+                  {isParsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                   {isParsing ? "Parsing..." : "Parse Now"}
                 </Button>
               </CardContent>
             </Card>
 
             {/* Score */}
-            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isScoring && selectedResume.hasParsedData && handleScore()}>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="size-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isScoring && selectedResume.hasParsedData && handleScore()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
                     <Zap className="size-4 text-white" />
                   </div>
                   <h3 className="font-semibold text-sm">ATS Score</h3>
                 </div>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Check how ATS-friendly your resume is.
+                <p className="text-xs text-muted-foreground mb-3">
+                  Check ATS compatibility.
                 </p>
                 <Button
                   onClick={(e) => { e.stopPropagation(); handleScore(); }}
@@ -758,27 +692,23 @@ function OverviewTab({
                   className="w-full gap-2 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                   size="sm"
                 >
-                  {isScoring ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Zap className="size-4" />
-                  )}
+                  {isScoring ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
                   {isScoring ? "Scoring..." : "Check Score"}
                 </Button>
               </CardContent>
             </Card>
 
             {/* Optimize */}
-            <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer" onClick={() => !isOptimizing && selectedResume.hasParsedData && handleOptimize()}>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="size-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={() => !isOptimizing && selectedResume.hasParsedData && handleOptimize()}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="size-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="size-4 text-white" />
                   </div>
                   <h3 className="font-semibold text-sm">Optimize for ATS</h3>
                 </div>
-                <p className="text-xs text-muted-foreground mb-4">
-                  AI-rewrite to maximize ATS compatibility.
+                <p className="text-xs text-muted-foreground mb-3">
+                  AI-rewrite for max compatibility.
                 </p>
                 <Button
                   onClick={(e) => { e.stopPropagation(); handleOptimize(); }}
@@ -786,89 +716,206 @@ function OverviewTab({
                   className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
                   size="sm"
                 >
-                  {isOptimizing ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-4" />
-                  )}
+                  {isOptimizing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                   {isOptimizing ? "Optimizing..." : "Optimize"}
                 </Button>
               </CardContent>
             </Card>
+
+            {!selectedResume.hasParsedData && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                <span>Parse first to unlock Score + Optimize.</span>
+              </div>
+            )}
           </div>
 
-          {!selectedResume.hasParsedData && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-              <AlertCircle className="size-4 shrink-0" />
-              Parse your resume first to unlock ATS Score + Optimize tools.
-            </div>
-          )}
-
-          {/* ATS Score Result */}
-          {atsScore && (
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-b">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="size-5 text-blue-600" />
-                  ATS Compatibility Score
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="flex items-center gap-6">
-                  <ScoreGauge score={atsScore.score} size={120} />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold mb-2">
-                      {atsScore.score >= 80 ? "Excellent! Your resume is highly ATS-friendly." :
-                       atsScore.score >= 60 ? "Good — with a few tweaks it'll be excellent." :
-                       atsScore.score >= 40 ? "Needs work — several sections need attention." :
-                       "Poor — major improvements needed for ATS compatibility."}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Based on {atsScore.breakdown?.length || 0} categories including contact info, keywords, formatting, and content.
-                    </p>
+          {/* ─── Right: Resume preview + Score results ─── */}
+          <div className="space-y-4 min-w-0">
+            {/* Resume card */}
+            <Card className="overflow-hidden hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <div className={`size-9 rounded-lg flex items-center justify-center ${
+                      selectedResume.isBuilderResume
+                        ? "bg-gradient-to-br from-emerald-500 to-teal-500"
+                        : "bg-blue-500/10"
+                    }`}>
+                      {selectedResume.isBuilderResume ? (
+                        <Bot className="size-5 text-white" />
+                      ) : (
+                        <FileText className="size-5 text-blue-500" />
+                      )}
+                    </div>
+                    {selectedResume.isBuilderResume ? "AI-Built Resume" : "Uploaded Resume"}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {new Date(selectedResume.createdAt).toLocaleDateString()}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 h-8"
+                      onClick={() => setExportResume(selectedResume)}
+                      disabled={!selectedResume.hasParsedData}
+                    >
+                      <Download className="size-3.5" />
+                      Download
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 h-8 text-destructive hover:text-destructive"
+                      onClick={() => onDelete(selectedResume.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category Breakdown</p>
-                  {atsScore.breakdown?.map((item, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{item.category}</span>
-                        <span className={`text-sm font-bold ${
-                          item.score >= 80 ? "text-emerald-600" :
-                          item.score >= 60 ? "text-amber-600" :
-                          "text-red-500"
-                        }`}>{item.score}/100</span>
-                      </div>
-                      <Progress value={item.score} className={`h-1.5 ${
-                        item.score >= 80 ? "[&>div]:bg-emerald-500" :
-                        item.score >= 60 ? "[&>div]:bg-amber-500" :
-                        "[&>div]:bg-red-500"
-                      }`} />
-                      <p className="text-xs text-muted-foreground">{item.feedback}</p>
+              </CardHeader>
+              <CardContent>
+                {selectedResume.parsedData ? (
+                  <ParsedResumePreview data={selectedResume.parsedData} />
+                ) : (
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-amber-50 border border-amber-200">
+                    <div className="flex items-center gap-2 text-sm text-amber-800">
+                      <AlertCircle className="size-4 shrink-0" />
+                      Not parsed yet — click "Parse Now" on the left
                     </div>
-                  ))}
-                </div>
-                {atsScore.suggestions && atsScore.suggestions.length > 0 && (
-                  <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-                    <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
-                      <Sparkles className="size-4" />
-                      Suggestions to improve:
-                    </p>
-                    <ul className="space-y-1.5">
-                      {atsScore.suggestions.map((s, i) => (
-                        <li key={i} className="text-xs text-blue-700 flex items-start gap-1.5">
-                          <CheckCircle2 className="size-3 shrink-0 mt-0.5 text-blue-400" />
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
+                    <Badge variant="outline" className="text-amber-600 border-amber-300">Raw upload</Badge>
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
-        </>
+
+            {/* ATS Score Result */}
+            {atsScore && (
+              <Card className="overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-b">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="size-5 text-blue-600" />
+                    ATS Compatibility Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-6">
+                    <ScoreGauge score={atsScore.score} size={120} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold mb-2">
+                        {atsScore.score >= 80 ? "Excellent! Your resume is highly ATS-friendly." :
+                         atsScore.score >= 60 ? "Good — with a few tweaks it\'ll be excellent." :
+                         atsScore.score >= 40 ? "Needs work — several sections need attention." :
+                         "Poor — major improvements needed for ATS compatibility."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Based on {atsScore.breakdown?.length || 0} categories including contact info, keywords, formatting, and content.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category Breakdown</p>
+                    {atsScore.breakdown?.map((item, i) => (
+                      <div key={i} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{item.category}</span>
+                          <span className={`text-sm font-bold ${
+                            item.score >= 80 ? "text-emerald-600" :
+                            item.score >= 60 ? "text-amber-600" :
+                            "text-red-500"
+                          }`}>{item.score}/100</span>
+                        </div>
+                        <Progress value={item.score} className={`h-1.5 ${
+                          item.score >= 80 ? "[&>div]:bg-emerald-500" :
+                          item.score >= 60 ? "[&>div]:bg-amber-500" :
+                          "[&>div]:bg-red-500"
+                        }`} />
+                        <p className="text-xs text-muted-foreground">{item.feedback}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {atsScore.suggestions && atsScore.suggestions.length > 0 && (
+                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                      <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                        <Sparkles className="size-4" />
+                        Suggestions to improve:
+                      </p>
+                      <ul className="space-y-1.5">
+                        {atsScore.suggestions.map((s, i) => (
+                          <li key={i} className="text-xs text-blue-700 flex items-start gap-1.5">
+                            <CheckCircle2 className="size-3 shrink-0 mt-0.5 text-blue-400" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ─── No resume selected — show all cards ─── */
+        resumes.map((resume) => (
+          <Card key={resume.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <div className={`size-9 rounded-lg flex items-center justify-center ${
+                    resume.isBuilderResume
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-500"
+                      : "bg-blue-500/10"
+                  }`}>
+                    {resume.isBuilderResume ? (
+                      <Bot className="size-5 text-white" />
+                    ) : (
+                      <FileText className="size-5 text-blue-500" />
+                    )}
+                  </div>
+                  {resume.isBuilderResume ? "AI-Built Resume" : "Uploaded Resume"}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {new Date(resume.createdAt).toLocaleDateString()}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-1 h-8"
+                    onClick={() => setExportResume(resume)}
+                    disabled={!resume.hasParsedData}
+                  >
+                    <Download className="size-3.5" />
+                    Download
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-1 h-8 text-destructive hover:text-destructive"
+                    onClick={() => onDelete(resume.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {resume.parsedData ? (
+                <ParsedResumePreview data={resume.parsedData} />
+              ) : (
+                <div className="flex items-center justify-between p-4 rounded-lg bg-amber-50 border border-amber-200">
+                  <div className="flex items-center gap-2 text-sm text-amber-800">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Not parsed yet — click "Parse Now" on the left
+                  </div>
+                  <Badge variant="outline" className="text-amber-600 border-amber-300">Raw upload</Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))
       )}
 
       {/* Export Dialog */}
