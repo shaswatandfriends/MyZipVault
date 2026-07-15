@@ -920,7 +920,7 @@ function OverviewTab({
 
       {/* Export Dialog */}
       <Dialog open={!!exportResume} onOpenChange={(open) => !open && setExportResume(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Download className="size-5 text-primary" />
@@ -1737,7 +1737,7 @@ function UploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Upload Resume</DialogTitle>
         </DialogHeader>
