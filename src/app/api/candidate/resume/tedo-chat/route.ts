@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groqChatCompletion } from "@/lib/groq";
+import { aiChatCompletion } from "@/lib/ai-unified";
 
 /**
  * POST /api/candidate/resume/tedo-chat
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       { role: "user", content: message },
     ];
 
-    const completion = await groqChatCompletion({
+    const completion = await aiChatCompletion({
       messages,
       temperature: 0.7,
       max_tokens: 1500,

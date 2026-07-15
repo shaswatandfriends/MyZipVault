@@ -76,7 +76,7 @@ const nextConfig: NextConfig = {
   // pdfjs-dist uses workers internally — marking as external ensures
   // the serverless function loads it correctly.
   // mammoth uses dynamic requires for DOCX parsing.
-  serverExternalPackages: ["pdfmake", "pdfkit", "pdfjs-dist", "mammoth"],
+  serverExternalPackages: ["pdfmake", "pdfkit", "pdfjs-dist", "mammoth", "pdf-parse"],
 
   // Include pdfkit's font data files, pdfmake's full package, and
   // pdfjs-dist's legacy build in the serverless function bundle.
@@ -89,6 +89,7 @@ const nextConfig: NextConfig = {
       "./node_modules/pdfmake/fonts/**/*",
       "./node_modules/pdfjs-dist/legacy/build/**/*",
       "./node_modules/mammoth/**/*",
+      "./node_modules/pdf-parse/**/*",
     ],
   },
 };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groqChatCompletion } from "@/lib/groq";
+import { aiChatCompletion } from "@/lib/ai-unified";
 
 /**
  * POST /api/candidate/resume/ats-score
@@ -69,7 +69,7 @@ Return ONLY valid JSON (no markdown):
 Categories to evaluate: Contact Info, Professional Summary, Work Experience, Education, Skills, Formatting, Keywords.
 Return ONLY the JSON.`;
 
-    const completion = await groqChatCompletion({
+    const completion = await aiChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(resumeData).slice(0, 6000) },
