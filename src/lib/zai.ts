@@ -42,10 +42,6 @@ export function isZaiConfigured(): boolean {
  * Make a chat completion request to the ZAI/GLM API.
  * Uses the new z.ai API key format (Bearer token).
  */
-export function isZaiConfigured(): boolean {
-  return !!process.env.ZAI_API_KEY;
-}
-
 export async function zaiChatCompletion(
   options: ChatCompletionOptions
 ): Promise<ChatCompletionResponse> {
