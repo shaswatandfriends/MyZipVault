@@ -1459,6 +1459,7 @@ function TedoChatTab({
         body: JSON.stringify({
           message: userMsg.content,
           conversationHistory: messages,
+          currentResumeData: resumeData,
         }),
       });
       const data = await res.json();
