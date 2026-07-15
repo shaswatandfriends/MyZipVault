@@ -59,13 +59,16 @@ export async function POST(request: Request) {
 
     // ── Step 1: Fetch the file content ──
     let fileBuffer: Buffer;
+    console.log("[RESUME_PARSE] Step 1: Fetching file. URL starts with:", resume.file_url.slice(0, 50));
 
     if (resume.file_url.startsWith("data:")) {
       // Base64 data URL (fallback when Supabase isn't configured)
+      console.log("[RESUME_PARSE] File is base64 data URL");
       const base64 = resume.file_url.split(",")[1];
       fileBuffer = Buffer.from(base64, "base64");
     } else if (isSupabaseAdminConfigured()) {
       // Download from Supabase Storage (server-side, no CORS)
+      console.log("[RESUME_PARSE] Downloading from Supabase Storage");
       const supabase = getSupabaseAdmin();
       const bucket = "resumes";
 
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
       // URL format: https://[project].supabase.co/storage/v1/object/public/resumes/candidate-123/uuid.pdf
       const urlParts = resume.file_url.split(`/${bucket}/`);
       const storagePath = urlParts.length > 1 ? urlParts[1] : resume.file_url;
+      console.log("[RESUME_PARSE] Storage path:", storagePath);
 
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -81,7 +85,7 @@ export async function POST(request: Request) {
       if (error || !data) {
         console.error("[RESUME_PARSE] Supabase download failed:", error);
         return NextResponse.json(
-          { error: "Failed to download resume file" },
+          { error: `Failed to download resume file from storage: ${error?.message || "Unknown error"}` },
           { status: 500 }
         );
       }
@@ -89,12 +93,15 @@ export async function POST(request: Request) {
       // Convert Blob to Buffer
       const arrayBuffer = await data.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
+      console.log("[RESUME_PARSE] File downloaded, size:", fileBuffer.length, "bytes");
     } else {
       // Fallback: try fetching the URL directly
+      console.log("[RESUME_PARSE] Fetching URL directly (no Supabase admin)");
       const fileRes = await fetch(resume.file_url);
       if (!fileRes.ok) {
+        console.error("[RESUME_PARSE] Direct fetch failed:", fileRes.status);
         return NextResponse.json(
-          { error: "Failed to fetch resume file" },
+          { error: `Failed to fetch resume file: HTTP ${fileRes.status}` },
           { status: 500 }
         );
       }
@@ -103,12 +110,15 @@ export async function POST(request: Request) {
     }
 
     // ── Step 2: Extract text based on file type ──
+    console.log("[RESUME_PARSE] Step 2: Extracting text");
     const lowerUrl = resume.file_url.toLowerCase();
     let rawText = "";
 
     if (lowerUrl.includes(".pdf") || lowerUrl.startsWith("data:application/pdf")) {
+      console.log("[RESUME_PARSE] Detected PDF, extracting with pdfjs");
       rawText = await extractTextFromPDF(fileBuffer);
     } else if (lowerUrl.includes(".docx")) {
+      console.log("[RESUME_PARSE] Detected DOCX, extracting with mammoth");
       rawText = await extractTextFromDOCX(fileBuffer);
     } else if (lowerUrl.includes(".doc")) {
       // Legacy .doc format — mammoth only supports .docx
@@ -135,6 +145,7 @@ export async function POST(request: Request) {
     }
 
     // ── Step 2b: Clean up extracted text ──
+    console.log("[RESUME_PARSE] Step 2b: Cleaning text. Length:", rawText.length);
     // PDF text extraction often produces artifacts:
     //   - Letters with spaces between them: "S W A T I" → "SWATI"
     //   - Multiple consecutive spaces: "name    email" → "name email"
@@ -174,6 +185,7 @@ export async function POST(request: Request) {
       .trim();
 
     // ── Step 3: AI parse ──
+    console.log("[RESUME_PARSE] Step 3: Calling AI. Text length:", rawText.length, "ZAI_API_KEY set:", !!process.env.ZAI_API_KEY);
     const systemPrompt = `You are an expert resume parser. Extract structured data from the raw resume text. This could be a nurse, doctor, healthcare recruiter, or any healthcare professional's resume.
 
 Return ONLY valid JSON (no markdown, no explanations) matching this exact schema:
@@ -202,6 +214,7 @@ IMPORTANT:
 - Look carefully — names might have unusual spacing from PDF extraction.
 - Return ONLY the JSON object, no surrounding text or markdown.`;
 
+    console.log("[RESUME_PARSE] Sending request to ZAI API...");
     const completion = await zaiChatCompletion({
       messages: [
         { role: "system", content: systemPrompt },
@@ -210,6 +223,7 @@ IMPORTANT:
       temperature: 0.1,
       max_tokens: 4000,
     });
+    console.log("[RESUME_PARSE] AI response received. Content length:", completion.choices[0]?.message?.content?.length || 0);
 
     const rawResponse = completion.choices[0]?.message?.content?.trim() || "";
     const jsonStr = rawResponse
