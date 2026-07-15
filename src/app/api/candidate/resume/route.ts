@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { uploadFile } from "@/lib/storage";
+import { MAX_RESUMES } from "./versions/route";
+
+const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function GET() {
   try {
@@ -46,6 +51,102 @@ export async function GET() {
     console.error("Resume GET error:", error);
     return NextResponse.json(
       { error: "Failed to fetch resume" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/candidate/resume
+ *
+ * Upload a new resume file (PDF/DOC/DOCX). Enforces the MAX_RESUMES
+ * limit — if the candidate already has 3 resumes, returns 400 with a
+ * message telling them to delete one first.
+ */
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = Number(session.user.id);
+    const userRole = (session.user as Record<string, unknown>).role;
+    if (userRole !== "candidate") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // ── Enforce the version limit ──
+    const count = await db.resume.count({ where: { candidate_user_id: userId } });
+    if (count >= MAX_RESUMES) {
+      return NextResponse.json(
+        {
+          error: `You can only have ${MAX_RESUMES} resume versions. Delete one before uploading a new one.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) {
+      return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
+
+    // ── Validate file size ──
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds 10MB limit" },
+        { status: 400 }
+      );
+    }
+
+    // ── Validate extension ──
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const ext = safeFileName.toLowerCase().slice(safeFileName.lastIndexOf("."));
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json(
+        { error: `File type not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // ── Upload to Supabase Storage ──
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { v4: uuidv4 } = await import("uuid");
+    const uniqueName = `${uuidv4()}${ext}`;
+    const uploadResult = await uploadFile(
+      "resumes",
+      `candidate-${userId}`,
+      buffer,
+      uniqueName,
+      file.type || "application/octet-stream"
+    );
+
+    // ── Create resume row ──
+    const resume = await db.resume.create({
+      data: {
+        candidate_user_id: userId,
+        file_url: uploadResult.url,
+        is_builder_resume: false,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        resume: {
+          id: resume.id,
+          fileUrl: resume.file_url,
+          isBuilderResume: resume.is_builder_resume,
+          createdAt: resume.created_at,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("[RESUME_POST]", error);
+    return NextResponse.json(
+      { error: "Failed to upload resume" },
       { status: 500 }
     );
   }
