@@ -1408,9 +1408,9 @@ export async function generateResumePdf(data: {
         margin: [0, 0, 0, 3],
       },
 
-      // ─── Professional title (derived from experience or first skill) ───
+      // ─── Professional title ───
       {
-        text: data.experience[0]?.title || (data.skills[0] ? `${data.skills[0]} Professional` : 'Healthcare Professional'),
+        text: data.experience[0]?.title || 'Healthcare Professional',
         fontSize: 12,
         color: GREEN_LIGHT,
         margin: [0, 0, 0, 9],
@@ -1422,10 +1422,8 @@ export async function generateResumePdf(data: {
           { text: data.email, fontSize: 9.5, color: LIGHT, width: 'auto' },
           { text: '·', fontSize: 9.5, color: '#D1D5DB', width: 'auto', margin: [8, 0, 8, 0] },
           { text: data.phone, fontSize: 9.5, color: LIGHT, width: 'auto' },
-          ...(data.experience[0]?.company ? [
-            { text: '·', fontSize: 9.5, color: '#D1D5DB', width: 'auto', margin: [8, 0, 8, 0] },
-            { text: 'United States', fontSize: 9.5, color: LIGHT, width: 'auto' },
-          ] : []),
+          { text: '·', fontSize: 9.5, color: '#D1D5DB', width: 'auto', margin: [8, 0, 8, 0] },
+          { text: 'United States', fontSize: 9.5, color: LIGHT, width: 'auto' },
         ],
         margin: [0, 0, 0, 14],
       },
@@ -1436,25 +1434,19 @@ export async function generateResumePdf(data: {
       // ─── Professional Summary ───
       ...(data.summary ? [
         sectionLabel('PROFESSIONAL SUMMARY'),
-        { text: data.summary, fontSize: 9.5, color: MEDIUM, lineHeight: 1.65, margin: [0, 0, 0, 18] },
+        { text: data.summary, fontSize: 9.5, color: MEDIUM, lineHeight: 1.55, margin: [0, 0, 0, 16] },
       ] : []),
 
-      // ─── Skills (green pill tags using table) ───
+      // ─── Skills (inline green text with bullet separators) ───
       ...(data.skills.length > 0 ? [
         sectionLabel('SKILLS'),
         {
-          table: {
-            widths: data.skills.map(() => 'auto'),
-            body: [data.skills.map((skill) => ({
-              text: ` ${skill} `,
-              fontSize: 8.5,
-              color: GREEN,
-              fillColor: GREEN_BG,
-              margin: [7, 2.5, 7, 2.5],
-            }))],
-          },
-          layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 4, paddingTop: () => 2.5, paddingBottom: () => 2.5 },
-          margin: [0, 0, 0, 18],
+          text: data.skills.flatMap((s, i) => [
+            { text: s, fontSize: 9, color: GREEN, bold: true },
+            ...(i < data.skills.length - 1 ? [{ text: '  •  ', fontSize: 9, color: '#9CA3AF' }] : []),
+          ]),
+          margin: [0, 0, 0, 16],
+          lineHeight: 1.8,
         },
       ] : []),
 
@@ -1474,17 +1466,17 @@ export async function generateResumePdf(data: {
             // Job title (green)
             { text: exp.title, fontSize: 9.5, color: GREEN, margin: [0, 0, 0, 4] },
             // Description
-            { text: exp.description, fontSize: 9, color: MEDIUM, lineHeight: 1.6 },
+            { text: exp.description, fontSize: 9, color: MEDIUM, lineHeight: 1.5 },
           ];
 
           // Add divider between jobs (not after last)
           if (idx < data.experience.length - 1) {
             jobBlock.push({
               canvas: [{ type: 'line', x1: 0, y1: 0, x2: 500, y2: 0, lineWidth: 0.5, lineColor: DIVIDER }],
-              margin: [0, 10, 0, 10],
+              margin: [0, 8, 0, 8],
             });
           } else {
-            jobBlock.push({ text: '', margin: [0, 0, 0, 18] });
+            jobBlock.push({ text: '', margin: [0, 0, 0, 16] });
           }
 
           return jobBlock;
@@ -1500,7 +1492,7 @@ export async function generateResumePdf(data: {
               width: '*',
               stack: [
                 { text: edu.school, fontSize: 10, bold: true, color: DARK },
-                { text: edu.degree, fontSize: 9.5, color: GREEN, margin: [0, 2, 0, 0] },
+                ...(edu.degree ? [{ text: edu.degree, fontSize: 9.5, color: GREEN, margin: [0, 2, 0, 0] }] : []),
               ],
             },
             { text: edu.year, fontSize: 8.5, color: LIGHT, alignment: 'right', width: 'auto' },
@@ -1511,7 +1503,7 @@ export async function generateResumePdf(data: {
 
       // ─── Certifications ───
       ...(data.certifications.length > 0 ? [
-        { text: '', margin: [0, 14, 0, 0] },
+        { text: '', margin: [0, 12, 0, 0] },
         sectionLabel('CERTIFICATIONS'),
         {
           ul: data.certifications.map((cert) => ({
@@ -1535,14 +1527,14 @@ function sectionLabel(label: string): any {
     stack: [
       {
         text: label,
-        fontSize: 8.5,
+        fontSize: 9,
         bold: true,
         color: '#166534',
-        characterSpacing: 1.8,
+        characterSpacing: 0.5,
         font: 'Roboto',
-        margin: [0, 0, 0, 5],
+        margin: [0, 0, 0, 4],
       },
-      { canvas: [{ type: 'rect', x: 0, y: 0, w: 500, h: 0.5, color: '#E5E7EB' }], margin: [0, 0, 0, 10] },
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: 500, h: 0.5, color: '#E5E7EB' }], margin: [0, 0, 0, 8] },
     ],
     margin: [0, 0, 0, 0],
   };
