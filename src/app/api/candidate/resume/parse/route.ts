@@ -237,8 +237,48 @@ IMPORTANT:
     return NextResponse.json({ parsedData });
   } catch (error) {
     console.error("[RESUME_PARSE]", error);
+
+    // Return the actual error message so the user + frontend can see what failed
+    // (instead of a generic "Failed to parse resume with AI")
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
+    // Check for common configuration issues
+    if (errorMessage.includes("ZAI_API_KEY not configured")) {
+      return NextResponse.json(
+        {
+          error:
+            "AI service is not configured. Please contact support to set up the ZAI_API_KEY environment variable.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (errorMessage.includes("ZAI API error")) {
+      return NextResponse.json(
+        {
+          error: `AI service error: ${errorMessage}. Please try again in a moment.`,
+        },
+        { status: 502 }
+      );
+    }
+
+    if (errorMessage.includes("Failed to extract text from PDF")) {
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 422 }
+      );
+    }
+
+    if (errorMessage.includes("Failed to extract text from DOCX")) {
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 422 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to parse resume with AI" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
