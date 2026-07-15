@@ -463,7 +463,7 @@ export default function ResumePage() {
           </TabsList>
 
           {/* ─── Tab 1: Overview ─────────────────────────────────── */}
-          <TabsContent value="overview" className="mt-6">
+          <TabsContent value="overview" className="mt-6 data-[state=inactive]:hidden" forceMount>
             <OverviewTab
               resumes={resumes}
               selectedResumeId={selectedResumeId}
@@ -473,12 +473,12 @@ export default function ResumePage() {
           </TabsContent>
 
           {/* ─── Tab 2: ATS Tools ────────────────────────────────── */}
-          <TabsContent value="ats" className="mt-6">
+          <TabsContent value="ats" className="mt-6 data-[state=inactive]:hidden" forceMount>
             <ATSToolsTab resume={selectedResume} onResumeChanged={fetchResumes} />
           </TabsContent>
 
           {/* ─── Tab 3: Tedo AI Chat ─────────────────────────────── */}
-          <TabsContent value="tedo" className="mt-6">
+          <TabsContent value="tedo" className="mt-6 data-[state=inactive]:hidden" forceMount>
             <TedoChatTab onResumeCreated={fetchResumes} canAddMore={canAddMore} />
           </TabsContent>
         </Tabs>
@@ -1296,6 +1296,34 @@ function TedoChatTab({
                 }`}>
                   {completeness}% complete
                 </Badge>
+              )}
+              {resumeData && (
+                <Button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/candidate/resume/export-pdf");
+                      if (!res.ok) throw new Error("Export failed");
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `resume-${(resumeData.contact?.fullName || "draft").replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      window.URL.revokeObjectURL(url);
+                      toast.success("Resume downloaded");
+                    } catch {
+                      toast.error("Download failed");
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                >
+                  <Download className="size-3.5" />
+                  Download
+                </Button>
               )}
               {isComplete && canAddMore && (
                 <Button
