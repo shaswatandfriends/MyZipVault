@@ -1359,186 +1359,199 @@ export async function generateResumePdf(data: {
   skills: string[];
   certifications: string[];
 }): Promise<Buffer> {
+  // ─── Brand colors matching the HTML mockup ───
+  const GREEN = '#166534';
+  const GREEN_LIGHT = '#0D9488';
+  const GREEN_BG = '#DCFCE7';
+  const DARK = '#111827';
+  const MEDIUM = '#374151';
+  const LIGHT = '#6B7280';
+  const LIGHTER = '#9CA3AF';
+  const DIVIDER = '#E5E7EB';
+  const GREEN_BADGE_BG = '#F0FDF4';
+  const GREEN_BADGE_BORDER = '#BBF7D0';
+
   const docDefinition: any = {
     pageSize: 'LETTER',
-    pageMargins: [48, 40, 48, 40],
-    defaultStyle: { font: 'Roboto' },
-    styles: {
-      ...baseStyles,
-      nameTitle: {
-        fontSize: 32,
-        bold: true,
-        color: BRAND_COLOR,
-        margin: [0, 0, 0, 4],
-      },
-      contactInfo: {
-        fontSize: 10,
-        color: TEXT_MEDIUM,
-        margin: [0, 0, 0, 2],
-      },
-      sectionHeader: {
-        fontSize: 11,
-        bold: true,
-        color: BRAND_COLOR,
-        characterSpacing: 0.8,
-        margin: [0, 16, 0, 8],
-      },
-      experienceTitle: {
-        fontSize: 12,
-        bold: true,
-        color: TEXT_DARK,
-        margin: [0, 0, 0, 2],
-      },
-      experienceCompany: {
-        fontSize: 10,
-        color: BRAND_COLOR,
-        bold: true,
-        margin: [0, 0, 0, 2],
-      },
-      experienceDates: {
-        fontSize: 9,
-        color: TEXT_LIGHT,
-        margin: [0, 0, 0, 4],
-      },
-      experienceDesc: {
-        fontSize: 10,
-        color: TEXT_MEDIUM,
-        lineHeight: 1.4,
+    pageMargins: [56, 52, 56, 48],
+    defaultStyle: { font: 'Roboto', fontSize: 10, color: DARK, lineHeight: 1.4 },
+    header: (currentPage: number, pageSize: number) => {
+      if (currentPage !== 1) return {};
+      return {
         margin: [0, 0, 0, 0],
-      },
-      listItem: {
-        fontSize: 10,
-        color: TEXT_DARK,
-        margin: [0, 2, 0, 2],
-      },
-    },
-    content: [
-      // Top gradient accent bar
-      {
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: 200, h: 6, color: BRAND_COLOR },
-          { type: 'rect', x: 200, y: 0, w: 200, h: 6, color: '#0D9488' },
-          { type: 'rect', x: 400, y: 0, w: 197, h: 6, color: '#06B6D4' },
+          { type: 'rect', x: 0, y: 0, w: pageSize.width, h: 6, color: GREEN, lineColor: GREEN },
         ],
-        margin: [-48, 0, -48, 0],
+      };
+    },
+    footer: (currentPage: number, pageCount: number) => ({
+      margin: [56, 0, 56, 0],
+      columns: [
+        { text: `${data.name} — Resume`, fontSize: 7.5, color: LIGHTER, width: '*' },
+        {
+          table: {
+            widths: ['auto'],
+            body: [[
+              {
+                columns: [
+                  { width: 6, height: 6, canvas: [{ type: 'rect', x: 0, y: 0, w: 6, h: 6, r: 3, color: GREEN }] },
+                  { text: 'myzipvault.com', fontSize: 7.5, color: GREEN, margin: [4, 0, 0, 0] },
+                ],
+                margin: [0, 0, 0, 0],
+              },
+            ]],
+          },
+          layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
+          width: 'auto',
+          margin: [0, 0, 0, 0],
+        },
+        { text: `Page ${currentPage} of ${pageCount}`, fontSize: 7.5, color: LIGHTER, alignment: 'right', width: '*' },
+      ],
+      margin: [56, 12, 56, 0],
+    }),
+    content: [
+      // ─── Name ───
+      {
+        text: data.name,
+        fontSize: 22,
+        bold: true,
+        font: 'Roboto',
+        color: DARK,
+        margin: [0, 0, 0, 3],
       },
 
-      // Name
-      { text: '', margin: [0, 16, 0, 0] },
-      { text: data.name, style: 'nameTitle' },
+      // ─── Professional title (derived from experience or first skill) ───
+      {
+        text: data.experience[0]?.title || (data.skills[0] ? `${data.skills[0]} Professional` : 'Healthcare Professional'),
+        fontSize: 12,
+        color: GREEN_LIGHT,
+        margin: [0, 0, 0, 9],
+      },
 
-      // Contact info
+      // ─── Contact info row ───
       {
         columns: [
-          { text: data.email, style: 'contactInfo' },
-          { text: '|', style: 'contactInfo', width: 'auto', margin: [8, 0, 8, 0] },
-          { text: data.phone, style: 'contactInfo' },
+          { text: data.email, fontSize: 9.5, color: LIGHT, width: 'auto' },
+          { text: '·', fontSize: 9.5, color: '#D1D5DB', width: 'auto', margin: [8, 0, 8, 0] },
+          { text: data.phone, fontSize: 9.5, color: LIGHT, width: 'auto' },
+          ...(data.experience[0]?.company ? [
+            { text: '·', fontSize: 9.5, color: '#D1D5DB', width: 'auto', margin: [8, 0, 8, 0] },
+            { text: 'United States', fontSize: 9.5, color: LIGHT, width: 'auto' },
+          ] : []),
         ],
-        margin: [0, 0, 0, 12],
+        margin: [0, 0, 0, 14],
       },
 
-      createBrandLine(),
+      // ─── Green divider ───
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: '100%', h: 2, color: GREEN }], margin: [0, 0, 0, 18] },
 
-      // Summary
-      { text: 'PROFESSIONAL SUMMARY', style: 'sectionHeader' },
-      { text: data.summary, style: 'bodyText', margin: [0, 0, 0, 10] },
+      // ─── Professional Summary ───
+      ...(data.summary ? [
+        sectionLabel('PROFESSIONAL SUMMARY'),
+        { text: data.summary, fontSize: 9.5, color: MEDIUM, lineHeight: 1.65, margin: [0, 0, 0, 18] },
+      ] : []),
 
-      // Skills — premium badge layout
-      { text: 'SKILLS', style: 'sectionHeader' },
-      {
-        table: { widths: ['*'], body: [[{
-          text: data.skills.join('  •  '),
-          fontSize: 10, color: TEXT_DARK, lineHeight: 1.6,
-          margin: [14, 10, 14, 10],
-        }]] },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => BORDER_COLOR,
-          vLineColor: () => BORDER_COLOR,
-        },
-        margin: [0, 0, 0, 10],
-        fillColor: '#F0FDFA',
-      },
-
-      // Experience
-      { text: 'WORK EXPERIENCE', style: 'sectionHeader' },
-      ...data.experience.flatMap((exp) => [
+      // ─── Skills (green pill tags) ───
+      ...(data.skills.length > 0 ? [
+        sectionLabel('SKILLS'),
         {
+          stack: data.skills.map((skill) => ({
+            text: skill,
+            fontSize: 8.5,
+            color: GREEN,
+            background: GREEN_BG,
+            margin: [7, 2.5, 7, 2.5],
+          })),
+          margin: [0, 0, 0, 18],
+        },
+      ] : []),
+
+      // ─── Work Experience ───
+      ...(data.experience.length > 0 ? [
+        sectionLabel('WORK EXPERIENCE'),
+        ...data.experience.flatMap((exp, idx) => {
+          const jobBlock: any[] = [
+            // Company name (left) + dates (right)
+            {
+              columns: [
+                { text: exp.company, fontSize: 10, bold: true, color: DARK, width: '*' },
+                { text: exp.dates, fontSize: 8.5, color: LIGHT, alignment: 'right', width: 'auto' },
+              ],
+              margin: [0, 0, 0, 2],
+            },
+            // Job title (green)
+            { text: exp.title, fontSize: 9.5, color: GREEN, margin: [0, 0, 0, 4] },
+            // Description
+            { text: exp.description, fontSize: 9, color: MEDIUM, lineHeight: 1.6 },
+          ];
+
+          // Add divider between jobs (not after last)
+          if (idx < data.experience.length - 1) {
+            jobBlock.push({
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: '100%', y2: 0, lineWidth: 0.5, lineColor: DIVIDER }],
+              margin: [0, 10, 0, 10],
+            });
+          } else {
+            jobBlock.push({ text: '', margin: [0, 0, 0, 18] });
+          }
+
+          return jobBlock;
+        }),
+      ] : []),
+
+      // ─── Education ───
+      ...(data.education.length > 0 ? [
+        sectionLabel('EDUCATION'),
+        ...data.education.map((edu) => ({
           columns: [
             {
               width: '*',
               stack: [
-                { text: exp.title, style: 'experienceTitle' },
-                { text: exp.company, style: 'experienceCompany' },
+                { text: edu.school, fontSize: 10, bold: true, color: DARK },
+                { text: edu.degree, fontSize: 9.5, color: GREEN, margin: [0, 2, 0, 0] },
               ],
             },
-            {
-              width: 'auto',
-              stack: [
-                { text: exp.dates, style: 'experienceDates', alignment: 'right' },
-              ],
-            },
+            { text: edu.year, fontSize: 8.5, color: LIGHT, alignment: 'right', width: 'auto' },
           ],
-          margin: [0, 0, 0, 2],
+          margin: [0, 0, 0, 4],
+        })),
+      ] : []),
+
+      // ─── Certifications ───
+      ...(data.certifications.length > 0 ? [
+        { text: '', margin: [0, 14, 0, 0] },
+        sectionLabel('CERTIFICATIONS'),
+        {
+          ul: data.certifications.map((cert) => ({
+            text: cert,
+            fontSize: 9,
+            color: MEDIUM,
+            margin: [0, 2, 0, 2],
+          })),
+          margin: [0, 0, 0, 0],
         },
-        { text: exp.description, style: 'experienceDesc', margin: [0, 0, 0, 12] },
-      ]),
-
-      // Education
-      { text: 'EDUCATION', style: 'sectionHeader' },
-      ...data.education.map((edu) => ({
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: edu.degree, bold: true, fontSize: 11, color: TEXT_DARK },
-              { text: edu.school, fontSize: 10, color: TEXT_MEDIUM },
-            ],
-          },
-          {
-            width: 'auto',
-            stack: [
-              { text: edu.year, fontSize: 10, color: TEXT_LIGHT, alignment: 'right' },
-            ],
-          },
-        ],
-        margin: [0, 0, 0, 8],
-      })),
-
-      // Certifications
-      ...(data.certifications.length > 0
-        ? [
-            { text: 'CERTIFICATIONS', style: 'sectionHeader' },
-            {
-              ul: data.certifications.map((c) => ({
-                text: c,
-                style: 'listItem',
-              })),
-              margin: [0, 0, 0, 10],
-            },
-          ]
-        : []),
-
-      // Bottom branding
-      { text: '', margin: [0, 24, 0, 0] },
-      {
-        canvas: [
-          { type: 'rect', x: 0, y: 0, w: 200, h: 3, color: BRAND_COLOR },
-          { type: 'rect', x: 200, y: 0, w: 200, h: 3, color: '#0D9488' },
-          { type: 'rect', x: 400, y: 0, w: 197, h: 3, color: '#06B6D4' },
-        ],
-        margin: [-48, 0, -48, 0],
-      },
-      { text: '', margin: [0, 6, 0, 0] },
-      {
-        columns: [
-          { text: 'Generated by MyZipVault', fontSize: 8, color: TEXT_LIGHT, width: '*' },
-          { text: 'www.myzipvault.com', fontSize: 8, color: TEXT_LIGHT, alignment: 'right', width: 'auto' },
-        ],
-      },
+      ] : []),
     ],
   };
 
   return pdfDocToBuffer(docDefinition);
+}
+
+// ─── Helper: section label with divider ─────────────────────────────
+function sectionLabel(label: string): any {
+  return {
+    stack: [
+      {
+        text: label,
+        fontSize: 8.5,
+        bold: true,
+        color: '#166534',
+        characterSpacing: 1.8,
+        font: 'Roboto',
+        margin: [0, 0, 0, 5],
+      },
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: '100%', h: 0.5, color: '#E5E7EB' }], margin: [0, 0, 0, 10] },
+    ],
+    margin: [0, 0, 0, 0],
+  };
 }
