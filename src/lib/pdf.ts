@@ -686,26 +686,16 @@ export async function generateChecklistPdf(data: {
     margin: [-48, -40, -48, 0],
   });
 
-  // Top section: Agency + Document type
+  // Top section: Document type only (no agency name/logo)
   content.push({
     columns: [
       {
         width: '60%',
         stack: [
-          // Agency name styled box
           {
-            table: { widths: ['auto'], body: [[{
-              text: data.agencyName || 'MyZipVault',
-              fontSize: 16, bold: true, color: '#FFFFFF',
-              fillColor: CL_GREEN, margin: [12, 8, 12, 8], border: [false, false, false, false],
-            }]] },
-            layout: 'noBorders',
+            text: 'SKILLS CHECKLIST',
+            fontSize: 16, bold: true, color: CL_GREEN, characterSpacing: 0.5,
             margin: [0, 28, 0, 0],
-          },
-          {
-            text: (data.agencyName || 'MyZipVault').toUpperCase(),
-            fontSize: 11, color: CL_GRAY2, characterSpacing: 0.5,
-            margin: [0, 10, 0, 0],
           },
         ],
       },
@@ -1065,21 +1055,7 @@ export async function generateChecklistPdf(data: {
     margin: [0, 0, 0, 16],
   });
 
-  // Agency information box
-  content.push({
-    table: { widths: ['*'], body: [[{
-      stack: [
-        { text: 'REQUESTING AGENCY', fontSize: 9, color: CL_GRAY3, characterSpacing: 0.8 },
-        { text: data.agencyName || 'MyZipVault', fontSize: 13, bold: true, color: CL_TEXT, margin: [0, 4, 0, 0] },
-        { text: 'Secure Healthcare Credential Verification Platform', fontSize: 10, color: CL_GRAY2, lineHeight: 1.5, margin: [0, 4, 0, 0] },
-      ],
-      fillColor: CL_SURF, border: [false, false, false, false], margin: [20, 16, 20, 16],
-    }]] },
-    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => CL_BORDER, vLineColor: () => CL_BORDER },
-    margin: [0, 0, 0, 16],
-  });
-
-  // Bottom branding
+  // Bottom branding (no agency info)
   content.push({ text: '', margin: [0, 32, 0, 0] });
   content.push({
     stack: [
