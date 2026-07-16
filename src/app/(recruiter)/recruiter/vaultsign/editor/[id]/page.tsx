@@ -189,12 +189,22 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/vaultsign/documents/${docId}`);
       if (!res.ok) throw new Error("Failed to fetch document");
       const data = await res.json();
+
+      // ── Defensive: ensure ALL array fields are actually arrays ──
+      // The BOB→VaultSign flow can sometimes produce non-array values
+      // for signers, sign_fields, or template.placeholder_variables.
+      // This prevents "eG.filter is not a function" crashes.
+      const safeSigners = Array.isArray(data.signers) ? data.signers : [];
+      const safeSignFields = Array.isArray(data.sign_fields) ? data.sign_fields : [];
+      const safePlaceholderValues = data.placeholder_values && typeof data.placeholder_values === "object" && !Array.isArray(data.placeholder_values)
+        ? data.placeholder_values
+        : {};
+
       setDocument(data);
       setDocName(data.document_name);
-      setSigners(data.signers || []);
-      setSignFields(data.sign_fields || []);
-      setPlaceholderValues(data.placeholder_values || {});
-      // Store organization info for header/footer live preview
+      setSigners(safeSigners);
+      setSignFields(safeSignFields);
+      setPlaceholderValues(safePlaceholderValues);
       setOrganization(data.organization || null);
 
       if (data.show_header_footer !== undefined) {

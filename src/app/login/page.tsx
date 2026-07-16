@@ -62,6 +62,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Sign out any existing session first to allow role switching
       await signOut({ redirect: false });
 
       const result = await signIn("credentials", {
@@ -75,15 +76,20 @@ export default function LoginPage() {
           description: result.error || "Invalid email or password",
         });
       } else {
-        const sessionRes = await fetch("/api/auth/session");
+        // Fetch session to get role for redirect
+        // Add a small delay to ensure the session cookie is set
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const sessionRes = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
         const sessionData = await sessionRes.json();
         const role = sessionData?.user?.role || "candidate";
         const dashboard = getRoleDashboard(role);
         toast.success("Welcome back!", {
           description: "You have been signed in successfully.",
         });
-        router.push(dashboard);
-        router.refresh();
+        // Hard redirect — ensures session cookie is read fresh
+        window.location.href = dashboard;
       }
     } catch {
       toast.error("An unexpected error occurred. Please try again.");

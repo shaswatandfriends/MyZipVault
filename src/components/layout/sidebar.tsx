@@ -677,8 +677,7 @@ export function AppSidebar() {
                   className="btn-gradient text-white hover:brightness-110"
                   onClick={(e) => {
                     // ⚠️ Critical: prevent Radix from auto-closing the dialog
-                    // before the async signOut() resolves. Without this, the
-                    // button unmounts mid-async and the redirect never fires.
+                    // before the async signOut() resolves.
                     e.preventDefault();
 
                     let redirectUrl = "/login";
@@ -690,19 +689,17 @@ export function AppSidebar() {
                       redirectUrl = "/admin-login";
                     }
 
-                    // Fire-and-forget with a fallback timeout so the user is
-                    // NEVER stuck on a half-closed dialog.
+                    // Sign out, then wait 500ms for cookie to clear before
+                    // redirecting. Without the delay, the old session cookie
+                    // is still present when the login page loads, causing
+                    // AuthProvider to redirect back to the dashboard.
                     signOut({ redirect: false })
+                      .then(() => new Promise((resolve) => setTimeout(resolve, 500)))
                       .catch(() => {})
                       .finally(() => {
-                        window.location.href = redirectUrl;
+                        // Use replace() so back button doesn't return to dashboard
+                        window.location.replace(redirectUrl);
                       });
-
-                    // Hard fallback — if signOut hangs for any reason,
-                    // redirect after 1.5s anyway.
-                    setTimeout(() => {
-                      window.location.href = redirectUrl;
-                    }, 1500);
                   }}
                 >
                   Sign Out
