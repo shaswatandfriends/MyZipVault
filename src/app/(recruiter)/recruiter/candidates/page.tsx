@@ -13,10 +13,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+
 import { toast } from "sonner";
 import {
-  Plus, Search, LayoutGrid, List as ListIcon, Users, Building2,
+  Plus, Search, LayoutGrid, List as ListIcon, Users,
   Loader2, AlertCircle, ChevronRight, Download,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
@@ -259,22 +259,6 @@ export default function BOBPage() {
       <div className="flex items-center gap-3 flex-wrap">
         <Button onClick={() => setShowAddLead(true)} size="default">
           <Plus className="h-4 w-4 mr-1.5" /> Add Lead
-        </Button>
-
-        {/* Company Pool */}
-        <Button
-          variant={view === "company_pool" ? "default" : "outline"}
-          onClick={() => setView(view === "company_pool" ? "kanban" : "company_pool")}
-        >
-          <Building2 className="h-4 w-4 mr-1.5" />
-          {view === "company_pool" ? "Back to My BOB" : "Company Pool"}
-        </Button>
-
-        {/* Pools */}
-        <Button variant="outline" asChild>
-          <Link href="/recruiter/pools">
-            <Users className="h-4 w-4 mr-1.5" /> Pools
-          </Link>
         </Button>
 
         {/* View toggle */}

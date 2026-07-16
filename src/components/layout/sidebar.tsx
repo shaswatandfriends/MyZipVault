@@ -118,6 +118,7 @@ const bobGroup: NavGroup = {
         { title: "My BOB", href: "/recruiter/candidates", icon: Users },
         { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
         { title: "Candidate Pools", href: "/recruiter/pools", icon: FolderOpen },
+        { title: "Company Pool", href: "/recruiter/candidates?view=company_pool", icon: Building2 },
       ],
     },
   ],
