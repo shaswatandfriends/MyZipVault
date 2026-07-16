@@ -54,17 +54,23 @@ export default function BOBPage() {
   const [canExportCsv, setCanExportCsv] = useState(true);
 
   // View + filters — read initial view from URL (?view=company_pool)
-  // Using window.location instead of useSearchParams to avoid Suspense
-  // boundary issues with Next.js static generation.
+  // Also listens for URL changes (when navigating from sidebar)
   const [view, setView] = useState<ViewMode>("kanban");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+    const checkUrl = () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get("view") === "company_pool") {
         setView("company_pool");
+      } else {
+        setView("kanban");
       }
-    }
+    };
+    checkUrl();
+    // Listen for URL changes (sidebar clicks use client-side navigation)
+    window.addEventListener("popstate", checkUrl);
+    return () => window.removeEventListener("popstate", checkUrl);
   }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

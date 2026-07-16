@@ -327,9 +327,12 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
               </p>
               {/* Section items */}
               {section.items.map((item) => {
+                // For items with query params (like ?view=company_pool),
+                // strip the query for pathname comparison
+                const itemPath = item.href.split("?")[0];
                 const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
+                  pathname === itemPath ||
+                  pathname.startsWith(itemPath + "/");
                 return (
                   <Link
                     key={item.href}
