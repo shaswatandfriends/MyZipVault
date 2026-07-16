@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 import {
@@ -46,6 +46,7 @@ interface Stats {
 
 export default function BOBPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [leads, setLeads] = useState<LeadCardData[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -53,8 +54,10 @@ export default function BOBPage() {
   const [error, setError] = useState<string | null>(null);
   const [canExportCsv, setCanExportCsv] = useState(true);
 
-  // View + filters
-  const [view, setView] = useState<ViewMode>("kanban");
+  // View + filters — read initial view from URL (?view=company_pool)
+  const [view, setView] = useState<ViewMode>(
+    searchParams.get("view") === "company_pool" ? "company_pool" : "kanban"
+  );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
