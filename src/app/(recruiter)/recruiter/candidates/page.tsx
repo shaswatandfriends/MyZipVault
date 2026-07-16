@@ -11,8 +11,8 @@
  * Top metrics: total active, in company pool, hot leads, pending next actions
  */
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 import {
@@ -44,17 +44,8 @@ interface Stats {
   in_pool: number;
 }
 
-export default function BOBPageWrapper() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
-      <BOBPage />
-    </Suspense>
-  );
-}
-
-function BOBPage() {
+export default function BOBPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [leads, setLeads] = useState<LeadCardData[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -63,9 +54,18 @@ function BOBPage() {
   const [canExportCsv, setCanExportCsv] = useState(true);
 
   // View + filters — read initial view from URL (?view=company_pool)
-  const [view, setView] = useState<ViewMode>(
-    searchParams.get("view") === "company_pool" ? "company_pool" : "kanban"
-  );
+  // Using window.location instead of useSearchParams to avoid Suspense
+  // boundary issues with Next.js static generation.
+  const [view, setView] = useState<ViewMode>("kanban");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("view") === "company_pool") {
+        setView("company_pool");
+      }
+    }
+  }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
