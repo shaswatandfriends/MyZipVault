@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 import {
-  Plus, Search, LayoutGrid, List as ListIcon, Users,
+  Plus, Search, LayoutGrid, List as ListIcon, Users, Building2,
   Loader2, AlertCircle, ChevronRight, Download,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
@@ -278,34 +278,39 @@ export default function BOBPage() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Lead
         </Button>
 
-        {/* View toggle */}
-        {view !== "company_pool" && (
-          <div
-            className="flex items-center rounded-full p-1 gap-1"
-            style={{
-              background: "var(--material-thin-bg)",
-              backdropFilter: "var(--material-thin-blur)",
-              WebkitBackdropFilter: "var(--material-thin-blur)",
-              border: "0.5px solid var(--material-thin-border)",
-              boxShadow: "var(--specular-top), var(--depth-1)",
-            }}
+        {/* View toggle — always visible */}
+        <div
+          className="flex items-center rounded-full p-1 gap-1"
+          style={{
+            background: "var(--material-thin-bg)",
+            backdropFilter: "var(--material-thin-blur)",
+            WebkitBackdropFilter: "var(--material-thin-blur)",
+            border: "0.5px solid var(--material-thin-border)",
+            boxShadow: "var(--specular-top), var(--depth-1)",
+          }}
+        >
+          <button
+            onClick={() => setView("kanban")}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={view === "kanban" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
           >
-            <button
-              onClick={() => setView("kanban")}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={view === "kanban" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" /> Kanban
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={view === "list" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
-            >
-              <ListIcon className="h-3.5 w-3.5" /> List
-            </button>
-          </div>
-        )}
+            <LayoutGrid className="h-3.5 w-3.5" /> Kanban
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={view === "list" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
+          >
+            <ListIcon className="h-3.5 w-3.5" /> List
+          </button>
+          <button
+            onClick={() => setView("company_pool")}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={view === "company_pool" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)" } : { color: "var(--text-secondary)" }}
+          >
+            <Building2 className="h-3.5 w-3.5" /> Pool
+          </button>
+        </div>
 
         {/* Search — prominent, flex-1 */}
         <div className="flex-1 min-w-[200px] relative">
