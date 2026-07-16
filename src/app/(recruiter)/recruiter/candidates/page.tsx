@@ -11,7 +11,7 @@
  * Top metrics: total active, in company pool, hot leads, pending next actions
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
@@ -44,7 +44,15 @@ interface Stats {
   in_pool: number;
 }
 
-export default function BOBPage() {
+export default function BOBPageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
+      <BOBPage />
+    </Suspense>
+  );
+}
+
+function BOBPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
