@@ -118,7 +118,6 @@ const bobGroup: NavGroup = {
         { title: "My BOB", href: "/recruiter/candidates", icon: Users },
         { title: "Pipeline Report", href: "/recruiter/bob/report", icon: BarChart3, adminOnly: true },
         { title: "Candidate Pools", href: "/recruiter/pools", icon: FolderOpen },
-        { title: "Company Pool", href: "/recruiter/candidates?view=company_pool", icon: Building2 },
       ],
     },
   ],
@@ -327,12 +326,9 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
               </p>
               {/* Section items */}
               {section.items.map((item) => {
-                // For items with query params (like ?view=company_pool),
-                // strip the query for pathname comparison
-                const itemPath = item.href.split("?")[0];
                 const isActive =
-                  pathname === itemPath ||
-                  pathname.startsWith(itemPath + "/");
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
                 return (
                   <Link
                     key={item.href}
