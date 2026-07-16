@@ -105,6 +105,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // ── Duplicate prevention ──
+    // A candidate can only have ONE of each certification type.
+    // e.g., if they already have "BLS (Basic Life Support)", they can't
+    // upload another BLS. They must delete the old one first.
+    // Match is case-insensitive on the document_name field.
+    const existingCredential = await db.credential.findFirst({
+      where: {
+        candidate_user_id: userId,
+        document_name: {
+          equals: documentName,
+          mode: "insensitive",
+        },
+      },
+      select: { id: true, document_name: true },
+    });
+
+    if (existingCredential) {
+      return NextResponse.json(
+        {
+          error: `You already have "${existingCredential.document_name}" in your vault. Delete the existing one first if you need to upload a new version.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // ── Validate file size (max 10MB) ──
     const MAX_FILE_SIZE = 10 * 1024 * 1024;
     if (fileBuffer.length > MAX_FILE_SIZE) {
