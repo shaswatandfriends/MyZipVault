@@ -114,13 +114,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Authenticated user on a public route — redirect to their dashboard
-    // Exceptions: routes that should remain accessible even when logged in
+    // EXCEPTIONS:
+    //   1. Login pages — DON'T redirect. The user just signed out and
+    //      landed here. Even if the session cookie hasn't cleared yet
+    //      (Vercel serverless delay), we must let them stay on the
+    //      login page. Otherwise they bounce back to dashboard = auto-login.
+    //   2. /onboard — accessible while logged in (invite token flow)
+    //   3. /verify-document, /shared/ — always accessible
+    const LOGIN_ROUTES = ["/login", "/agency-login", "/admin-login", "/superadmin-login", "/forgot-password", "/reset-password", "/verify-email", "/signup", "/agency-signup"];
+    const isLoginPage = LOGIN_ROUTES.includes(pathname);
     const ALWAYS_ACCESSIBLE_PUBLIC_ROUTES = ["/verify-document", "/shared/"];
     const isPrefixPublic = PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
     const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
-    if (isPublicRoute && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible) {
+
+    if (isPublicRoute && !isLoginPage && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible) {
       const dashboard = getRoleDashboard(user.role);
       router.replace(dashboard);
+      return;
+    }
+
+    // If on a login page with a session, DON'T redirect — just stay.
+    // The login page's handleSubmit() calls signOut() before signIn(),
+    // so the old session will be cleared when they actually try to log in.
+    if (isLoginPage) {
       return;
     }
 
