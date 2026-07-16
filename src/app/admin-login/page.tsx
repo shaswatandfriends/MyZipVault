@@ -62,11 +62,11 @@ export default function AdminLoginPage() {
       }
 
       if (role === "super_admin") {
-        router.push("/superadmin/dashboard");
+        window.location.href = "/superadmin/dashboard";
       } else {
-        router.push("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       }
-      router.refresh();
+      
     } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {

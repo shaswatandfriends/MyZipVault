@@ -116,7 +116,7 @@ export default function SuperAdminLoginPage() {
       toast.success("Welcome to the Super Admin Portal", {
         description: "You have been verified successfully.",
       });
-      router.push("/superadmin/dashboard");
+      window.location.href = "/superadmin/dashboard";
     } catch {
       toast.error("Verification failed");
     } finally {

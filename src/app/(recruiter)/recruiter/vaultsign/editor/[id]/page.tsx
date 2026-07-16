@@ -216,7 +216,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         const vars = typeof data.template.placeholder_variables === "string"
           ? JSON.parse(data.template.placeholder_variables)
           : data.template.placeholder_variables;
-        setCustomVariables(vars.filter((v: any) => v.category === "custom"));
+        // Ensure vars is an array before calling .filter()
+        if (Array.isArray(vars)) {
+          setCustomVariables(vars.filter((v: any) => v.category === "custom"));
+        } else {
+          setCustomVariables([]);
+        }
       }
 
       // Set editor content

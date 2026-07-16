@@ -88,8 +88,8 @@ export default function AgencyLoginPage() {
       toast.success("Welcome back!", {
         description: "You have been signed in successfully.",
       });
-      router.push("/recruiter/dashboard");
-      router.refresh();
+      window.location.href = "/recruiter/dashboard";
+      
     } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
