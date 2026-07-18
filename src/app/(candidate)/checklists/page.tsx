@@ -87,7 +87,8 @@ function getDisplayStatus(item: ChecklistItem): DisplayStatus {
   if (item.status === "completed") return "completed";
   if (item.status === "expired") return "expired";
   if (item.status === "reuse_pending") return "reuse_pending";
-  if (item.status === "opened" || item.status === "in_progress" || item.responseStatus === "active")
+  // In Progress = request opened, OR candidate has started (responseStatus active/submitted)
+  if (item.status === "opened" || item.status === "in_progress" || item.responseStatus === "active" || item.responseStatus === "submitted")
     return "in_progress";
   return "pending";
 }
@@ -180,29 +181,27 @@ function StatCard({
   const c = colorMap[color];
 
   return (
-    <FadeIn delay={delay} direction="up" distance={16}>
-      <button
-        onClick={onClick}
-        className={cn(
-          "premium-card w-full text-left p-5 cursor-pointer transition-all duration-300",
-          isActive && `ring-2 ${c.ring}`
-        )}
-      >
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
-              {label}
-            </p>
-            <p className="text-3xl font-bold text-foreground font-heading tracking-tight">
-              <CountUp value={value} duration={0.8} delay={delay * 0.001} />
-            </p>
-          </div>
-          <div className={cn("size-12 rounded-xl flex items-center justify-center", c.iconBg)}>
-            <Icon className={cn("size-5", c.iconText)} />
-          </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        "premium-card w-full text-left p-5 cursor-pointer transition-all duration-300",
+        isActive && `ring-2 ${c.ring}`
+      )}
+    >
+      <div className="relative z-10 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
+            {label}
+          </p>
+          <p className="text-3xl font-bold text-foreground font-heading tracking-tight">
+            {value}
+          </p>
         </div>
-      </button>
-    </FadeIn>
+        <div className={cn("size-12 rounded-xl flex items-center justify-center", c.iconBg)}>
+          <Icon className={cn("size-5", c.iconText)} />
+        </div>
+      </div>
+    </button>
   );
 }
 
