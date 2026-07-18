@@ -30,13 +30,15 @@ export async function POST(request: Request) {
     if (!validation.success) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    const { managerFirstName, managerLastName, managerEmail, managerPhone, facilityName, employmentStatus } = validation.data;
+    const { managerFirstName, managerLastName, managerJobTitle, managerEmail, managerPhone, facilityName, candidateJobTitle, employmentStatus } = validation.data;
 
     const reference = await db.candidateReference.create({
       data: {
         candidate_user_id: userId,
         manager_first_name: managerFirstName,
         manager_last_name: managerLastName,
+        manager_job_title: managerJobTitle || null,
+        candidate_job_title: candidateJobTitle || null,
         manager_email: managerEmail,
         manager_phone: managerPhone || "",
         facility_name: facilityName,

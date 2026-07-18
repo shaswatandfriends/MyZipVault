@@ -151,9 +151,11 @@ export const shareApproveSchema = z.object({
 export const referenceRequestSchema = z.object({
   managerFirstName: nameSchema,
   managerLastName: nameSchema,
+  managerJobTitle: z.string().max(200).optional().nullable(),
   managerEmail: emailSchema,
   managerPhone: phoneSchema,
   facilityName: nameSchema,
+  candidateJobTitle: z.string().max(200).optional().nullable(),
   employmentStatus: z.enum(["current", "ending_contract", "past"]),
 });
 

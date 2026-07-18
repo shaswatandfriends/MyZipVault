@@ -305,6 +305,8 @@ model CandidateReference {
   manager_user_id     Int?
   manager_first_name  String?
   manager_last_name   String?
+  manager_job_title   String?
+  candidate_job_title String?
   manager_email       String
   manager_phone       String
   facility_name       String

@@ -137,9 +137,11 @@ export default function CandidateReferencesPage() {
   // Form state
   const [managerFirstName, setManagerFirstName] = useState("");
   const [managerLastName, setManagerLastName] = useState("");
+  const [managerJobTitle, setManagerJobTitle] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
   const [facilityName, setFacilityName] = useState("");
+  const [candidateJobTitle, setCandidateJobTitle] = useState("");
   const [employmentStatus, setEmploymentStatus] = useState("current");
   const [employmentStartMonth, setEmploymentStartMonth] = useState("");
   const [employmentStartYear, setEmploymentStartYear] = useState("");
@@ -198,9 +200,11 @@ export default function CandidateReferencesPage() {
         body: JSON.stringify({
           managerFirstName: managerFirstName.trim(),
           managerLastName: managerLastName.trim(),
+          managerJobTitle: managerJobTitle.trim(),
           managerEmail: managerEmail.trim(),
           managerPhone: managerPhone.trim(),
           facilityName: facilityName.trim(),
+          candidateJobTitle: candidateJobTitle.trim(),
           employmentStatus,
           employmentStart: employmentStartYear && employmentStartMonth ? `${employmentStartYear}-${employmentStartMonth}` : null,
           employmentEnd: (employmentStatus === "past" || employmentStatus === "ending_contract") && employmentEndYear && employmentEndMonth ? `${employmentEndYear}-${employmentEndMonth}` : null,
@@ -392,6 +396,15 @@ export default function CandidateReferencesPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="mgrJobTitle">Manager Job Title</Label>
+                    <Input
+                      id="mgrJobTitle"
+                      placeholder="e.g., Nursing Director, Charge Nurse"
+                      value={managerJobTitle}
+                      onChange={(e) => setManagerJobTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="mgrEmail">Email</Label>
                     <Input
                       id="mgrEmail"
@@ -420,6 +433,15 @@ export default function CandidateReferencesPage() {
                       value={facilityName}
                       onChange={(e) => setFacilityName(e.target.value)}
                       required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="candJobTitle">Your Job Title (at this facility)</Label>
+                    <Input
+                      id="candJobTitle"
+                      placeholder="e.g., ICU Registered Nurse, ER Staff Nurse"
+                      value={candidateJobTitle}
+                      onChange={(e) => setCandidateJobTitle(e.target.value)}
                     />
                   </div>
                   <div className="space-y-3">
