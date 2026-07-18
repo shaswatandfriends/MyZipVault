@@ -174,6 +174,7 @@ const skillsChecklistGroup: NavGroup = {
       items: [
         { title: "All Recruiters", href: "/superadmin/skills/recruiters", icon: Users },
         { title: "Companies", href: "/superadmin/skills/companies", icon: Building2 },
+        { title: "Checklist Requests", href: "/superadmin/skills/checklist-requests", icon: Inbox },
       ],
     },
     {

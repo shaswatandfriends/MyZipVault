@@ -319,6 +319,9 @@ export default function CandidateChecklistsPage() {
         description="View and complete your skills checklists requested by recruiters."
       />
 
+      {/* Request Checklist from Admin */}
+      <RequestChecklistButton />
+
       {/* Overview Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
@@ -663,5 +666,100 @@ function ReusePendingActions({
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Request Checklist from Admin Button ────────────────────────────
+
+function RequestChecklistButton() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [profession, setProfession] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [requestedChecklist, setRequestedChecklist] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!requestedChecklist.trim()) {
+      toast.error("Please specify which checklist you need");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/candidate/checklists/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profession: profession.trim(),
+          specialty: specialty.trim(),
+          requestedChecklist: requestedChecklist.trim(),
+          notes: notes.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success("Request sent!", {
+        description: "Admin will assign your checklist soon.",
+      });
+      setProfession(""); setSpecialty(""); setRequestedChecklist(""); setNotes("");
+      setIsOpen(false);
+    } catch (err) {
+      toast.error("Failed to send request", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setIsOpen(true)} className="gap-2">
+        <ClipboardCheck className="size-4" />
+        Request Checklist from Admin
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>Request a Checklist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t see the checklist you need? Request it from admin and they&apos;ll assign it to you.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="reqProfession">Profession</Label>
+                <Input id="reqProfession" placeholder="e.g., RN" value={profession}
+                  onChange={(e) => setProfession(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reqSpecialty">Specialty</Label>
+                <Input id="reqSpecialty" placeholder="e.g., ICU" value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reqChecklist">Checklist Needed *</Label>
+              <Input id="reqChecklist" placeholder="e.g., ICU Skills Checklist" value={requestedChecklist}
+                onChange={(e) => setRequestedChecklist(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reqNotes">Notes (optional)</Label>
+              <Input id="reqNotes" placeholder="Any additional details" value={notes}
+                onChange={(e) => setNotes(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
+              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+              Send Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
