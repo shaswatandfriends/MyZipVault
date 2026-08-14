@@ -18,6 +18,9 @@ import {
   Flag,
   Inbox,
   Send,
+  KeyRound,
+  MoreVertical,
+  ToggleLeft,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -41,6 +44,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -142,6 +152,12 @@ export default function SkillsRecruitersPage() {
   const [flagReason, setFlagReason] = useState("");
   const [flagLoading, setFlagLoading] = useState(false);
 
+  // Reset password state
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [resetPasswordRecruiter, setResetPasswordRecruiter] = useState<RecruiterItem | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+
   // Companies for filter
   const [companies, setCompanies] = useState<Array<{ id: number; name: string }>>([]);
 
@@ -199,6 +215,48 @@ export default function SkillsRecruitersPage() {
       setFlagReason("");
     } finally {
       setFlagLoading(false);
+    }
+  };
+
+  // ─── Reset password handler ──────────────────────────────────────
+  // Uses the skill-checklist reset-password API (still exists, kept
+  // functional after the page consolidation in Batch 1).
+  const handleResetPassword = async () => {
+    if (!resetPasswordRecruiter) return;
+    try {
+      setResetPasswordLoading(true);
+      const res = await fetch(
+        `/api/superadmin/skill-checklist/recruiters/${resetPasswordRecruiter.id}/reset-password`,
+        { method: "POST" }
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed to reset password");
+      setResetPasswordResult(body.temporary_password || null);
+      toast.success("Password reset", {
+        description: "Share the temporary password with the recruiter.",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Reset failed";
+      toast.error("Password reset failed", { description: msg });
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // ─── Toggle recruiter active/suspended status ────────────────────
+  const handleToggleStatus = async (recruiter: RecruiterItem) => {
+    try {
+      const res = await fetch(
+        `/api/superadmin/skill-checklist/recruiters/${recruiter.id}/toggle-status`,
+        { method: "POST" }
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed to toggle status");
+      toast.success(body.message || "Status updated");
+      fetchData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Toggle failed";
+      toast.error("Status toggle failed", { description: msg });
     }
   };
 
@@ -364,6 +422,32 @@ export default function SkillsRecruitersPage() {
                             >
                               <Flag className="size-3.5 text-amber-600" />
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-7" title="More actions">
+                                  <MoreVertical className="size-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setResetPasswordRecruiter(recruiter);
+                                    setResetPasswordResult(null);
+                                    setResetPasswordDialogOpen(true);
+                                  }}
+                                >
+                                  <KeyRound className="size-4 mr-2" />
+                                  Reset Password
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleStatus(recruiter)}
+                                >
+                                  <ToggleLeft className="size-4 mr-2" />
+                                  Toggle Status
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -446,6 +530,63 @@ export default function SkillsRecruitersPage() {
               {flagLoading && <Loader2 className="size-4 animate-spin mr-2" />}
               Flag Recruiter
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Reset Password Dialog ─────────────────────────────────── */}
+      <Dialog
+        open={resetPasswordDialogOpen}
+        onOpenChange={(open) => {
+          setResetPasswordDialogOpen(open);
+          if (!open) setResetPasswordResult(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Recruiter Password</DialogTitle>
+            <DialogDescription>
+              {resetPasswordRecruiter && (
+                <>Generate a new temporary password for <strong>{getName(resetPasswordRecruiter)}</strong> ({resetPasswordRecruiter.email}). The recruiter must change it on next login.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetPasswordResult ? (
+            <div className="space-y-3 py-2">
+              <div className="rounded-md bg-emerald-50 border border-emerald-200 p-4">
+                <p className="text-sm font-semibold text-emerald-800 mb-1">Temporary Password</p>
+                <code className="text-base font-mono text-emerald-900 select-all block bg-white/60 px-3 py-2 rounded border border-emerald-200">
+                  {resetPasswordResult}
+                </code>
+                <p className="text-xs text-emerald-700 mt-2">
+                  Copy this password and share it securely with the recruiter. It will not be shown again.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-2">
+              A new random temporary password will be generated. The recruiter&apos;s current password will be invalidated immediately.
+            </p>
+          )}
+
+          <DialogFooter>
+            {resetPasswordResult ? (
+              <Button onClick={() => setResetPasswordDialogOpen(false)}>Done</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)} disabled={resetPasswordLoading}>
+                  Cancel
+                </Button>
+                <Button onClick={handleResetPassword} disabled={resetPasswordLoading}>
+                  {resetPasswordLoading ? (
+                    <><Loader2 className="size-4 mr-2 animate-spin" /> Resetting...</>
+                  ) : (
+                    <><KeyRound className="size-4 mr-2" /> Reset Password</>
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

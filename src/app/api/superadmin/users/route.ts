@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hash } from "bcryptjs";
+import { validateBody, superadminUserActionSchema, superadminUserCreateSchema } from "@/lib/validation-schemas";
 
 export async function GET(request: Request) {
   try {
@@ -140,14 +141,71 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, userId } = body;
 
-    if (!action || !userId) {
-      return NextResponse.json(
-        { error: "Action and userId are required" },
-        { status: 400 }
-      );
+    // ── Branch: Create new user (action === "create") ──────────────
+    if (body.action === "create") {
+      const result = validateBody(superadminUserCreateSchema, body);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      const { email, firstName, lastName, role, phone, organizationId, sendInviteEmail } = result.data;
+
+      // Check for existing user
+      const existing = await db.user.findUnique({ where: { email } });
+      if (existing) {
+        return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
+      }
+
+      // Generate a random temporary password (user must change on first login)
+      const tempPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+      const hashedPassword = await hash(tempPassword, 12);
+
+      const newUser = await db.user.create({
+        data: {
+          email,
+          first_name: firstName ?? null,
+          last_name: lastName ?? null,
+          role,
+          phone: phone ?? null,
+          password_hash: hashedPassword,
+          must_change_pass: true,
+          is_approved: true,
+          organization_id: organizationId ?? null,
+        },
+        select: { id: true, email: true, role: true },
+      });
+
+      // Audit log
+      const actionerId = parseInt(session.user.id as string, 10);
+      await db.auditLog.create({
+        data: {
+          user_id: actionerId,
+          role: "super_admin",
+          action: "create_user",
+          entity_type: "user",
+          entity_id: newUser.id,
+          details: `Created ${role} user ${email}`,
+        },
+      });
+
+      // TODO: If sendInviteEmail is true, send an invite email with a
+      // password-reset link so the user can set their own password.
+      // For now, return the temp password so the admin can share it.
+
+      return NextResponse.json({
+        success: true,
+        message: `User created. Temporary password: ${tempPassword}`,
+        user: newUser,
+        tempPassword, // Only returned once — admin must share with user
+      });
     }
+
+    // ── Branch: Action on existing user (suspend/ban/etc.) ─────────
+    const result = validateBody(superadminUserActionSchema, body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    const { action, userId } = result.data;
 
     const targetUser = await db.user.findUnique({
       where: { id: userId },

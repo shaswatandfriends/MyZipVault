@@ -7,6 +7,7 @@ interface AuditEvent {
   entityType?: string;
   entityId?: number;
   ipAddress?: string;
+  details?: string;
 }
 
 /**
@@ -22,6 +23,7 @@ export async function logAudit(event: AuditEvent): Promise<void> {
       entity_type: event.entityType ?? null,
       entity_id: event.entityId ?? null,
       ip_address: event.ipAddress ?? null,
+      details: event.details ?? null,
     },
   });
 }

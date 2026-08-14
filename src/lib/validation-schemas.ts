@@ -178,6 +178,83 @@ export const platformSettingSchema = z.object({
   settingValue: z.string().max(100000),
 });
 
+// ─── SuperAdmin: User Management Schemas ──────────────────────────
+
+export const superadminUserActionSchema = z.object({
+  action: z.enum(["force-reset-password", "suspend", "ban", "unsuspend", "proxy-login"]),
+  userId: positiveIntSchema,
+});
+
+export const superadminUserCreateSchema = z.object({
+  email: emailSchema,
+  firstName: nameSchema.optional(),
+  lastName: nameSchema.optional(),
+  role: z.enum(["candidate", "client_recruiter", "client_admin", "platform_admin", "super_admin"]),
+  phone: phoneSchema,
+  organizationId: positiveIntSchema.optional().nullable(),
+  sendInviteEmail: z.boolean().optional().default(true),
+});
+
+export const superadminUserUpdateSchema = z.object({
+  firstName: nameSchema.optional(),
+  lastName: nameSchema.optional(),
+  phone: phoneSchema,
+  role: z.enum(["candidate", "client_recruiter", "client_admin", "platform_admin", "super_admin"]).optional(),
+  organizationId: positiveIntSchema.optional().nullable(),
+  isApproved: z.boolean().optional(),
+});
+
+// ─── SuperAdmin: Company/Credits Schemas ──────────────────────────
+
+export const superadminCreditsAdjustSchema = z.object({
+  amount: z.number().int().refine((v) => v !== 0, "Amount must be non-zero"),
+  description: z.string().max(500).optional(),
+  action: z.enum(["add", "deduct"]).optional(),
+});
+
+export const superadminComplianceInvoiceSchema = z.object({
+  organization_id: positiveIntSchema,
+  credit_amount: positiveIntSchema,
+  total_price: z.number().min(0, "Total price must be non-negative"),
+  description: z.string().max(500).optional(),
+});
+
+export const superadminCompanyCreateSchema = z.object({
+  name: z.string().min(1, "Company name is required").max(255).transform((v) => v.trim()),
+  adminEmail: emailSchema,
+  adminFirstName: nameSchema.optional(),
+  adminLastName: nameSchema.optional(),
+  seatLimit: z.number().int().min(0).max(10000).optional().default(0),
+  bundleLimit: z.number().int().min(0).max(1000).optional().default(0),
+  creditsBalance: z.number().int().min(0).max(1000000).optional().default(0),
+});
+
+export const superadminCompanyUpdateSchema = z.object({
+  name: z.string().min(1).max(255).optional().transform((v) => v?.trim()),
+  seatLimit: z.number().int().min(0).max(10000).optional(),
+  bundleLimit: z.number().int().min(0).max(1000).optional(),
+  baaStatus: z.enum(["none", "pending", "signed", "expired"]).optional(),
+  baaSignedAt: z.string().datetime().optional().nullable(),
+  isActive: z.boolean().optional(),
+});
+
+// ─── SuperAdmin: Checklist Expiry Extend Schema ───────────────────
+
+export const superadminChecklistExtendSchema = z.object({
+  extendDays: z.number().int().min(1, "Extend days must be at least 1").max(365, "Extend days must be at most 365"),
+});
+
+// ─── SuperAdmin: Email Campaign Send Schema ───────────────────────
+
+export const superadminEmailCampaignUpdateSchema = z.object({
+  name: z.string().min(1).max(255).optional().transform((v) => v?.trim()),
+  subject: z.string().min(1).max(500).optional().transform((v) => v?.trim()),
+  body: z.string().min(1).max(100000).optional(),
+  targetRole: z.enum(["all", "candidate", "client_recruiter", "client_admin", "platform_admin", "super_admin"]).optional(),
+  targetFilter: z.string().max(10000).optional().nullable(),
+  status: z.enum(["draft", "cancelled"]).optional(),
+});
+
 // ─── Validation Helper ─────────────────────────────────────────────
 
 /**

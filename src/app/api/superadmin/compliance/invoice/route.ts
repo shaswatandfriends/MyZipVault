@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { validateBody, superadminComplianceInvoiceSchema } from "@/lib/validation-schemas";
 
 export async function POST(request: Request) {
   try {
@@ -18,14 +19,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { organization_id, credit_amount, total_price, description } = body;
-
-    if (!organization_id || !credit_amount || total_price === undefined) {
-      return NextResponse.json(
-        { error: "Organization ID, credit amount, and total price are required" },
-        { status: 400 }
-      );
+    const result = validateBody(superadminComplianceInvoiceSchema, body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
+    const { organization_id, credit_amount, total_price, description } = result.data;
 
     let org;
     try {
@@ -40,24 +38,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    // Create invoice record
-    const invoice = await db.invoice.create({
-      data: {
-        organization_id,
-        credit_amount,
-        total_price: parseFloat(String(total_price)),
-      },
-    });
+    // ─── Transactional invoice creation ──────────────────────────────
+    // Invoice + audit log must be created atomically.
+    const invoice = await db.$transaction(async (tx) => {
+      const created = await tx.invoice.create({
+        data: {
+          organization_id,
+          credit_amount,
+          total_price: parseFloat(String(total_price)),
+        },
+      });
 
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        user_id: adminUserId,
-        role: "super_admin",
-        action: "generate_compliance_invoice",
-        entity_type: "invoice",
-        entity_id: invoice.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          user_id: adminUserId,
+          role: "super_admin",
+          action: "generate_compliance_invoice",
+          entity_type: "invoice",
+          entity_id: created.id,
+          details: description || `Invoice for ${credit_amount} credits — $${total_price}`,
+        },
+      });
+
+      return created;
     });
 
     return NextResponse.json({ invoice }, { status: 201 });

@@ -559,6 +559,7 @@ model AuditLog {
   entity_type  String?
   entity_id    Int?
   ip_address   String?
+  details      String?
   created_at   DateTime  @default(now())
 
   user         User?     @relation(fields: [user_id], references: [id])

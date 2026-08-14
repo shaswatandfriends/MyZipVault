@@ -145,32 +145,60 @@ export async function DELETE(
 
     const { id } = await params;
     const userId = parseInt(id);
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+    }
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Delete all related data then the user
-    await db.candidateProfile.deleteMany({ where: { user_id: userId } });
-    await db.skillRating.deleteMany({
-      where: { checklist_response: { candidate_user_id: userId } },
-    });
-    await db.candidateChecklistResponse.deleteMany({ where: { candidate_user_id: userId } });
-    await db.referenceResponse.deleteMany({
-      where: { candidate_reference: { candidate_user_id: userId } },
-    });
-    await db.candidateReference.deleteMany({ where: { candidate_user_id: userId } });
-    await db.credential.deleteMany({ where: { candidate_user_id: userId } });
-    await db.resume.deleteMany({ where: { candidate_user_id: userId } });
-    await db.consentShare.deleteMany({ where: { candidate_user_id: userId } });
-    await db.consentShare.deleteMany({ where: { client_user_id: userId } });
-    await db.notification.deleteMany({ where: { user_id: userId } });
-    await db.adminPermission.deleteMany({ where: { user_id: userId } });
-    await db.pendingReminder.deleteMany({ where: { target_user_id: userId } });
+    // Prevent deleting super_admin accounts (safety guard)
+    if (user.role === "super_admin") {
+      return NextResponse.json(
+        { error: "Cannot delete a super admin account. Remove super_admin role first." },
+        { status: 403 }
+      );
+    }
 
-    // Delete the user record last
-    await db.user.delete({ where: { id: userId } });
+    const actionerId = parseInt(session.user.id as string, 10);
+
+    // Delete all related data then the user — all in a transaction so
+    // we never end up with orphaned records if a step fails.
+    await db.$transaction(async (tx) => {
+      // Audit log FIRST (before user is deleted, so we capture their info)
+      await tx.auditLog.create({
+        data: {
+          user_id: actionerId,
+          role: "super_admin",
+          action: "delete_user",
+          entity_type: "user",
+          entity_id: userId,
+          details: `Permanently deleted ${user.role} user ${user.email}`,
+        },
+      });
+
+      await tx.candidateProfile.deleteMany({ where: { user_id: userId } });
+      await tx.skillRating.deleteMany({
+        where: { checklist_response: { candidate_user_id: userId } },
+      });
+      await tx.candidateChecklistResponse.deleteMany({ where: { candidate_user_id: userId } });
+      await tx.referenceResponse.deleteMany({
+        where: { candidate_reference: { candidate_user_id: userId } },
+      });
+      await tx.candidateReference.deleteMany({ where: { candidate_user_id: userId } });
+      await tx.credential.deleteMany({ where: { candidate_user_id: userId } });
+      await tx.resume.deleteMany({ where: { candidate_user_id: userId } });
+      await tx.consentShare.deleteMany({ where: { candidate_user_id: userId } });
+      await tx.consentShare.deleteMany({ where: { client_user_id: userId } });
+      await tx.notification.deleteMany({ where: { user_id: userId } });
+      await tx.adminPermission.deleteMany({ where: { user_id: userId } });
+      await tx.pendingReminder.deleteMany({ where: { target_user_id: userId } });
+
+      // Delete the user record last
+      await tx.user.delete({ where: { id: userId } });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

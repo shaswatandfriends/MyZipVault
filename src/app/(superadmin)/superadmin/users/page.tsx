@@ -188,6 +188,23 @@ export default function SuperadminUsersPage() {
   // View user dialog
   const [viewUser, setViewUser] = useState<UserRow | null>(null);
 
+  // Create user dialog state
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [createUserLoading, setCreateUserLoading] = useState(false);
+  const [createUserResult, setCreateUserResult] = useState<{
+    email: string;
+    tempPassword: string;
+  } | null>(null);
+  const [createUserForm, setCreateUserForm] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    role: "candidate" as "candidate" | "client_recruiter" | "client_admin" | "platform_admin" | "super_admin",
+    phone: "",
+    organizationId: "",
+    sendInviteEmail: true,
+  });
+
   // Fetch organizations for the Company filter dropdown
   const fetchOrganizations = useCallback(async () => {
     try {
@@ -336,6 +353,44 @@ export default function SuperadminUsersPage() {
     }
   };
 
+  const handleCreateUser = async () => {
+    try {
+      setCreateUserLoading(true);
+      const res = await fetch("/api/superadmin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          email: createUserForm.email,
+          firstName: createUserForm.firstName || undefined,
+          lastName: createUserForm.lastName || undefined,
+          role: createUserForm.role,
+          phone: createUserForm.phone || null,
+          organizationId: createUserForm.organizationId
+            ? parseInt(createUserForm.organizationId)
+            : null,
+          sendInviteEmail: createUserForm.sendInviteEmail,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed to create user");
+
+      setCreateUserResult({
+        email: body.user.email,
+        tempPassword: body.tempPassword,
+      });
+      toast.success("User created", {
+        description: "Share the temporary password with the user.",
+      });
+      fetchUsers();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Create failed";
+      toast.error("Failed to create user", { description: msg });
+    } finally {
+      setCreateUserLoading(false);
+    }
+  };
+
   const handleCSVExport = () => {
     if (!data?.users.length) return;
     const headers = ["ID", "Email", "First Name", "Last Name", "Role", "Status", "Organization", "Profile %", "Last Login", "Created"];
@@ -389,6 +444,17 @@ export default function SuperadminUsersPage() {
                 Redact PII
               </Label>
             </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setCreateUserOpen(true);
+                setCreateUserResult(null);
+              }}
+            >
+              <UserPlus className="size-4" />
+              Create User
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -847,6 +913,151 @@ export default function SuperadminUsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Create User Dialog ──────────────────────────────────────── */}
+      <Dialog
+        open={createUserOpen}
+        onOpenChange={(open) => {
+          setCreateUserOpen(open);
+          if (!open) {
+            setCreateUserResult(null);
+            setCreateUserForm({
+              email: "",
+              firstName: "",
+              lastName: "",
+              role: "candidate",
+              phone: "",
+              organizationId: "",
+              sendInviteEmail: true,
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account. A temporary password will be generated — the user must change it on first login.
+            </DialogDescription>
+          </DialogHeader>
+
+          {createUserResult ? (
+            <div className="space-y-3 py-2">
+              <div className="rounded-md bg-emerald-50 border border-emerald-200 p-4">
+                <p className="text-sm font-semibold text-emerald-800 mb-1">User Created Successfully</p>
+                <p className="text-xs text-emerald-700 mb-2">Email: <strong>{createUserResult.email}</strong></p>
+                <p className="text-sm font-semibold text-emerald-800 mb-1">Temporary Password</p>
+                <code className="text-base font-mono text-emerald-900 select-all block bg-white/60 px-3 py-2 rounded border border-emerald-200">
+                  {createUserResult.tempPassword}
+                </code>
+                <p className="text-xs text-emerald-700 mt-2">
+                  Copy this password and share it securely with the user. It will not be shown again.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setCreateUserOpen(false)}>Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 py-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cu-email">Email *</Label>
+                  <Input
+                    id="cu-email"
+                    type="email"
+                    value={createUserForm.email}
+                    onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cu-firstName">First Name</Label>
+                    <Input
+                      id="cu-firstName"
+                      value={createUserForm.firstName}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, firstName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cu-lastName">Last Name</Label>
+                    <Input
+                      id="cu-lastName"
+                      value={createUserForm.lastName}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, lastName: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cu-role">Role *</Label>
+                    <Select
+                      value={createUserForm.role}
+                      onValueChange={(v) => setCreateUserForm({ ...createUserForm, role: v as typeof createUserForm.role })}
+                    >
+                      <SelectTrigger id="cu-role"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="candidate">Candidate</SelectItem>
+                        <SelectItem value="client_recruiter">Recruiter</SelectItem>
+                        <SelectItem value="client_admin">Client Admin</SelectItem>
+                        <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cu-phone">Phone</Label>
+                    <Input
+                      id="cu-phone"
+                      value={createUserForm.phone}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, phone: e.target.value })}
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+                {(createUserForm.role === "client_recruiter" || createUserForm.role === "client_admin") && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cu-org">Organization (for recruiter/admin)</Label>
+                    <Select
+                      value={createUserForm.organizationId}
+                      onValueChange={(v) => setCreateUserForm({ ...createUserForm, organizationId: v })}
+                    >
+                      <SelectTrigger id="cu-org"><SelectValue placeholder="Select organization" /></SelectTrigger>
+                      <SelectContent>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={String(org.id)}>{org.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-1">
+                  <Checkbox
+                    id="cu-sendInvite"
+                    checked={createUserForm.sendInviteEmail}
+                    onCheckedChange={(v) => setCreateUserForm({ ...createUserForm, sendInviteEmail: v === true })}
+                  />
+                  <Label htmlFor="cu-sendInvite" className="text-xs text-muted-foreground cursor-pointer">
+                    Send invite email (coming soon — for now, share the temp password manually)
+                  </Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateUserOpen(false)} disabled={createUserLoading}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateUser}
+                  disabled={createUserLoading || !createUserForm.email}
+                >
+                  {createUserLoading ? "Creating..." : "Create User"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

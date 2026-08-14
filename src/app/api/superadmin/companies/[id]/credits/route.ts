@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { validateBody, superadminCreditsAdjustSchema } from "@/lib/validation-schemas";
 
 export async function PUT(
   request: Request,
@@ -20,15 +21,16 @@ export async function PUT(
 
     const { id } = await params;
     const orgId = parseInt(id);
-    const body = await request.json();
-    const { amount, description, action } = body;
-
-    if (!amount || !Number.isInteger(amount) || amount === 0) {
-      return NextResponse.json(
-        { error: "Valid non-zero credit amount is required" },
-        { status: 400 }
-      );
+    if (isNaN(orgId)) {
+      return NextResponse.json({ error: "Invalid organization ID" }, { status: 400 });
     }
+
+    const body = await request.json();
+    const result = validateBody(superadminCreditsAdjustSchema, body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    const { amount, description, action } = result.data;
 
     let org;
     try {
@@ -43,25 +45,44 @@ export async function PUT(
     // Determine if adding or deducting
     const creditAmount = Math.abs(amount);
     const isAdd = action === "add" || amount > 0;
+    const actionerId = parseInt(session.user.id as string, 10);
 
-    // Update credits balance
-    const updatedOrg = await db.organization.update({
-      where: { id: orgId },
-      data: {
-        credits_balance: isAdd
-          ? { increment: creditAmount }
-          : { decrement: Math.min(creditAmount, org.credits_balance) },
-      },
-    });
+    // ─── Transactional credit adjustment ─────────────────────────────
+    // All three operations (balance update, transaction record, audit log)
+    // must succeed atomically. Without this, a partial failure could
+    // increment the balance without recording the transaction (or vice
+    // versa), making the books not match.
+    const updatedOrg = await db.$transaction(async (tx) => {
+      const updated = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          credits_balance: isAdd
+            ? { increment: creditAmount }
+            : { decrement: Math.min(creditAmount, org.credits_balance) },
+        },
+      });
 
-    // Create credit transaction record
-    await db.creditTransaction.create({
-      data: {
-        organization_id: orgId,
-        transaction_type: isAdd ? "admin_adjustment_add" : "admin_adjustment_deduct",
-        credit_amount: isAdd ? creditAmount : -creditAmount,
-        description: description || (isAdd ? `Admin added ${creditAmount} credits` : `Admin deducted ${creditAmount} credits`),
-      },
+      await tx.creditTransaction.create({
+        data: {
+          organization_id: orgId,
+          transaction_type: isAdd ? "admin_adjustment_add" : "admin_adjustment_deduct",
+          credit_amount: isAdd ? creditAmount : -creditAmount,
+          description: description || (isAdd ? `Admin added ${creditAmount} credits` : `Admin deducted ${creditAmount} credits`),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          user_id: actionerId,
+          role: "super_admin",
+          action: isAdd ? "credits_add" : "credits_deduct",
+          entity_type: "organization",
+          entity_id: orgId,
+          details: `${isAdd ? "Added" : "Deducted"} ${creditAmount} credits${description ? ` — ${description}` : ""}`,
+        },
+      });
+
+      return updated;
     });
 
     return NextResponse.json({ success: true, balance: updatedOrg.credits_balance });

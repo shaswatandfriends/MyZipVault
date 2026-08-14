@@ -111,8 +111,28 @@ export async function DELETE(
       );
     }
 
-    // Recipients will be cascade-deleted due to onDelete: Cascade in schema
-    await db.emailCampaign.delete({ where: { id: campaignId } });
+    // Recipients will be cascade-deleted due to onDelete: Cascade in schema.
+    // Capture audit log BEFORE deletion (so we have the campaign name).
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
+    const campaignDetails = await db.emailCampaign.findUnique({
+      where: { id: campaignId },
+      select: { name: true, subject: true, target_role: true },
+    });
+
+    await db.$transaction(async (tx) => {
+      await tx.emailCampaign.delete({ where: { id: campaignId } });
+
+      await tx.auditLog.create({
+        data: {
+          user_id: actionerId,
+          role: "super_admin",
+          action: "delete_email_campaign",
+          entity_type: "email_campaign",
+          entity_id: campaignId,
+          details: `Deleted draft campaign "${campaignDetails?.name ?? "unknown"}"`,
+        },
+      });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

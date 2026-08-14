@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
+import { validateBody, superadminChecklistExtendSchema } from "@/lib/validation-schemas";
 
 export async function PUT(
   request: Request,
@@ -26,10 +27,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { extendDays } = body;
-    if (!extendDays || extendDays < 1 || extendDays > 365) {
-      return NextResponse.json({ error: "Extend days must be between 1 and 365" }, { status: 400 });
+    const result = validateBody(superadminChecklistExtendSchema, body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
+    const { extendDays } = result.data;
 
     let response;
     try {
