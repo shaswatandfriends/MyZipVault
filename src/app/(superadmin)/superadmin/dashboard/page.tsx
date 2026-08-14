@@ -68,6 +68,7 @@ interface DashboardData {
     total: number;
   };
   revenueThisMonth: number;
+  creditsSoldThisMonth: number;
   creditsPurchasedToday: number;
   creditsSpentToday: number;
   creditsPurchasedMonth: number;
@@ -456,12 +457,18 @@ export default function SuperadminDashboardPage() {
                     </div>
                     <ArrowUpRight className="size-4 text-white/50 group-hover/card:text-white/90 transition-colors" />
                   </div>
-                  <div className="text-3xl font-bold tracking-tight tabular-nums">{data?.creditsPurchasedMonth ?? 0}</div>
-                  <p className="text-sm font-medium mt-0.5 text-white/85">Credits Purchased (Month)</p>
+                  <div className="text-3xl font-bold tracking-tight tabular-nums">${(data?.revenueThisMonth ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  <p className="text-sm font-medium mt-0.5 text-white/85">Revenue This Month</p>
                   <div className="mt-3 space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-white/85 flex items-center gap-1.5">
-                        <CreditCard className="size-3.5" /> Spent This Month
+                        <CreditCard className="size-3.5" /> Credits Sold (Month)
+                      </span>
+                      <span className="font-semibold tabular-nums">{data?.creditsSoldThisMonth ?? 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-white/85 flex items-center gap-1.5">
+                        <TrendingUp className="size-3.5" /> Spent This Month
                       </span>
                       <span className="font-semibold tabular-nums">{data?.creditsSpentMonth ?? 0}</span>
                     </div>

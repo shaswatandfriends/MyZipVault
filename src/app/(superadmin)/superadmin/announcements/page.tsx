@@ -1102,6 +1102,8 @@ function CampaignsTab() {
                 ? "text-blue-600 bg-blue-50 border-blue-200"
                 : c.status === "partial_failure"
                 ? "text-orange-600 bg-orange-50 border-orange-200"
+                : c.status === "failed"
+                ? "text-red-600 bg-red-50 border-red-200"
                 : "text-gray-600 bg-gray-50 border-gray-200";
 
             return (

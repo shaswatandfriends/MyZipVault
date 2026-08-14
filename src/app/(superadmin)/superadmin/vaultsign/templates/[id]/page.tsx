@@ -304,7 +304,9 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
     setSignFields([...signFields, newField]);
 
     if (editor) {
-      editor.chain().focus().insertSignField({
+      // Cast to any because SignFieldExtension adds `insertSignField` via
+      // TipTap's addCommands but the type isn't augmented globally.
+      (editor.chain().focus() as any).insertSignField({
         fieldType: type,
         assignedToSignerIndex: signerIndex,
         signerLabel: signerSlots.find(s => s.index === signerIndex)?.label || `Signer ${signerIndex + 1}`,

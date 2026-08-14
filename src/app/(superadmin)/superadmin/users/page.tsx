@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
+  Trash2,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -298,7 +299,24 @@ export default function SuperadminUsersPage() {
         return; // Don't re-fetch users — we're leaving this page
       }
 
-      // ── All other actions ────────────────────────────────────────
+      // ── Delete user — uses the DELETE method on /api/superadmin/users/[id]
+      // This is a hard delete that cascades to all related data (credentials,
+      // resumes, references, notifications, etc.). Use with caution.
+      if (action === "delete") {
+        const res = await fetch(`/api/superadmin/users/${userId}`, {
+          method: "DELETE",
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Delete failed");
+
+        toast.success("User deleted", {
+          description: "All related data has been permanently removed.",
+        });
+        fetchUsers();
+        return;
+      }
+
+      // ── All other actions (suspend, unsuspend, ban, force-reset-password)
       const res = await fetch("/api/superadmin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -664,6 +682,15 @@ export default function SuperadminUsersPage() {
                                 <Ban className="size-4 mr-2" />
                                 Ban User
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setConfirmAction({ type: "delete", userId: user.id, userName: fullName })
+                                }
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="size-4 mr-2" />
+                                Delete User
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() =>
@@ -788,6 +815,8 @@ export default function SuperadminUsersPage() {
                 ? "Unsuspend User"
                 : confirmAction?.type === "force-reset-password"
                 ? "Force Password Reset"
+                : confirmAction?.type === "delete"
+                ? "Permanently Delete User"
                 : "Proxy Login"}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -797,6 +826,8 @@ export default function SuperadminUsersPage() {
                 ? `Are you sure you want to ban ${confirmAction.userName}? This action can be reversed by an admin.`
                 : confirmAction?.type === "force-reset-password"
                 ? `Force a password reset for ${confirmAction.userName}? They will be required to change their password on next login.`
+                : confirmAction?.type === "delete"
+                ? `Are you sure you want to PERMANENTLY DELETE ${confirmAction?.userName}? This will remove ALL their data — credentials, resumes, references, checklists, notifications, and audit history. This action CANNOT be undone.`
                 : `Are you sure you want to ${confirmAction?.type} ${confirmAction?.userName}?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -806,7 +837,7 @@ export default function SuperadminUsersPage() {
               disabled={actionLoading}
               onClick={() => confirmAction && handleAction(confirmAction.type, confirmAction.userId)}
               className={
-                confirmAction?.type === "ban"
+                confirmAction?.type === "ban" || confirmAction?.type === "delete"
                   ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-emerald-600 hover:bg-emerald-700 text-white"
               }

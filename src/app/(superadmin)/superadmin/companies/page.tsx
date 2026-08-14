@@ -1908,7 +1908,7 @@ export default function SuperadminCompaniesPage() {
                 <div className="space-y-1.5 max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
                   {(() => {
                     const activity = profileData.activity as Record<string, Array<Record<string, unknown>>>;
-                    const allActivity = [
+                    const allActivity: Array<Record<string, unknown> & { sortDate: number }> = [
                       ...(activity?.checklistRequests || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),
                       ...(activity?.unlockedDocuments || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),
                       ...(activity?.auditLogs || []).map((a) => ({ ...a, sortDate: new Date(a.date as string).getTime() })),

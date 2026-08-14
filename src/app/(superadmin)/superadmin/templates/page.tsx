@@ -239,8 +239,8 @@ export default function SuperadminTemplatesPage() {
     if (cursorTarget === "subject") {
       const el = subjectRef.current;
       if (el) {
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
+        const start = el.selectionStart ?? 0;
+        const end = el.selectionEnd ?? 0;
         const newSubject = editSubject.slice(0, start) + varTag + editSubject.slice(end);
         setEditSubject(newSubject);
         setTimeout(() => {
@@ -253,8 +253,8 @@ export default function SuperadminTemplatesPage() {
     } else {
       const el = bodyRef.current;
       if (el) {
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
+        const start = el.selectionStart ?? 0;
+        const end = el.selectionEnd ?? 0;
         const newBody = editBody.slice(0, start) + varTag + editBody.slice(end);
         setEditBody(newBody);
         setTimeout(() => {

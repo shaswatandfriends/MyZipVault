@@ -40,7 +40,10 @@ export async function GET(request: Request) {
 
     const totalUsers = candidates + clientRecruiters + clientAdmins + platformAdmins + superAdmins;
 
-    // Revenue this month — sum of all purchase transactions
+    // Credits sold this month — sum of all purchase transaction credit_amounts.
+    // NOTE: This is the CREDIT COUNT, not dollar revenue. Dollar revenue
+    // comes from paid invoices (Invoice.total_price) — computed separately
+    // below as `revenueThisMonth`.
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const purchasesThisMonth = await db.creditTransaction.findMany({
       where: {
@@ -49,7 +52,20 @@ export async function GET(request: Request) {
       },
       select: { credit_amount: true },
     });
-    const revenueThisMonth = purchasesThisMonth.reduce((sum, t) => sum + t.credit_amount, 0);
+    const creditsSoldThisMonth = purchasesThisMonth.reduce((sum, t) => sum + t.credit_amount, 0);
+
+    // Actual dollar revenue this month — sum of Invoice.total_price for
+    // invoices that have been paid (pdf_url starts with "stripe_paid:").
+    // Unpaid invoices (pdf_url starts with "stripe_session:" or is null)
+    // are NOT counted as revenue.
+    const invoicesThisMonth = await db.invoice.aggregate({
+      _sum: { total_price: true },
+      where: {
+        created_at: { gte: startOfMonth },
+        pdf_url: { startsWith: "stripe_paid:" },
+      },
+    });
+    const revenueThisMonth = invoicesThisMonth._sum.total_price ?? 0;
 
     // Credits purchased vs spent today
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -174,6 +190,7 @@ export async function GET(request: Request) {
         total: totalUsers,
       },
       revenueThisMonth,
+      creditsSoldThisMonth,
       creditsPurchasedToday: purchasedToday._sum.credit_amount ?? 0,
       creditsSpentToday: spentToday._sum.credit_amount ?? 0,
       creditsPurchasedMonth: purchasedMonth._sum.credit_amount ?? 0,

@@ -254,11 +254,15 @@ export async function POST(
     }
 
     // ─── 5. Update campaign totals ────────────────────────────────────
+    // Status logic:
+    //   - failedCount === 0          → "sent" (all delivered)
+    //   - sentCount === 0            → "failed" (none delivered)
+    //   - both > 0                   → "partial_failure" (some delivered, some not)
     const finalStatus =
       failedCount === 0
         ? "sent"
         : sentCount === 0
-        ? "partial_failure"
+        ? "failed"
         : "partial_failure";
 
     await db.emailCampaign.update({
@@ -285,8 +289,9 @@ export async function POST(
   } catch (error) {
     console.error("[EMAIL CAMPAIGNS] Send error:", error);
 
-    // If we crashed mid-send, mark the campaign as partial_failure
-    // (the recipient rows we did manage to create will have their status)
+    // If we crashed mid-send, mark the campaign with the appropriate
+    // status based on what we managed to send (failed if 0 sent,
+    // partial_failure otherwise).
     try {
       const { id } = await params;
       const campaignId = parseInt(id);
@@ -297,10 +302,11 @@ export async function POST(
         const failedCount = await db.emailCampaignRecipient.count({
           where: { campaign_id: campaignId, status: "failed" },
         });
+        const crashStatus = sentCount === 0 ? "failed" : "partial_failure";
         await db.emailCampaign.update({
           where: { id: campaignId },
           data: {
-            status: "partial_failure",
+            status: crashStatus,
             sent_count: sentCount,
             failed_count: failedCount,
             completed_at: new Date(),

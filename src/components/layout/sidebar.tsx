@@ -225,8 +225,12 @@ const superAdminFlatNav: NavItem[] = [
 
 const superAdminBottomNav: NavItem[] = [
   // Management
+  { title: "Users", href: "/superadmin/users", icon: Users },
+  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
+  { title: "Documents", href: "/superadmin/documents", icon: FileCheck },
+  { title: "Calendar", href: "/superadmin/calendar", icon: CalendarDays },
   // Communication
   { title: "Templates", href: "/superadmin/templates", icon: Mail },
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
@@ -236,6 +240,7 @@ const superAdminBottomNav: NavItem[] = [
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
   // Content
   { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
+  { title: "Auth Pages", href: "/superadmin/auth-page-editor", icon: Pencil },
   // Monitoring
   { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
@@ -246,7 +251,7 @@ const superAdminBottomNav: NavItem[] = [
 
 // Section divider positions for superadmin bottom nav
 const superAdminSectionDividers: Record<string, string> = {
-  "/superadmin/admins": "MANAGEMENT",
+  "/superadmin/users": "MANAGEMENT",
   "/superadmin/templates": "COMMUNICATION",
   "/superadmin/settings": "CONFIGURATION",
   "/superadmin/landing-page-editor": "CONTENT",
