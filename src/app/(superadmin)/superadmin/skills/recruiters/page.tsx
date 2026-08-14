@@ -418,7 +418,8 @@ export default function SkillsRecruitersPage() {
                               size="icon"
                               className="size-7"
                               title="Flag recruiter"
-                              onClick={() = aria-label="Flag recruiter"> { setFlagRecruiter(recruiter); setFlagDialogOpen(true); }}
+                              aria-label="Flag recruiter"
+                              onClick={() => { setFlagRecruiter(recruiter); setFlagDialogOpen(true); }}
                             >
                               <Flag className="size-3.5 text-amber-600" />
                             </Button>

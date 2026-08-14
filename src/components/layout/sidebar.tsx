@@ -39,6 +39,7 @@ import {
   ClipboardList,
   Layers,
   FolderOpen,
+  Inbox,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
