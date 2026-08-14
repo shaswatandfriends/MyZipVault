@@ -65,26 +65,34 @@ export async function POST(
     }
 
     // Verify the recruiter has access to this candidate (Gap 1 scoping)
-    const hasAccess = await scope.clientUserIds.some(async (rId) => {
-      const [consentShare, checklistRequest] = await Promise.all([
-        db.consentShare.findFirst({
-          where: {
-            client_user_id: rId,
-            candidate_user_id: Number(candidateUserId),
-            is_deleted: false,
-          },
-          select: { id: true },
-        }),
-        db.checklistRequest.findFirst({
-          where: {
-            client_user_id: rId,
-            candidate_user_id: Number(candidateUserId),
-          },
-          select: { id: true },
-        }),
-      ]);
-      return !!(consentShare || checklistRequest);
-    });
+    //
+    // SECURITY FIX: The previous implementation used `Array.some(async ...)`
+    // which ALWAYS returns true because async callbacks return Promises
+    // (truthy). This was an access-control bypass — any recruiter could
+    // add ANY candidate to their pool, even candidates they had never
+    // engaged with.
+    //
+    // The fix uses a single bulk query with `client_user_id: { in: scope.clientUserIds }`
+    // which is both correct AND more efficient (1 query instead of N).
+    const [consentShare, checklistRequest] = await Promise.all([
+      db.consentShare.findFirst({
+        where: {
+          client_user_id: { in: scope.clientUserIds },
+          candidate_user_id: Number(candidateUserId),
+          is_deleted: false,
+        },
+        select: { id: true },
+      }),
+      db.checklistRequest.findFirst({
+        where: {
+          client_user_id: { in: scope.clientUserIds },
+          candidate_user_id: Number(candidateUserId),
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    const hasAccess = !!(consentShare || checklistRequest);
 
     if (!hasAccess) {
       return NextResponse.json(

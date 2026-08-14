@@ -27,12 +27,14 @@ export async function POST(request: Request) {
       );
     }
 
-    let org: any = null;
-try {
-  db.organization.findUnique({
-      where: { id: organization_id },
-    });;
-} catch (e) { console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e); }
+    let org;
+    try {
+      org = await db.organization.findUnique({
+        where: { id: organization_id },
+      });
+    } catch (e) {
+      console.error("[SCHEMA_DRIFT] organization.findUnique failed:", e);
+    }
 
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });

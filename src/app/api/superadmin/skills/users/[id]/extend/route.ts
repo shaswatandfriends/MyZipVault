@@ -31,18 +31,23 @@ export async function PUT(
       return NextResponse.json({ error: "Extend days must be between 1 and 365" }, { status: 400 });
     }
 
-    let response: any = null;
-try {
-  db.candidateChecklistResponse.findUnique({
-      where: { id: responseId },
-    });;
-} catch (e) { console.error("[SCHEMA_DRIFT] candidateChecklistResponse.findUnique failed:", e); }
+    let response;
+    try {
+      response = await db.candidateChecklistResponse.findUnique({
+        where: { id: responseId },
+      });
+    } catch (e) {
+      console.error("[SCHEMA_DRIFT] candidateChecklistResponse.findUnique failed:", e);
+    }
     if (!response) {
       return NextResponse.json({ error: "Response not found" }, { status: 404 });
     }
 
+    const validUntilDate = response.valid_until instanceof Date
+      ? response.valid_until
+      : new Date(response.valid_until);
     const newValidUntil = new Date(
-      response.valid_until.getTime() + extendDays * 24 * 60 * 60 * 1000
+      validUntilDate.getTime() + extendDays * 24 * 60 * 60 * 1000
     );
 
     await db.candidateChecklistResponse.update({

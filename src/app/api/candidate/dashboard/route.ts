@@ -25,18 +25,20 @@ export async function GET() {
 
     // ─── Parallelize independent queries ──────────────────────────────
     // All of these are independent — fetch them in a single round-trip
-    // via Promise.all to cut dashboard latency significantly.
+    // via Promise.allSettled so a single failing query (e.g., a missing
+    // column after a partial migration) doesn't 500 the WHOLE dashboard.
+    // Failed queries fall back to safe defaults (empty arrays / null).
     const [
-      profile,
-      allCredentials,
-      references,
-      resume,
-      notifications,
-      vaultSignSigners,
-      shareRequests,
-      calendarAvailabilities,
-      checklistResponses,
-    ] = await Promise.all([
+      profileResult,
+      credentialsResult,
+      referencesResult,
+      resumeResult,
+      notificationsResult,
+      vaultSignResult,
+      shareRequestsResult,
+      calendarResult,
+      checklistResponsesResult,
+    ] = await Promise.allSettled([
       db.candidateProfile.findUnique({
         where: { user_id: userId },
       }),
@@ -76,6 +78,44 @@ export async function GET() {
         },
       }),
     ]);
+
+    // Resolve settled results with safe fallbacks
+    const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
+    if (profileResult.status === "rejected") {
+      console.error("[DASHBOARD] candidateProfile query failed:", profileResult.reason);
+    }
+    const allCredentials = credentialsResult.status === "fulfilled" ? credentialsResult.value : [];
+    if (credentialsResult.status === "rejected") {
+      console.error("[DASHBOARD] credential query failed:", credentialsResult.reason);
+    }
+    const references = referencesResult.status === "fulfilled" ? referencesResult.value : [];
+    if (referencesResult.status === "rejected") {
+      console.error("[DASHBOARD] candidateReference query failed:", referencesResult.reason);
+    }
+    const resume = resumeResult.status === "fulfilled" ? resumeResult.value : null;
+    if (resumeResult.status === "rejected") {
+      console.error("[DASHBOARD] resume query failed:", resumeResult.reason);
+    }
+    const notifications = notificationsResult.status === "fulfilled" ? notificationsResult.value : [];
+    if (notificationsResult.status === "rejected") {
+      console.error("[DASHBOARD] notification query failed:", notificationsResult.reason);
+    }
+    const vaultSignSigners = vaultSignResult.status === "fulfilled" ? vaultSignResult.value : [];
+    if (vaultSignResult.status === "rejected") {
+      console.error("[DASHBOARD] vaultSignSigner query failed:", vaultSignResult.reason);
+    }
+    const shareRequests = shareRequestsResult.status === "fulfilled" ? shareRequestsResult.value : [];
+    if (shareRequestsResult.status === "rejected") {
+      console.error("[DASHBOARD] shareRequest query failed:", shareRequestsResult.reason);
+    }
+    const calendarAvailabilities = calendarResult.status === "fulfilled" ? calendarResult.value : [];
+    if (calendarResult.status === "rejected") {
+      console.error("[DASHBOARD] calendarAvailability query failed:", calendarResult.reason);
+    }
+    const checklistResponses = checklistResponsesResult.status === "fulfilled" ? checklistResponsesResult.value : 0;
+    if (checklistResponsesResult.status === "rejected") {
+      console.error("[DASHBOARD] candidateChecklistResponse query failed:", checklistResponsesResult.reason);
+    }
 
     // ─── Derived data ─────────────────────────────────────────────────
     const activeCredentials = allCredentials.filter(

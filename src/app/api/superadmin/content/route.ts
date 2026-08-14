@@ -15,45 +15,17 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // NOTE: Profession / Specialty / SkillCategory models do not exist
+    // in the current Prisma schema. ChecklistTemplate.profession and
+    // ChecklistTemplate.specialty are flat string fields, and Skill.category
+    // is a flat string field. Until those normalized models are added,
+    // we return empty arrays for them so the consuming admin page can
+    // still render without 500ing.
     const [
-      professions,
-      specialties,
-      skillCategories,
       checklistTemplates,
       skills,
       referenceQuestions,
     ] = await Promise.all([
-      db.profession.findMany({
-        select: {
-          id: true,
-          name: true,
-          is_active: true,
-          sort_order: true,
-          created_at: true,
-        },
-        orderBy: { sort_order: "asc" },
-      }),
-      db.specialty.findMany({
-        select: {
-          id: true,
-          profession_id: true,
-          name: true,
-          is_active: true,
-          sort_order: true,
-          created_at: true,
-        },
-        orderBy: [{ profession_id: "asc" }, { sort_order: "asc" }],
-      }),
-      db.skillCategory.findMany({
-        select: {
-          id: true,
-          specialty_id: true,
-          name: true,
-          sort_order: true,
-          created_at: true,
-        },
-        orderBy: [{ specialty_id: "asc" }, { sort_order: "asc" }],
-      }),
       db.checklistTemplate.findMany({
         select: {
           id: true,
@@ -61,8 +33,6 @@ export async function GET() {
           specialty: true,
           name: true,
           is_active: true,
-          profession_id: true,
-          specialty_id: true,
           created_at: true,
         },
         orderBy: { created_at: "desc" },
@@ -76,7 +46,6 @@ export async function GET() {
           question_type: true,
           sort_order: true,
           has_na_option: true,
-          category_id: true,
         },
         orderBy: [{ checklist_template_id: "asc" }, { sort_order: "asc" }],
       }),
@@ -93,36 +62,15 @@ export async function GET() {
     ]);
 
     return NextResponse.json({
-      professions: professions.map((p) => ({
-        id: p.id,
-        name: p.name,
-        isActive: p.is_active,
-        sortOrder: p.sort_order,
-        createdAt: p.created_at,
-      })),
-      specialties: specialties.map((s) => ({
-        id: s.id,
-        professionId: s.profession_id,
-        name: s.name,
-        isActive: s.is_active,
-        sortOrder: s.sort_order,
-        createdAt: s.created_at,
-      })),
-      skillCategories: skillCategories.map((c) => ({
-        id: c.id,
-        specialtyId: c.specialty_id,
-        name: c.name,
-        sortOrder: c.sort_order,
-        createdAt: c.created_at,
-      })),
+      professions: [],
+      specialties: [],
+      skillCategories: [],
       checklistTemplates: checklistTemplates.map((t) => ({
         id: t.id,
         profession: t.profession,
         specialty: t.specialty,
         name: t.name,
         isActive: t.is_active,
-        professionId: t.profession_id,
-        specialtyId: t.specialty_id,
         createdAt: t.created_at,
       })),
       skills: skills.map((s) => ({
@@ -133,7 +81,6 @@ export async function GET() {
         questionType: s.question_type,
         sortOrder: s.sort_order,
         hasNaOption: s.has_na_option,
-        categoryId: s.category_id,
       })),
       referenceQuestions: referenceQuestions.map((q) => ({
         id: q.id,
@@ -176,158 +123,39 @@ export async function POST(request: Request) {
 
     switch (type) {
       // ─── Professions ──────────────────────────────────────────
-      case "profession": {
-        switch (action) {
-          case "create": {
-            const profession = await db.profession.create({
-              data: {
-                name: data.name,
-                is_active: data.isActive ?? true,
-                sort_order: data.sortOrder ?? 0,
-              },
-            });
-            return NextResponse.json({ success: true, profession });
-          }
-          case "update": {
-            const profession = await db.profession.update({
-              where: { id: data.id },
-              data: {
-                name: data.name,
-                is_active: data.isActive,
-                sort_order: data.sortOrder,
-              },
-            });
-            return NextResponse.json({ success: true, profession });
-          }
-          case "delete": {
-            await db.profession.delete({
-              where: { id: data.id },
-            });
-            return NextResponse.json({ success: true, message: "Profession deleted" });
-          }
-          default:
-            return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-        }
-      }
-
-      // ─── Specialties ──────────────────────────────────────────
-      case "specialty": {
-        switch (action) {
-          case "create": {
-            const profession = await db.profession.findUnique({
-              where: { id: data.professionId },
-            });
-            const specialty = await db.specialty.create({
-              data: {
-                profession_id: data.professionId,
-                name: data.name,
-                is_active: data.isActive ?? true,
-                sort_order: data.sortOrder ?? 0,
-              },
-            });
-            return NextResponse.json({
-              success: true,
-              specialty,
-              professionName: profession?.name,
-            });
-          }
-          case "update": {
-            const specialty = await db.specialty.update({
-              where: { id: data.id },
-              data: {
-                name: data.name,
-                is_active: data.isActive,
-                sort_order: data.sortOrder,
-              },
-            });
-            return NextResponse.json({ success: true, specialty });
-          }
-          case "delete": {
-            await db.specialty.delete({
-              where: { id: data.id },
-            });
-            return NextResponse.json({ success: true, message: "Specialty deleted" });
-          }
-          default:
-            return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-        }
-      }
-
-      // ─── Skill Categories ─────────────────────────────────────
-      case "skill_category": {
-        switch (action) {
-          case "create": {
-            const category = await db.skillCategory.create({
-              data: {
-                specialty_id: data.specialtyId,
-                name: data.name,
-                sort_order: data.sortOrder ?? 0,
-              },
-            });
-            return NextResponse.json({ success: true, category });
-          }
-          case "update": {
-            const category = await db.skillCategory.update({
-              where: { id: data.id },
-              data: {
-                name: data.name,
-                sort_order: data.sortOrder,
-              },
-            });
-            return NextResponse.json({ success: true, category });
-          }
-          case "delete": {
-            await db.skill.updateMany({
-              where: { category_id: data.id },
-              data: { category_id: null },
-            });
-            await db.skillCategory.delete({
-              where: { id: data.id },
-            });
-            return NextResponse.json({ success: true, message: "Skill category deleted" });
-          }
-          default:
-            return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-        }
-      }
+      // NOTE: Profession / Specialty / SkillCategory models are not yet
+      // implemented in the Prisma schema. These cases return 501 so the
+      // admin UI gets a clean error rather than a 500 from Prisma.
+      case "profession":
+      case "specialty":
+      case "skill_category":
+        return NextResponse.json(
+          { error: `${type} management is not yet implemented — the underlying model does not exist in the schema` },
+          { status: 501 }
+        );
 
       // ─── Checklist Templates ──────────────────────────────────
       case "checklist_template": {
         switch (action) {
           case "create": {
-            let professionName = data.profession || "";
-            let specialtyName = data.specialty || "";
-            if (data.professionId && !professionName) {
-              const prof = await db.profession.findUnique({ where: { id: data.professionId } });
-              professionName = prof?.name || "";
-            }
-            if (data.specialtyId && !specialtyName) {
-              const spec = await db.specialty.findUnique({ where: { id: data.specialtyId } });
-              specialtyName = spec?.name || "";
-            }
+            // Profession/Specialty are denormalized strings on ChecklistTemplate.
+            // The IDs are not resolved via lookup tables since those models
+            // don't exist — the caller provides the string names directly.
+            const professionName = data.profession || "";
+            const specialtyName = data.specialty || "";
             const template = await db.checklistTemplate.create({
               data: {
                 profession: professionName,
                 specialty: specialtyName,
                 name: data.name,
                 is_active: data.isActive ?? true,
-                profession_id: data.professionId ?? null,
-                specialty_id: data.specialtyId ?? null,
               },
             });
             return NextResponse.json({ success: true, template });
           }
           case "update": {
-            let professionName = data.profession;
-            let specialtyName = data.specialty;
-            if (data.professionId) {
-              const prof = await db.profession.findUnique({ where: { id: data.professionId } });
-              professionName = prof?.name || professionName;
-            }
-            if (data.specialtyId) {
-              const spec = await db.specialty.findUnique({ where: { id: data.specialtyId } });
-              specialtyName = spec?.name || specialtyName;
-            }
+            const professionName = data.profession;
+            const specialtyName = data.specialty;
             const template = await db.checklistTemplate.update({
               where: { id: data.id },
               data: {
@@ -335,8 +163,6 @@ export async function POST(request: Request) {
                 specialty: specialtyName,
                 name: data.name,
                 is_active: data.isActive,
-                profession_id: data.professionId ?? undefined,
-                specialty_id: data.specialtyId ?? undefined,
               },
             });
             return NextResponse.json({ success: true, template });
@@ -356,11 +182,7 @@ export async function POST(request: Request) {
       case "skill": {
         switch (action) {
           case "create": {
-            let categoryName = data.category || "";
-            if (data.categoryId && !categoryName) {
-              const cat = await db.skillCategory.findUnique({ where: { id: data.categoryId } });
-              categoryName = cat?.name || "";
-            }
+            const categoryName = data.category || "";
             const skill = await db.skill.create({
               data: {
                 checklist_template_id: data.checklistTemplateId,
@@ -369,17 +191,12 @@ export async function POST(request: Request) {
                 question_type: data.questionType,
                 sort_order: data.sortOrder ?? 0,
                 has_na_option: data.hasNaOption ?? true,
-                category_id: data.categoryId ?? null,
               },
             });
             return NextResponse.json({ success: true, skill });
           }
           case "update": {
-            let categoryName = data.category;
-            if (data.categoryId) {
-              const cat = await db.skillCategory.findUnique({ where: { id: data.categoryId } });
-              categoryName = cat?.name || categoryName;
-            }
+            const categoryName = data.category;
             const skill = await db.skill.update({
               where: { id: data.id },
               data: {
@@ -388,7 +205,6 @@ export async function POST(request: Request) {
                 question_type: data.questionType,
                 sort_order: data.sortOrder,
                 has_na_option: data.hasNaOption,
-                category_id: data.categoryId ?? undefined,
               },
             });
             return NextResponse.json({ success: true, skill });

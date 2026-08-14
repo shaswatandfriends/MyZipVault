@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { isAffindaConfigured } from "@/lib/affinda";
 
 /**
  * Debug endpoint to check AI service availability.
- * Publicly accessible (in middleware publicPrefixes).
+ *
+ * SECURITY: Restricted to super_admin / platform_admin only.
+ * Exposes API key prefixes and triggers real billable AI calls,
+ * so it MUST NOT be publicly accessible.
+ *
+ * If you need a public health-check, use /api/cron/keepalive instead
+ * (which only verifies DB connectivity, not AI services).
  */
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userRole = (session.user as Record<string, unknown>).role as string;
+  if (userRole !== "super_admin" && userRole !== "platform_admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   // ZAI env vars status
   const zaiEnvStatus = {
     ZAI_BASE_URL: !!process.env.ZAI_BASE_URL,
