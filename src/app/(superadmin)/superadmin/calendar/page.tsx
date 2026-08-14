@@ -258,10 +258,10 @@ function OverviewCalendar({
                 {getMonthName(currentYear, currentMonth)}
               </CardTitle>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" className="size-8" onClick={onPrevMonth}>
+                <Button variant="outline" size="icon" className="size-8" onClick={onPrevMonth} aria-label="Previous month">
                   <ChevronLeft className="size-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="size-8" onClick={onNextMonth}>
+                <Button variant="outline" size="icon" className="size-8" onClick={onNextMonth} aria-label="Next month">
                   <ChevronRight className="size-4" />
                 </Button>
               </div>

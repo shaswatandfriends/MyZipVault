@@ -636,6 +636,23 @@ export async function POST(request: Request) {
       }
     }
 
+    // ─── Audit log: recruiter sent a checklist request ───────────────
+    try {
+      await db.auditLog.create({
+        data: {
+          user_id: userId,
+          role: userRole,
+          action: "recruiter_sent_checklist_request",
+          entity_type: "checklist_request",
+          entity_id: checklistRequest.id,
+          details: `Sent ${checklistTemplateName} request to ${firstName} ${lastName} (${email}) — ${totalCredits} credits charged`,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT_LOG] Failed to log checklist request:", auditErr);
+      // Non-blocking — request was already created
+    }
+
     return NextResponse.json({
       success: true,
       checklistRequestId: checklistRequest.id,

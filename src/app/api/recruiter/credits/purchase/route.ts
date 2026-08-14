@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     if (checkoutSession) {
       // Create a pending invoice (marked as pending until webhook confirms payment)
-      await db.invoice.create({
+      const invoice = await db.invoice.create({
         data: {
           organization_id: organizationId,
           credit_amount: amount,
@@ -79,6 +79,23 @@ export async function POST(request: Request) {
           pdf_url: `stripe_session:${checkoutSession.sessionId}`,
         },
       });
+
+      // Audit log: credit purchase initiated
+      try {
+        const userId = Number(session.user.id);
+        await db.auditLog.create({
+          data: {
+            user_id: userId,
+            role: userRole,
+            action: "credit_purchase_initiated",
+            entity_type: "invoice",
+            entity_id: invoice.id,
+            details: `Initiated purchase of ${amount} credits for $${totalPrice.toFixed(2)} (Stripe session ${checkoutSession.sessionId})`,
+          },
+        });
+      } catch (auditErr) {
+        console.error("[AUDIT_LOG] Failed to log credit purchase:", auditErr);
+      }
 
       return NextResponse.json({
         success: true,

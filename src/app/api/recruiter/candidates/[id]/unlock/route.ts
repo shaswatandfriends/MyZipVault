@@ -138,8 +138,22 @@ export async function POST(
       },
     });
 
-    // Audit log
-    await logRecruiterUnlocked(userId, entityType, entityId);
+    // Audit log — use the new details field for richer context
+    try {
+      await db.auditLog.create({
+        data: {
+          user_id: userId,
+          role: userRole,
+          action: "recruiter_unlocked_document",
+          entity_type: entityType,
+          entity_id: entityId,
+          details: `Unlocked ${entityType} for ${candidate?.first_name ?? ""} ${candidate?.last_name ?? ""} (candidate #${candidateId}) — ${creditsCharged} credits charged. New balance: ${newBalance}`,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT_LOG] Failed to log unlock:", auditErr);
+      // Non-blocking — unlock already succeeded
+    }
 
     return NextResponse.json({
       success: true,

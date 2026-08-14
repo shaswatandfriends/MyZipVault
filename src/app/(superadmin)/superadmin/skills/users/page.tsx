@@ -484,6 +484,7 @@ export default function SkillsUsersPage() {
                                 size="icon"
                                 className="size-7"
                                 title="View checklist"
+                                aria-label="View checklist"
                                 onClick={() => handleViewChecklist(resp.id)}
                               >
                                 <Eye className="size-3.5" />
@@ -493,6 +494,7 @@ export default function SkillsUsersPage() {
                                 size="icon"
                                 className="size-7"
                                 title="Extend expiry"
+                                aria-label="Extend expiry"
                                 onClick={() => { setExtendResponseId(resp.id); setExtendDialogOpen(true); }}
                               >
                                 <Calendar className="size-3.5 text-blue-600" />
@@ -502,6 +504,7 @@ export default function SkillsUsersPage() {
                                 size="icon"
                                 className="size-7"
                                 title="Edit ratings"
+                                aria-label="Edit ratings"
                                 onClick={() => handleEditChecklist(resp.id)}
                               >
                                 <Pencil className="size-3.5 text-emerald-600" />
@@ -511,6 +514,7 @@ export default function SkillsUsersPage() {
                                 size="icon"
                                 className="size-7"
                                 title="Delete response"
+                                aria-label="Delete response"
                                 onClick={() => { setDeleteResponseId(resp.id); setDeleteDialogOpen(true); }}
                               >
                                 <Trash2 className="size-3.5 text-red-600" />

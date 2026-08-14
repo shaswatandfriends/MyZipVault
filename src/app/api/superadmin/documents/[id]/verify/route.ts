@@ -45,8 +45,22 @@ export async function PUT(
     // Recalculate profile_completion_pct for the candidate
     await recalcProfileCompletion(credential.candidate_user_id);
 
-    // Audit log
+    // Audit log — include the document name for richer context
     await logDocumentApproved(adminUserId, userRole, credentialId);
+    try {
+      await db.auditLog.create({
+        data: {
+          user_id: adminUserId,
+          role: userRole,
+          action: "superadmin_approved_document",
+          entity_type: "credential",
+          entity_id: credentialId,
+          details: `Approved "${credential.document_name}" for candidate #${credential.candidate_user_id}`,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT_LOG] Failed to log document approval:", auditErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

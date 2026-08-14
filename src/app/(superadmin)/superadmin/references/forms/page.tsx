@@ -224,7 +224,7 @@ export default function RefFormsPage() {
                     <p className="text-sm font-medium">{empTabIcon[status]} {empStatusLabel[status]}</p>
                     <p className="text-xs text-muted-foreground">{count} question(s)</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="size-8" onClick={(e) => { e.stopPropagation(); openPreview(status); }}>
+                  <Button variant="ghost" size="icon" className="size-8" aria-label="Preview form" onClick={(e) => { e.stopPropagation(); openPreview(status); }}>
                     <Eye className="size-4" />
                   </Button>
                 </CardContent>
@@ -302,6 +302,7 @@ export default function RefFormsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-7"
+                                  aria-label="Move question up"
                                   disabled={isSaving || idx === 0}
                                   onClick={() => moveQuestion(q.id, "up", q.sort_order)}
                                 >
@@ -311,6 +312,7 @@ export default function RefFormsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-7"
+                                  aria-label="Move question down"
                                   disabled={isSaving || idx === sortedQuestions.length - 1}
                                   onClick={() => moveQuestion(q.id, "down", q.sort_order)}
                                 >

@@ -182,14 +182,14 @@ export default function AnnouncementsPage() {
         <TabsList className="bg-surface-2 p-1 rounded-lg">
           <TabsTrigger
             value="banners"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md px-4"
           >
             <Megaphone className="size-4 mr-2" />
             In-App Banners
           </TabsTrigger>
           <TabsTrigger
             value="campaigns"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md px-4"
           >
             <Mail className="size-4 mr-2" />
             Email Campaigns
@@ -340,7 +340,7 @@ function BannersTab() {
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-all",
                 activeChannel === ch.value
-                  ? "bg-white shadow-sm text-primary"
+                  ? "bg-background shadow-sm text-primary"
                   : "text-text-secondary hover:text-foreground"
               )}
             >

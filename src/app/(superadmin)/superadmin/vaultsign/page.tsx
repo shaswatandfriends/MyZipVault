@@ -379,7 +379,7 @@ export default function SuperAdminVaultSignPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4">
-            <TabsList className="bg-white border border-border rounded-xl p-1 inline-flex">
+            <TabsList className="bg-background border border-border rounded-xl p-1 inline-flex">
               <TabsTrigger value="templates" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">
                 <LayoutTemplate className="h-4 w-4 mr-1" /> Templates
               </TabsTrigger>

@@ -58,8 +58,22 @@ export async function PUT(
       );
     }
 
-    // Audit log
+    // Audit log — include the document name + review notes for context
     await logDocumentRejected(adminUserId, userRole, credentialId);
+    try {
+      await db.auditLog.create({
+        data: {
+          user_id: adminUserId,
+          role: userRole,
+          action: "superadmin_rejected_document",
+          entity_type: "credential",
+          entity_id: credentialId,
+          details: `Rejected "${credential.document_name}" for candidate #${credential.candidate_user_id}${review_notes ? ` — Reason: ${review_notes}` : ""}`,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT_LOG] Failed to log document rejection:", auditErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

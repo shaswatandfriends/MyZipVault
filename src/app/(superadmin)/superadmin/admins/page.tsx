@@ -279,7 +279,7 @@ export default function SuperadminAdminsPage() {
                 return (
                   <div
                     key={admin.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100"
+                    className="flex items-center justify-between p-3 bg-card rounded-lg border border-amber-100"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold shrink-0">

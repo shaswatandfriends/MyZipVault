@@ -44,7 +44,7 @@ function EditorSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-border rounded-2xl p-6">
+    <div className="bg-background border border-border rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-1">
         <div className="size-8 rounded-lg bg-primary-light flex items-center justify-center">
           <Icon className="size-4 text-primary" />

@@ -386,7 +386,7 @@ export default function RefCandidatesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="size-7" onClick={() => { setSelectedCandidate(candidate); setDetailOpen(true); }}>
+                            <Button variant="ghost" size="icon" className="size-7" aria-label="View candidate details" onClick={() => { setSelectedCandidate(candidate); setDetailOpen(true); }}>
                               <Eye className="size-3.5" />
                             </Button>
                             {candidate.pendingReferences > 0 && (
@@ -394,6 +394,7 @@ export default function RefCandidatesPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="size-7"
+                                aria-label="Send reminder to references"
                                 disabled={sendingReminder === candidate.id}
                                 onClick={() => handleSendReminder(candidate.id)}
                               >

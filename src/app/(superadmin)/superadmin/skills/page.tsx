@@ -909,7 +909,7 @@ export default function SuperadminSkillsPage() {
                             size="icon"
                             className="size-6"
                             title="Rename Profession"
-                            onClick={() => {
+                            onClick={() = aria-label="Rename Profession"> {
                               setRenameProfession(pg.profession);
                               setRenameNewName(pg.profession);
                               setRenameDialogOpen(true);
@@ -922,7 +922,7 @@ export default function SuperadminSkillsPage() {
                             size="icon"
                             className="size-6 text-red-500 hover:text-red-600 hover:bg-red-50"
                             title="Delete Profession"
-                            onClick={() => {
+                            onClick={() = aria-label="Delete Profession"> {
                               pg.jobTitles.forEach((jt) => {
                                 jt.templates.forEach((s) => {
                                   performAction("checklist_template", "delete", { id: s.templateId });
@@ -971,7 +971,7 @@ export default function SuperadminSkillsPage() {
                                     size="icon"
                                     className="size-6"
                                     title="Rename Job Title"
-                                    onClick={() => {
+                                    onClick={() = aria-label="Rename Job Title"> {
                                       // Rename job title by updating all templates under it
                                       const newName = prompt("Enter new job title name:", jt.jobTitle);
                                       if (newName && newName.trim() && newName.trim() !== jt.jobTitle) {
@@ -1001,7 +1001,7 @@ export default function SuperadminSkillsPage() {
                                     size="icon"
                                     className="size-6 text-red-500 hover:text-red-600 hover:bg-red-50"
                                     title="Delete Job Title"
-                                    onClick={() => handleDeleteJobTitle(pg, jt)}
+                                    onClick={() = aria-label="Delete Job Title"> handleDeleteJobTitle(pg, jt)}
                                   >
                                     <Trash2 className="size-3" />
                                   </Button>
@@ -1104,7 +1104,7 @@ export default function SuperadminSkillsPage() {
                         className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all ${
                           selectedSpecialtyId === sp.templateId
                             ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                            : "bg-white text-gray-700 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"
+                            : "bg-background text-foreground border border-border hover:border-emerald-300 hover:bg-emerald-50"
                         }`}
                         onClick={() => setSelectedSpecialtyId(sp.templateId)}
                       >
@@ -1219,7 +1219,7 @@ export default function SuperadminSkillsPage() {
                                         size="icon"
                                         className="size-7"
                                         title="Add skill to this category"
-                                        onClick={() => openSkillDialog(undefined, selectedSpecialtyData.templateId)}
+                                        onClick={() = aria-label="Add skill to this category"> openSkillDialog(undefined, selectedSpecialtyData.templateId)}
                                       >
                                         <Plus className="size-3.5" />
                                       </Button>

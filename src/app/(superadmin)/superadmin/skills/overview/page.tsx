@@ -363,7 +363,7 @@ export default function SkillsOverviewPage() {
                 {data.recentRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-white hover:bg-muted/30 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => router.push("/superadmin/skills/users")}
                   >
                     <div className="min-w-0 flex-1">

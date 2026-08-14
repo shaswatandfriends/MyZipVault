@@ -12,7 +12,7 @@ export default function VaultSignError({
 }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-md w-full text-center">
+      <div className="bg-background rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-md w-full text-center">
         <div className="w-16 h-16 bg-status-red-bg rounded-full flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="h-8 w-8 text-status-amber" />
         </div>

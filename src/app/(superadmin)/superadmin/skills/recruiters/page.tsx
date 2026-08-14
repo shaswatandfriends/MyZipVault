@@ -418,13 +418,13 @@ export default function SkillsRecruitersPage() {
                               size="icon"
                               className="size-7"
                               title="Flag recruiter"
-                              onClick={() => { setFlagRecruiter(recruiter); setFlagDialogOpen(true); }}
+                              onClick={() = aria-label="Flag recruiter"> { setFlagRecruiter(recruiter); setFlagDialogOpen(true); }}
                             >
                               <Flag className="size-3.5 text-amber-600" />
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-7" title="More actions">
+                                <Button variant="ghost" size="icon" className="size-7" title="More actions" aria-label="More actions">
                                   <MoreVertical className="size-3.5" />
                                 </Button>
                               </DropdownMenuTrigger>

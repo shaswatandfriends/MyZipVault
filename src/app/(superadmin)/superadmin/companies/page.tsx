@@ -1689,12 +1689,12 @@ export default function SuperadminCompaniesPage() {
                 </p>
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm font-mono bg-white rounded px-2 py-1 border">{addRecruiterEmail}</p>
+                  <p className="text-sm font-mono bg-muted rounded px-2 py-1 border">{addRecruiterEmail}</p>
                 </div>
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">Auto-generated Password</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono bg-white rounded px-2 py-1 border flex-1 break-all">
+                    <p className="text-sm font-mono bg-muted rounded px-2 py-1 border flex-1 break-all">
                       {addRecruiterResult.password}
                     </p>
                     <Button
@@ -1966,7 +1966,7 @@ export default function SuperadminCompaniesPage() {
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">New Password</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono bg-white rounded px-2 py-1 border flex-1 break-all">
+                    <p className="text-sm font-mono bg-muted rounded px-2 py-1 border flex-1 break-all">
                       {resetPasswordResult}
                     </p>
                     <Button size="sm" variant="outline" className="shrink-0 gap-1" onClick={copyResetPassword}>

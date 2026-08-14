@@ -351,7 +351,7 @@ export default function RefResponsesPage() {
                         </TableCell>
                         <TableCell>{getAvgRatingDisplay(ref.avgRating)}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); openDetail(ref); }}>
+                          <Button variant="ghost" size="icon" className="size-7" aria-label="View response details" onClick={(e) => { e.stopPropagation(); openDetail(ref); }}>
                             <Eye className="size-3.5" />
                           </Button>
                         </TableCell>
