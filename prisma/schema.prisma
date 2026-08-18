@@ -50,6 +50,12 @@ model Organization {
   vault_sign_documents VaultSignDocument[]
   compliance_bundles   ComplianceBundle[]
   candidate_pools      CandidatePool[]
+
+  // ─── Marketplace relations (Phase 0 — added 2026-08-15) ────────────
+  job_postings_posted             JobPosting[]               @relation("JobPostingOrganization")
+  candidate_submissions           CandidateSubmission[]      @relation("SubmissionOrganization")
+  ownership_windows               CandidateOwnershipWindow[] @relation("OwnershipWindowOrganization")
+  contact_reveals                 CandidateContactReveal[]   @relation("ContactRevealOrganization")
 }
 
 // ─── 2. Users ────────────────────────────────────────────────────────
@@ -138,6 +144,38 @@ model User {
   recruiter_leads_as_candidate    RecruiterLead[]          @relation("RecruiterLeadCandidate")
   recruiter_leads_blacklisted_by  RecruiterLead[]          @relation("RecruiterLeadBlacklistedBy")
   lead_activities                 RecruiterLeadActivity[]  @relation("RecruiterLeadActivityActor")
+
+  // ─── Marketplace relations (Phase 0 — added 2026-08-15) ────────────
+  // CandidateRecord ownership (recruiter who brought the candidate via Path B)
+  candidate_records_owned         CandidateRecord[]        @relation("CandidateRecordOwner")
+  // CandidateRecord self-claim (when a candidate signs up using matching email)
+  candidate_records_claimed       CandidateRecord[]        @relation("CandidateRecordClaimedBy")
+  // Contact info provenance
+  candidate_contact_info_added    CandidateContactInfo[]   @relation("ContactInfoAddedByRecruiter")
+  // Job postings (superadmin/platform posts)
+  job_postings_posted             JobPosting[]             @relation("JobPostingPoster")
+  // Candidate submissions (recruiter submits candidate → job)
+  candidate_submissions           CandidateSubmission[]   @relation("SubmissionRecruiter")
+  // Ownership windows
+  ownership_windows               CandidateOwnershipWindow[] @relation("OwnershipWindowRecruiter")
+  // Contact reveals (credit-gated)
+  contact_reveals                 CandidateContactReveal[] @relation("ContactRevealRecruiter")
+  // Reputation (the recruiter being reviewed)
+  recruiter_reviews_received      RecruiterReview[]         @relation("RecruiterReviewsReceived")
+  // Reputation (the reviewer)
+  recruiter_reviews_given         RecruiterReview[]         @relation("RecruiterReviewsGiven")
+  // Reputation score (aggregate)
+  reputation_score                RecruiterReputationScore?
+  // Reports filed against this recruiter
+  recruiter_reports_received      RecruiterReport[]         @relation("RecruiterReportsReceived")
+  // Reports filed by this user
+  recruiter_reports_filed         RecruiterReport[]         @relation("RecruiterReportsFiled")
+  // Review disputes filed by this recruiter
+  review_disputes_filed           RecruiterReviewDispute[]  @relation("ReviewDisputeRecruiter")
+  // Reports handled by this admin
+  recruiter_reports_handled       RecruiterReport[]         @relation("RecruiterReportsHandled")
+  // Disputes handled by this admin
+  review_disputes_handled         RecruiterReviewDispute[]  @relation("ReviewDisputeHandled")
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -897,6 +935,9 @@ model VaultSignDocument {
   revised_documents        VaultSignDocument[] @relation("VaultSignDocumentRevision")
   signers                  VaultSignSigner[]
   reminders                VaultSignReminder[]
+
+  // Marketplace — RTR (Right to Represent) link
+  rtr_submissions          CandidateSubmission[] @relation("SubmissionRTRDocument")
 }
 
 // ─── 42. VaultSign Signers ──────────────────────────────────────────
@@ -1090,4 +1131,508 @@ model CandidatePoolMember {
   @@unique([pool_id, candidate_user_id])
   @@index([pool_id])
   @@index([candidate_user_id])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 50. Marketplace: CandidateRecord — the 1M healthcare candidate pool
+// ─────────────────────────────────────────────────────────────────────
+// This is DIFFERENT from the User model. The 1M records in the platform
+// pool are NOT users (no account, no password). They become Users only
+// when they self-claim their profile via signup.
+//
+// Two paths create records here:
+//   Path A — platform_pool: imported via CSV (basic info only, no resumes/docs)
+//   Path B — recruiter_submitted: a recruiter brings an outside candidate
+//   Self-signup — candidate signs up themselves, then claims an existing
+//     CandidateRecord by email match (linked via claimed_by_user_id)
+model CandidateRecord {
+  id                       Int       @id @default(autoincrement())
+  public_id                String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name               String?
+  last_name                String?
+  city                     String?
+  state                    String?
+  job_title                String?
+  specialty                String?
+  profession               String?  // nursing, allied, physician, non-clinical, IT
+  years_of_experience      Int?
+  willing_to_relocate       Boolean   @default(false)
+  license_number           String?
+  license_state            String?
+  npi_number               String?  // National Provider Identifier (for physicians)
+
+  // Source tracking
+  source                   String    @default("platform_pool")
+    // 'platform_pool' | 'recruiter_submitted' | 'self_signup'
+  original_owner_recruiter_id Int?  // FK to User (Path B recruiter who brought them)
+  imported_at              DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Candidate self-claim (when they sign up using matching email)
+  claimed_by_user_id       Int?     // FK to User (if candidate claimed this profile)
+  claimed_at               DateTime?
+
+  // Relations
+  original_owner           User?                  @relation("CandidateRecordOwner", fields: [original_owner_recruiter_id], references: [id])
+  claimed_by               User?                  @relation("CandidateRecordClaimedBy", fields: [claimed_by_user_id], references: [id])
+  contact_info             CandidateContactInfo[]
+  submissions              CandidateSubmission[]
+  ownership_windows        CandidateOwnershipWindow[]
+  contact_reveals          CandidateContactReveal[]
+
+  @@index([first_name, last_name])
+  @@index([specialty, state])
+  @@index([source])
+  @@index([original_owner_recruiter_id])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 51. Marketplace: CandidateContactInfo — append-only email/phone history
+// ─────────────────────────────────────────────────────────────────────
+// Contact info can be ADDED but never DELETED via the UI. The latest
+// entry of each type is marked is_primary=true. Deletion requires admin
+// via the email-to-platform flow.
+//
+// All values are stored TWICE:
+//   value          — original display format (e.g., "+1 (555) 123-4567")
+//   value_normalized — for dedup: lowercase+trimmed email, or E.164 phone
+//
+// Recruiter-added contact info stays private for 90 days, then becomes
+// public. The is_visible_to_others + visible_after fields control this.
+model CandidateContactInfo {
+  id                       Int       @id @default(autoincrement())
+  candidate_record_id      Int
+  type                     String    // 'email' | 'phone'
+  value                    String    // original display format
+  value_normalized         String    // for dedup
+
+  // Provenance
+  added_by_recruiter_id    Int?      // FK to User
+  added_by_candidate       Boolean   @default(false)
+  added_at                 DateTime  @default(now())
+
+  // Primary flag — latest entry auto-marked primary (enforced in app)
+  is_primary               Boolean   @default(false)
+
+  // Visibility — recruiter-added info stays private for 90 days
+  is_visible_to_others     Boolean   @default(true)
+  visible_after            DateTime? // null = immediately visible
+
+  // Soft delete (admin only, via email-to-platform flow)
+  deleted_at               DateTime?
+  deleted_by_admin_id      Int?
+  deletion_reason          String?
+
+  // Relations
+  candidate_record         CandidateRecord        @relation(fields: [candidate_record_id], references: [id], onDelete: Cascade)
+  added_by_recruiter       User?                  @relation("ContactInfoAddedByRecruiter", fields: [added_by_recruiter_id], references: [id])
+  contact_reveals          CandidateContactReveal[]
+
+  @@index([candidate_record_id])
+  @@index([value_normalized])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 52. Marketplace: JobPosting — jobs posted by the platform
+// ─────────────────────────────────────────────────────────────────────
+// Jobs have two visibility modes:
+//   is_public = false → only recruiters can see (recruiter-facing)
+//   is_public = true  → candidates can browse + apply directly (Indeed-style)
+//
+// Compensation + commission fields are recruiter-side only. Candidates
+// see only salary_display (e.g., "$200k").
+model JobPosting {
+  id                       Int       @id @default(autoincrement())
+  public_id                String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                    String
+  profession               String?
+  specialty                String?
+  job_title                String?
+  employment_type          String?   // permanent | travel | contract | per_diem | locum
+  city                     String?
+  state                    String?
+  is_remote                Boolean   @default(false)
+
+  // Compensation (recruiter-side)
+  salary_min               Decimal?  @db.Decimal(12, 2)
+  salary_max               Decimal?  @db.Decimal(12, 2)
+  salary_display           String?   // e.g., "$200k" — shown to candidates
+  currency                 String    @default("USD")
+
+  // Commission (recruiter-side)
+  commission_amount        Decimal?  @db.Decimal(12, 2)
+  commission_percentage    Decimal?  @db.Decimal(5, 2)
+  commission_type          String?   // 'flat' | 'percentage'
+
+  // Description
+  description              String?
+  requirements             String?   // JSON array
+  nice_to_have             String?   // JSON array
+
+  // Status
+  status                   String    @default("draft") // draft | open | paused | filled | cancelled
+  is_public                Boolean   @default(false)
+  open_date                DateTime?
+  close_date               DateTime?
+
+  // Attribution
+  posted_by_user_id        Int?
+  organization_id          Int?
+
+  // Tracking
+  views_count              Int       @default(0)
+  applications_count      Int       @default(0)
+  submissions_count       Int       @default(0)
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  posted_by                User?            @relation("JobPostingPoster", fields: [posted_by_user_id], references: [id])
+  organization             Organization?    @relation("JobPostingOrganization", fields: [organization_id], references: [id])
+  submissions               CandidateSubmission[]
+  reports                   RecruiterReport[]
+  employer_reviews          RecruiterReview[]  @relation("JobPostingEmployerReviews")
+
+  @@index([status, is_public])
+  @@index([profession, specialty])
+  @@index([state, city])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 53. Marketplace: CandidateSubmission — recruiter submits candidate → job
+// ─────────────────────────────────────────────────────────────────────
+// FIRST-SUBMISSION-WINS is enforced by the unique constraint on
+// (candidate_record_id, job_id). The millisecond timestamp is used for
+// tiebreaks (with reputation score as a secondary tiebreaker).
+model CandidateSubmission {
+  id                       Int       @id @default(autoincrement())
+  candidate_record_id      Int
+  job_id                   Int
+  recruiter_user_id        Int
+  organization_id          Int?
+
+  // FIRST-SUBMISSION-WINS — millisecond-precision timestamp
+  submitted_at_ms          BigInt
+  submitted_at             DateTime  @default(now())
+
+  // RTR (Right to Represent) — link to VaultSign document
+  rtr_vault_sign_document_id Int?
+  rtr_signed_at            DateTime?
+
+  // Status workflow
+  status                   String    @default("submitted")
+    // 'submitted' | 'reviewing' | 'interview' | 'offer' | 'placed' | 'rejected' | 'withdrawn'
+  status_history           String?   // JSON array of {status, changed_at, changed_by_user_id}
+
+  // Notes
+  recruiter_notes          String?
+
+  // Tiebreak info
+  tiebreak_recruiter_reputation Float?
+  tiebreak_won             Boolean   @default(false)
+
+  // Revenue tracking (captured when status=placed)
+  placement_fee            Decimal?  @db.Decimal(12, 2)
+  recruiter_payout         Decimal?  @db.Decimal(12, 2)
+  platform_payout          Decimal?  @db.Decimal(12, 2)
+  original_owner_residual  Decimal?  @db.Decimal(12, 2)
+  payout_split_phase       String?   // 'exclusive' | 'residual' | 'open'
+  placed_at                DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  candidate_record         CandidateRecord     @relation(fields: [candidate_record_id], references: [id])
+  job                      JobPosting          @relation(fields: [job_id], references: [id])
+  recruiter                User                @relation("SubmissionRecruiter", fields: [recruiter_user_id], references: [id])
+  organization             Organization?       @relation("SubmissionOrganization", fields: [organization_id], references: [id])
+  rtr_document             VaultSignDocument?  @relation("SubmissionRTRDocument", fields: [rtr_vault_sign_document_id], references: [id])
+  candidate_reviews        RecruiterReview[]   @relation("SubmissionCandidateReviews")
+  reports                   RecruiterReport[]
+
+  @@unique([candidate_record_id, job_id])
+  @@index([recruiter_user_id])
+  @@index([job_id])
+  @@index([status])
+  @@index([submitted_at_ms])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 54. Marketplace: CandidateOwnershipWindow — 90-day exclusive + 90-180 residual
+// ─────────────────────────────────────────────────────────────────────
+// One active ownership window per CandidateRecord (enforced by partial
+// unique index on (candidate_record_id) WHERE is_active = true).
+//
+// Phases:
+//   0-90 days:  'exclusive' — only the owner recruiter can see/submit. 75/25 split.
+//   90-180 days: 'residual'  — anyone can submit. Original owner gets 2% residual
+//                              FROM THE NEW RECRUITER'S 70%. 68/30/2 split.
+//   180+ days:  'expired'   — standard 70/30 split, no residual.
+//
+// The clock starts at candidate CREATION, not at RTR signature.
+model CandidateOwnershipWindow {
+  id                       Int       @id @default(autoincrement())
+  candidate_record_id      Int
+  recruiter_user_id        Int
+  organization_id          Int?
+
+  // Window timestamps (clock starts at candidate CREATION)
+  exclusive_window_start   DateTime
+  exclusive_window_end     DateTime  // = exclusive_start + 90 days
+  residual_window_end      DateTime  // = exclusive_end + 90 days
+
+  // Current state (stored for fast queries; refreshed by cron)
+  current_phase            String    @default("exclusive")
+    // 'exclusive' | 'residual' | 'expired'
+  phase_computed_at        DateTime  @default(now())
+
+  // Payout splits applicable during each phase (configurable per window)
+  exclusive_recruiter_pct  Decimal   @default(75.00) @db.Decimal(5, 2)
+  exclusive_platform_pct   Decimal   @default(25.00) @db.Decimal(5, 2)
+  residual_recruiter_pct   Decimal   @default(68.00) @db.Decimal(5, 2)
+  residual_platform_pct    Decimal   @default(30.00) @db.Decimal(5, 2)
+  residual_original_pct    Decimal   @default(2.00)  @db.Decimal(5, 2)
+  open_recruiter_pct       Decimal   @default(70.00) @db.Decimal(5, 2)
+  open_platform_pct        Decimal   @default(30.00) @db.Decimal(5, 2)
+
+  is_active                Boolean   @default(true)
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  candidate_record         CandidateRecord     @relation(fields: [candidate_record_id], references: [id])
+  recruiter                User                @relation("OwnershipWindowRecruiter", fields: [recruiter_user_id], references: [id])
+  organization             Organization?       @relation("OwnershipWindowOrganization", fields: [organization_id], references: [id])
+
+  @@index([recruiter_user_id])
+  @@index([current_phase])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 55. Marketplace: CandidateContactReveal — credit-gated contact info unlock
+// ─────────────────────────────────────────────────────────────────────
+// When a recruiter pays credits to reveal a candidate's email/phone,
+// a record is created here. The reveal is valid for 90 days (matches the
+// ownership window concept — recruiter has the candidate "fresh" for
+// 90 days after paying).
+//
+// This is SEPARATE from the existing UnlockedDocument model, which is for
+// unlocking shared documents (resumes, credentials, etc.) via the
+// consentShare flow. The two coexist.
+model CandidateContactReveal {
+  id                       Int       @id @default(autoincrement())
+  candidate_record_id      Int
+  recruiter_user_id        Int
+  organization_id          Int
+  contact_info_id          Int?
+  credits_charged          Int       @default(0)
+  revealed_at             DateTime  @default(now())
+  expires_at              DateTime
+  is_expired              Boolean   @default(false)
+
+  // Relations
+  candidate_record         CandidateRecord     @relation(fields: [candidate_record_id], references: [id])
+  recruiter                User                @relation("ContactRevealRecruiter", fields: [recruiter_user_id], references: [id])
+  organization             Organization       @relation("ContactRevealOrganization", fields: [organization_id], references: [id])
+  contact_info             CandidateContactInfo? @relation(fields: [contact_info_id], references: [id])
+
+  @@index([recruiter_user_id])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 56. Marketplace: RecruiterReputationScore — aggregate score per recruiter
+// ─────────────────────────────────────────────────────────────────────
+// Computed by a cron job every 6 hours (not real-time — too expensive
+// to recalculate on every review submission). The overall_score is a
+// weighted average of the 5 sub-dimensions.
+//
+// Used as the tiebreaker for millisecond-tied first submissions.
+model RecruiterReputationScore {
+  recruiter_user_id        Int       @id
+  total_reviews            Int       @default(0)
+  verified_reviews         Int       @default(0)
+
+  // Aggregate scores (0-10, weighted)
+  overall_score            Decimal   @default(0.0) @db.Decimal(3, 1)
+  professionalism_avg      Decimal   @default(0.0) @db.Decimal(3, 1)
+  communication_avg        Decimal   @default(0.0) @db.Decimal(3, 1)
+  job_match_avg            Decimal   @default(0.0) @db.Decimal(3, 1)
+  process_speed_avg        Decimal   @default(0.0) @db.Decimal(3, 1)
+  post_placement_avg       Decimal   @default(0.0) @db.Decimal(3, 1)
+
+  // Other reputation signals
+  total_placements         Int       @default(0)
+  avg_time_to_fill_days    Decimal?  @db.Decimal(5, 1)
+  candidate_retention_pct  Decimal?  @db.Decimal(5, 2)  // 0-100
+  avg_response_hours       Decimal?  @db.Decimal(5, 1)
+
+  // Status / badges
+  badge_tier               String    @default("none") // 'none' | 'verified' | 'top'
+  is_top_recruiter         Boolean   @default(false)
+  is_verified_recruiter    Boolean   @default(false)
+  last_calculated_at       DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  recruiter                User      @relation(fields: [recruiter_user_id], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 57. Marketplace: RecruiterReview — individual reviews (multi-dimensional)
+// ─────────────────────────────────────────────────────────────────────
+// Multi-dimensional ratings (5 sub-scores 1-10) + free-text comment +
+// recruiter reply (one per review, can't edit).
+//
+// Verification gates: only candidates with a confirmed submission can
+// rate. Rating window: 30-180 days after placement. One rating per
+// placement per reviewer.
+//
+// Negative reviews (≤5/10) get a "Dispute Review" button available to
+// the reviewed recruiter — see RecruiterReviewDispute model.
+model RecruiterReview {
+  id                       Int       @id @default(autoincrement())
+  recruiter_user_id        Int       // who is being reviewed
+  reviewer_user_id         Int?      // who left the review (null = anonymous)
+  reviewer_role            String    // 'candidate' | 'employer' | 'recruiter_peer'
+
+  // Multi-dimensional ratings (each 1-10)
+  professionalism          Int
+  communication            Int
+  job_match                Int
+  process_speed           Int
+  post_placement           Int
+
+  // Free-text comment (min 50 chars for negative reviews, enforced in app)
+  comment                  String?   @db.VarChar(500)
+
+  // Status
+  is_anonymous             Boolean   @default(false)
+  is_verified_placement    Boolean   @default(false) // tied to actual CandidateSubmission
+  status                   String    @default("active") // 'active' | 'flagged' | 'removed'
+
+  // Recruiter reply (one per review, can't edit)
+  recruiter_reply          String?   @db.VarChar(300)
+  recruiter_replied_at    DateTime?
+
+  // Dispute flag
+  has_dispute              Boolean   @default(false)
+  dispute_status           String?   // 'pending' | 'investigating' | 'upheld' | 'removed' | 'annotated' | 'dismissed'
+  admin_annotation         String?   @db.VarChar(500) // shown publicly under the review
+
+  // Linkage
+  submission_id           Int?
+  job_id                  Int?
+
+  // Timestamps
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+
+  // Relations
+  recruiter                User                @relation("RecruiterReviewsReceived", fields: [recruiter_user_id], references: [id])
+  reviewer                 User?               @relation("RecruiterReviewsGiven", fields: [reviewer_user_id], references: [id])
+  submission               CandidateSubmission? @relation("SubmissionCandidateReviews", fields: [submission_id], references: [id])
+  job                      JobPosting?         @relation("JobPostingEmployerReviews", fields: [job_id], references: [id])
+  dispute                  RecruiterReviewDispute?
+
+  @@index([recruiter_user_id, status])
+  @@index([has_dispute, dispute_status])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 58. Marketplace: RecruiterReport — formal complaints
+// ─────────────────────────────────────────────────────────────────────
+// SEPARATE from reviews. Reviews are public feedback. Reports are formal
+// complaints that go to a superadmin review queue (private).
+//
+// Auto-actions: 3+ upheld reports in 30 days → 30-day suspension.
+// 5+ upheld reports in 90 days → 90-day suspension. Any upheld
+// 'rtr_violation' → automatic 14-day suspension.
+model RecruiterReport {
+  id                       Int       @id @default(autoincrement())
+  recruiter_user_id        Int       // who is being reported
+  reporter_user_id         Int?      // who filed the report (null = anonymous)
+  reporter_role            String    // 'candidate' | 'employer' | 'recruiter_peer'
+
+  // Report details
+  reason_category          String    // 'misrepresentation' | 'harassment' | 'fee_dispute' | 'rtr_violation' | 'data_misuse' | 'other'
+  description              String    @db.VarChar(2000)
+
+  // Evidence
+  evidence_urls            String?   @db.Text // JSON array
+
+  // Status
+  status                   String    @default("pending") // 'pending' | 'investigating' | 'resolved' | 'dismissed'
+  priority                 String    @default("normal") // 'low' | 'normal' | 'high' | 'urgent'
+
+  // Resolution
+  admin_user_id           Int?
+  resolution_notes         String?   @db.VarChar(2000)
+  resolution_action       String?   // 'no_action' | 'warning' | 'temp_suspension' | 'perm_ban' | 'rtr_revoked'
+  resolved_at             DateTime?
+
+  // Linkage
+  submission_id           Int?
+  job_id                  Int?
+
+  // Timestamps
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+
+  // Relations
+  recruiter                User                @relation("RecruiterReportsReceived", fields: [recruiter_user_id], references: [id])
+  reporter                 User?               @relation("RecruiterReportsFiled", fields: [reporter_user_id], references: [id])
+  admin                    User?               @relation("RecruiterReportsHandled", fields: [admin_user_id], references: [id])
+  submission               CandidateSubmission? @relation(fields: [submission_id], references: [id])
+  job                      JobPosting?         @relation(fields: [job_id], references: [id])
+
+  @@index([recruiter_user_id, status])
+  @@index([status, priority])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 59. Marketplace: RecruiterReviewDispute — recruiter's challenge to a negative review
+// ─────────────────────────────────────────────────────────────────────
+// Only available on reviews where any sub-score is ≤5/10. Recruiter
+// clicks "Dispute Review" → fills out reason + explanation + evidence →
+// goes into superadmin moderation queue.
+//
+// One dispute per review (unique constraint on review_id).
+//
+// Outcomes:
+//   'review_kept'       — review stays as-is
+//   'review_removed'    — review removed entirely
+//   'review_annotated'  — review kept, but admin_annotation added publicly
+//   'recruiter_warned' — review kept, recruiter gets a warning
+model RecruiterReviewDispute {
+  id                       Int       @id @default(autoincrement())
+  review_id                Int
+  recruiter_user_id        Int       // who is disputing (must be the reviewed recruiter)
+
+  // Dispute grounds
+  reason_category          String    // 'false_claim' | 'wrong_recruiter' | 'vindictive' | 'factually_incorrect' | 'policy_violation' | 'other'
+  explanation              String    @db.VarChar(1000)
+
+  // Evidence
+  evidence_urls            String?   @db.Text // JSON array
+
+  // Status
+  status                   String    @default("pending")
+    // 'pending' | 'investigating' | 'upheld' | 'removed' | 'annotated' | 'dismissed'
+  admin_user_id            Int?
+  admin_notes              String?   @db.VarChar(1000)
+  resolution               String?   // 'review_kept' | 'review_removed' | 'review_annotated' | 'recruiter_warned'
+  admin_annotation         String?   @db.VarChar(500)
+
+  // Timestamps
+  created_at               DateTime  @default(now())
+  resolved_at              DateTime?
+
+  // Relations
+  review                   RecruiterReview @relation(fields: [review_id], references: [id], onDelete: Cascade)
+  recruiter                User            @relation("ReviewDisputeRecruiter", fields: [recruiter_user_id], references: [id])
+  admin                    User?           @relation("ReviewDisputeHandled", fields: [admin_user_id], references: [id])
+
+  @@unique([review_id])
+  @@index([status])
 }
