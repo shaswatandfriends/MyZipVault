@@ -1309,8 +1309,9 @@ model CandidateSubmission {
   id                       Int       @id @default(autoincrement())
   candidate_record_id      Int
   job_id                   Int
-  recruiter_user_id        Int
+  recruiter_user_id        Int?      // nullable for self-apply submissions (candidate applied directly, no recruiter)
   organization_id          Int?
+  submission_type          String    @default("recruiter") // 'recruiter' | 'self_apply'
 
   // FIRST-SUBMISSION-WINS — millisecond-precision timestamp
   submitted_at_ms          BigInt
@@ -1345,7 +1346,7 @@ model CandidateSubmission {
   // Relations
   candidate_record         CandidateRecord     @relation(fields: [candidate_record_id], references: [id])
   job                      JobPosting          @relation(fields: [job_id], references: [id])
-  recruiter                User                @relation("SubmissionRecruiter", fields: [recruiter_user_id], references: [id])
+  recruiter                User?               @relation("SubmissionRecruiter", fields: [recruiter_user_id], references: [id])
   organization             Organization?       @relation("SubmissionOrganization", fields: [organization_id], references: [id])
   rtr_document             VaultSignDocument?  @relation("SubmissionRTRDocument", fields: [rtr_vault_sign_document_id], references: [id])
   candidate_reviews        RecruiterReview[]   @relation("SubmissionCandidateReviews")

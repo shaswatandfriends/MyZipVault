@@ -94,6 +94,7 @@ const roleLabels: Record<UserRole, string> = {
 // ─── Candidate Nav Items ─────────────────────────────────────────────
 const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Browse Jobs", href: "/candidate/jobs", icon: Briefcase },
   { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "VaultSign", href: "/vaultsign", icon: FileSignature },
