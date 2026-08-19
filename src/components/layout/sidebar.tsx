@@ -16,6 +16,7 @@ import {
   Share2,
   Settings,
   Send,
+  Search,
   CreditCard,
   FileSignature,
   FileCheck,
@@ -109,6 +110,21 @@ const candidateNav: NavItem[] = [
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
 ];
+
+// ─── Recruiter: Marketplace Group (Phase 3) ─────────────────────────────
+const marketplaceGroup: NavGroup = {
+  title: "Marketplace",
+  icon: Briefcase,
+  sections: [
+    {
+      title: "JOBS & CANDIDATES",
+      items: [
+        { title: "Open Jobs", href: "/recruiter/jobs", icon: Briefcase },
+        { title: "Find Candidates", href: "/recruiter/candidates/search", icon: Search },
+      ],
+    },
+  ],
+};
 
 // ─── Recruiter: Book of Business Group ─────────────────────────────────
 const bobGroup: NavGroup = {
@@ -396,7 +412,7 @@ export function AppSidebar() {
   }
 
   // Recruiter groups — filter adminOnly items for client_recruiter
-  const recruiterGroups = isRecruiter ? [bobGroup, sendRequestGroup] : [];
+  const recruiterGroups = isRecruiter ? [marketplaceGroup, bobGroup, sendRequestGroup] : [];
   const recruiterBottom = isRecruiter
     ? role === "client_recruiter"
       ? recruiterBottomNav.filter((item) => !item.adminOnly)
