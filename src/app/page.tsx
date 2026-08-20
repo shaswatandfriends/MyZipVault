@@ -10,18 +10,18 @@ import {
   Zap, Eye, FolderOpen, BadgeCheck, Handshake, Sparkles,
 } from "@/lib/icons";
 
-// ─── LinkedIn Blue Palette ───────────────────────────────────────────────
+// ─── Glass Warm Palette (original) ─────────────────────────────────────
 const C = {
-  darkNavy: "#004182",
-  midNavy: "#0073B1",
-  primary: "#0A66C2",
-  primaryLight: "#70B5F9",
-  primaryTint: "#DCEAF8",
+  darkNavy: "#1E3A26",      // dark forest green (replaces dark navy)
+  midNavy: "#2D5A3D",       // forest green (replaces mid navy)
+  primary: "#2D5A3D",       // forest green primary
+  primaryLight: "#4A7C59", // lighter green
+  primaryTint: "rgba(45,90,61,0.12)", // green tint
   white: "#FFFFFF",
-  surface: "#F3F2F0",
-  text: "#111827",
-  muted: "#6B7280",
-  amber: "#D97706",
+  surface: "#F2EDE4",      // warm off-white
+  text: "#2D5A3D",         // dark green text
+  muted: "#6A8A6A",        // muted green
+  amber: "#C97B54",        // terracotta accent (replaces amber)
 };
 
 // ─── Hamburger Menu ──────────────────────────────────────────────────────
