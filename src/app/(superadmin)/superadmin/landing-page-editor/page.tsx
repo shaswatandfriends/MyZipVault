@@ -19,6 +19,12 @@ import {
   ExternalLink,
   Stethoscope,
   Briefcase,
+  Database,
+  TrendingUp,
+  Star,
+  FileSignature,
+  Send,
+  ShieldCheck,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
@@ -85,6 +91,46 @@ interface LandingPageData {
   privacySection: PrivacyItem[];
   howItWorks: HowItWorksStep[];
   footer: FooterContent;
+  // ─── Marketplace sections (Phase 7) ──────────────────────────────
+  marketplaceStats?: MarketplaceStat[];
+  marketplaceFlow?: MarketplaceFlowStep[];
+  marketplaceFeatures?: MarketplaceFeatureCard[];
+  verificationSection?: VerificationItem[];
+  reputationPreview?: ReputationPreview;
+}
+
+// Marketplace stat for the animated stats band
+interface MarketplaceStat {
+  value: string;
+  label: string;
+  countUpTo: number;
+  suffix: string;
+}
+
+interface MarketplaceFlowStep {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+interface MarketplaceFeatureCard {
+  icon: string;
+  heading: string;
+  body: string;
+}
+
+interface VerificationItem {
+  icon: string;
+  heading: string;
+  body: string;
+  features: string[];
+}
+
+interface ReputationPreview {
+  headline: string;
+  subheadline: string;
+  scoreDimensions: { label: string; score: number }[];
+  badgeText: string;
 }
 
 // ─── Icon Options ───────────────────────────────────────────────────
@@ -204,6 +250,44 @@ const defaultData: LandingPageData = {
   footer: {
     copyrightText: "\u00A9 2025 MyZipVault. All rights reserved.",
     hipaaBadgeText: "HIPAA-Aligned Security",
+  },
+  // Marketplace sections (Phase 7)
+  marketplaceStats: [
+    { value: "1,000,000+", label: "Healthcare Candidates", countUpTo: 1000000, suffix: "+" },
+    { value: "850+", label: "Specialties Covered", countUpTo: 850, suffix: "+" },
+    { value: "90 days", label: "Ownership Protection", countUpTo: 90, suffix: " days" },
+    { value: "70/30", label: "Recruiter / Platform Split", countUpTo: 70, suffix: "/30" },
+  ],
+  marketplaceFlow: [
+    { icon: "Briefcase", title: "Post a Job", description: "Superadmin creates a job posting with commission info." },
+    { icon: "Search", title: "Find Candidates", description: "Recruiters search the 1M healthcare pool or bring their own." },
+    { icon: "FileSignature", title: "Send RTR", description: "Recruiter sends RTR via VaultSign. Candidate e-signs." },
+    { icon: "Send", title: "Submit & Win", description: "First submission wins. 90-day exclusive ownership." },
+  ],
+  marketplaceFeatures: [
+    { icon: "Database", heading: "1M Candidate Pool", body: "Pre-loaded healthcare records across nursing, allied health, physician, and IT." },
+    { icon: "Briefcase", heading: "Job Marketplace", body: "Post jobs with flat or percentage commission. Candidates apply or recruiters submit." },
+    { icon: "FileSignature", heading: "VaultSign RTR", body: "Right to Represent sent via VaultSign e-signature. No RTR, no submission." },
+    { icon: "Lock", heading: "Credit-Gated Reveal", body: "Recruiters pay credits to unlock contact info. 90-day reveal validity." },
+    { icon: "Shield", heading: "Ownership Windows", body: "90-day exclusive (75/25). 90-180 residual (68/30/2). After 180: 70/30." },
+    { icon: "Star", heading: "Reputation System", body: "5-dimensional reviews (1-10). Verified badges. Dispute mechanism." },
+  ],
+  verificationSection: [
+    { icon: "ClipboardCheck", heading: "Skills Checklists", body: "Industry-standard checklists. Complete once, reuse 30 days.", features: ["Complete once, share for 30 days", "Industry-standard templates", "PDF export"] },
+    { icon: "ShieldCheck", heading: "Credential Management", body: "Upload BLS, ACLS, RN License. Admin verification + expiry reminders.", features: ["Admin-verified", "Automatic expiry reminders", "Secure storage"] },
+    { icon: "FileSignature", heading: "VaultSign E-Signature", body: "Full e-signature platform: templates, multi-signer, audit trail.", features: ["Multi-signer", "Full audit trail", "PDF export"] },
+  ],
+  reputationPreview: {
+    headline: "Reputation You Can Trust",
+    subheadline: "Every recruiter is rated by candidates and employers. Five dimensions, transparent scores.",
+    scoreDimensions: [
+      { label: "Professionalism", score: 8.7 },
+      { label: "Communication", score: 7.2 },
+      { label: "Job Match", score: 9.1 },
+      { label: "Process Speed", score: 7.8 },
+      { label: "Post-Placement", score: 8.2 },
+    ],
+    badgeText: "Verified Recruiter",
   },
 };
 
@@ -669,6 +753,61 @@ export default function LandingPageEditorPage() {
   // ── Footer helpers ──
   const updateFooter = (key: keyof FooterContent, value: string) => {
     setData((prev) => ({ ...prev, footer: { ...prev.footer, [key]: value } }));
+    setHasUnsavedChanges(true);
+  };
+
+  // ── Marketplace section updates (Phase 7) ──
+  const updateMarketplaceStat = (index: number, key: keyof MarketplaceStat, value: string | number) => {
+    setData((prev) => {
+      const stats = [...(prev.marketplaceStats || [])];
+      if (stats[index]) stats[index] = { ...stats[index], [key]: value };
+      return { ...prev, marketplaceStats: stats };
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const updateMarketplaceFlow = (index: number, key: keyof MarketplaceFlowStep, value: string) => {
+    setData((prev) => {
+      const flow = [...(prev.marketplaceFlow || [])];
+      if (flow[index]) flow[index] = { ...flow[index], [key]: value };
+      return { ...prev, marketplaceFlow: flow };
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const updateMarketplaceFeature = (index: number, key: keyof MarketplaceFeatureCard, value: string) => {
+    setData((prev) => {
+      const features = [...(prev.marketplaceFeatures || [])];
+      if (features[index]) features[index] = { ...features[index], [key]: value };
+      return { ...prev, marketplaceFeatures: features };
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const updateVerificationItem = (index: number, key: keyof VerificationItem, value: string | string[]) => {
+    setData((prev) => {
+      const items = [...(prev.verificationSection || [])];
+      if (items[index]) items[index] = { ...items[index], [key]: value };
+      return { ...prev, verificationSection: items };
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const updateReputationPreview = (key: keyof ReputationPreview, value: string | { label: string; score: number }[]) => {
+    setData((prev) => {
+      if (!prev.reputationPreview) return prev;
+      return { ...prev, reputationPreview: { ...prev.reputationPreview, [key]: value } };
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const updateScoreDimension = (index: number, key: "label" | "score", value: string | number) => {
+    setData((prev) => {
+      if (!prev.reputationPreview) return prev;
+      const dims = [...prev.reputationPreview.scoreDimensions];
+      if (dims[index]) dims[index] = { ...dims[index], [key]: value };
+      return { ...prev, reputationPreview: { ...prev.reputationPreview, scoreDimensions: dims } };
+    });
     setHasUnsavedChanges(true);
   };
 
@@ -1139,6 +1278,139 @@ export default function LandingPageEditorPage() {
                   className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
+            </div>
+          </EditorSection>
+
+          {/* Section 7: Marketplace Stats */}
+          <EditorSection icon={TrendingUp} title="Marketplace Stats (CountUp Band)">
+            <div className="space-y-4">
+              {(data.marketplaceStats || []).map((stat, i) => (
+                <div key={i} className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-text-secondary">Stat {i + 1}</p>
+                  <FormField label="Label">
+                    <Input value={stat.label} onChange={(e) => updateMarketplaceStat(i, "label", e.target.value)} className="border-border rounded-xl" />
+                  </FormField>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField label="CountUp To (number)">
+                      <Input type="number" value={stat.countUpTo} onChange={(e) => updateMarketplaceStat(i, "countUpTo", parseInt(e.target.value) || 0)} className="border-border rounded-xl" />
+                    </FormField>
+                    <FormField label="Suffix (e.g. +)">
+                      <Input value={stat.suffix} onChange={(e) => updateMarketplaceStat(i, "suffix", e.target.value)} className="border-border rounded-xl" />
+                    </FormField>
+                  </div>
+                  <FormField label="Fallback Display (if countUpTo=0)">
+                    <Input value={stat.value} onChange={(e) => updateMarketplaceStat(i, "value", e.target.value)} className="border-border rounded-xl" />
+                  </FormField>
+                </div>
+              ))}
+            </div>
+          </EditorSection>
+
+          {/* Section 8: Marketplace Flow */}
+          <EditorSection icon={Send} title="Marketplace Flow (How It Works)">
+            <div className="space-y-4">
+              {(data.marketplaceFlow || []).map((step, i) => (
+                <div key={i} className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-text-secondary">Step {i + 1}</p>
+                  <FormField label="Icon">
+                    <Select value={step.icon} onValueChange={(v) => updateMarketplaceFlow(i, "icon", v)}>
+                      <SelectTrigger className="border-border rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {iconOptions.map((ic) => <SelectItem key={ic} value={ic}>{ic}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Title">
+                    <Input value={step.title} onChange={(e) => updateMarketplaceFlow(i, "title", e.target.value)} className="border-border rounded-xl" />
+                  </FormField>
+                  <FormField label="Description">
+                    <Textarea value={step.description} onChange={(e) => updateMarketplaceFlow(i, "description", e.target.value)} rows={2} className="border-border rounded-xl" />
+                  </FormField>
+                </div>
+              ))}
+            </div>
+          </EditorSection>
+
+          {/* Section 9: Marketplace Features */}
+          <EditorSection icon={Database} title="Marketplace Features (6 Core Cards)">
+            <div className="space-y-4">
+              {(data.marketplaceFeatures || []).map((feat, i) => (
+                <div key={i} className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-text-secondary">Card {i + 1}</p>
+                  <FormField label="Icon">
+                    <Select value={feat.icon} onValueChange={(v) => updateMarketplaceFeature(i, "icon", v)}>
+                      <SelectTrigger className="border-border rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {iconOptions.map((ic) => <SelectItem key={ic} value={ic}>{ic}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Heading">
+                    <Input value={feat.heading} onChange={(e) => updateMarketplaceFeature(i, "heading", e.target.value)} className="border-border rounded-xl" />
+                  </FormField>
+                  <FormField label="Body">
+                    <Textarea value={feat.body} onChange={(e) => updateMarketplaceFeature(i, "body", e.target.value)} rows={2} className="border-border rounded-xl" />
+                  </FormField>
+                </div>
+              ))}
+            </div>
+          </EditorSection>
+
+          {/* Section 10: Verification Section */}
+          <EditorSection icon={ShieldCheck} title="Trust & Verification (3 Cards)">
+            <div className="space-y-4">
+              {(data.verificationSection || []).map((item, i) => (
+                <div key={i} className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-text-secondary">Card {i + 1}</p>
+                  <FormField label="Icon">
+                    <Select value={item.icon} onValueChange={(v) => updateVerificationItem(i, "icon", v)}>
+                      <SelectTrigger className="border-border rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {iconOptions.map((ic) => <SelectItem key={ic} value={ic}>{ic}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Heading">
+                    <Input value={item.heading} onChange={(e) => updateVerificationItem(i, "heading", e.target.value)} className="border-border rounded-xl" />
+                  </FormField>
+                  <FormField label="Body">
+                    <Textarea value={item.body} onChange={(e) => updateVerificationItem(i, "body", e.target.value)} rows={2} className="border-border rounded-xl" />
+                  </FormField>
+                  <FormField label="Features (one per line)">
+                    <Textarea
+                      value={(item.features || []).join("\n")}
+                      onChange={(e) => updateVerificationItem(i, "features", e.target.value.split("\n").filter(Boolean))}
+                      rows={4}
+                      className="border-border rounded-xl"
+                    />
+                  </FormField>
+                </div>
+              ))}
+            </div>
+          </EditorSection>
+
+          {/* Section 11: Reputation Preview */}
+          <EditorSection icon={Star} title="Reputation Preview">
+            <div className="space-y-4">
+              <FormField label="Headline">
+                <Input value={data.reputationPreview?.headline || ""} onChange={(e) => updateReputationPreview("headline", e.target.value)} className="border-border rounded-xl" />
+              </FormField>
+              <FormField label="Subheadline">
+                <Textarea value={data.reputationPreview?.subheadline || ""} onChange={(e) => updateReputationPreview("subheadline", e.target.value)} rows={2} className="border-border rounded-xl" />
+              </FormField>
+              <FormField label="Badge Text">
+                <Input value={data.reputationPreview?.badgeText || ""} onChange={(e) => updateReputationPreview("badgeText", e.target.value)} className="border-border rounded-xl" />
+              </FormField>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-text-secondary">Score Dimensions (1-10):</p>
+                {(data.reputationPreview?.scoreDimensions || []).map((dim, i) => (
+                  <div key={i} className="grid grid-cols-3 gap-2 items-center">
+                    <Input value={dim.label} onChange={(e) => updateScoreDimension(i, "label", e.target.value)} className="border-border rounded-xl text-sm" placeholder="Dimension" />
+                    <Input type="number" min={0} max={10} step={0.1} value={dim.score} onChange={(e) => updateScoreDimension(i, "score", parseFloat(e.target.value) || 0)} className="border-border rounded-xl text-sm" />
+                    <span className="text-xs text-text-secondary">/ 10</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </EditorSection>
         </div>
