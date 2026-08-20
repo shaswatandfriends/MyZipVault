@@ -21,6 +21,7 @@ import {
   FileSignature,
   FileCheck,
   Flag,
+  MessageSquare,
   Pencil,
   Bell,
   Building2,
@@ -269,6 +270,7 @@ const superAdminBottomNav: NavItem[] = [
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
   { title: "Reports", href: "/superadmin/reports", icon: Flag },
+  { title: "Review Disputes", href: "/superadmin/review-disputes", icon: MessageSquare },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
   { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
 ];
