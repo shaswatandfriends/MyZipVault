@@ -40,6 +40,14 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+// Clash Display — bold geometric sans for hero headlines on the new landing page.
+// Available in /public/fonts but was previously unregistered.
+const clashDisplay = localFont({
+  src: "../../public/fonts/clash-display-700.woff2",
+  variable: "--font-clash",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "MyZipVault — Healthcare Credential Verification",
   description:
@@ -72,7 +80,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${satoshi.variable} ${playfair.variable} antialiased bg-background text-foreground font-sans`}
+        className={`${inter.variable} ${satoshi.variable} ${playfair.variable} ${clashDisplay.variable} antialiased bg-background text-foreground font-sans`}
       >
         <ProxyModeBanner />
         <ThemeProvider

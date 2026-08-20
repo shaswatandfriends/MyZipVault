@@ -74,6 +74,50 @@ export interface LandingPageConfig {
   // Recruiter-specific sections (separate from candidate)
   recruiterFeatureCards: RecruiterFeatureCard[];
   recruiterHowItWorks: RecruiterHowItWorksStep[];
+  // ─── Marketplace sections (Phase 7 — landing page redesign) ──────
+  marketplaceStats: MarketplaceStat[];
+  marketplaceFlow: MarketplaceFlowStep[];
+  marketplaceFeatures: MarketplaceFeatureCard[];
+  verificationSection: VerificationItem[];
+  reputationPreview: ReputationPreview;
+}
+
+// Marketplace stat for the animated stats band
+export interface MarketplaceStat {
+  value: string;   // e.g., "1,000,000+" — displayed as-is with CountUp
+  label: string;   // e.g., "Healthcare Candidates"
+  countUpTo: number; // e.g., 1000000 — for the CountUp animation (0 if non-numeric)
+  suffix: string;    // e.g., "+" — appended after count
+}
+
+// Marketplace flow step for the "How It Works" section
+export interface MarketplaceFlowStep {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+// Marketplace feature card for the 6-core-capabilities grid
+export interface MarketplaceFeatureCard {
+  icon: string;
+  heading: string;
+  body: string;
+}
+
+// Verification item for the trust & verification section
+export interface VerificationItem {
+  icon: string;
+  heading: string;
+  body: string;
+  features: string[]; // bullet point list
+}
+
+// Reputation preview for the reputation system showcase
+export interface ReputationPreview {
+  headline: string;
+  subheadline: string;
+  scoreDimensions: { label: string; score: number }[]; // 5 dimensions, 0-10
+  badgeText: string;
 }
 
 // ─── Icon Options ───────────────────────────────────────────────────
@@ -238,6 +282,44 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
         "Nurses share via expiring, HIPAA-aligned links. You get compliant, verified documents without storing sensitive data.",
     },
   ],
+  // ─── Marketplace sections (Phase 7) ──────────────────────────────
+  marketplaceStats: [
+    { value: "1,000,000+", label: "Healthcare Candidates", countUpTo: 1000000, suffix: "+" },
+    { value: "850+", label: "Specialties Covered", countUpTo: 850, suffix: "+" },
+    { value: "90 days", label: "Ownership Protection", countUpTo: 90, suffix: " days" },
+    { value: "70/30", label: "Recruiter / Platform Split", countUpTo: 70, suffix: "/30" },
+  ],
+  marketplaceFlow: [
+    { icon: "Briefcase", title: "Post a Job", description: "Superadmin creates a job posting with commission info. Set it public for candidate self-apply or private for recruiter-only." },
+    { icon: "Search", title: "Find Candidates", description: "Recruiters search the 1M healthcare pool (Path A) or bring their own candidates (Path B with 90-day exclusive ownership)." },
+    { icon: "FileSignature", title: "Send RTR", description: "Recruiter sends a Right to Represent via VaultSign. Candidate e-signs to grant representation rights. No RTR, no submission." },
+    { icon: "Send", title: "Submit & Win", description: "First submission wins (millisecond timestamp + reputation tiebreak). Ownership window: 90-day exclusive (75/25), then 90-180 residual (68/30/2)." },
+  ],
+  marketplaceFeatures: [
+    { icon: "Database", heading: "1M Candidate Pool", body: "Pre-loaded healthcare records across nursing, allied health, physician, and IT. Search by specialty, location, or name. Dedup by email OR phone." },
+    { icon: "Briefcase", heading: "Job Marketplace", body: "Post jobs with flat or percentage commission. Candidates apply directly (100% to platform) or recruiters submit (70/30 split)." },
+    { icon: "FileSignature", heading: "VaultSign RTR", body: "Right to Represent sent via VaultSign e-signature. Candidate signs → recruiter can submit. Full audit trail. Link expires in 30 days." },
+    { icon: "Lock", heading: "Credit-Gated Reveal", body: "Recruiters pay credits to unlock candidate contact info. 90-day reveal validity. Configurable per-task credit costs via superadmin." },
+    { icon: "Shield", heading: "Ownership Windows", body: "90-day exclusive ownership (75/25 split). 90-180 day residual (68/30/2 — original owner gets 2%). After 180 days: standard 70/30." },
+    { icon: "Star", heading: "Reputation System", body: "5-dimensional reviews (1-10): professionalism, communication, job match, process speed, post-placement support. Verified badges. Dispute mechanism." },
+  ],
+  verificationSection: [
+    { icon: "ClipboardCheck", heading: "Skills Checklists", body: "Industry-standard healthcare skills checklists. Complete once, reuse for 30 days. Rate yourself against standard lists. PDF export.", features: ["Complete once, share for 30 days", "Industry-standard templates", "PDF export with your name", "Reminders before expiry"] },
+    { icon: "ShieldCheck", heading: "Credential Management", body: "Upload BLS, ACLS, RN License, immunizations. Admin verification. Expiry reminders 30 days before renewal.", features: ["Admin-verified credentials", "Automatic expiry reminders", "Secure storage with audit trail", "One-click share with recruiters"] },
+    { icon: "FileSignature", heading: "VaultSign E-Signature", body: "Full e-signature platform: document templates, multi-signer support, audit trails, PDF export. Used for RTR, offer letters, and more.", features: ["Multi-signer sequential/parallel", "Full audit trail with IP + device", "PDF export with signature data", "Auto-expiry + reminders"] },
+  ],
+  reputationPreview: {
+    headline: "Reputation You Can Trust",
+    subheadline: "Every recruiter is rated by the candidates and employers they work with. Five dimensions, transparent scores, public profiles.",
+    scoreDimensions: [
+      { label: "Professionalism", score: 8.7 },
+      { label: "Communication", score: 7.2 },
+      { label: "Job Match", score: 9.1 },
+      { label: "Process Speed", score: 7.8 },
+      { label: "Post-Placement", score: 8.2 },
+    ],
+    badgeText: "Verified Recruiter",
+  },
 };
 
 // ─── PlatformSetting key used to store the config ─────────────────────
@@ -282,5 +364,26 @@ export function mergeWithDefaults(dbConfig: Partial<LandingPageConfig>): Landing
       dbConfig.recruiterHowItWorks && dbConfig.recruiterHowItWorks.length > 0
         ? dbConfig.recruiterHowItWorks
         : DEFAULT_LANDING_PAGE_CONFIG.recruiterHowItWorks,
+    // Marketplace sections
+    marketplaceStats:
+      dbConfig.marketplaceStats && dbConfig.marketplaceStats.length > 0
+        ? dbConfig.marketplaceStats
+        : DEFAULT_LANDING_PAGE_CONFIG.marketplaceStats,
+    marketplaceFlow:
+      dbConfig.marketplaceFlow && dbConfig.marketplaceFlow.length > 0
+        ? dbConfig.marketplaceFlow
+        : DEFAULT_LANDING_PAGE_CONFIG.marketplaceFlow,
+    marketplaceFeatures:
+      dbConfig.marketplaceFeatures && dbConfig.marketplaceFeatures.length > 0
+        ? dbConfig.marketplaceFeatures
+        : DEFAULT_LANDING_PAGE_CONFIG.marketplaceFeatures,
+    verificationSection:
+      dbConfig.verificationSection && dbConfig.verificationSection.length > 0
+        ? dbConfig.verificationSection
+        : DEFAULT_LANDING_PAGE_CONFIG.verificationSection,
+    reputationPreview: {
+      ...DEFAULT_LANDING_PAGE_CONFIG.reputationPreview,
+      ...(dbConfig.reputationPreview || {}),
+    },
   };
 }
