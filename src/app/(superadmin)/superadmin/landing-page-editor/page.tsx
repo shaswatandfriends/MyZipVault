@@ -185,11 +185,11 @@ const defaultData: LandingPageData = {
     trustLine3: "100% Free for Nurses",
   },
   colors: {
-    primary: "#059669",
-    accent: "#0D9488",
-    background: "#F0FDFA",
-    textPrimary: "#0F172A",
-    textSecondary: "#475569",
+    primary: "#2D5A3D",
+    accent: "#C97B54",
+    background: "#F2EDE4",
+    textPrimary: "#2D5A3D",
+    textSecondary: "#6A8A6A",
   },
   featureCards: [
     {

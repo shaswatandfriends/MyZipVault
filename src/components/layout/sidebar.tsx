@@ -260,6 +260,7 @@ const superAdminBottomNav: NavItem[] = [
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
   // Configuration
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
+  { title: "Credit Costs", href: "/superadmin/credit-costs", icon: CreditCard },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
   // Content
