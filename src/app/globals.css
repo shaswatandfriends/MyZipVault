@@ -145,7 +145,7 @@
   --terra-bg: rgba(10, 102, 194, 0.15);
   --gold: #0A66C2;
   --gold-light: rgba(10, 102, 194, 0.15);
-  --text-primary: #0A66C2;
+  --text-primary: #111827;
   --text-secondary: #6B7280;
   --text-muted: #9CA3AF;
   --border: rgba(17, 24, 39, 0.15);
@@ -290,7 +290,7 @@
   --editorial-gold-dark: #0A66C2;         /* → badge-terra */
 
   /* Text */
-  --editorial-ink: #0A66C2;               /* → text-primary */
+  --editorial-ink: #111827;               /* → text-primary */
   --editorial-ink-soft: #6B7280;          /* → text-secondary */
   --editorial-ink-muted: #9CA3AF;         /* → text-muted */
   --editorial-ink-faint: #9CA3AF;         /* → text-muted */
