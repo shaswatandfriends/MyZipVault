@@ -248,6 +248,7 @@ const superAdminBottomNav: NavItem[] = [
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
   { title: "Candidates Pool", href: "/superadmin/candidates", icon: Database },
   { title: "Jobs", href: "/superadmin/jobs", icon: Briefcase },
+  { title: "Submissions", href: "/superadmin/submissions", icon: Send },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
   { title: "Documents", href: "/superadmin/documents", icon: FileCheck },
