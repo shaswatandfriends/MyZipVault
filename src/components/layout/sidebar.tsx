@@ -20,6 +20,7 @@ import {
   CreditCard,
   FileSignature,
   FileCheck,
+  Flag,
   Pencil,
   Bell,
   Building2,
@@ -267,6 +268,7 @@ const superAdminBottomNav: NavItem[] = [
   { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
+  { title: "Reports", href: "/superadmin/reports", icon: Flag },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
   { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
 ];
