@@ -32,7 +32,7 @@ const buttonVariants = cva(
           "text-[var(--text-primary)] bg-transparent border border-transparent shadow-none hover:bg-[rgba(255,252,248,0.55)] hover:backdrop-blur-[20px] hover:text-[var(--primary)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] hover:scale-[1.02] active:scale-[0.97]",
         // Terra — terracotta accent for warm CTAs
         terra:
-          "bg-gradient-to-b from-[#E08862] to-[var(--terra)] text-white border border-[rgba(201,123,84,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_4px_rgba(201,123,84,0.06),0_6px_14px_rgba(201,123,84,0.08),0_12px_32px_rgba(201,123,84,0.06)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_4px_8px_rgba(201,123,84,0.08),0_10px_24px_rgba(201,123,84,0.1),0_20px_48px_rgba(201,123,84,0.1),0_0_24px_rgba(201,123,84,0.22)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.97] active:brightness-95",
+          "bg-gradient-to-b from-[#70B5F9] to-[var(--terra)] text-white border border-[rgba(201,123,84,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_4px_rgba(201,123,84,0.06),0_6px_14px_rgba(201,123,84,0.08),0_12px_32px_rgba(201,123,84,0.06)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(0,0,0,0.06),0_4px_8px_rgba(201,123,84,0.08),0_10px_24px_rgba(201,123,84,0.1),0_20px_48px_rgba(201,123,84,0.1),0_0_24px_rgba(201,123,84,0.22)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.97] active:brightness-95",
         link: "text-[var(--primary)] underline-offset-4 hover:underline hover:scale-100! rounded-none",
       },
       size: {

@@ -298,7 +298,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                 <div
                   className="size-10 rounded-[12px] flex items-center justify-center mb-2"
                   style={{
-                    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
                     color: "#fff",
                   }}
@@ -316,7 +316,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                   // Priority + category metadata
                   const priority = (notification as any).priority || "info";
                   const category = (notification as any).category || "system";
-                  const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#2D5A3D";
+                  const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#0A66C2";
                   const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.08)" : priority === "important" ? "rgba(217,119,6,0.08)" : "rgba(45,90,61,0.06)";
                   const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
 
@@ -446,7 +446,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
               <div
                 className="size-10 rounded-[12px] flex items-center justify-center mb-2"
                 style={{
-                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
                   color: "#fff",
                 }}
@@ -461,7 +461,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
                 const actionLink = getNotificationActionLink(notification, role);
                 const priority = (notification as any).priority || "info";
                 const category = (notification as any).category || "system";
-                const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#2D5A3D";
+                const priorityColor = priority === "urgent" ? "#B84040" : priority === "important" ? "#D97706" : "#0A66C2";
                 const priorityBg = priority === "urgent" ? "rgba(184,64,64,0.08)" : priority === "important" ? "rgba(217,119,6,0.08)" : "rgba(45,90,61,0.06)";
                 const catIcon = category === "rtr" ? "✍️" : category === "document" ? "📄" : category === "status" ? "📊" : category === "calendar" ? "📅" : category === "credit" ? "💳" : category === "compliance" ? "🛡️" : "⚙️";
 

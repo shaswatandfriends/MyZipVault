@@ -172,11 +172,11 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
     trustLine3: "100% Free for Nurses",
   },
   colors: {
-    primary: "#2D5A3D",       // Glass Warm forest green
-    accent: "#C97B54",        // Glass Warm terracotta
+    primary: "#0A66C2",       // Glass Warm forest green
+    accent: "#0A66C2",        // Glass Warm terracotta
     background: "#F2EDE4",    // Glass Warm warm off-white
-    textPrimary: "#2D5A3D",   // Same as primary (dark green text)
-    textSecondary: "#6A8A6A", // Muted green
+    textPrimary: "#0A66C2",   // Same as primary (dark green text)
+    textSecondary: "#6B7280", // Muted green
   },
   featureCards: [
     {

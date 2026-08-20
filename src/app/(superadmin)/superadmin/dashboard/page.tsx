@@ -336,7 +336,7 @@ export default function SuperadminDashboardPage() {
               <div
                 className="empty-state-icon"
                 style={{
-                  background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
                   color: "#fff",
                 }}
@@ -383,7 +383,7 @@ export default function SuperadminDashboardPage() {
               className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/users")}
               style={{
-                background: "linear-gradient(135deg, #2D5A3D 0%, #1E3A26 100%)",
+                background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(45,90,61,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
@@ -433,7 +433,7 @@ export default function SuperadminDashboardPage() {
               className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/analytics")}
               style={{
-                background: "linear-gradient(135deg, #C97B54 0%, #A0522D 100%)",
+                background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(201,123,84,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
@@ -502,7 +502,7 @@ export default function SuperadminDashboardPage() {
                     ? "linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)"
                     : healthStatus === "warning"
                     ? "linear-gradient(135deg, #D97706 0%, #92400E 100%)"
-                    : "linear-gradient(135deg, #4A7C59 0%, #2D5A3D 100%)",
+                    : "linear-gradient(135deg, #70B5F9 0%, #0A66C2 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
@@ -569,7 +569,7 @@ export default function SuperadminDashboardPage() {
                 <div
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
-                    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
                     color: "#fff",
                   }}
@@ -597,8 +597,8 @@ export default function SuperadminDashboardPage() {
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="candidates" name="Candidates" fill="#4A7C59" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="recruiters" name="Recruiters" fill="#C97B54" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="candidates" name="Candidates" fill="#70B5F9" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="recruiters" name="Recruiters" fill="#0A66C2" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -615,7 +615,7 @@ export default function SuperadminDashboardPage() {
                 <div
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
-                    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
                     color: "#fff",
                   }}

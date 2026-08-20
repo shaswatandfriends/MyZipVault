@@ -20,12 +20,12 @@ interface SpatialStatCardProps {
 
 const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"]>, React.CSSProperties> = {
   primary: {
-    background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
     color: "#fff",
   },
   terra: {
-    background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
     color: "#fff",
   },
@@ -108,12 +108,12 @@ export function SpatialAvatar({
       style={
         variant === "terra"
           ? {
-              background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.24)",
               color: "#fff",
             }
           : {
-              background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
               color: "#fff",
             }

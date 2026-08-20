@@ -95,14 +95,14 @@ function getNotificationIconBg(type: string): React.CSSProperties {
     case "call_follow_up":
       // Primary green
       return {
-        background: "linear-gradient(180deg, #4A7C59 0%, #2D5A3D 60%, #1E3A26 100%)",
+        background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
         color: "#fff",
       };
     case "shift_accepted":
       // Terra
       return {
-        background: "linear-gradient(180deg, #E08862 0%, #C97B54 60%, #A0522D 100%)",
+        background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
         color: "#fff",
       };
@@ -130,7 +130,7 @@ function getNotificationIconBg(type: string): React.CSSProperties {
     default:
       // Muted neutral — text-secondary gradient
       return {
-        background: "linear-gradient(180deg, #9AAA94 0%, #6A8A6A 60%, #4A5A4A 100%)",
+        background: "linear-gradient(180deg, #9CA3AF 0%, #6B7280 60%, #374151 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(106,138,106,0.28)",
         color: "#fff",
       };
