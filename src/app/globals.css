@@ -127,7 +127,7 @@
 :root {
   /* ─── Core Palette — Glass Warm: Forest Green + Terracotta ──────── */
   --background: #FFFFFF;
-  --foreground: #0A66C2;
+  --foreground: #111827;
   --surface: #FFFFFF;
   --surface-2: rgba(249, 250, 251, 0.6);
   --surface-3: rgba(249, 250, 251, 0.4);
@@ -382,15 +382,15 @@
 
   /* ─── shadcn/ui compatibility ──────────────────────────────────── */
   --card: #FFFFFF;
-  --card-foreground: #0A66C2;
+  --card-foreground: #111827;
   --popover: #FFFFFF;
-  --popover-foreground: #0A66C2;
+  --popover-foreground: #111827;
   --secondary: rgba(249, 250, 251, 0.6);
-  --secondary-foreground: #0A66C2;
+  --secondary-foreground: #111827;
   --muted: rgba(249, 250, 251, 0.5);
   --muted-foreground: #6B7280;
   --accent: rgba(10, 102, 194, 0.15);
-  --accent-foreground: #0A66C2;
+  --accent-foreground: #FFFFFF;
   --destructive: #B84040;
   --input: rgba(17, 24, 39, 0.15);
   --ring: #0A66C2;
@@ -415,7 +415,7 @@
   --pipeline-blacklisted: #8B2C2C;
 
   /* ─── Sidebar — Dark Forest Green Glass ─────────────────────────── */
-  --sidebar: rgba(30, 58, 38, 0.82);
+  --sidebar: rgba(0, 65, 130, 0.82);
   --sidebar-foreground: rgba(255, 255, 255, 0.7);
   --sidebar-primary: #0A66C2;
   --sidebar-primary-foreground: #FFFFFF;
@@ -457,7 +457,7 @@
 }
 
 .glass-dark {
-  background: rgba(30, 58, 38, 0.78);
+  background: rgba(0, 65, 130, 0.78);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.18);
