@@ -161,6 +161,7 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [viewTab, setViewTab] = useState<"candidate" | "recruiter">("candidate");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -325,76 +326,79 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ FOR CANDIDATES ═══ */}
-      <section id="for-candidates" style={{ padding: "96px 0", background: C.white }}>
+      {/* ═══ TABBED FEATURES (Candidate OR Recruiter — not both) ═══ */}
+      <section id="features" style={{ padding: "96px 0", background: C.white }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>For Candidates</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>Everything you need, <span style={{ color: C.primary }}>nothing you don't.</span></h2>
-            <p style={{ fontSize: 16, color: C.muted, marginTop: 14, maxWidth: 640, margin: "14px auto 0", lineHeight: 1.6 }}>Your credentials, checklists, references, and resume — all in one vault. Share on your terms. Take it anywhere.</p>
+          {/* Tab toggle */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+            <div style={{ display: "inline-flex", borderRadius: 28, background: C.surface, padding: 4, border: `1px solid ${C.border}` }}>
+              <button onClick={() => setViewTab("candidate")} style={{
+                padding: "10px 24px", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", borderRadius: 24,
+                background: viewTab === "candidate" ? C.primary : "transparent", color: viewTab === "candidate" ? C.white : C.muted,
+                transition: C.transition, display: "flex", alignItems: "center", gap: 8,
+              }}>For Candidates</button>
+              <button onClick={() => setViewTab("recruiter")} style={{
+                padding: "10px 24px", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", borderRadius: 24,
+                background: viewTab === "recruiter" ? C.primary : "transparent", color: viewTab === "recruiter" ? C.white : C.muted,
+                transition: C.transition, display: "flex", alignItems: "center", gap: 8,
+              }}>For Recruiters</button>
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 20 }}>
-            {candidateFeatures.map((f, i) => (
-              <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 24, transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.borderColor = C.primaryTint; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; e.currentTarget.style.borderColor = C.border; }}
-              >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                  <f.icon size={22} style={{ color: C.primary }} />
-                </div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: C.black, marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ═══ YOUR CAREER, YOUR DATA ═══ */}
-      <section style={{ padding: "96px 0", background: `linear-gradient(160deg, ${C.surfaceDark} 0%, ${C.primaryDark} 100%)`, color: C.white, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -80, right: -40, width: 300, height: 300, borderRadius: "50%", background: `radial-gradient(circle, ${C.primary}20 0%, transparent 70%)`, filter: "blur(50px)" }} />
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px", textAlign: "center", position: "relative" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
-            <ShieldCheck size={32} style={{ color: C.primaryLight }} />
-          </div>
-          <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, marginBottom: 20, letterSpacing: "-0.02em" }}>Your Career, Your Data.</h2>
-          <p style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, marginBottom: 40 }}>
-            You own everything. Not the recruiter. Not the agency. Not us.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(2, 1fr)" : "1fr", gap: 16, textAlign: "left" }}>
-            {["Your vault stays with you when you leave a recruiter", "Your checklists stay with you — complete once, reuse 30 days", "Your references stay with you — verified and portable", "Your credentials stay with you — admin-verified, expiry-tracked"].map((t, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: C.radius, border: "1px solid rgba(255,255,255,0.08)" }}>
-                <CheckCircle2 size={22} style={{ color: C.primaryLight, marginTop: 1, flexShrink: 0 }} />
-                <span style={{ fontSize: 15, color: "rgba(255,255,255,0.85)" }}>{t}</span>
+          {/* Candidate view */}
+          {viewTab === "candidate" && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: 40 }}>
+                <h2 style={{ fontSize: isDesktop ? 36 : 26, fontWeight: 800, color: C.black, letterSpacing: "-0.02em" }}>Everything you need, <span style={{ color: C.primary }}>nothing you don't.</span></h2>
+                <p style={{ fontSize: 15, color: C.muted, marginTop: 10, maxWidth: 600, margin: "10px auto 0" }}>Your credentials, checklists, references, and resume — all in one vault. Share on your terms.</p>
               </div>
-            ))}
-          </div>
-          <p style={{ fontSize: 26, fontWeight: 700, color: C.primaryLight, marginTop: 36 }}>Build once. Take it anywhere.</p>
-        </div>
-      </section>
+              <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 16 }}>
+                {candidateFeatures.map((f, i) => (
+                  <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 20, transition: C.transition }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                      <f.icon size={20} style={{ color: C.primary }} />
+                    </div>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: C.black, marginBottom: 6 }}>{f.title}</h3>
+                    <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Your Career Your Data — only for candidates */}
+              <div style={{ marginTop: 48, padding: 40, background: `linear-gradient(160deg, ${C.surfaceDark} 0%, ${C.primaryDark} 100%)`, borderRadius: C.radiusLg, color: C.white, textAlign: "center" }}>
+                <ShieldCheck size={36} style={{ color: C.primaryLight, marginBottom: 16 }} />
+                <h3 style={{ fontSize: isDesktop ? 28 : 22, fontWeight: 800, marginBottom: 12 }}>Your Career, Your Data.</h3>
+                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 24 }}>You own everything. Not the recruiter. Not the agency. Not us.</p>
+                <p style={{ fontSize: 20, fontWeight: 700, color: C.primaryLight }}>Build once. Take it anywhere.</p>
+              </div>
+            </>
+          )}
 
-      {/* ═══ FOR RECRUITERS ═══ */}
-      <section id="for-recruiters" style={{ padding: "96px 0", background: C.surface }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>For Recruiters</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>Work for yourself. <span style={{ color: C.primary }}>Keep 70%.</span></h2>
-            <p style={{ fontSize: 16, color: C.muted, marginTop: 14, maxWidth: 640, margin: "14px auto 0", lineHeight: 1.6 }}>No agency. No retainer. No overhead. Search our candidate pool, bring your own, send RTR, submit, and earn.</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 20 }}>
-            {recruiterFeatures.map((f, i) => (
-              <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 24, transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
-              >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                  <f.icon size={22} style={{ color: C.primary }} />
-                </div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: C.black, marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{f.desc}</p>
+          {/* Recruiter view */}
+          {viewTab === "recruiter" && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: 40 }}>
+                <h2 style={{ fontSize: isDesktop ? 36 : 26, fontWeight: 800, color: C.black, letterSpacing: "-0.02em" }}>Work for yourself. <span style={{ color: C.primary }}>Keep 70%.</span></h2>
+                <p style={{ fontSize: 15, color: C.muted, marginTop: 10, maxWidth: 600, margin: "10px auto 0" }}>No agency. No retainer. Search our pool, bring your own, send RTR, submit, and earn.</p>
               </div>
-            ))}
-          </div>
+              <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 16 }}>
+                {recruiterFeatures.map((f, i) => (
+                  <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 20, transition: C.transition }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                      <f.icon size={20} style={{ color: C.primary }} />
+                    </div>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: C.black, marginBottom: 6 }}>{f.title}</h3>
+                    <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
