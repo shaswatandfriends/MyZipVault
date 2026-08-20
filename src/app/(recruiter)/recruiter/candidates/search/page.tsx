@@ -7,6 +7,7 @@ import Link from "next/link";
 import {
   Search, Users, MapPin, Briefcase, RefreshCw, Send, UserPlus,
   Lock, CheckCircle2, Eye, Database, Filter, Loader2, Mail, Phone,
+  FileSignature,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +42,8 @@ interface CandidateRow {
   contact_info_locked: boolean;
   submission_count: number;
   has_submitted_to_job: boolean | null;
+  rtr_status: string; // 'none' | 'sent' | 'viewed' | 'signed' | 'expired' | 'declined'
+  rtr_document_id: number | null;
 }
 
 function getSourceBadge(source: string) {
@@ -78,6 +81,7 @@ function RecruiterCandidateSearchInner() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", email: "", phone: "", city: "", state: "", job_title: "", specialty: "" });
   const [isAdding, setIsAdding] = useState(false);
+  const [sendingRtrTo, setSendingRtrTo] = useState<number | null>(null); // candidate record ID currently being sent RTR
 
   const fetchCandidates = useCallback(async () => {
     try {
@@ -174,6 +178,37 @@ function RecruiterCandidateSearchInner() {
       toast.error("Add failed", { description: err instanceof Error ? err.message : "" });
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleSendRtr = async (candidate: CandidateRow) => {
+    try {
+      setSendingRtrTo(candidate.id);
+      const res = await fetch(`/api/recruiter/candidates/${candidate.id}/send-rtr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          job_id: jobId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send RTR");
+
+      if (data.already_sent) {
+        toast.info("RTR already sent", {
+          description: `Status: ${data.signer_status}. Document: ${data.document_public_id}`,
+        });
+      } else {
+        toast.success("RTR sent", {
+          description: `Right to Represent sent to ${candidate.fullName}. They'll receive an email to sign.`,
+        });
+      }
+      // Refresh to show updated RTR status
+      fetchCandidates();
+    } catch (err) {
+      toast.error("Failed to send RTR", { description: err instanceof Error ? err.message : "" });
+    } finally {
+      setSendingRtrTo(null);
     }
   };
 
@@ -305,6 +340,29 @@ function RecruiterCandidateSearchInner() {
                     {jobId && !c.has_submitted_to_job && (
                       <Button size="sm" onClick={() => handleSubmit(c)}>
                         <Send className="size-3.5 mr-1" />Submit
+                      </Button>
+                    )}
+                    {/* RTR status badge + Send RTR button */}
+                    {c.rtr_status === "signed" ? (
+                      <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 justify-center">
+                        <CheckCircle2 className="size-3 mr-1" />RTR Signed
+                      </Badge>
+                    ) : c.rtr_status === "sent" || c.rtr_status === "viewed" ? (
+                      <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 justify-center">
+                        RTR {c.rtr_status === "viewed" ? "Viewed" : "Sent"}
+                      </Badge>
+                    ) : !c.contact_info_locked && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSendRtr(c)}
+                        disabled={sendingRtrTo === c.id}
+                      >
+                        {sendingRtrTo === c.id ? (
+                          <><Loader2 className="size-3.5 mr-1 animate-spin" />Sending...</>
+                        ) : (
+                          <><FileSignature className="size-3.5 mr-1" />Send RTR</>
+                        )}
                       </Button>
                     )}
                     {!c.has_revealed && !c.contact_info_locked && !c.primary_email && !c.primary_phone && (

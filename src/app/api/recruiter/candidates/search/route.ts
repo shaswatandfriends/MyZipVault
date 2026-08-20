@@ -175,6 +175,56 @@ export async function GET(request: NextRequest) {
     });
     const revealedSet = new Set(myReveals.map((r) => r.candidate_record_id));
 
+    // ─── Batch RTR status check ──────────────────────────────────────
+    // For each candidate's email, check if there's an RTR document from
+    // this org. Build a map: email → { status, document_id, signed_at }
+    const allCandidateEmails = candidates.flatMap((c) =>
+      c.contact_info
+        .filter((ci) => ci.type === "email" && !ci.deleted_at)
+        .map((ci) => ci.value)
+    );
+
+    let rtrStatusMap = new Map<string, { status: string; document_id: number; signed_at: Date | null }>();
+    if (allCandidateEmails.length > 0 && organizationId) {
+      const rtrDocs = await db.vaultSignDocument.findMany({
+        where: {
+          organization_id: organizationId,
+          document_type: "right_to_represent",
+          status: { in: ["sent", "partially_signed", "completed"] },
+          signers: {
+            some: {
+              email: { in: allCandidateEmails },
+              role: "Candidate",
+            },
+          },
+        },
+        include: {
+          signers: {
+            where: {
+              email: { in: allCandidateEmails },
+              role: "Candidate",
+            },
+            select: { email: true, status: true, signed_at: true },
+          },
+        },
+        orderBy: { created_at: "desc" },
+      });
+
+      for (const doc of rtrDocs) {
+        for (const signer of doc.signers) {
+          // Only set if not already set (most recent first due to orderBy)
+          if (!rtrStatusMap.has(signer.email)) {
+            const isSigned = signer.status === "signed" || doc.status === "completed";
+            rtrStatusMap.set(signer.email, {
+              status: isSigned ? "signed" : signer.status,
+              document_id: doc.id,
+              signed_at: signer.signed_at,
+            });
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       candidates: candidates.map((c) => {
         const ownershipWindow = c.ownership_windows[0];
@@ -222,6 +272,23 @@ export async function GET(request: NextRequest) {
           contact_info_locked: contactInfoHidden,
           submission_count: c._count.submissions,
           has_submitted_to_job: jobIdParam ? alreadySubmittedIds.has(c.id) : null,
+          // RTR status from the batch query
+          rtr_status: (() => {
+            const candidateEmails = c.contact_info.filter((ci) => ci.type === "email" && !ci.deleted_at).map((ci) => ci.value);
+            for (const email of candidateEmails) {
+              const rtr = rtrStatusMap.get(email);
+              if (rtr) return rtr.status;
+            }
+            return "none";
+          })(),
+          rtr_document_id: (() => {
+            const candidateEmails = c.contact_info.filter((ci) => ci.type === "email" && !ci.deleted_at).map((ci) => ci.value);
+            for (const email of candidateEmails) {
+              const rtr = rtrStatusMap.get(email);
+              if (rtr) return rtr.document_id;
+            }
+            return null;
+          })(),
           created_at: c.created_at,
         };
       }),

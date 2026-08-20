@@ -21,9 +21,13 @@ import { logAudit } from "@/lib/audit";
  *     allowed but the 2% residual is auto-deducted from this recruiter's
  *     70% payout.
  *
- * RTR requirement: Currently NOT enforced — recruiters can submit
- * without an RTR. The rtr_vault_sign_document_id is nullable. This will
- * be enforced in a later phase once VaultSign RTR templates are built.
+ * RTR requirement: ENFORCED (Phase 5). Before creating the submission,
+ * the API checks for a signed VaultSign RTR document (document_type=
+ * 'right_to_represent', status='completed') for this candidate + this
+ * recruiter's organization. If no signed RTR exists, the submission
+ * is blocked with a 403 and the recruiter is told to send an RTR first.
+ * The rtr_vault_sign_document_id + rtr_signed_at are linked to the
+ * submission when it's created.
  *
  * Body:
  *   - candidate_record_id (required)
@@ -141,6 +145,80 @@ export async function POST(
       }, { status: 409 });
     }
 
+    // ─── RTR (Right to Represent) check ──────────────────────────────
+    // Before allowing submission, verify the candidate has signed an RTR
+    // from this recruiter's organization. If not signed, block the
+    // submission and tell the recruiter to send an RTR first.
+    //
+    // The RTR is sent via VaultSign (POST /api/recruiter/candidates/[id]/send-rtr)
+    // and the candidate signs it at /sign/[token]. Once signed, the
+    // VaultSignSigner.status becomes 'signed' and the VaultSignDocument
+    // status becomes 'completed'.
+    //
+    // For now, we look up by candidate email + organization. If the
+    // candidate has no email on file, we skip the RTR check (can't send
+    // RTR without email anyway).
+    let rtrDocumentId: number | null = null;
+    let rtrSignedAt: Date | null = null;
+
+    const candidateEmail = candidate.contact_info?.find(
+      (ci: { type: string; value: string }) => ci.type === "email" && ci.is_primary
+    )?.value;
+    // If no primary email, try any email
+    const anyEmail = candidateEmail || candidate.contact_info?.find(
+      (ci: { type: string }) => ci.type === "email"
+    )?.value;
+
+    if (anyEmail && organizationId) {
+      const rtrDocument = await db.vaultSignDocument.findFirst({
+        where: {
+          organization_id: organizationId,
+          document_type: "right_to_represent",
+          status: { in: ["sent", "partially_signed", "completed"] },
+          signers: {
+            some: {
+              email: anyEmail,
+              role: "Candidate",
+            },
+          },
+        },
+        include: {
+          signers: {
+            where: { email: anyEmail, role: "Candidate" },
+            take: 1,
+          },
+        },
+        orderBy: { created_at: "desc" },
+      });
+
+      if (rtrDocument) {
+        const signer = rtrDocument.signers[0];
+        const isSigned = signer?.status === "signed" || rtrDocument.status === "completed";
+
+        if (!isSigned) {
+          return NextResponse.json({
+            error: "RTR not signed — the candidate must sign the Right to Represent document before you can submit them to a job.",
+            rtr_status: signer?.status ?? "unknown",
+            rtr_document_id: rtrDocument.id,
+            action: "send_rtr",
+            message: `RTR was sent but status is '${signer?.status ?? "unknown"}'. Wait for the candidate to sign, or resend the RTR.`,
+          }, { status: 403 });
+        }
+
+        // RTR is signed — link it to the submission
+        rtrDocumentId = rtrDocument.id;
+        rtrSignedAt = signer?.signed_at ?? null;
+      } else {
+        // No RTR exists — block submission
+        return NextResponse.json({
+          error: "No RTR on file — send a Right to Represent document to the candidate first. They must sign it before you can submit them to a job.",
+          action: "send_rtr",
+          send_rtr_endpoint: `/api/recruiter/candidates/${candidateRecordId}/send-rtr`,
+        }, { status: 403 });
+      }
+    }
+    // If candidate has no email, we skip the RTR check (can't send RTR without email)
+
     // ─── Get recruiter's reputation snapshot for tiebreak ─────────────
     let reputationSnapshot = 0;
     try {
@@ -172,6 +250,9 @@ export async function POST(
         tiebreak_recruiter_reputation: reputationSnapshot,
         tiebreak_won: true, // first submission wins by definition
         payout_split_phase: payoutSplitPhase,
+        // Link the signed RTR document (required by Phase 5)
+        rtr_vault_sign_document_id: rtrDocumentId,
+        rtr_signed_at: rtrSignedAt,
       },
       select: { id: true },
     });
