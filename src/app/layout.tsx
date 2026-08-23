@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ProxyModeBanner } from "@/components/proxy-mode-banner";
+import { CookieConsent } from "@/components/shared/CookieConsent";
 import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
@@ -93,6 +94,7 @@ export default function RootLayout({
           </SessionProvider>
         </ThemeProvider>
         <Toaster richColors position="top-right" />
+        <CookieConsent />
         <Analytics />
       </body>
     </html>
