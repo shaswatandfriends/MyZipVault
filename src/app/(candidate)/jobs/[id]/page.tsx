@@ -82,7 +82,7 @@ export default function CandidateJobDetailPage() {
   const fetchJob = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/jobs/${jobId}`);
+      const res = await fetch(`/api/candidate/jobs/${jobId}`);
       if (!res.ok) {
         if (res.status === 404) {
           toast.error("Job not available", { description: "This job may have been closed or removed." });
@@ -107,7 +107,7 @@ export default function CandidateJobDetailPage() {
   const handleApply = async () => {
     try {
       setIsApplying(true);
-      const res = await fetch(`/api/jobs/${jobId}/apply`, {
+      const res = await fetch(`/api/candidate/jobs/${jobId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cover_note: coverNote || undefined }),
