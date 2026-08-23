@@ -81,6 +81,7 @@ export default function HomePage() {
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 32 }}>
           {[
             { label: "Browse Jobs", href: "/browse-jobs" },
+            { label: "Blog", href: "/blog" },
             { label: "For Candidates", href: "/for-candidates" },
             { label: "For Recruiters", href: "/for-recruiters" },
             { label: "For Employers", href: "/for-employers" },
@@ -448,6 +449,7 @@ export default function HomePage() {
               {[
                 { label: "About", href: "/about" },
                 { label: "Our Story", href: "/our-story" },
+                { label: "Blog", href: "/blog" },
                 { label: "Contact", href: "/contact" },
                 { label: "Referral Program", href: "/referral-program" },
                 { label: "Sign Up", href: "/signup" },

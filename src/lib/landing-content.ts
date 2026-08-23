@@ -19,6 +19,7 @@ import {
   Search, Database, Send, Lock, Star, CheckCircle2, Clock, Bell,
   Stethoscope, Calendar, TrendingUp, Award, Zap, Eye, FolderOpen,
   BadgeCheck, Handshake, Sparkles, Phone, UserPlus, DollarSign,
+  FileText,
 } from "@/lib/icons";
 
 // ─── Hamburger Menu ─────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ export const menuSections: MenuSection[] = [
     items: [
       { icon: Briefcase, label: "What is MyZipVault?", href: "/about" },
       { icon: Users, label: "Our Story", href: "/our-story" },
+      { icon: FileText, label: "Blog", href: "/blog" },
       { icon: Mail, label: "Contact", href: "/contact" },
       { icon: Handshake, label: "Referral Program", href: "/referral-program" },
     ],

@@ -10,7 +10,7 @@ export default withAuth({
       const pathname = req.nextUrl.pathname;
 
       // Public routes - always allowed
-      const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications", "/browse-jobs"];
+      const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications", "/browse-jobs", "/blog"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/public/", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document"];
 
       // Allow public GET access to landing page content (so the public landing page can fetch it)
@@ -18,6 +18,9 @@ export default withAuth({
 
       // Public job detail page (/browse-jobs/[id]) — allowed without auth
       if (pathname.startsWith("/browse-jobs/")) return true;
+
+      // Public blog post pages (/blog/[slug]) — allowed without auth
+      if (pathname.startsWith("/blog/")) return true;
 
       if (publicRoutes.some((r) => pathname === r)) return true;
       if (publicPrefixes.some((p) => pathname.startsWith(p))) return true;
