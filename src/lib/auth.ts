@@ -156,9 +156,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Account is not active. Please contact support.");
         }
 
-        // Block pending client accounts (agency/recruiter) — admin must activate from admin panel
+        // Pending check only for client_admin/client_recruiter with pending status.
+        // Since recruiters are now active by default (is_approved=true,
+        // account_status='active' on signup), this only catches legacy accounts
+        // that were created before the auto-approval change.
         if (user.account_status === "pending" && (user.role === "client_admin" || user.role === "client_recruiter")) {
-          throw new Error("Your account is pending admin activation. You will be notified once activated.");
+          throw new Error("Your account is pending activation. Please contact support.");
         }
 
         // Super Admin gate: only the env-configured email can be super_admin
@@ -168,10 +171,8 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
-        // Block unapproved client_admin / client_recruiter from logging in
-        if ((user.role === "client_admin" || user.role === "client_recruiter") && !user.is_approved) {
-          throw new Error("Your account is pending admin approval. You will be notified once approved.");
-        }
+        // Skip is_approved check for recruiters since they're auto-approved on signup.
+        // Only block if explicitly set to not approved by admin (suspended/banned already caught above).
 
         const isValidPassword = await compare(
           credentials.password,

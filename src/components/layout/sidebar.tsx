@@ -720,26 +720,13 @@ export function AppSidebar() {
                     // before the async signOut() resolves.
                     e.preventDefault();
 
-                    let redirectUrl = "/login";
-                    if (role === "super_admin") {
-                      redirectUrl = "/superadmin-login";
-                    } else if (role === "client_admin" || role === "client_recruiter") {
-                      redirectUrl = "/agency-login";
-                    } else if (role === "platform_admin") {
-                      redirectUrl = "/admin-login";
-                    }
-
-                    // Sign out, then wait 500ms for cookie to clear before
-                    // redirecting. Without the delay, the old session cookie
-                    // is still present when the login page loads, causing
-                    // AuthProvider to redirect back to the dashboard.
-                    signOut({ redirect: false })
-                      .then(() => new Promise((resolve) => setTimeout(resolve, 500)))
-                      .catch(() => {})
-                      .finally(() => {
-                        // Use replace() so back button doesn't return to dashboard
-                        window.location.replace(redirectUrl);
-                      });
+                    // Sign out and redirect to the homepage (index page).
+                    // Use callbackUrl to force NextAuth to clear the cookie
+                    // and navigate to '/' — no more auto-login on refresh.
+                    signOut({
+                      callbackUrl: "/",
+                      redirect: true,
+                    });
                   }}
                 >
                   Sign Out

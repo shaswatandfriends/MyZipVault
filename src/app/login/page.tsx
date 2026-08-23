@@ -64,7 +64,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Sign in directly — NextAuth replaces any existing session automatically
+      // Sign in directly — NextAuth replaces any existing session automatically.
+      // Use redirect: true with callbackUrl so NextAuth handles the cookie
+      // + redirect in one step — no extra session fetch needed.
+      // The AuthProvider on the dashboard page will read the role from
+      // the session and redirect to the correct role-specific dashboard
+      // if the user lands on the wrong one.
       const result = await signIn("credentials", {
         email,
         password,
@@ -76,20 +81,16 @@ export default function LoginPage() {
           description: result.error || "Invalid email or password",
         });
       } else {
-        // Fetch session to get role for redirect
-        // Add a small delay to ensure the session cookie is set
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        const sessionRes = await fetch("/api/auth/session", {
-          cache: "no-store",
-        });
-        const sessionData = await sessionRes.json();
-        const role = sessionData?.user?.role || "candidate";
-        const dashboard = getRoleDashboard(role);
+        // Session cookie is set by NextAuth — no need to fetch it separately.
+        // Redirect to /dashboard — the AuthProvider will read the role from
+        // the session and redirect to the correct role-specific dashboard
+        // (candidate → /dashboard, recruiter → /recruiter/dashboard,
+        //  employer → /employer/dashboard, etc.)
+        // This eliminates the 300ms delay + extra /api/auth/session fetch.
         toast.success("Welcome back!", {
           description: "You have been signed in successfully.",
         });
-        // Hard redirect — ensures session cookie is read fresh
-        window.location.href = dashboard;
+        window.location.href = "/dashboard";
       }
     } catch {
       toast.error("An unexpected error occurred. Please try again.");

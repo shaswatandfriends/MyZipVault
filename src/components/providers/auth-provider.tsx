@@ -138,13 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     //      login page. Otherwise they bounce back to dashboard = auto-login.
     //   2. /onboard — accessible while logged in (invite token flow)
     //   3. /verify-document, /shared/ — always accessible
+    //   4. / (homepage) — DON'T redirect. After signout, the old session
+    //      cookie persists briefly on Vercel. If we redirect from / to
+    //      dashboard, the user gets auto-logged-in. By exempting /, the
+    //      user stays on the homepage until the cookie fully clears.
     const LOGIN_ROUTES = ["/login", "/agency-login", "/admin-login", "/superadmin-login", "/forgot-password", "/reset-password", "/verify-email", "/signup", "/agency-signup", "/employer-signup"];
     const isLoginPage = LOGIN_ROUTES.includes(pathname);
     const ALWAYS_ACCESSIBLE_PUBLIC_ROUTES = ["/verify-document", "/shared/"];
     const isPrefixPublic = PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
     const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
+    const isHomepage = pathname === "/";
 
-    if (isPublicRoute && !isLoginPage && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible) {
+    if (isPublicRoute && !isLoginPage && pathname !== "/onboard" && !isPrefixPublic && !isAlwaysAccessible && !isHomepage) {
       const dashboard = getRoleDashboard(user.role);
       router.replace(dashboard);
       return;

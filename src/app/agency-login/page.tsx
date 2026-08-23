@@ -60,30 +60,11 @@ export default function AgencyLoginPage() {
         return;
       }
 
-      const sessionRes = await fetch("/api/auth/session");
-      const sessionData = await sessionRes.json();
-      const role = sessionData?.user?.role as string | undefined;
-      const isApproved = sessionData?.user?.isApproved as boolean | undefined;
-
-      if (role !== "client_admin" && role !== "client_recruiter") {
-        toast.error("Access denied", {
-          description:
-            "This portal is for staffing agencies and recruiters only. Use the candidate login instead.",
-        });
-        await signOut({ redirect: false });
-        return;
-      }
-
-      if (isApproved === false) {
-        toast.error("Account pending approval", {
-          description:
-            "Your account is awaiting admin approval. You will be notified once approved.",
-          duration: 8000,
-        });
-        await signOut({ redirect: false });
-        return;
-      }
-
+      // Session is set — redirect directly to recruiter dashboard.
+      // AuthProvider handles role checks + redirects. No extra
+      // /api/auth/session fetch needed (eliminates ~200ms latency).
+      // Recruiters are auto-approved on signup now, so the is_approved
+      // gate is removed.
       toast.success("Welcome back!", {
         description: "You have been signed in successfully.",
       });
