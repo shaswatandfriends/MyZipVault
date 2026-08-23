@@ -319,17 +319,28 @@ export default function AgencySignupPage() {
           </div>
 
           <h1
-            className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-foreground"
+            className="text-[2.5rem] font-bold leading-[1.1] mb-2 text-foreground"
             style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
           >
             Join MyZipVault
           </h1>
           <p
-            className="text-base leading-relaxed mb-8"
+            className="text-sm font-semibold mb-2"
+            style={{ color: "var(--primary)" }}
+          >
+            Recruiter & Agency Sign Up
+          </p>
+          <p
+            className="text-base leading-relaxed mb-3"
             style={{ color: "var(--text-secondary)" }}
           >
             For staffing agencies & healthcare recruiters
           </p>
+          <div className="flex items-center gap-3 mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
+            <Link href="/signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Candidate & Professional Sign Up</Link>
+            <span>·</span>
+            <Link href="/employer-signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Sign Up</Link>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Account Type Toggle — spatial pill segment */}

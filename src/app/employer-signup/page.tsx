@@ -67,7 +67,13 @@ export default function EmployerSignupPage() {
               <Building2 size={28} style={{ color: "#0A66C2" }} />
             </div>
             <h1 className="text-2xl font-bold text-[#111827]">Employer Sign Up</h1>
-            <p className="text-sm text-[#6B7280] mt-2">Post jobs, set your commission budget, and receive candidates from our recruiter network.</p>
+            <p className="text-sm font-semibold mt-2" style={{ color: "#0A66C2" }}>Employer Login & Sign Up</p>
+            <p className="text-sm text-[#6B7280] mt-1">Post jobs, set your commission budget, and receive candidates from our recruiter network.</p>
+            <div className="flex items-center justify-center gap-3 mt-3 text-xs text-[#6B7280]">
+              <Link href="/signup" className="font-medium hover:underline" style={{ color: "#0A66C2" }}>Candidate & Professional Sign Up</Link>
+              <span>·</span>
+              <Link href="/agency-signup" className="font-medium hover:underline" style={{ color: "#0A66C2" }}>Recruiter & Agency Sign Up</Link>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

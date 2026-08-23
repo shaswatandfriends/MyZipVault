@@ -154,17 +154,28 @@ export default function SignupPage() {
 
           {/* Heading */}
           <h1
-            className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-foreground"
+            className="text-[2.5rem] font-bold leading-[1.1] mb-2 text-foreground"
             style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
           >
             Build your vault.
           </h1>
           <p
-            className="text-base leading-relaxed mb-8"
+            className="text-sm font-semibold mb-2"
+            style={{ color: "var(--primary)" }}
+          >
+            Candidate & Professional Sign Up
+          </p>
+          <p
+            className="text-base leading-relaxed mb-3"
             style={{ color: "var(--text-secondary)" }}
           >
             Join MyZipVault as a healthcare professional. Free forever.
           </p>
+          <div className="flex items-center gap-3 mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
+            <Link href="/agency-signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Recruiter & Agency Sign Up</Link>
+            <span>·</span>
+            <Link href="/employer-signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Sign Up</Link>
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
