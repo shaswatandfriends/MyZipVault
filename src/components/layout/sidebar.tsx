@@ -98,6 +98,7 @@ const employerNav: NavItem[] = [
   { title: "My Jobs", href: "/employer/jobs", icon: Briefcase },
   { title: "Find Candidates", href: "/employer/candidates/search", icon: Search },
   { title: "Submissions", href: "/employer/submissions", icon: Send },
+  { title: "Billing", href: "/employer/billing", icon: CreditCard },
 ];
 
 // ─── Candidate Nav Items ─────────────────────────────────────────────
