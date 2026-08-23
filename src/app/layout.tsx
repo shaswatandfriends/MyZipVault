@@ -8,6 +8,7 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ProxyModeBanner } from "@/components/proxy-mode-banner";
 import { CookieConsent } from "@/components/shared/CookieConsent";
+import { HelpFloater } from "@/components/shared/HelpFloater";
 import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
@@ -95,6 +96,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Toaster richColors position="top-right" />
         <CookieConsent />
+        <HelpFloater />
         <Analytics />
       </body>
     </html>
