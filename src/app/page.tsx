@@ -80,6 +80,7 @@ export default function HomePage() {
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 32 }}>
           {[
+            { label: "Browse Jobs", href: "/browse-jobs" },
             { label: "For Candidates", href: "/for-candidates" },
             { label: "For Recruiters", href: "/for-recruiters" },
             { label: "For Employers", href: "/for-employers" },
@@ -435,6 +436,7 @@ export default function HomePage() {
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Platform</p>
               {[
+                { label: "Browse Jobs", href: "/browse-jobs" },
                 { label: "Marketplace", href: "/marketplace-flow" },
                 { label: "Credit System", href: "/credit-system" },
                 { label: "For Candidates", href: "/for-candidates" },

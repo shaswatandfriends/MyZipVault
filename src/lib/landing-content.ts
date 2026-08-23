@@ -48,6 +48,7 @@ export const menuSections: MenuSection[] = [
   {
     title: "HOW IT WORKS",
     items: [
+      { icon: Briefcase, label: "Browse Jobs", href: "/browse-jobs" },
       { icon: Briefcase, label: "For Candidates", href: "/for-candidates" },
       { icon: Search, label: "For Recruiters", href: "/for-recruiters" },
       { icon: Briefcase, label: "For Employers", href: "/for-employers" },
