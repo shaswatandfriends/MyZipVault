@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     nextDay.setDate(nextDay.getDate() + 1);
 
     // Determine which recruiter's calls to fetch
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     let targetRecruiterId = userId;
 
     if (recruiterId) {

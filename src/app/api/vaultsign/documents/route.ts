@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
     const document = await db.vaultSignDocument.create({
       data: {
         organization_id: orgId,
-        created_by_user_id: parseInt(session.user.id),
+        created_by_user_id: parseInt((session.user as Record<string, unknown>).id),
         template_id: template_id || null,
         document_name,
         document_type,

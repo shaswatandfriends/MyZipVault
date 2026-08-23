@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Log the flagging action
-    const actionerId = Number(session.user.id);
+    const actionerId = Number((session.user as Record<string, unknown>).id);
     await db.auditLog.create({
       data: {
         user_id: actionerId,

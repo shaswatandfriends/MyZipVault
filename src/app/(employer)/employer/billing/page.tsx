@@ -413,7 +413,7 @@ function EmployerBillingPageInner() {
                               {tx.balanceAfter.toLocaleString()}
                             </TableCell>
                             <TableCell className="text-xs text-text-muted">
-                              {formatDate(tx.createdAt.toISOString ? tx.createdAt.toISOString() : String(tx.createdAt))}
+                              {formatDate(tx.createdAt)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -495,7 +495,7 @@ function EmployerBillingPageInner() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs text-text-muted">
-                              {formatDate(inv.createdAt.toISOString ? inv.createdAt.toISOString() : String(inv.createdAt))}
+                              {formatDate(inv.createdAt)}
                             </TableCell>
                           </TableRow>
                         );

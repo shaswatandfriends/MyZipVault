@@ -93,6 +93,7 @@ interface SignaturePadInstance {
   toData(): unknown[];
   fromData(data: unknown[]): void;
   off(): void;
+  addEventListener(type: string, listener: () => void): void;
 }
 
 type SignatureType = "draw" | "type" | "upload";
@@ -286,14 +287,15 @@ export default function ChecklistAssessmentPage({
         sigPadRef.current = new SignaturePad(canvas, {
           backgroundColor: "rgb(255,255,255)",
           penColor: "rgb(5,150,105)",
-          onEnd: () => {
-            const pad = sigPadRef.current;
-            if (pad && !pad.isEmpty()) {
-              const base64 = pad.toDataURL("image/png");
-              setDrawnSignatureBase64(base64);
-              setSignatureData({ type: "draw", image_base64: base64 });
-            }
-          },
+        });
+        // signature_pad v5+ uses addEventListener instead of the onEnd option
+        sigPadRef.current.addEventListener("endStroke", () => {
+          const pad = sigPadRef.current;
+          if (pad && !pad.isEmpty()) {
+            const base64 = pad.toDataURL("image/png");
+            setDrawnSignatureBase64(base64);
+            setSignatureData({ type: "draw", image_base64: base64 });
+          }
         });
         sigPadInitialized.current = true;
 
@@ -309,7 +311,7 @@ export default function ChecklistAssessmentPage({
         };
 
         window.addEventListener("resize", handleResize);
-        (sigPadRef as Record<string, unknown>)._cleanup = () => {
+        (sigPadRef as unknown as Record<string, unknown>)._cleanup = () => {
           window.removeEventListener("resize", handleResize);
           sigPadRef.current?.off();
         };
@@ -320,10 +322,10 @@ export default function ChecklistAssessmentPage({
 
     return () => {
       destroyed = true;
-      const cleanup = (sigPadRef as Record<string, unknown>)._cleanup as (() => void) | undefined;
+      const cleanup = (sigPadRef as unknown as Record<string, unknown>)._cleanup as (() => void) | undefined;
       if (cleanup) {
         cleanup();
-        delete (sigPadRef as Record<string, unknown>)._cleanup;
+        delete (sigPadRef as unknown as Record<string, unknown>)._cleanup;
       }
       sigPadInitialized.current = false;
     };

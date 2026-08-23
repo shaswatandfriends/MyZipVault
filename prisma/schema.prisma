@@ -788,9 +788,12 @@ model CallSchedule {
   id                Int       @id @default(autoincrement())
   lead_id           Int
   recruiter_user_id Int
+  schedule_type     String?   // 'specific_date' | 'month_range' — null for legacy rows
   scheduled_date    DateTime? // Specific date/time (null for month-range)
   scheduled_month   String?   // "2026-12" for month-range scheduling
+  scheduled_year    Int?      // 2026 for month-range scheduling
   status            String    @default("scheduled") // scheduled, completed, rescheduled, cancelled, no_answer
+  remark            String?
   reminder_sent_at  DateTime?
   created_at        DateTime  @default(now())
 

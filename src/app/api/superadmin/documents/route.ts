@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = Number(session.user.id);
+    const adminUserId = Number((session.user as Record<string, unknown>).id);
     const body = await request.json();
     const { action, credentialId, reason } = body;
 

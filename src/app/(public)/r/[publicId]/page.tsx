@@ -173,10 +173,7 @@ function PublicRecruiterProfileInner() {
       const res = await fetch(`/api/recruiter/${data!.recruiter.public_id}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...reviewForm,
-          recruiter_public_id: data!.recruiter.public_id,
-        }),
+        body: JSON.stringify(reviewForm),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to submit review");
@@ -197,10 +194,7 @@ function PublicRecruiterProfileInner() {
       const res = await fetch(`/api/recruiter/${data!.recruiter.public_id}/report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...reportForm,
-          recruiter_public_id: data!.recruiter.public_id,
-        }),
+        body: JSON.stringify(reportForm),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to submit report");

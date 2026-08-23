@@ -11,7 +11,7 @@ import { logAudit } from "@/lib/audit";
  * cannot be edited (Glassdoor-style — the recruiter's defense is final).
  *
  * Auth: the logged-in user must be the recruiter who was reviewed
- * (review.recruiter_user_id === session.user.id).
+ * (review.recruiter_user_id === (session.user as Record<string, unknown>).id).
  *
  * Body:
  *   - reply: string (max 300 chars, required)
@@ -26,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
     const reviewId = parseInt(id, 10);
     if (isNaN(reviewId)) {

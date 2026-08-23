@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // ── Log audit trail for exiting proxy ────────────────────────────
     const session = await getServerSession(authOptions);
     if (session?.user) {
-      const userId = Number(session.user.id);
+      const userId = Number((session.user as Record<string, unknown>).id);
       const userRole = (session.user as Record<string, unknown>).role as string;
       await logProxyExit(userId, userRole);
     }

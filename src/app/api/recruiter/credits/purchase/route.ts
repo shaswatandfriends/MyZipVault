@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
       // Audit log: credit purchase initiated
       try {
-        const userId = Number(session.user.id);
+        const userId = Number((session.user as Record<string, unknown>).id);
         await db.auditLog.create({
           data: {
             user_id: userId,

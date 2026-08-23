@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
 
     // Fetch user email and phone for notification
     const user = await db.user.findUnique({

@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const body = await request.json();
     const { first_name, last_name, phone, notification_preferences } = body;
 

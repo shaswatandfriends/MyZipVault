@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     }
 
     // Create audit log
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     await logBaaSigned(userId, organizationId);
 
     return NextResponse.json({

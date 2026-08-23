@@ -179,7 +179,7 @@ function PdfCanvasPreview({ url }: { url: string }) {
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport }).promise;
+        await page.render({ canvas, canvasContext: context, viewport }).promise;
       } catch (err) {
         console.error("PDF render error:", err);
         if (!cancelled) setRenderError(true);

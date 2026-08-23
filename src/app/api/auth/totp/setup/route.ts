@@ -48,12 +48,12 @@ export async function POST() {
       where: { setting_key: "superadmin_totp_secret" },
       update: {
         setting_value: secret,
-        updated_by: Number(session.user.id),
+        updated_by: Number((session.user as Record<string, unknown>).id),
       },
       create: {
         setting_key: "superadmin_totp_secret",
         setting_value: secret,
-        updated_by: Number(session.user.id),
+        updated_by: Number((session.user as Record<string, unknown>).id),
       },
     });
 

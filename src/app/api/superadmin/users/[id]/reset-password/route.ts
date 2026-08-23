@@ -42,7 +42,7 @@ export async function POST(
     // Generate a temporary password
     const tempPassword = randomBytes(8).toString("hex");
     const hashedPassword = await hash(tempPassword, 12);
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     // ─── Transactional password reset + audit log ────────────────────
     await db.$transaction(async (tx) => {

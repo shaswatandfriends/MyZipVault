@@ -34,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
     const { id } = await params;
     const submissionId = parseInt(id, 10);
@@ -238,7 +238,7 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
     const { id } = await params;
     const submissionId = parseInt(id, 10);
@@ -457,7 +457,7 @@ export async function PUT(
         if (config) {
           await createNotification({
             userId: submission.recruiter_user_id,
-            category: "submission",
+            category: "status",
             priority: config.priority as "info" | "important" | "urgent",
             title: config.title,
             message: config.message,

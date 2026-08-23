@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const organizationId = (session.user as Record<string, unknown>)
       .organizationId as number | null;
 

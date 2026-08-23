@@ -802,7 +802,9 @@ export default function CalendarPage() {
                     }`}
                     style={{
                       backgroundColor: cfg.color,
-                      ringColor: cfg.color,
+                      // Set the Tailwind ring color via CSS variable so the
+                      // 'ring-2' className picks up the same color as the dot
+                      ["--tw-ring-color" as string]: cfg.color,
                     }}
                   />
                 ))}

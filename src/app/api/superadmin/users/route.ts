@@ -176,7 +176,7 @@ export async function POST(request: Request) {
       });
 
       // Audit log
-      const actionerId = parseInt(session.user.id as string, 10);
+      const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
       await db.auditLog.create({
         data: {
           user_id: actionerId,
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     switch (action) {
       case "force-reset-password": {

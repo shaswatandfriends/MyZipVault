@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         header_config: JSON.stringify(header_config),
         footer_config: JSON.stringify(footer_config),
         is_active,
-        created_by: parseInt(session.user.id),
+        created_by: parseInt((session.user as Record<string, unknown>).id),
       },
       include: {
         creator: {

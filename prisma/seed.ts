@@ -109,7 +109,7 @@ async function main() {
   console.log(`  ✓ Client Recruiter: ${clientRecruiter.email}`);
 
   // ─── 3. Create Candidates ───────────────────────────────────────
-  const candidates = [];
+  const candidates: Array<{ id: number; email: string; [key: string]: unknown }> = [];
   const candidateData = [
     { email: 'nurse@example.com', first: 'Jane', last: 'Nurse', phone: '(555) 123-4567' },
     { email: 'john.icu@email.com', first: 'John', last: 'Smith', phone: '(555) 234-5678' },
@@ -146,7 +146,7 @@ async function main() {
   console.log(`  ✓ Candidates: ${candidates.length} created`);
 
   // ─── 4. Create Checklist Templates ──────────────────────────────
-  const templates = [];
+  const templates: Array<{ id: number; name: string; [key: string]: unknown }> = [];
   const templateData = [
     { profession: 'RN', specialty: 'ICU', name: 'ICU Nurse Skills Checklist' },
     { profession: 'RN', specialty: 'ER', name: 'Emergency Room Nurse Skills Checklist' },
@@ -228,7 +228,7 @@ async function main() {
 
   // ─── 6. Create Checklist Requests ───────────────────────────────
   const now = Date.now();
-  const checklistRequests = [];
+  const checklistRequests: Array<{ id: number; [key: string]: unknown }> = [];
 
   // Jane Nurse - completed checklist
   const cr1 = await prisma.checklistRequest.create({
@@ -355,7 +355,7 @@ async function main() {
   console.log('  ✓ Checklist Responses & Skill Ratings created');
 
   // ─── 8. Create Credentials for candidates ───────────────────────
-  const creds = [];
+  const creds: Array<{ id: number; [key: string]: unknown }> = [];
   for (let i = 0; i < candidates.length; i++) {
     const cred = await prisma.credential.create({
       data: {
@@ -387,7 +387,7 @@ async function main() {
   console.log(`  ✓ Resumes: ${candidates.length} created`);
 
   // ─── 10. Create Consent Shares ──────────────────────────────────
-  const shares = [];
+  const shares: Array<{ id: number; [key: string]: unknown }> = [];
   // Jane Nurse shared checklist with recruiter
   const share1 = await prisma.consentShare.create({
     data: {

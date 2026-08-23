@@ -195,6 +195,7 @@ export default function PublicSigningPage() {
         canvas.style.height = `${viewport.height / 1.5}px`;
 
         const renderTask = page.render({
+          canvas,
           canvasContext: context,
           viewport: viewport,
         });

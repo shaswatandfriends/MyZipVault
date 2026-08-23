@@ -49,7 +49,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const body = await request.json();
     const { flagName, isEnabled } = body;
 

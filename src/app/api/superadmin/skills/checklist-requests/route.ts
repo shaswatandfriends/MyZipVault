@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       // Create a ChecklistRequest for the candidate
       const newRequest = await db.checklistRequest.create({
         data: {
-          client_user_id: Number(session.user.id), // Admin assigns as the requester
+          client_user_id: Number((session.user as Record<string, unknown>).id), // Admin assigns as the requester
           candidate_user_id: requestData.candidateUserId,
           checklist_template_id: Number(templateId),
           status: "sent",

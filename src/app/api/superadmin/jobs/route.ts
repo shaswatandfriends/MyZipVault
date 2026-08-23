@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title is required (min 3 chars)" }, { status: 400 });
     }
 
-    const adminUserId = parseInt(session.user.id as string, 10);
+    const adminUserId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     const job = await db.jobPosting.create({
       data: {

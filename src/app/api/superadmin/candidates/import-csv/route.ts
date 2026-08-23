@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Audit log: log every chunk (not just the last one)
-    const adminUserId = parseInt(session.user.id as string, 10);
+    const adminUserId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     try {
       await logAudit({
         userId: adminUserId,

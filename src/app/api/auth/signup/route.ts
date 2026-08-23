@@ -138,7 +138,7 @@ export async function POST(request: Request) {
           const { createNotification } = await import("@/lib/notifications/create");
           await createNotification({
             userId: user.id,
-            category: "profile",
+            category: "system",
             priority: "info",
             title: "Profile linked ✓",
             message: `We found your profile in our healthcare candidate pool${poolRecord.specialty ? ` (${poolRecord.specialty})` : ""}. Your information has been auto-filled — please review and complete any missing details.`,

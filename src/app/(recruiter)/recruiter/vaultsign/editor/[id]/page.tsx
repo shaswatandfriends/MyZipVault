@@ -412,7 +412,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           }
           loadingTask = pdfjsLib.getDocument({ data: bytes });
         } else {
-          loadingTask = pdfjsLib.getDocument(pdfUrl);
+          loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         }
 
         docToRender = await loadingTask.promise;
@@ -429,6 +429,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       canvas.width = viewport.width;
 
       await page.render({
+        canvas,
         canvasContext: context,
         viewport: viewport,
       }).promise;

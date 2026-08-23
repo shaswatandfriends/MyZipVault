@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
 
     if (userRole !== "candidate") {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
 
     if (userRole !== "candidate") {
@@ -108,7 +108,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
 
     if (userRole !== "candidate") {
@@ -169,7 +169,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
 
     if (userRole !== "candidate") {

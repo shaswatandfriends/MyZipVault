@@ -47,7 +47,7 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = parseInt(session.user.id as string, 10);
+    const adminUserId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
     const submissionId = parseInt(id, 10);
     if (isNaN(submissionId)) {
@@ -268,7 +268,7 @@ export async function PUT(
         if (config) {
           await createNotification({
             userId: submission.recruiter_user_id,
-            category: "submission",
+            category: "status",
             priority: config.priority as "info" | "important" | "urgent",
             title: config.title,
             message: config.message,

@@ -36,7 +36,7 @@ export async function PATCH(
       );
     }
 
-    const reviewerId = Number(session.user.id);
+    const reviewerId = Number((session.user as Record<string, unknown>).id);
 
     const flag = await db.documentFlag.update({
       where: { id: flagId },

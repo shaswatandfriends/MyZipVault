@@ -20,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized — you must be logged in to file a report" }, { status: 401 });
     }
 
-    const reporterId = parseInt(session.user.id as string, 10);
+    const reporterId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const reporterRole = (session.user as Record<string, unknown>).role as string;
     const { publicId } = await params;
 

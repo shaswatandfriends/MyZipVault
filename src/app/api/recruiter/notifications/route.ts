@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const { searchParams } = new URL(request.url);
     const typeFilter = searchParams.get("type") || "all";
     const page = parseInt(searchParams.get("page") || "1");
@@ -124,7 +124,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const body = await request.json();
 
     if (body.markAllRead) {

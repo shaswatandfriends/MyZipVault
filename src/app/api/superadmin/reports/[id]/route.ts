@@ -22,7 +22,7 @@ export async function PUT(
     const role = (session.user as Record<string, unknown>).role as string;
     if (role !== "super_admin" && role !== "platform_admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const adminId = parseInt(session.user.id as string, 10);
+    const adminId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
     const reportId = parseInt(id, 10);
     if (isNaN(reportId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });

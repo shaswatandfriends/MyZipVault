@@ -287,7 +287,7 @@ export async function GET(request: Request) {
       user_id: user.id,
       email: user.email,
       hipaa_export: true,
-      exported_by: `super_admin (user ${session.user.id})`,
+      exported_by: `super_admin (user ${(session.user as Record<string, unknown>).id})`,
       files: [
         "profile.json",
         "credentials/credentials.json",
@@ -305,7 +305,7 @@ export async function GET(request: Request) {
     const zipBuffer = await zipDone;
 
     // ── Log the export ───────────────────────────────────────────────
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     await db.auditLog.create({
       data: {
         user_id: actionerId,

@@ -255,6 +255,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
         canvas.style.height = `${viewport.height / 1.5}px`;
 
         const renderTask = page.render({
+          canvas,
           canvasContext: context,
           viewport: viewport,
         });

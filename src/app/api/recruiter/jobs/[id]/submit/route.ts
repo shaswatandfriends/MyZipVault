@@ -47,7 +47,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const organizationId = (session.user as Record<string, unknown>).organizationId as number | undefined;
 
     const { id } = await params;
@@ -293,7 +293,7 @@ export async function POST(
         const { createNotification } = await import("@/lib/notifications/create");
         await createNotification({
           userId: activeOwnership.recruiter_user_id,
-          category: "submission",
+          category: "status",
           priority: "info",
           title: "Your candidate was submitted by another recruiter",
           message: `${candidate.first_name ?? ""} ${candidate.last_name ?? ""} was submitted to "${job.title}" by another recruiter. You'll receive a 2% residual if this placement closes.`,

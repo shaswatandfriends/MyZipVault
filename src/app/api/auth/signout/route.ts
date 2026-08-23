@@ -21,7 +21,7 @@ export async function POST() {
     const session = await getServerSession(authOptions);
 
     if (session?.user) {
-      const userId = Number(session.user.id);
+      const userId = Number((session.user as Record<string, unknown>).id);
       const role = (session.user as Record<string, unknown>).role as string;
       const email = session.user.email;
 

@@ -73,7 +73,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const adminUserId = parseInt(session.user.id as string, 10);
+    const adminUserId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     // Build update data — only include fields that are present in body
     const updateData: Record<string, unknown> = {};
@@ -151,7 +151,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
 
-    const adminUserId = parseInt(session.user.id as string, 10);
+    const adminUserId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const job = await db.jobPosting.findUnique({ where: { id: jobId }, select: { title: true, status: true } });
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });

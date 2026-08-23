@@ -15,7 +15,7 @@ export async function PUT(
     }
 
     const userRole = (session.user as Record<string, unknown>).role;
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
 
     if (userRole !== "super_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

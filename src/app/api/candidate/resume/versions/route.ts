@@ -18,7 +18,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const resumes = await db.resume.findMany({
       where: { candidate_user_id: userId },
       orderBy: { created_at: "desc" },
@@ -64,7 +64,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

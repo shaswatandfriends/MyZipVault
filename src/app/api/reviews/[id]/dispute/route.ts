@@ -29,7 +29,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { id } = await params;
     const reviewId = parseInt(id, 10);
     if (isNaN(reviewId)) {

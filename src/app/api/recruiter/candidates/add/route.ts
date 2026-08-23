@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const organizationId = (session.user as Record<string, unknown>).organizationId as number | undefined;
 
     const body = await request.json();

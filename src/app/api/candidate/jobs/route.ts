@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     // Get the candidate's existing application IDs so the UI can show
     // "Already Applied" badges
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const myApplications = await db.candidateSubmission.findMany({
       where: {
         submission_type: "self_apply",

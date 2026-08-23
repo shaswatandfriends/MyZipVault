@@ -16,7 +16,7 @@ async function requireRecruiter() {
   const userRole = (session.user as Record<string, unknown>).role as string;
   if (!["client_admin", "client_recruiter"].includes(userRole)) return null;
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as Record<string, unknown>).id);
   const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
   if (!organizationId) return null;
 

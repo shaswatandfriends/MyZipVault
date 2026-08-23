@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 
         if (response.ok) {
           // Log the test email action
-          const actionerId = parseInt(session.user.id as string, 10);
+          const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
           await db.auditLog.create({
             data: {
               user_id: actionerId,
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     console.log(`[TEST EMAIL] Subject: ${previewSubject}`);
     console.log(`[TEST EMAIL] Body: ${htmlContent.substring(0, 500)}...`);
 
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     await db.auditLog.create({
       data: {
         user_id: actionerId,

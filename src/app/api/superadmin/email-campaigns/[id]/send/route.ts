@@ -50,7 +50,7 @@ export async function POST(
 
     // ─── Rate limit: max 3 campaign sends per hour ───
     // (each campaign can send up to 500 emails — this prevents Brevo credit drain)
-    const adminUserId = Number(session.user.id);
+    const adminUserId = Number((session.user as Record<string, unknown>).id);
     const rateLimit = await checkRateLimit("email_campaign_send", `user_${adminUserId}`, 3, 3600);
     if (!rateLimit.allowed) {
       return NextResponse.json(

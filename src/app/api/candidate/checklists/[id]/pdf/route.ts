@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
     if (userRole !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -142,7 +142,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const jsonValue = JSON.stringify(body);
 
     // Upsert the platform setting

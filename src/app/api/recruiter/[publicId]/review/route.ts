@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized — you must be logged in to review" }, { status: 401 });
     }
 
-    const reviewerId = parseInt(session.user.id as string, 10);
+    const reviewerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const reviewerRole = (session.user as Record<string, unknown>).role as string;
     const { publicId } = await params;
 

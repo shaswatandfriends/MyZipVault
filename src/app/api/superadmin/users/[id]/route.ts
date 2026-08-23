@@ -162,7 +162,7 @@ export async function DELETE(
       );
     }
 
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     // Delete all related data then the user — all in a transaction so
     // we never end up with orphaned records if a step fails.

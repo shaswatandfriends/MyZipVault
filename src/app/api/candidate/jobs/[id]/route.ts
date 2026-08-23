@@ -74,7 +74,7 @@ export async function GET(
     }
 
     // Check if the candidate already applied
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const existingApplication = await db.candidateSubmission.findFirst({
       where: {
         job_id: jobId,

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const role = (session.user as Record<string, unknown>).role as string;
     if (role !== "employer") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "";
 

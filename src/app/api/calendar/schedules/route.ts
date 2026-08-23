@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
 
     if (!["client_recruiter", "client_admin"].includes(userRole)) {
@@ -156,7 +156,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number(session.user.id);
+    const userId = Number((session.user as Record<string, unknown>).id);
     const userRole = (session.user as Record<string, unknown>).role as string;
     const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
 

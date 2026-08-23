@@ -45,7 +45,7 @@ export async function PUT(
     // Determine if adding or deducting
     const creditAmount = Math.abs(amount);
     const isAdd = action === "add" || amount > 0;
-    const actionerId = parseInt(session.user.id as string, 10);
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
 
     // ─── Transactional credit adjustment ─────────────────────────────
     // All three operations (balance update, transaction record, audit log)

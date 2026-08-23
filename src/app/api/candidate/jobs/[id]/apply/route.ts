@@ -46,7 +46,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
 
-    const userId = parseInt(session.user.id as string, 10);
+    const userId = parseInt((session.user as Record<string, unknown>).id as string, 10);
     const userEmail = (session.user as Record<string, unknown>).email as string;
 
     // Optional cover note
@@ -236,7 +236,7 @@ export async function POST(
       const { createNotification } = await import("@/lib/notifications/create");
       await createNotification({
         userId,
-        category: "job",
+        category: "status",
         priority: "info",
         title: "Application submitted ✓",
         message: `Your application for "${job.title}" has been received. The employer will review and reach out if there's a fit.`,

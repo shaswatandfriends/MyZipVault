@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Find the signer for this document that matches the candidate
-    const userId = parseInt(session.user.id);
+    const userId = parseInt((session.user as Record<string, unknown>).id);
     const signer = await db.vaultSignSigner.findFirst({
       where: {
         document_id: docId,

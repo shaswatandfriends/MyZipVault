@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
-    const userId = parseInt(session.user.id);
+    const userId = parseInt((session.user as Record<string, unknown>).id);
 
     // Find all signers for this user
     const signers = await db.vaultSignSigner.findMany({
