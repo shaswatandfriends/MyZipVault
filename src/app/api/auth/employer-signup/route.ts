@@ -86,7 +86,9 @@ export async function POST(request: Request) {
       });
       const verificationLink = `${BASE_URL}/verify-email?token=${verifyToken}`;
       await sendVerificationEmail(user.email, verificationLink);
-      console.log(`[EMPLOYER_SIGNUP] Verification email sent — user: ${user.id}, email: ${user.email}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[EMPLOYER_SIGNUP] Verification email sent — user: ${user.id}, email: ${user.email}`);
+      }
     } catch (emailError) {
       logAuthError("[EMPLOYER_SIGNUP] Failed to send verification email", emailError);
     }

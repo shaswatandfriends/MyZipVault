@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = parseInt(session.user.id as string, 10);
-    const organizationId = (session.user as Record<string, unknown>).organization_id as number | undefined;
+    const organizationId = (session.user as Record<string, unknown>).organizationId as number | undefined;
 
     const body = await request.json();
     const { name, email, phone, city, state, job_title, specialty } = body;

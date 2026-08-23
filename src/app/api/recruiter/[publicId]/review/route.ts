@@ -59,8 +59,11 @@ export async function POST(
 
     // Check for existing review
     if (submissionId) {
-      const existing = await db.recruiterReview.findUnique({
-        where: { reviewer_user_id_submission_id: { reviewer_user_id: reviewerId, submission_id: submissionId } },
+      // Note: there's a partial unique index on (reviewer_user_id, submission_id) WHERE
+      // reviewer_user_id IS NOT NULL in the DB, but Prisma cannot introspect partial indexes
+      // so we can't use findUnique with reviewer_user_id_submission_id. Use findFirst instead.
+      const existing = await db.recruiterReview.findFirst({
+        where: { reviewer_user_id: reviewerId, submission_id: submissionId },
       });
       if (existing) return NextResponse.json({ error: "You have already reviewed this placement" }, { status: 409 });
     } else {

@@ -809,3 +809,46 @@ Stage Summary:
 - 4 known audit issues resolved (#1 sidebar palette, #2 Employer Login links in both auth pages, #3 /employer/* middleware redirect, #4 employer role-routing gaps in auth-provider).
 - 16 additional fixes found by scanning the codebase for: production console.log leaks (9 fixes — including one that was leaking OTPs and another that was leaking the superadmin email), a mis-ordered import, an `any` type, an incorrect logout redirect for the employer role, a missing case in a role-dashboard helper, and 4 missing aria-labels on icon-only buttons across 4 files.
 - All changes are minimal, surgical, and respect the constraints (no DB schema changes, no new dependencies, no new features, no copy/CTA edits, no /skills/ files touched).
+
+---
+Task ID: audit-1
+Agent: Audit
+Task: Complete platform audit — connections, flows, dependencies
+
+Work Log:
+- Read /home/z/my-project/MyZipVault/worklog.md to understand previous work (Glass Warm design system, dark mode toggle, 20 audit fixes, marketplace Phase 0)
+- Read prisma/schema.prisma end-to-end (1,640 lines, 62 models)
+- Cross-checked every db.<model> reference in src/ (119 marketplace + many legacy) against schema — all model names match
+- Audited prisma/sql/ (19 SQL files, NO prisma/migrations/ directory — all schema changes are raw SQL)
+- Listed all 355 API routes in src/app/api/**
+- Traced referral flow end-to-end: /api/referrals/status → 3 signup routes → grantReferralCredits() — flow is correct
+- Traced Stripe webhook flow: metadata.payment_type === "credit_purchase" vs "employer_placement" branches verified
+- Traced placement payment → status_history append on the submission (webhook lines 161–184) — verified
+- Traced review reply/dispute flow: API checks recruiter_user_id === session.user.id correctly
+- Traced first-submission-wins: BigInt(Date.now()) used for submitted_at_ms (line 235 of submit route) — correct
+- Traced public/private jobs merge: candidate /jobs redirects to /browse-jobs — verified
+- Verified CookieConsent + HelpFloater are in root layout (lines 98-99) — correct
+- Read middleware.ts end-to-end, mapped public vs protected routes
+- Enumerated env vars used in src/ (29 unique names) + 1 in schema.prisma (DIRECT_URL)
+- Cross-referenced session.user.organizationId (camelCase in auth.ts:305) against usages — found 8 routes using snake_case `organization_id` (silent bug)
+- Identified `reviewer_user_id_submission_id` findUnique call (route.ts:63) referencing a Prisma composite unique that isn't declared in schema.prisma — only a partial unique index in SQL migration (Prisma can't see it)
+- Identified `rtr_document.title` select on VaultSignDocument (superadmin submissions route line 70) — VaultSignDocument has `document_name`, not `title`
+- Identified auth-provider.tsx PUBLIC_ROUTES missing `/browse-jobs`, `/blog`, `/contact`, `/for-candidates`, `/for-employers`, `/for-recruiters`, `/support`, `/our-story`, `/faq`, `/marketplace-flow`, `/credit-system`, `/referral-program` — logged-in users get bounced to dashboard
+- Identified middleware blocks non-recruiters from `/api/recruiter/[publicId]/review` and `/api/recruiter/[publicId]/report` (line 80) — public recruiter review/report flow is broken for candidates and employers
+- Identified 5 invalid notification categories (`"submission"`, `"profile"`, `"job"`) — fall back to default NotificationDefault settings but cause inconsistent filtering
+- Identified `/api/feedback/route.ts` has no rate limiter or role check — any authenticated user can spam super_admin notification queue
+- Identified 3 unguarded console.log statements in signup routes leaking user email + ID to server logs (PII leak)
+- Verified next.config.ts has `typescript.ignoreBuildErrors: true` (line 60) — explains why all the above TS mismatches don't fail `next build`
+- Identified Stripe webhook is registered via vercel.json crons (only /api/cron/keepalive + /api/cron/marketplace-maintenance) — Stripe webhook itself is NOT in the vercel.json crons; it must be registered manually in Stripe Dashboard
+- Confirmed 3 SQL migration files (2026-08-14, 2026-08-15, 2026-08-19) are dated Aug 23 (today) and need to be applied to prod DB before deploy
+
+Stage Summary:
+- Audit complete. 4 P0 production blockers identified, 10 P1 bugs, 6 P2 polish items.
+- Top 5 critical findings:
+  1. **P0** `session.user.organization_id` (snake_case) bug — 8 routes affected. RTR send / reveal / status endpoints always return 400. RTR enforcement in submit route silently never runs.
+  2. **P0** `reviewer_user_id_submission_id` findUnique on RecruiterReview at /api/recruiter/[publicId]/review/route.ts:63 references a composite unique that only exists as a partial SQL index, not in Prisma schema — runtime PrismaClientValidationError breaks review submission for verified placements.
+  3. **P0** `rtr_document.title` select at /api/superadmin/submissions/route.ts:70 references non-existent field — superadmin submissions list endpoint will throw 500.
+  4. **P0** auth-provider PUBLIC_ROUTES missing /browse-jobs and /blog — logged-in candidates are redirected away from the public job board (middleware allows it, but client-side auth bounces them to /dashboard).
+  5. **P1** middleware line 80 blocks non-recruiter roles from /api/recruiter/[publicId]/review and /report — the public recruiter review/report flow is broken for candidates and employers.
+
+Full audit report (severity-tagged, file:line, impact, recommended fix) is in the delivered Markdown below.

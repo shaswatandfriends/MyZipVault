@@ -23,9 +23,19 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program"];
 
-const PUBLIC_ROUTE_PREFIXES = ["/reference/", "/sign/", "/shared/"];
+// PUBLIC_ROUTE_PREFIXES — prefix-matched routes that are public AND that
+// logged-in users can still view (the redirect on line 137 exempts these
+// via `isPrefixPublic`). Add nested-route groups here (e.g. `/browse-jobs`
+// covers both `/browse-jobs` and `/browse-jobs/[id]`).
+const PUBLIC_ROUTE_PREFIXES = [
+  "/reference/", "/sign/", "/shared/",
+  "/browse-jobs", "/blog",
+  "/contact", "/for-candidates", "/for-employers", "/for-recruiters",
+  "/support", "/our-story", "/faq", "/marketplace-flow",
+  "/credit-system", "/referral-program",
+];
 
 function getRoleDashboard(role: UserRole): string {
   switch (role) {

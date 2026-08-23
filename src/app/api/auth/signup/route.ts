@@ -149,7 +149,9 @@ export async function POST(request: Request) {
           console.error("[SIGNUP_CLAIM] Failed to send claim notification:", notifErr);
         }
 
-        console.log(`[SIGNUP_CLAIM] User ${user.id} (${user.email}) claimed CandidateRecord ${existingContact.candidate_record_id}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[SIGNUP_CLAIM] User ${user.id} (${user.email}) claimed CandidateRecord ${existingContact.candidate_record_id}`);
+        }
       }
     } catch (claimErr) {
       console.error("[SIGNUP_CLAIM] Failed to link candidate record:", claimErr);
@@ -182,7 +184,9 @@ export async function POST(request: Request) {
 
       const verificationLink = `${BASE_URL}/verify-email?token=${verifyToken}`;
       await sendVerificationEmail(user.email, verificationLink);
-      console.log(`[AUDIT] Verification email sent on signup — user: ${user.id}, email: ${user.email}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[AUDIT] Verification email sent on signup — user: ${user.id}, email: ${user.email}`);
+      }
     } catch (emailError) {
       logAuthError("[SIGNUP] Failed to send verification email", emailError);
       // Don't fail signup if email sending fails

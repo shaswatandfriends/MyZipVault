@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true },
           },
           rtr_document: {
-            select: { id: true, status: true, title: true },
+            select: { id: true, status: true, document_name: true },
           },
         },
         orderBy: { submitted_at: "desc" },
@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
         rtr_signed_at: s.rtr_signed_at,
         rtr_document_id: s.rtr_document?.id ?? null,
         rtr_document_status: s.rtr_document?.status ?? null,
+        rtr_document_name: s.rtr_document?.document_name ?? null,
         recruiter_notes: s.recruiter_notes,
         // Revenue
         placement_fee: s.placement_fee,

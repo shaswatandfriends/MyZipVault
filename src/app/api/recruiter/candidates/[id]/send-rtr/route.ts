@@ -45,7 +45,7 @@ export async function POST(
     }
 
     const userId = parseInt(session.user.id as string, 10);
-    const organizationId = (session.user as Record<string, unknown>).organization_id as number | undefined;
+    const organizationId = (session.user as Record<string, unknown>).organizationId as number | undefined;
     if (!organizationId) {
       return NextResponse.json({ error: "No organization found" }, { status: 400 });
     }

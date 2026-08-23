@@ -77,6 +77,13 @@ export default withAuth({
       // API routes - check role for protected APIs
       if (pathname.startsWith("/api/superadmin") && role !== "super_admin") return false;
       if (pathname.startsWith("/api/admin") && !["super_admin", "platform_admin"].includes(role)) return false;
+      // Public recruiter review/report endpoints — multi-source reputation system.
+      // Any authenticated user (candidate, recruiter, employer) can leave a review
+      // or file a report on a recruiter. The routes themselves enforce auth.
+      // Must be checked BEFORE the /api/recruiter role gate below.
+      if (pathname.match(/^\/api\/recruiter\/[^/]+\/(review|report)$/)) {
+        return true;
+      }
       if (pathname.startsWith("/api/recruiter") && !["client_admin", "client_recruiter"].includes(role)) return false;
       if (pathname.startsWith("/api/candidate") && role !== "candidate") return false;
 
