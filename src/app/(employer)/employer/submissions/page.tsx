@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Send, RefreshCw, Eye, MapPin, Briefcase, Clock, CheckCircle2,
@@ -41,6 +43,7 @@ function getStatusBadge(status: string) {
 }
 
 export default function EmployerSubmissionsPage() {
+  const router = useRouter();
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -117,7 +120,11 @@ export default function EmployerSubmissionsPage() {
                 </TableHeader>
                 <TableBody>
                   {submissions.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer hover:bg-surface"
+                      onClick={() => router.push(`/employer/submissions/${s.id}`)}
+                    >
                       <TableCell>
                         <div>
                           <p className="font-medium text-sm">{s.candidate.name}</p>

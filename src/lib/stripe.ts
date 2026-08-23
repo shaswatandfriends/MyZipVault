@@ -73,6 +73,80 @@ export async function createCreditCheckoutSession(params: {
 }
 
 /**
+ * Create a Stripe Checkout Session for an employer placement payment.
+ *
+ * Unlike credit purchases (which top up an organization's credit balance),
+ * placement payments are charged to the employer after they mark a
+ * candidate as 'placed' on one of their jobs. The platform collects the
+ * full placement_fee from the employer, then splits the payout:
+ *   - recruiter_payout → credited to the recruiter (transaction record)
+ *   - platform_payout  → kept by the platform
+ *   - original_owner_residual (if residual phase) → credited to original owner
+ *
+ * All split amounts are passed as Stripe metadata so the webhook can
+ * allocate payouts without re-reading the submission.
+ */
+export async function createPlacementCheckoutSession(params: {
+  organizationId: number;
+  organizationName: string;
+  submissionId: number;
+  jobTitle: string;
+  candidateName: string;
+  placementFee: number;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+  recruiterUserId: number | null;
+  recruiterPayout: number;
+  platformPayout: number;
+  originalOwnerUserId: number | null;
+  originalOwnerResidual: number;
+  payoutSplitPhase: string; // 'exclusive' | 'residual' | 'open' | 'self_apply'
+}): Promise<{ sessionId: string; sessionUrl: string } | null> {
+  const stripe = getStripe();
+  if (!stripe) return null;
+
+  const totalCents = Math.round(params.placementFee * 100);
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    customer_email: params.customerEmail,
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Placement Fee — ${params.candidateName}`,
+            description: `Placement for "${params.jobTitle}" on MyZipVault marketplace. Payment is collected by the platform and split to the recruiter per the ownership window.`,
+          },
+          unit_amount: totalCents,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      payment_type: "employer_placement",
+      organizationId: String(params.organizationId),
+      submissionId: String(params.submissionId),
+      recruiterUserId: String(params.recruiterUserId ?? ""),
+      recruiterPayout: String(params.recruiterPayout),
+      platformPayout: String(params.platformPayout),
+      originalOwnerUserId: String(params.originalOwnerUserId ?? ""),
+      originalOwnerResidual: String(params.originalOwnerResidual),
+      payoutSplitPhase: params.payoutSplitPhase,
+    },
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+  });
+
+  return {
+    sessionId: session.id,
+    sessionUrl: session.url || "",
+  };
+}
+
+/**
  * Verify a Stripe webhook signature.
  */
 export function verifyWebhookSignature(
