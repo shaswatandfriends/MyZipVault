@@ -1015,10 +1015,18 @@ model EmailCampaign {
   id                Int       @id @default(autoincrement())
   name              String    @db.VarChar(255)
   subject           String    @db.VarChar(500)
-  body              String    // HTML or plain text body
+  body              String    // HTML or plain text body (campaign content — wrapped by branded template at send time)
+  from_name         String?   @db.VarChar(100)
+    // Custom sender name shown in the email "From" field (default: "MyZipVault")
+  reply_to          String?   @db.VarChar(255)
+    // Custom reply-to email (default: BREVO_SENDER_EMAIL)
+  logo_url          String?   @db.VarChar(500)
+    // Logo image URL for the branded email header (if null, text logo is used)
+  accent_color      String?   @db.VarChar(20)
+    // Accent color for the branded email top bar (default: #0A66C2)
   target_role       String    @default("all")
     // 'all' | 'candidate' | 'client_recruiter' | 'client_admin' |
-    // 'platform_admin' | 'super_admin'
+    // 'platform_admin' | 'super_admin' | 'employer'
   target_filter     String?
     // JSON string for additional filters, e.g. {"specialty":"ICU","state":"CA"}
     // null = no additional filters

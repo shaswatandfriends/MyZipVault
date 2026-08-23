@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limiter";
+import { buildCampaignEmailHtml } from "@/lib/campaign-email";
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@myzipvault.com";
@@ -219,6 +220,21 @@ export async function POST(
           }
         }
 
+        // ─── Wrap with branded email template ───────────────────────
+        // The campaign body is the content; the wrapper adds logo header,
+        // accent bar, footer with unsubscribe link.
+        const appUrl2 = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
+        const unsubscribeUrl = trackingToken
+          ? `${appUrl2}/api/email/track/click/${trackingToken}?u=${encodeURIComponent(appUrl2 + "/unsubscribe?token=" + trackingToken)}`
+          : undefined;
+
+        const brandedHtml = buildCampaignEmailHtml(personalizedBody, {
+          accentColor: campaign.accent_color || "#0A66C2",
+          logoUrl: campaign.logo_url || undefined,
+          unsubscribeUrl,
+          campaignName: campaign.name,
+        });
+
         try {
           const brevoResponse = await fetch(BREVO_API_URL, {
             method: "POST",
@@ -227,11 +243,12 @@ export async function POST(
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              sender: { email: BREVO_SENDER_EMAIL, name: "MyZipVault" },
+              sender: { email: BREVO_SENDER_EMAIL, name: campaign.from_name || "MyZipVault" },
               to: [{ email: user.email, name: recipientName }],
               subject: personalizedSubject,
-              htmlContent: personalizedBody,
+              htmlContent: brandedHtml,
               tags: [`campaign:${campaignId}`],
+              ...(campaign.reply_to ? { replyTo: { email: campaign.reply_to } } : {}),
             }),
           });
 
