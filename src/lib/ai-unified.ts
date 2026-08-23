@@ -27,12 +27,13 @@ export async function aiChatCompletion(
   options: ChatCompletionOptions
 ): Promise<ChatCompletionResponse> {
   const errors: string[] = [];
+  const isDev = process.env.NODE_ENV === "development";
 
   if (isGroqConfigured()) {
     try {
-      console.log("[AI] Trying Groq...");
+      if (isDev) console.log("[AI] Trying Groq...");
       const result = await groqChatCompletion(options);
-      console.log("[AI] Groq succeeded");
+      if (isDev) console.log("[AI] Groq succeeded");
       return result;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -43,9 +44,9 @@ export async function aiChatCompletion(
 
   if (isZaiConfigured()) {
     try {
-      console.log("[AI] Trying ZAI...");
+      if (isDev) console.log("[AI] Trying ZAI...");
       const result = await zaiChatCompletion(options);
-      console.log("[AI] ZAI succeeded");
+      if (isDev) console.log("[AI] ZAI succeeded");
       return result;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

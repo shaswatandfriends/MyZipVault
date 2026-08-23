@@ -26,7 +26,12 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
   `;
 
   if (!BREVO_API_KEY) {
-    console.log("[OTP EMAIL] No BREVO_API_KEY — would send OTP:", otpCode, "to", toEmail);
+    // Only log the OTP code in development — never expose OTPs in production logs
+    if (process.env.NODE_ENV === "development") {
+      console.log("[OTP EMAIL] No BREVO_API_KEY — would send OTP:", otpCode, "to", toEmail);
+    } else {
+      console.log("[OTP EMAIL] No BREVO_API_KEY — OTP not delivered (Brevo not configured)");
+    }
     return true;
   }
 
@@ -46,7 +51,9 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
     });
 
     if (response.ok) {
-      console.log(`[OTP EMAIL] Sent OTP to ${toEmail}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[OTP EMAIL] Sent OTP to ${toEmail}`);
+      }
       return true;
     } else {
       const errorText = await response.text();

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") ?? "0") || 0;
 
     // Build where clause
-    const where: any = { user_id: userId };
+    const where: Record<string, unknown> = { user_id: userId };
 
     if (filter === "unread") {
       where.is_read = false;

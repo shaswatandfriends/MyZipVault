@@ -54,19 +54,19 @@ export async function POST(request: Request) {
 
     // ── Step 1: Fetch the file content ──
     let fileBuffer: Buffer;
-    console.log("[RESUME_PARSE] Step 1: Fetching file. URL starts with:", resume.file_url.slice(0, 50));
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Step 1: Fetching file. URL starts with:", resume.file_url.slice(0, 50));
 
     if (resume.file_url.startsWith("data:")) {
-      console.log("[RESUME_PARSE] File is base64 data URL");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] File is base64 data URL");
       const base64 = resume.file_url.split(",")[1];
       fileBuffer = Buffer.from(base64, "base64");
     } else if (isSupabaseAdminConfigured()) {
-      console.log("[RESUME_PARSE] Downloading from Supabase Storage");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Downloading from Supabase Storage");
       const supabase = getSupabaseAdmin();
       const bucket = "resumes";
       const urlParts = resume.file_url.split(`/${bucket}/`);
       const storagePath = urlParts.length > 1 ? urlParts[1] : resume.file_url;
-      console.log("[RESUME_PARSE] Storage path:", storagePath);
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Storage path:", storagePath);
 
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -82,9 +82,9 @@ export async function POST(request: Request) {
 
       const arrayBuffer = await data.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
-      console.log("[RESUME_PARSE] File downloaded, size:", fileBuffer.length, "bytes");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] File downloaded, size:", fileBuffer.length, "bytes");
     } else {
-      console.log("[RESUME_PARSE] Fetching URL directly");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Fetching URL directly");
       const fileRes = await fetch(resume.file_url);
       if (!fileRes.ok) {
         return NextResponse.json(
@@ -97,15 +97,15 @@ export async function POST(request: Request) {
     }
 
     // ── Step 2: Extract text based on file type ──
-    console.log("[RESUME_PARSE] Step 2: Extracting text");
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Step 2: Extracting text");
     const lowerUrl = resume.file_url.toLowerCase();
     let rawText = "";
 
     if (lowerUrl.includes(".pdf") || lowerUrl.startsWith("data:application/pdf")) {
-      console.log("[RESUME_PARSE] Detected PDF, extracting with pdf-parse");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Detected PDF, extracting with pdf-parse");
       rawText = await extractTextFromPDF(fileBuffer);
     } else if (lowerUrl.includes(".docx")) {
-      console.log("[RESUME_PARSE] Detected DOCX, extracting with mammoth");
+      if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Detected DOCX, extracting with mammoth");
       rawText = await extractTextFromDOCX(fileBuffer);
     } else if (lowerUrl.includes(".doc")) {
       return NextResponse.json(
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
     }
 
     // ── Step 2b: Clean up extracted text ──
-    console.log("[RESUME_PARSE] Step 2b: Cleaning text. Length:", rawText.length);
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Step 2b: Cleaning text. Length:", rawText.length);
 
     // Fix single-letter-spaced words (e.g., "S W A T I" → "SWATI")
     let prevText: string;
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
       .trim();
 
     // ── Step 3: AI parse (Groq primary, ZAI fallback) ──
-    console.log("[RESUME_PARSE] Step 3: Calling AI. Text length:", rawText.length);
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Step 3: Calling AI. Text length:", rawText.length);
 
     const systemPrompt = `You are an expert resume parser. Extract structured data from the raw resume text. This could be a nurse, doctor, healthcare recruiter, or any healthcare professional's resume.
 
@@ -195,7 +195,7 @@ IMPORTANT:
       temperature: 0.1,
       max_tokens: 4000,
     });
-    console.log("[RESUME_PARSE] AI response received. Content length:", completion.choices[0]?.message?.content?.length || 0);
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] AI response received. Content length:", completion.choices[0]?.message?.content?.length || 0);
 
     const rawResponse = completion.choices[0]?.message?.content?.trim() || "";
     const jsonStr = rawResponse
@@ -220,7 +220,7 @@ IMPORTANT:
       data: { parsed_data: JSON.stringify(parsedData) },
     });
 
-    console.log("[RESUME_PARSE] Done — saved to DB");
+    if (process.env.NODE_ENV === "development") console.log("[RESUME_PARSE] Done — saved to DB");
     return NextResponse.json({ parsedData });
   } catch (error) {
     console.error("[RESUME_PARSE]", error);

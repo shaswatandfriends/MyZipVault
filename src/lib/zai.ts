@@ -66,7 +66,9 @@ export async function zaiChatCompletion(
     thinking: { type: "disabled" },
   };
 
-  console.log(`[ZAI] Direct fetch to ${url} with model ${DEFAULT_MODEL}`);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[ZAI] Direct fetch to ${url} with model ${DEFAULT_MODEL}`);
+  }
 
   const response = await fetch(url, {
     method: "POST",

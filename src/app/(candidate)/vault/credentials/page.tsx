@@ -657,6 +657,7 @@ export default function CandidateCredentialsPage() {
                               size="icon"
                               className="size-7"
                               onClick={() => openPreviewDialog(credential)}
+                              aria-label="Preview credential"
                             >
                               <Eye className="size-3.5" />
                             </Button>
@@ -671,6 +672,7 @@ export default function CandidateCredentialsPage() {
                               size="icon"
                               className="size-7"
                               onClick={() => openEditDialog(credential)}
+                              aria-label="Edit credential"
                             >
                               <Pencil className="size-3.5" />
                             </Button>
@@ -686,6 +688,7 @@ export default function CandidateCredentialsPage() {
                               className="size-7"
                               onClick={() => handleDownload(credential)}
                               disabled={downloadingId === credential.id}
+                              aria-label="Download credential"
                             >
                               {downloadingId === credential.id ? (
                                 <Loader2 className="size-3.5 animate-spin" />
@@ -706,6 +709,7 @@ export default function CandidateCredentialsPage() {
                                   size="icon"
                                   className="size-7 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                   disabled={deletingId === credential.id}
+                                  aria-label="Delete credential"
                                 >
                                   {deletingId === credential.id ? (
                                     <Loader2 className="size-3.5 animate-spin" />

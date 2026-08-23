@@ -168,7 +168,7 @@ export default function AgencyLoginPage() {
           <div className="flex items-center gap-3 mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
             <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Candidate & Professional Login</Link>
             <span>·</span>
-            <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Login</Link>
+            <Link href="/employer-signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Login</Link>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

@@ -33,7 +33,9 @@ async function sendVaultSignEmail({ to, toName, subject, htmlContent }: VaultSig
       });
 
       if (response.ok) {
-        console.log(`[VAULTSIGN-EMAIL] Sent to ${to}: ${subject}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[VAULTSIGN-EMAIL] Sent to ${to}: ${subject}`);
+        }
         return true;
       } else {
         const error = await response.text();
@@ -44,10 +46,12 @@ async function sendVaultSignEmail({ to, toName, subject, htmlContent }: VaultSig
     }
   }
 
-  // Fallback: log to console
-  console.log(`[VAULTSIGN-EMAIL] To: ${to}`);
-  console.log(`[VAULTSIGN-EMAIL] Subject: ${subject}`);
-  console.log(`[VAULTSIGN-EMAIL] Body: ${htmlContent.substring(0, 300)}...`);
+  // Fallback: log to console (development only — never log email contents in production)
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[VAULTSIGN-EMAIL] To: ${to}`);
+    console.log(`[VAULTSIGN-EMAIL] Subject: ${subject}`);
+    console.log(`[VAULTSIGN-EMAIL] Body: ${htmlContent.substring(0, 300)}...`);
+  }
   return true;
 }
 

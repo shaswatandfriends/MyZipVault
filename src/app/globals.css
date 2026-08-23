@@ -414,8 +414,8 @@
   --pipeline-not-interested: #B84040;
   --pipeline-blacklisted: #8B2C2C;
 
-  /* ─── Sidebar — Dark Forest Green Glass ─────────────────────────── */
-  --sidebar: rgba(30, 58, 38, 0.82);
+  /* ─── Sidebar — Professional Slate-Blue Glass ──────────────────── */
+  --sidebar: rgba(15, 23, 42, 0.92);
   --sidebar-foreground: rgba(255, 255, 255, 0.7);
   --sidebar-primary: #0A66C2;
   --sidebar-primary-foreground: #FFFFFF;
@@ -457,7 +457,7 @@
 }
 
 .glass-dark {
-  background: rgba(30, 58, 38, 0.78);
+  background: rgba(15, 23, 42, 0.78);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.18);

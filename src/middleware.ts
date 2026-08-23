@@ -29,7 +29,7 @@ export default withAuth({
         const loginPage = pathname.startsWith("/superadmin") ? "/superadmin-login"
           : pathname.startsWith("/admin") ? "/admin-login"
           : pathname.startsWith("/recruiter") ? "/agency-login"
-          : pathname.startsWith("/employer") ? "/login"
+          : pathname.startsWith("/employer") ? "/employer-signup"
           : "/login";
 
         // If we're already on the correct login page, allow (don't loop)

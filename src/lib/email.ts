@@ -223,11 +223,13 @@ export async function sendEmail({
     }
   }
 
-  // Fallback: log to console
-  console.log(`[EMAIL] Template: ${templateKey}`);
-  console.log(`[EMAIL] To: ${to}`);
-  console.log(`[EMAIL] Subject: ${subject}`);
-  console.log(`[EMAIL] Body: ${htmlContent.substring(0, 200)}...`);
+  // Fallback: log to console (development only — never log email contents in production)
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[EMAIL] Template: ${templateKey}`);
+    console.log(`[EMAIL] To: ${to}`);
+    console.log(`[EMAIL] Subject: ${subject}`);
+    console.log(`[EMAIL] Body: ${htmlContent.substring(0, 200)}...`);
+  }
 }
 
 // Convenience functions for common email types

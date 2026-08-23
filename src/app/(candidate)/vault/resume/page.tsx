@@ -1609,6 +1609,7 @@ function TedoChatTab({
               disabled={isSending || !input.trim()}
               size="icon"
               className="rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md"
+              aria-label="Send message"
             >
               {isSending ? (
                 <Loader2 className="size-4 animate-spin" />

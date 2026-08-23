@@ -41,6 +41,10 @@ export async function POST() {
         redirectUrl = "/agency-login";
       } else if (role === "platform_admin") {
         redirectUrl = "/admin-login";
+      } else if (role === "employer") {
+        // No dedicated employer login page — /employer-signup is the
+        // only employer-facing auth page and links back to /login for sign-in
+        redirectUrl = "/employer-signup";
       }
 
       // Log the signout event for audit trail

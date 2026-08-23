@@ -739,3 +739,73 @@ Stage Summary:
 - Buttons now have strong layered shadows (rgba 0.32 alpha), glossy inset highlights, hover lift, and clear borders — making them unmistakably visible on any glass surface
 - New "terra" button variant added for warm CTA differentiation
 - New utility classes: .glass-button-bg, .btn-outline-premium, .btn-glass, .mesh-tertiary, .gradient-text, .gradient-text-hero
+
+---
+Task ID: 20-fixes
+Agent: General-purpose
+Task: Fix 20 issues in MyZipVault
+
+Work Log:
+- Read worklog.md to understand prior work (Glass Warm design system, design token migration, dark mode, status colors, etc.)
+- Audited 4 known-issue files first (globals.css, login/page.tsx, agency-login/page.tsx, middleware.ts)
+- Scanned codebase for the categories called out in the task brief: console.log in production code, hardcoded URLs, TODO/FIXME, label typos, missing alt/aria-label, missing rel="noopener noreferrer", `any` types in marketplace files, dead code, incorrect logout redirects, missing try/catch, etc.
+- All 20 fixes are surgical, file-by-file, and avoid changes to user-facing copy, DB schema, package.json, or new features.
+- Ran `npm run build` after every batch of edits; final build compiles successfully (✓ Compiled in ~66s, 343/343 pages generated) with only the two pre-existing warnings (Next.js "middleware" deprecation + a CSS @import-order warning), neither caused by these fixes.
+
+Stage Summary:
+- 20 distinct issues fixed across 17 files (some files fixed multiple issues).
+- Build passes (✓ Compiled successfully, 343/343 static pages, exit 0).
+- All 4 known audit issues resolved (#1 sidebar color, #2 Employer Login links in both auth pages, #3 /employer/* redirect target, #4 cross-link/role-routing gaps for employer in auth-provider).
+- 16 additional fixes found by scanning: 9 production-log leaks (resume parse, OTP send, AI unified, email fallback, ZAI, VaultSign email, OTP email plaintext, AI provider), 1 bottom-of-file import in employer-signup, 1 `any` type in notifications route, 4 missing aria-labels on icon-only buttons (notification bell, shared calendar nav, resume send, credential row actions), 1 employer role missing in getRoleDashboard helper, 1 signout route missing employer redirect.
+
+20 Issues & Fixes (file:line — description — fix):
+
+1. src/app/globals.css:418 + 460 — Two `rgba(30, 58, 38, ...)` (dark forest green) sidebar/glass-dark backgrounds that should match the new professional blue palette. Replaced with `rgba(15, 23, 42, 0.92)` for `--sidebar` and `rgba(15, 23, 42, 0.78)` for `.glass-dark` (slate-dark, consistent with the existing `--sidebar-primary: #0A66C2` LinkedIn-blue accent).
+
+2. src/app/login/page.tsx:177 AND src/app/agency-login/page.tsx:171 — "Employer Login" link pointed to `/login` (self-referential on the login page; wrong destination on agency-login). Changed `href` to `/employer-signup` in both files so the link goes to the only employer-facing auth page.
+
+3. src/middleware.ts:32 — Unauthenticated `/employer/*` routes redirected to `/login` (the candidate login page). Changed the redirect branch to send employer routes to `/employer-signup` instead, so unauthenticated employers land on the correct auth page.
+
+4. src/components/providers/auth-provider.tsx — Multiple employer-related gaps in the client-side auth provider: (a) `PUBLIC_ROUTES` missing `/employer-signup`; (b) `getRoleDashboard` missing `employer → /employer/dashboard`; (c) `getRolePrefix` missing `employer → /employer`; (d) `roleAccess` missing the `employer` entry (so logged-in employers had zero allowed prefixes and got bounced to the candidate dashboard); (e) the "null user" redirect logic didn't redirect employer paths to `/employer-signup`; (f) `LOGIN_ROUTES` was missing `/employer-signup` (so a logged-in user landing on /employer-signup would get auto-redirected to their dashboard). All six gaps fixed.
+
+5. src/lib/auth-helpers.ts:32-46 — `getRoleDashboard()` switch statement had no `case "employer"`, so calling it with role `employer` fell through to the default `/dashboard` (candidate dashboard). Added `case "employer": return "/employer/dashboard"`.
+
+6. src/app/api/auth/signout/route.ts:37-44 — Signout redirect URL logic handled `super_admin`, `client_admin`/`client_recruiter`, and `platform_admin`, but `employer` fell through to `/login` (candidate login). Added an explicit `else if (role === "employer") redirectUrl = "/employer-signup"` branch so employers are returned to their own auth page on logout.
+
+7. src/app/api/auth/employer-signup/route.ts — `import crypto from "crypto";` was placed at the bottom of the file (after the `export async function POST` declaration), which is non-idiomatic and error-prone. Moved the import to the top of the file alongside the other imports.
+
+8. src/app/api/candidate/resume/parse/route.ts:57,60,64,69,85,87,100,105,108,133,161,198,223 — 13 unguarded `console.log` statements (debug breadcrumbs like "Step 1: Fetching file", "Storage path:", "AI response received. Content length:") that print internal state to stdout on every candidate resume parse. Wrapped each in `if (process.env.NODE_ENV === "development")`. Left the `console.error` calls untouched so genuine errors still surface.
+
+9. src/app/api/auth/otp/send/route.ts:33 — `console.log("[OTP SEND] Looking for superadmin with email:", SUPERADMIN_EMAIL)` printed the configured superadmin email to server logs on every OTP send request. Removed the statement (the `console.error` lines for "user not found"/"wrong role" remain).
+
+10. src/lib/ai-unified.ts:33,35,46,48 — Bare `console.log("[AI] Trying Groq..." / "Groq succeeded" / "Trying ZAI..." / "ZAI succeeded")` printed on every AI call. Guarded with a top-of-function `const isDev = process.env.NODE_ENV === "development"` flag and `if (isDev)`. Kept the `console.warn` lines for actual provider failures.
+
+11. src/lib/email.ts:226-230 — The "no Brevo API key" fallback path logged the recipient address, subject, and the first 200 chars of the email HTML body to the server console. Wrapped the four `console.log` lines in `if (process.env.NODE_ENV === "development")` so email contents are never logged in production.
+
+12. src/lib/zai.ts:69 — `console.log(\`[ZAI] Direct fetch to ${url} with model ${DEFAULT_MODEL}\`)` ran on every ZAI chat call, leaking the upstream AI base URL to server logs. Guarded with the same `process.env.NODE_ENV === "development"` check.
+
+13. src/lib/vaultsign/email.ts:36 + 48-50 — VaultSign email sender logged the recipient+subject on every successful send, and logged recipient/subject/body in the fallback (no-Brevo) path. Wrapped all four `console.log` calls with the dev guard; left `console.error` lines for Brevo API errors untouched.
+
+14. src/lib/otp-email.ts:29 + 49 — `sendOtpEmail()` had two issues: (1) `console.log("[OTP EMAIL] No BREVO_API_KEY — would send OTP:", otpCode, "to", toEmail)` printed the actual 6-digit OTP to server logs whenever Brevo wasn't configured — a real security issue because OTPs should never appear in server logs. (2) `console.log(\`[OTP EMAIL] Sent OTP to ${toEmail}\`)` logged on every successful send. Now the OTP code is only logged in development; in production it logs a generic "OTP not delivered (Brevo not configured)" message; the success log is also dev-only.
+
+15. src/lib/ai-provider.ts:148 + 245 — Two `console.log("[AI_PROVIDER] Fallback (...) succeeded...")` and `console.log("[AI_PROVIDER] Vision fallback (...) succeeded")` statements printed on every AI provider failover. Guarded both with `process.env.NODE_ENV === "development"`. Kept the `console.warn` lines for actual failures.
+
+16. src/app/api/notifications/route.ts:43 — `const where: any = { user_id: userId };` used the `any` type for the Prisma where clause. Replaced with `const where: Record<string, unknown> = { user_id: userId };` to match the pattern used by other API routes in the same codebase (e.g. `/api/employer/submissions/route.ts:34`, `/api/calendar/schedules/route.ts:177`). The `catch (error: any)` blocks were left untouched because they are a common, harmless pattern in the codebase.
+
+17. src/components/layout/notification-bell.tsx:399 — The header-variant notification bell is an icon-only `<Button size="icon">` with just a `<BellIcon>` and no accessible label. Added `aria-label={\`Notifications${unreadCount > 0 ? \` (\${unreadCount} unread)\` : ""}\`}` so screen readers announce the button and the unread count.
+
+18. src/app/shared/calendar/[token]/page.tsx:495,502 — The "Previous month" and "Next month" icon-only buttons (ChevronLeft / ChevronRight) had no `aria-label`. Added `aria-label="Previous month"` and `aria-label="Next month"` (mirroring the existing pattern in /superadmin/calendar/page.tsx which already had these).
+
+19. src/app/(candidate)/vault/resume/page.tsx:1607 — The chat send button (`<Button size="icon">` with `<Send>` icon) had no `aria-label`. Added `aria-label="Send message"`.
+
+20. src/app/(candidate)/vault/credentials/page.tsx — Four icon-only action buttons in the credential list row (Preview `Eye`, Edit `Pencil`, Download `Download`, Delete `Trash2`) all wrapped in `<Tooltip>` but had no `aria-label` (Tooltip content is not reliably announced to assistive tech). Added `aria-label="Preview credential"`, `"Edit credential"`, `"Download credential"`, and `"Delete credential"` to the four `<Button>` elements.
+
+Final verification:
+- `npm run build` → ✓ Compiled successfully in ~66s, ✓ Generating static pages (343/343), exit code 0.
+- Pre-existing warnings remain (Next.js "middleware" deprecation + a CSS @import-order warning) but are not caused by these fixes.
+
+Stage Summary:
+- 20 distinct issues fixed across 17 source files; build compiles successfully with no new warnings or errors.
+- 4 known audit issues resolved (#1 sidebar palette, #2 Employer Login links in both auth pages, #3 /employer/* middleware redirect, #4 employer role-routing gaps in auth-provider).
+- 16 additional fixes found by scanning the codebase for: production console.log leaks (9 fixes — including one that was leaking OTPs and another that was leaking the superadmin email), a mis-ordered import, an `any` type, an incorrect logout redirect for the employer role, a missing case in a role-dashboard helper, and 4 missing aria-labels on icon-only buttons across 4 files.
+- All changes are minimal, surgical, and respect the constraints (no DB schema changes, no new dependencies, no new features, no copy/CTA edits, no /skills/ files touched).

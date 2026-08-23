@@ -30,7 +30,6 @@ export async function POST() {
     }
 
     // Verify the superadmin user exists in the database (case-insensitive)
-    console.log("[OTP SEND] Looking for superadmin with email:", SUPERADMIN_EMAIL);
     const user = await db.user.findFirst({
       where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
     });

@@ -38,6 +38,8 @@ export function getRoleDashboard(role: UserRole): string {
     case "client_admin":
     case "client_recruiter":
       return "/recruiter/dashboard";
+    case "employer":
+      return "/employer/dashboard";
     case "candidate":
       return "/dashboard";
     default:

@@ -23,7 +23,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document"];
 
 const PUBLIC_ROUTE_PREFIXES = ["/reference/", "/sign/", "/shared/"];
 
@@ -36,6 +36,8 @@ function getRoleDashboard(role: UserRole): string {
     case "client_admin":
     case "client_recruiter":
       return "/recruiter/dashboard";
+    case "employer":
+      return "/employer/dashboard";
     case "candidate":
       return "/dashboard";
     default:
@@ -52,6 +54,8 @@ function getRolePrefix(role: UserRole): string {
     case "client_admin":
     case "client_recruiter":
       return "/recruiter";
+    case "employer":
+      return "/employer";
     case "candidate":
       return "/";
     default:
@@ -107,6 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           loginPage = "/agency-login";
         } else if (pathname.startsWith("/admin")) {
           loginPage = "/admin-login";
+        } else if (pathname.startsWith("/employer")) {
+          // No dedicated employer login page — /employer-signup links back to /login
+          loginPage = "/employer-signup";
         }
         router.replace(loginPage);
       }
@@ -121,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     //      login page. Otherwise they bounce back to dashboard = auto-login.
     //   2. /onboard — accessible while logged in (invite token flow)
     //   3. /verify-document, /shared/ — always accessible
-    const LOGIN_ROUTES = ["/login", "/agency-login", "/admin-login", "/superadmin-login", "/forgot-password", "/reset-password", "/verify-email", "/signup", "/agency-signup"];
+    const LOGIN_ROUTES = ["/login", "/agency-login", "/admin-login", "/superadmin-login", "/forgot-password", "/reset-password", "/verify-email", "/signup", "/agency-signup", "/employer-signup"];
     const isLoginPage = LOGIN_ROUTES.includes(pathname);
     const ALWAYS_ACCESSIBLE_PUBLIC_ROUTES = ["/verify-document", "/shared/"];
     const isPrefixPublic = PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -151,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         platform_admin: ["/admin", "/notifications"],
         client_admin: ["/recruiter", "/notifications"],
         client_recruiter: ["/recruiter", "/notifications"],
+        employer: ["/employer", "/notifications"],
         candidate: ["/dashboard", "/checklists", "/calendar", "/vault", "/references", "/recruiters", "/sharing", "/settings", "/profile-completion", "/notifications", "/vaultsign"],
       };
 

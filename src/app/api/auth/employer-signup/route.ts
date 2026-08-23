@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
+import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
@@ -95,5 +96,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
   }
 }
-
-import crypto from "crypto";

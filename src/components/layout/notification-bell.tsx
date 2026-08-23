@@ -400,6 +400,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
           variant="ghost"
           size="icon"
           className="relative text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)] h-9 w-9"
+          aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
           <BellIcon className="size-5" />
           {unreadCount > 0 && (

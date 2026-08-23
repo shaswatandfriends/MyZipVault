@@ -144,7 +144,7 @@ export async function aiGenerateText(
   for (const provider of providersToTry) {
     try {
       const result = await generateWithProvider(provider, messages, options);
-      if (provider !== primary) {
+      if (provider !== primary && process.env.NODE_ENV === "development") {
         console.log(`[AI_PROVIDER] Fallback (${provider}) succeeded after (${primary}) failed`);
       }
       return result;
@@ -241,7 +241,7 @@ export async function aiAnalyzeDocument(
   for (const provider of providersToTry) {
     try {
       const result = await analyzeWithProvider(provider, options);
-      if (provider !== primary) {
+      if (provider !== primary && process.env.NODE_ENV === "development") {
         console.log(`[AI_PROVIDER] Vision fallback (${provider}) succeeded`);
       }
       return result;

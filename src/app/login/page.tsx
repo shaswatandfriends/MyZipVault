@@ -174,7 +174,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-3 mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
             <Link href="/agency-login" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Recruiter & Agency Login</Link>
             <span>·</span>
-            <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Login</Link>
+            <Link href="/employer-signup" className="font-medium hover:underline" style={{ color: "var(--primary)" }}>Employer Login</Link>
           </div>
 
           {/* Form — Spatial UI */}

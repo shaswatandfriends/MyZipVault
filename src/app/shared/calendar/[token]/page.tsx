@@ -492,14 +492,14 @@ export default function SharedCalendarPage({
                     Monthly Calendar
                   </CardTitle>
                   <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="size-8" onClick={goToPrevMonth}>
+                    <Button variant="outline" size="icon" className="size-8" onClick={goToPrevMonth} aria-label="Previous month">
                       <ChevronLeft className="size-4" />
                     </Button>
                     <Button variant="outline" size="sm" className="gap-1.5 text-xs font-medium" onClick={goToToday}>
                       <RefreshCw className="size-3" />
                       Today
                     </Button>
-                    <Button variant="outline" size="icon" className="size-8" onClick={goToNextMonth}>
+                    <Button variant="outline" size="icon" className="size-8" onClick={goToNextMonth} aria-label="Next month">
                       <ChevronRight className="size-4" />
                     </Button>
                   </div>
