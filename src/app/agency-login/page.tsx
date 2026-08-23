@@ -46,8 +46,7 @@ export default function AgencyLoginPage() {
     setIsLoading(true);
 
     try {
-      await signOut({ redirect: false });
-
+      // Sign in directly — NextAuth replaces any existing session automatically
       const result = await signIn("credentials", {
         email,
         password,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowRight, ShieldCheck, Lock } from "@/lib/icons";
@@ -64,9 +64,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Sign out any existing session first to allow role switching
-      await signOut({ redirect: false });
-
+      // Sign in directly — NextAuth replaces any existing session automatically
       const result = await signIn("credentials", {
         email,
         password,
