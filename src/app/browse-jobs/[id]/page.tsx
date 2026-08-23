@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, ArrowRight, Briefcase, MapPin, DollarSign, Building2,
   CheckCircle2, Star, Eye, Users, Calendar, Sparkles, Lock,
-  AlertCircle,
+  AlertCircle, Loader2,
 } from "@/lib/icons";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -38,6 +38,9 @@ interface JobDetail {
   organization_name: string | null;
   organization_website: string | null;
   is_closed: boolean;
+  has_applied: boolean;
+  application_status: string | null;
+  application_id: number | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -77,6 +80,9 @@ export default function PublicJobDetailPage() {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewerIsCandidate, setViewerIsCandidate] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [applySuccess, setApplySuccess] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +95,7 @@ export default function PublicJobDetailPage() {
       }
       const data = await res.json();
       setJob(data.job);
+      setViewerIsCandidate(data.viewer_is_candidate === true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -99,6 +106,38 @@ export default function PublicJobDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Apply to this job (candidate only — calls /api/candidate/jobs/[id]/apply)
+  const handleApply = async () => {
+    if (!job) return;
+    setApplying(true);
+    try {
+      const res = await fetch(`/api/candidate/jobs/${job.id}/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Failed (${res.status})`);
+      // Use sonner's toast (imported at top of file)
+      import("sonner").then(({ toast }) => {
+        toast.success("Application submitted", {
+          description: `Your application for "${job.title}" has been received.`,
+        });
+      });
+      setApplySuccess(true);
+      // Refetch the job to update has_applied status
+      await load();
+    } catch (e) {
+      import("sonner").then(({ toast }) => {
+        toast.error("Failed to apply", {
+          description: e instanceof Error ? e.message : "",
+        });
+      });
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -355,21 +394,102 @@ export default function PublicJobDetailPage() {
             <div className="lg:sticky lg:top-24">
               <Card className="border-2 border-primary">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-foreground">Interested in this role?</h3>
-                  <p className="text-sm text-text-secondary mt-1 mb-4">
-                    Sign up as a candidate to apply directly — no recruiter needed.
-                  </p>
-                  <Link href="/signup">
-                    <Button size="lg" className="w-full" disabled={job.is_closed}>
-                      <Briefcase className="size-4" />
-                      {job.is_closed ? "Applications closed" : "Apply now"}
-                    </Button>
-                  </Link>
-                  <Link href="/login">
-                    <Button variant="outline" size="sm" className="w-full mt-2">
-                      I already have an account
-                    </Button>
-                  </Link>
+                  {/* ─── Candidate-viewer states ─── */}
+                  {viewerIsCandidate && (
+                    <>
+                      {job.has_applied ? (
+                        // Already applied — show status
+                        <>
+                          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <CheckCircle2 className="size-5 text-emerald-600" />
+                            Application submitted
+                          </h3>
+                          <p className="text-sm text-text-secondary mt-2 mb-4">
+                            You&apos;ve applied to this job. Status:{" "}
+                            <span className="font-semibold text-foreground capitalize">
+                              {job.application_status ?? "submitted"}
+                            </span>
+                          </p>
+                          <Link href="/dashboard">
+                            <Button variant="outline" size="lg" className="w-full">
+                              Back to dashboard
+                            </Button>
+                          </Link>
+                          <p className="text-xs text-text-muted mt-3 text-center">
+                            You&apos;ll be notified when the employer responds.
+                          </p>
+                        </>
+                      ) : job.is_closed ? (
+                        // Closed — can't apply
+                        <>
+                          <h3 className="text-lg font-semibold text-foreground">Applications closed</h3>
+                          <p className="text-sm text-text-secondary mt-2">
+                            This job is no longer accepting applications.
+                          </p>
+                          <Link href="/browse-jobs" className="block mt-4">
+                            <Button variant="outline" size="sm" className="w-full">
+                              Browse other jobs
+                            </Button>
+                          </Link>
+                        </>
+                      ) : (
+                        // Can apply — show Apply button
+                        <>
+                          <h3 className="text-lg font-semibold text-foreground">Interested in this role?</h3>
+                          <p className="text-sm text-text-secondary mt-1 mb-4">
+                            Apply directly — no recruiter needed. 100% free.
+                          </p>
+                          <Button
+                            size="lg"
+                            className="w-full"
+                            onClick={handleApply}
+                            disabled={applying}
+                          >
+                            {applying ? (
+                              <>
+                                <Loader2 className="size-4 animate-spin" />
+                                Submitting…
+                              </>
+                            ) : applySuccess ? (
+                              <>
+                                <CheckCircle2 className="size-4" />
+                                Applied!
+                              </>
+                            ) : (
+                              <>
+                                <Briefcase className="size-4" />
+                                Apply now
+                              </>
+                            )}
+                          </Button>
+                          <p className="text-xs text-text-muted mt-3 text-center">
+                            Your profile will be shared with the employer.
+                          </p>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {/* ─── Non-candidate / anonymous viewer ─── */}
+                  {!viewerIsCandidate && (
+                    <>
+                      <h3 className="text-lg font-semibold text-foreground">Interested in this role?</h3>
+                      <p className="text-sm text-text-secondary mt-1 mb-4">
+                        Sign up as a candidate to apply directly — no recruiter needed.
+                      </p>
+                      <Link href="/signup">
+                        <Button size="lg" className="w-full" disabled={job.is_closed}>
+                          <Briefcase className="size-4" />
+                          {job.is_closed ? "Applications closed" : "Sign up to apply"}
+                        </Button>
+                      </Link>
+                      <Link href="/login">
+                        <Button variant="outline" size="sm" className="w-full mt-2">
+                          I already have an account
+                        </Button>
+                      </Link>
+                    </>
+                  )}
 
                   <div className="mt-5 pt-5 border-t border-border space-y-2">
                     <p className="text-xs font-bold uppercase tracking-wide text-text-muted mb-2">Free for candidates</p>

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 /**
  * GET /api/public/jobs
  *
  * PUBLIC job board — accessible without authentication.
- * Used by the /jobs landing page so anyone can browse open healthcare jobs.
+ * Used by the /browse-jobs landing page so anyone can browse open healthcare jobs.
+ *
+ * If the viewer is logged in as a candidate, the response ALSO includes:
+ *   - viewer_role: 'candidate' | 'recruiter' | 'employer' | null
+ *   - per-job has_applied (boolean) + application_status (string)
+ *   so the page can show 'Already Applied' badges and 'Apply now' buttons.
  *
  * CRITICAL: This route MUST strip out ALL internal fields:
  *   - salary_min, salary_max (raw numbers)
@@ -29,11 +36,16 @@ import { db } from "@/lib/db";
  *   - employment_type: filter by employment type
  *   - page: pagination (default 1)
  *   - pageSize: page size (default 25, max 50)
- *
- * Auth: NONE — fully public. Rate limiting may be added later.
  */
 export async function GET(request: NextRequest) {
   try {
+    // Optional auth — viewer may be a logged-in candidate (in which case we
+    // include has_applied flags), recruiter, employer, or anonymous.
+    const session = await getServerSession(authOptions);
+    const viewerUserId = session?.user?.id ? parseInt(session.user.id as string, 10) : null;
+    const viewerRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+    const viewerIsCandidate = viewerRole === "candidate" && viewerUserId !== null;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.trim() || "";
     const profession = searchParams.get("profession")?.trim() || "";
@@ -103,39 +115,69 @@ export async function GET(request: NextRequest) {
       db.jobPosting.count({ where }),
     ]);
 
+    // If the viewer is a logged-in candidate, look up their applications for
+    // these jobs so we can show 'Already Applied' badges in the UI.
+    let appliedJobMap = new Map<number, { status: string; submitted_at: Date }>();
+    if (viewerIsCandidate) {
+      const jobIds = jobs.map((j) => j.id);
+      if (jobIds.length > 0) {
+        try {
+          const myApplications = await db.candidateSubmission.findMany({
+            where: {
+              job_id: { in: jobIds },
+              candidate_record: { claimed_by_user_id: viewerUserId },
+            },
+            select: { job_id: true, status: true, submitted_at: true },
+          });
+          appliedJobMap = new Map(myApplications.map((a) => [a.job_id, { status: a.status, submitted_at: a.submitted_at }]));
+        } catch {
+          // If schema mismatch or query fails, just skip — UI will treat all as not-applied
+        }
+      }
+    }
+
     return NextResponse.json({
-      jobs: jobs.map((j) => ({
-        id: j.id,
-        public_id: j.public_id,
-        title: j.title,
-        profession: j.profession,
-        specialty: j.specialty,
-        job_title: j.job_title,
-        employment_type: j.employment_type,
-        city: j.city,
-        state: j.state,
-        is_remote: j.is_remote,
-        salary_display: j.salary_display,
-        // Truncate description for list view (full description only on detail page)
-        description_preview: j.description
-          ? j.description.length > 240
-            ? j.description.slice(0, 240) + "…"
-            : j.description
-          : null,
-        // Don't return full requirements/nice_to_have in list — only on detail page
-        requirements_count: j.requirements ? (safeParseArray(j.requirements)?.length ?? 0) : 0,
-        nice_to_have_count: j.nice_to_have ? (safeParseArray(j.nice_to_have)?.length ?? 0) : 0,
-        open_date: j.open_date,
-        close_date: j.close_date,
-        created_at: j.created_at,
-        organization_name: j.organization?.name ?? null,
-      })),
+      jobs: jobs.map((j) => {
+        const applied = appliedJobMap.get(j.id);
+        return {
+          id: j.id,
+          public_id: j.public_id,
+          title: j.title,
+          profession: j.profession,
+          specialty: j.specialty,
+          job_title: j.job_title,
+          employment_type: j.employment_type,
+          city: j.city,
+          state: j.state,
+          is_remote: j.is_remote,
+          salary_display: j.salary_display,
+          // Truncate description for list view (full description only on detail page)
+          description_preview: j.description
+            ? j.description.length > 240
+              ? j.description.slice(0, 240) + "…"
+              : j.description
+            : null,
+          // Don't return full requirements/nice_to_have in list — only on detail page
+          requirements_count: j.requirements ? (safeParseArray(j.requirements)?.length ?? 0) : 0,
+          nice_to_have_count: j.nice_to_have ? (safeParseArray(j.nice_to_have)?.length ?? 0) : 0,
+          open_date: j.open_date,
+          close_date: j.close_date,
+          created_at: j.created_at,
+          organization_name: j.organization?.name ?? null,
+          // Candidate-specific fields (null/undefined for non-candidate viewers)
+          has_applied: applied ? true : false,
+          application_status: applied ? applied.status : null,
+        };
+      }),
       pagination: {
         page,
         pageSize,
         total,
         totalPages: Math.ceil(total / pageSize),
       },
+      // Top-level viewer info
+      viewer_role: viewerRole ?? null,
+      viewer_is_candidate: viewerIsCandidate,
     });
   } catch (error) {
     console.error("[PUBLIC_JOBS_LIST]", error);

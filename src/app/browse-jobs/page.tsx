@@ -38,6 +38,8 @@ interface JobRow {
   close_date: string | null;
   created_at: string;
   organization_name: string | null;
+  has_applied: boolean;
+  application_status: string | null;
 }
 
 interface Pagination {
@@ -45,6 +47,13 @@ interface Pagination {
   pageSize: number;
   total: number;
   totalPages: number;
+}
+
+interface JobsResponse {
+  jobs: JobRow[];
+  pagination: Pagination;
+  viewer_role: string | null;
+  viewer_is_candidate: boolean;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -97,6 +106,7 @@ export default function PublicJobsListPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 25, total: 0, totalPages: 1 });
+  const [viewerIsCandidate, setViewerIsCandidate] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [professionFilter, setProfessionFilter] = useState("all");
@@ -118,9 +128,10 @@ export default function PublicJobsListPage() {
 
       const res = await fetch(`/api/public/jobs?${params}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed (${res.status})`);
-      const data = await res.json();
+      const data = (await res.json()) as JobsResponse;
       setJobs(data.jobs);
       setPagination(data.pagination);
+      setViewerIsCandidate(data.viewer_is_candidate);
     } catch (e) {
       toast.error("Failed to load jobs", { description: e instanceof Error ? e.message : "" });
     } finally {
@@ -161,18 +172,29 @@ export default function PublicJobsListPage() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-text-secondary hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
-            >
-              Sign up free <ArrowRight className="size-3.5" />
-            </Link>
+            {viewerIsCandidate ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground"
+              >
+                Back to dashboard <ArrowRight className="size-3.5" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-text-secondary hover:text-foreground transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
+                >
+                  Sign up free <ArrowRight className="size-3.5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -345,6 +367,16 @@ export default function PublicJobsListPage() {
                           Remote
                         </Badge>
                       )}
+                      {job.has_applied && (
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <CheckCircle2 className="size-3" />
+                          {job.application_status === "placed"
+                            ? "Placed"
+                            : job.application_status === "rejected"
+                            ? "Rejected"
+                            : "Applied"}
+                        </Badge>
+                      )}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
                       {job.organization_name && (
@@ -435,8 +467,8 @@ export default function PublicJobsListPage() {
           </div>
         )}
 
-        {/* ─── Sign-up CTA (for non-authenticated visitors) ─── */}
-        {!isLoading && (
+        {/* ─── Sign-up CTA (only for non-candidate viewers) ─── */}
+        {!isLoading && !viewerIsCandidate && (
           <div className="mt-10 rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary-light/30 to-white p-8 text-center">
             <h2
               className="text-2xl font-bold text-foreground"

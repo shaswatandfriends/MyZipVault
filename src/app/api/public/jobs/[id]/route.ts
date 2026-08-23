@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 /**
  * GET /api/public/jobs/[id]
  *
  * PUBLIC job detail — accessible without authentication.
- * Used by the /jobs/[id] public job detail page.
+ * Used by the /browse-jobs/[id] public job detail page.
  *
- * Same field stripping as /api/public/jobs (NO commission info, NO raw
- * salary numbers, NO internal metrics). Returns the FULL description
- * and full requirements / nice_to_have arrays (the list endpoint only
- * returns counts).
+ * If the viewer is logged in as a candidate, the response ALSO includes:
+ *   - has_applied (boolean)
+ *   - application_status (string | null)
+ *   - application_id (number | null) — so the candidate can see the link to their application
  *
  * Path params:
  *   - id: job id (integer) OR public_id (UUID string)
@@ -22,6 +24,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Optional auth — viewer may be a logged-in candidate (in which case we
+    // include has_applied flags), recruiter, employer, or anonymous.
+    const session = await getServerSession(authOptions);
+    const viewerUserId = session?.user?.id ? parseInt(session.user.id as string, 10) : null;
+    const viewerRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+    const viewerIsCandidate = viewerRole === "candidate" && viewerUserId !== null;
+
     const { id } = await params;
 
     // Try to parse as integer (job id) — if that fails, treat as public_id (UUID)
@@ -73,6 +82,29 @@ export async function GET(
     // If the job has closed, still show it but flag it
     const isClosed = job.close_date !== null && new Date(job.close_date) < new Date();
 
+    // If the viewer is a logged-in candidate, look up their application to this job
+    let hasApplied = false;
+    let applicationStatus: string | null = null;
+    let applicationId: number | null = null;
+    if (viewerIsCandidate) {
+      try {
+        const myApplication = await db.candidateSubmission.findFirst({
+          where: {
+            job_id: job.id,
+            candidate_record: { claimed_by_user_id: viewerUserId },
+          },
+          select: { id: true, status: true, submitted_at: true },
+        });
+        if (myApplication) {
+          hasApplied = true;
+          applicationStatus = myApplication.status;
+          applicationId = myApplication.id;
+        }
+      } catch {
+        // Schema mismatch or query fails — skip; treat as not-applied
+      }
+    }
+
     return NextResponse.json({
       job: {
         id: job.id,
@@ -98,7 +130,14 @@ export async function GET(
         organization_name: job.organization?.name ?? null,
         organization_website: job.organization?.company_website ?? null,
         is_closed: isClosed,
+        // Candidate-specific fields (null for non-candidate viewers)
+        has_applied: hasApplied,
+        application_status: applicationStatus,
+        application_id: applicationId,
       },
+      // Top-level viewer info
+      viewer_role: viewerRole ?? null,
+      viewer_is_candidate: viewerIsCandidate,
     });
   } catch (error) {
     console.error("[PUBLIC_JOB_DETAIL]", error);
