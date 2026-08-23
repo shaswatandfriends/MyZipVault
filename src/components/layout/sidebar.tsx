@@ -43,6 +43,9 @@ import {
   Inbox,
   Briefcase,
   Search,
+  Sparkles,
+  Handshake,
+  HelpCircle,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
