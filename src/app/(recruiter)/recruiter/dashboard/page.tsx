@@ -484,7 +484,7 @@ export default function RecruiterDashboardPage() {
                 className="empty-state-icon"
                 style={{
                   background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(10,102,194,0.32)",
                   color: "#fff",
                 }}
               >

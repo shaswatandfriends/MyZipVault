@@ -337,7 +337,7 @@ export default function SuperadminDashboardPage() {
                 className="empty-state-icon"
                 style={{
                   background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(10,102,194,0.32)",
                   color: "#fff",
                 }}
               >
@@ -385,7 +385,7 @@ export default function SuperadminDashboardPage() {
               style={{
                 background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(45,90,61,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(10,102,194,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
               }}
             >
@@ -435,7 +435,7 @@ export default function SuperadminDashboardPage() {
               style={{
                 background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(201,123,84,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(10,102,194,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
               }}
             >
@@ -570,7 +570,7 @@ export default function SuperadminDashboardPage() {
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
                     background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)",
                     color: "#fff",
                   }}
                 >
@@ -593,7 +593,7 @@ export default function SuperadminDashboardPage() {
                         fontSize: "12px",
                         backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                         WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                        boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(0,0,0,0.06)",
+                        boxShadow: "0 24px 64px rgba(10,102,194,0.18), 0 8px 24px rgba(0,0,0,0.06)",
                       }}
                     />
                     <Legend />
@@ -616,7 +616,7 @@ export default function SuperadminDashboardPage() {
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
                     background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)",
                     color: "#fff",
                   }}
                 >

@@ -47,8 +47,8 @@ interface DashboardData {
 
 // ─── Helpers ───────────────────────────────────────────────────────
 function statIconStyle(variant: "primary" | "terra") {
-  if (variant === "terra") return { background: "linear-gradient(180deg, var(--terra-light) 0%, var(--terra) 60%, var(--terra-dark) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)", color: "#fff" };
-  return { background: "linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 60%, var(--primary-dark) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)", color: "#fff" };
+  if (variant === "terra") return { background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)", color: "#fff" };
+  return { background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)", color: "#fff" };
 }
 
 function getTimeGreeting() {
@@ -232,9 +232,9 @@ export default function CandidateDashboardPage() {
 
       {/* ════ SECTION 1: SMART HERO BANNER ════ */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(45,90,61,0.95) 0%, rgba(30,58,38,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(45,90,61,0.22)", minHeight: "220px" }}>
+        <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(10,102,194,0.95) 0%, rgba(0,65,130,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(10,102,194,0.22)", minHeight: "220px" }}>
           <div className="absolute rounded-full pointer-events-none" style={{ width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle, rgba(74,124,89,0.4) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }} />
-          <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(201,123,84,0.3) 0%, rgba(201,123,84,0) 70%)", filter: "blur(30px)" }} />
+          <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(10,102,194,0.3) 0%, rgba(10,102,194,0) 70%)", filter: "blur(30px)" }} />
           {/* Hero image — right side of banner */}
           <div className="absolute right-0 bottom-0 top-0 w-[40%] hidden lg:flex items-center justify-end pointer-events-none">
             <div className="h-full w-full opacity-30" style={{ background: "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop') center/cover", maskImage: "linear-gradient(to left, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to left, black 40%, transparent 100%)" }} />
