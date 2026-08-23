@@ -1054,10 +1054,12 @@ model EmailCampaignRecipient {
   recipient_name    String?   @db.VarChar(255)
     // snapshot of recipient's name at send time
   status            String    @default("pending")
-    // 'pending' | 'sent' | 'failed' | 'bounced' | 'complained'
+    // 'pending' | 'sent' | 'failed' | 'bounced' | 'complained' | 'unsubscribed'
   error_message     String?
   brevo_message_id  String?   @db.VarChar(255)
-    // Brevo's message ID for tracking opens/clicks
+    // Brevo's message ID for tracking opens/clicks via webhook
+  tracking_token    String?  @db.VarChar(64) @unique
+    // Per-recipient unguessable token for tracking pixel + click redirect
   queued_at         DateTime  @default(now())
   sent_at           DateTime?
   delivered_at      DateTime?

@@ -118,9 +118,11 @@ export default withAuth({
       // Applied before auth checks so even unauthenticated abusers get blocked.
       // Page routes are NOT rate-limited (they're cached/CDN-served by Vercel).
       if (pathname.startsWith("/api/")) {
-        // Skip rate limiting for webhook + cron routes (they use their own auth)
+        // Skip rate limiting for webhook + cron + email tracking routes (they use their own auth or are public)
         const isWebhookOrCron =
           pathname.startsWith("/api/stripe/webhook") ||
+          pathname.startsWith("/api/brevo/webhook") ||
+          pathname.startsWith("/api/email/track/") ||
           pathname.startsWith("/api/cron/");
         if (!isWebhookOrCron) {
           const ip = getClientIp(req);
@@ -153,7 +155,7 @@ export default withAuth({
 
       // ── PUBLIC ROUTES (always allowed, but rate-limited above) ──
       const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program"];
-      const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/public/", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document"];
+      const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/public/", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document", "/api/email/track/", "/api/brevo/webhook", "/api/stripe/webhook"];
 
       // Allow public GET access to landing page content (so the public landing page can fetch it)
       if (pathname === "/api/superadmin/landing-page" && req.method === "GET") return true;

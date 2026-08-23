@@ -130,13 +130,17 @@ export async function POST(
       });
     }
 
-    // ─── 3. Create recipient rows (all status='pending') ──────────────
+    // ─── 3. Create recipient rows with tracking tokens ────────────────
+    // Each recipient gets a unique tracking_token (UUID) used for:
+    //   - Open tracking pixel: /api/email/track/open/{token}
+    //   - Click tracking redirect: /api/email/track/click/{token}?u={url}
     const recipientData = users.map((u) => ({
       campaign_id: campaignId,
       recipient_user_id: u.id,
       recipient_email: u.email,
       recipient_name: [u.first_name, u.last_name].filter(Boolean).join(" ") || null,
       status: "pending" as const,
+      tracking_token: crypto.randomUUID(),
     }));
 
     // Bulk insert recipients (skipping duplicates if any)
@@ -168,6 +172,10 @@ export async function POST(
         const recipientName =
           [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
 
+        // Find this recipient's tracking token (from the bulk insert above)
+        const recipientRow = recipientData.find((r) => r.recipient_user_id === user.id);
+        const trackingToken = recipientRow?.tracking_token || "";
+
         // Variable replacement — same convention as other emails
         let personalizedBody = campaign.body
           .replace(/\{\{first_name\}\}/g, user.first_name || "")
@@ -182,6 +190,34 @@ export async function POST(
           .replace(/\{\{name\}\}/g, recipientName)
           .replace(/\{\{email\}\}/g, user.email)
           .replace(/\{\{role\}\}/g, user.role);
+
+        // ─── Tracking: inject tracking pixel + rewrite links ──────────
+        if (trackingToken) {
+          const appUrl = process.env.NEXTAUTH_URL || "https://my-zip-vault.vercel.app";
+
+          // 1. Rewrite all <a href="http..."> links to click-tracking redirects
+          //    (skip mailto:, tel:, # anchors, and already-rewritten links)
+          personalizedBody = personalizedBody.replace(
+            /<a\s+[^>]*href="(https?:\/\/[^"]+)"/gi,
+            (match, url) => {
+              // Don't rewrite links that are already tracking redirects
+              if (url.includes("/api/email/track/")) return match;
+              const redirectUrl = `${appUrl}/api/email/track/click/${trackingToken}?u=${encodeURIComponent(url)}`;
+              return match.replace(url, redirectUrl);
+            }
+          );
+
+          // 2. Inject tracking pixel before </body> (or append if no </body>)
+          const trackingPixel = `<img src="${appUrl}/api/email/track/open/${trackingToken}" width="1" height="1" alt="" style="display:none;width:1px;height:1px;border:0;">`;
+          if (personalizedBody.includes("</body>")) {
+            personalizedBody = personalizedBody.replace("</body>", trackingPixel + "</body>");
+          } else if (personalizedBody.includes("</html>")) {
+            personalizedBody = personalizedBody.replace("</html>", trackingPixel + "</html>");
+          } else {
+            // Plain text or no HTML structure — append pixel
+            personalizedBody += trackingPixel;
+          }
+        }
 
         try {
           const brevoResponse = await fetch(BREVO_API_URL, {
