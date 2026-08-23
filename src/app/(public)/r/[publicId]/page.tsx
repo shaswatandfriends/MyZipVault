@@ -66,6 +66,7 @@ interface ProfileData {
     created_at: string;
   }>;
   public_jobs: Array<{
+    id: number;
     public_id: string;
     title: string;
     specialty: string | null;
@@ -326,7 +327,7 @@ function PublicRecruiterProfileInner() {
           <CardHeader><CardTitle className="text-base">Active Job Listings</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {jobs.map((j) => (
-              <Link key={j.public_id} href={`/candidate/jobs/${j.public_id}`}>
+              <Link key={j.id} href={`/jobs/${j.id}`}>
                 <div className="rounded-lg border p-3 hover:border-emerald-300 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <div>

@@ -40,6 +40,8 @@ import {
   Layers,
   FolderOpen,
   Inbox,
+  Briefcase,
+  Search,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -93,6 +95,7 @@ const roleLabels: Record<UserRole, string> = {
 // ─── Candidate Nav Items ─────────────────────────────────────────────
 const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Browse Jobs", href: "/jobs", icon: Briefcase },
   { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "VaultSign", href: "/vaultsign", icon: FileSignature },
@@ -107,6 +110,21 @@ const candidateNav: NavItem[] = [
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
 ];
+
+// ─── Recruiter: Marketplace Group ───────────────────────────────────────
+const marketplaceGroup: NavGroup = {
+  title: "Marketplace",
+  icon: Briefcase,
+  sections: [
+    {
+      title: "JOBS & CANDIDATES",
+      items: [
+        { title: "Open Jobs", href: "/recruiter/jobs", icon: Briefcase },
+        { title: "Find Candidates", href: "/recruiter/candidates/search", icon: Search },
+      ],
+    },
+  ],
+};
 
 // ─── Recruiter: Book of Business Group ─────────────────────────────────
 const bobGroup: NavGroup = {
@@ -226,6 +244,11 @@ const superAdminFlatNav: NavItem[] = [
 
 const superAdminBottomNav: NavItem[] = [
   // Management
+  { title: "Users", href: "/superadmin/users", icon: Users },
+  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
+  { title: "Candidates Pool", href: "/superadmin/candidates", icon: Database },
+  { title: "Jobs", href: "/superadmin/jobs", icon: Briefcase },
+  { title: "Submissions", href: "/superadmin/submissions", icon: Send },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
   // Communication
@@ -387,7 +410,7 @@ export function AppSidebar() {
   }
 
   // Recruiter groups — filter adminOnly items for client_recruiter
-  const recruiterGroups = isRecruiter ? [bobGroup, sendRequestGroup] : [];
+  const recruiterGroups = isRecruiter ? [marketplaceGroup, bobGroup, sendRequestGroup] : [];
   const recruiterBottom = isRecruiter
     ? role === "client_recruiter"
       ? recruiterBottomNav.filter((item) => !item.adminOnly)

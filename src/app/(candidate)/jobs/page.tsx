@@ -196,7 +196,7 @@ export default function CandidateJobsBrowsePage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {jobs.map((job) => (
-            <Link key={job.id} href={`/candidate/jobs/${job.id}`}>
+            <Link key={job.id} href={`/jobs/${job.id}`}>
               <Card className="hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer h-full">
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">

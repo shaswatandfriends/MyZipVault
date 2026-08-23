@@ -82,11 +82,11 @@ export default function CandidateJobDetailPage() {
   const fetchJob = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/candidate/jobs/${jobId}`);
+      const res = await fetch(`/api/jobs/${jobId}`);
       if (!res.ok) {
         if (res.status === 404) {
           toast.error("Job not available", { description: "This job may have been closed or removed." });
-          router.push("/candidate/jobs");
+          router.push("/jobs");
           return;
         }
         throw new Error("Failed to fetch");
@@ -96,7 +96,7 @@ export default function CandidateJobDetailPage() {
       setMyApplication(data.my_application);
     } catch (err) {
       toast.error("Failed to load job", { description: err instanceof Error ? err.message : "" });
-      router.push("/candidate/jobs");
+      router.push("/jobs");
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +107,7 @@ export default function CandidateJobDetailPage() {
   const handleApply = async () => {
     try {
       setIsApplying(true);
-      const res = await fetch(`/api/candidate/jobs/${jobId}/apply`, {
+      const res = await fetch(`/api/jobs/${jobId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cover_note: coverNote || undefined }),
@@ -152,7 +152,7 @@ export default function CandidateJobDetailPage() {
         title={job.title}
         description={job.specialty ? `${job.specialty}${job.profession ? ` · ${job.profession}` : ""}` : job.profession ?? ""}
         actions={
-          <Button variant="outline" size="sm" onClick={() => router.push("/candidate/jobs")}>
+          <Button variant="outline" size="sm" onClick={() => router.push("/jobs")}>
             <ArrowLeft className="size-4 mr-2" />
             Back to Jobs
           </Button>

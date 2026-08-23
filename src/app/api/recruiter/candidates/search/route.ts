@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = parseInt(session.user.id as string, 10);
+    const organizationId = (session.user as Record<string, unknown>).organization_id as number | undefined;
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.trim() || "";
     const profession = searchParams.get("profession")?.trim() || "";
