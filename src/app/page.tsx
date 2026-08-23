@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
-  Menu, X, ChevronDown, ShieldCheck, Briefcase, Users, HelpCircle,
+  Menu, X, ShieldCheck, Briefcase, Users, HelpCircle,
   FileSignature, CreditCard, Mail, ArrowRight, Building2,
   Search, Database, Send, Lock, Star, CheckCircle2, Clock, Bell,
   Stethoscope, Upload, FileText, Calendar, TrendingUp, Award,
@@ -18,7 +18,6 @@ import {
   flowSteps,
   verificationItems,
   comparisonRows,
-  faqSections,
   testimonials,
 } from "@/lib/landing-content";
 
@@ -45,7 +44,7 @@ const C = {
 // ─── Hamburger Menu — see src/lib/landing-content.ts (single source of truth) ──
 
 // ─── All content (candidateFeatures, recruiterFeatures, employerFeatures, flowSteps,
-//     verificationItems, comparisonRows, faqSections, testimonials) is imported from
+//     verificationItems, comparisonRows, testimonials) is imported from
 //     src/lib/landing-content.ts — the single source of truth shared with /for-candidates,
 //     /for-recruiters, /for-employers, /marketplace-flow, /credit-system, /faq, /support.
 
@@ -54,7 +53,6 @@ export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<"candidate" | "recruiter" | "employer">("candidate");
 
   useEffect(() => {
@@ -345,34 +343,6 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ═══ Q&A ═══ */}
-      <section id="faq" style={{ padding: "96px 0", background: C.surface }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>FAQ</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10 }}>Questions, Answered.</h2>
-          </div>
-          {faqSections.map((section, si) => (
-            <div key={si} style={{ marginBottom: 36 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: C.primary, marginBottom: 16, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>{section.category}</h3>
-              {section.items.map((item, ii) => {
-                const key = `${si}-${ii}`;
-                const isOpen = openFaq === key;
-                return (
-                  <div key={key} style={{ marginBottom: 10, border: `1px solid ${C.border}`, borderRadius: C.radius, overflow: "hidden" }}>
-                    <button onClick={() => setOpenFaq(isOpen ? null : key)} style={{ width: "100%", textAlign: "left", padding: "18px 22px", background: isOpen ? C.surface : "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 15, fontWeight: 600, color: C.black }}>
-                      {item.q}
-                      <ChevronDown size={18} style={{ color: C.muted, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.25s ease", flexShrink: 0 }} />
-                    </button>
-                    {isOpen && <div style={{ padding: "0 22px 18px", fontSize: 14, color: C.muted, lineHeight: 1.65 }}>{item.a}</div>}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
       </section>
 
