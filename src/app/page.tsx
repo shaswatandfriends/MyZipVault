@@ -10,6 +10,17 @@ import {
   Zap, Eye, FolderOpen, BadgeCheck, Handshake, Sparkles, Phone,
   UserPlus, DollarSign, MapPin, Globe,
 } from "@/lib/icons";
+import {
+  menuSections,
+  candidateFeatures,
+  recruiterFeatures,
+  employerFeatures,
+  flowSteps,
+  verificationItems,
+  comparisonRows,
+  faqSections,
+  testimonials,
+} from "@/lib/landing-content";
 
 // ─── White / Blue / Black Palette ────────────────────────────────────────
 const C = {
@@ -31,146 +42,12 @@ const C = {
   transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
 };
 
-// ─── Hamburger Menu ──────────────────────────────────────────────────────
-const menuSections = [
-  { title: "ABOUT", items: [
-    { icon: Building2, label: "What is MyZipVault?", href: "#about" },
-    { icon: Users, label: "Our Story", href: "#story" },
-    { icon: Mail, label: "Contact", href: "#contact" },
-    { icon: Handshake, label: "Referral Program", href: "#referral" },
-  ]},
-  { title: "HOW IT WORKS", items: [
-    { icon: Briefcase, label: "For Candidates", href: "#features" },
-    { icon: Search, label: "For Recruiters", href: "#features" },
-    { icon: Building2, label: "For Employers", href: "#features" },
-    { icon: Send, label: "Marketplace Flow", href: "#marketplace" },
-    { icon: CreditCard, label: "Credit System", href: "#pricing" },
-  ]},
-  { title: "HELP", items: [
-    { icon: HelpCircle, label: "FAQ", href: "#faq" },
-    { icon: Phone, label: "Support", href: "#support" },
-    { icon: Lock, label: "Privacy Policy", href: "/privacy" },
-    { icon: FileText, label: "Terms of Service", href: "/terms" },
-  ]},
-];
+// ─── Hamburger Menu — see src/lib/landing-content.ts (single source of truth) ──
 
-// ─── Candidate Features ─────────────────────────────────────────────────
-const candidateFeatures = [
-  { icon: Briefcase, title: "Browse & Apply to Jobs", desc: "Indeed-style job board. See salary, specialty, location. Apply directly — no recruiter needed. 100% free." },
-  { icon: Sparkles, title: "AI Resume Builder (Tedo)", desc: "Conversational AI assistant builds your resume. ATS scoring, optimization, PDF export. 3 versions." },
-  { icon: CheckCircle2, title: "Skills Checklists", desc: "Complete industry-standard checklists once. Reuse for 30 days. No retakes. PDF export with your name." },
-  { icon: ShieldCheck, title: "Credential Vault", desc: "Upload BLS, ACLS, RN License, immunizations. Admin-verified. Expiry reminders 30 days before renewal." },
-  { icon: Users, title: "Reference Network", desc: "Connect with managers. They verify and sign references via VaultSign. Stored permanently — ready to share." },
-  { icon: FileSignature, title: "VaultSign E-Signature", desc: "Sign RTR documents, offer letters, and more. Full audit trail. No more printing + scanning." },
-  { icon: Calendar, title: "Calendar & Scheduling", desc: "Set availability. Receive shift requests. Share calendar links with recruiters. Daily call sheets." },
-  { icon: Lock, title: "Sharing Controls", desc: "Grant expiring access (7/14/30 days). Revoke anytime. Recruiters see ONLY what you allow. Nothing more." },
-  { icon: Database, title: "Profile Auto-Link", desc: "If your email matches our healthcare pool, your profile is auto-filled — specialty, location, etc." },
-  { icon: Star, title: "Rate Recruiters", desc: "Leave 5-dimensional reviews. Public on profiles. Dispute mechanism for unfair reviews." },
-  { icon: ShieldCheck, title: "Report Recruiters", desc: "File formal complaints for misrepresentation, harassment, RTR violations. Auto-suspension on upheld reports." },
-  { icon: Bell, title: "Smart Notifications", desc: "Real-time alerts for job matches, checklist requests, document views, credential expiry warnings." },
-];
-
-// ─── Recruiter Features ─────────────────────────────────────────────────
-const recruiterFeatures = [
-  { icon: Briefcase, title: "Browse Open Jobs", desc: "See all open positions with commission info. Pick the jobs worth your time." },
-  { icon: Search, title: "Search Candidate Pool", desc: "Search by name, email, phone, specialty, location. Path A — use platform data." },
-  { icon: Users, title: "Bring Your Own", desc: "Path B — add candidates from your network. 90-day exclusive ownership if both email + phone are new." },
-  { icon: FileSignature, title: "Send RTR via VaultSign", desc: "Send Right to Represent. Candidate e-signs. No RTR = no submission. Full consent layer." },
-  { icon: CreditCard, title: "Credit-Gated Reveal", desc: "Pay credits to unlock email + phone. 90-day reveal validity. Costs configurable." },
-  { icon: Send, title: "Submit Candidates", desc: "First-submission-wins (millisecond timestamp + reputation tiebreak). One candidate → one job = one recruiter." },
-  { icon: ShieldCheck, title: "Ownership Windows", desc: "0-90 days: exclusive (75/25). 90-180: residual (68/30/2). 180+: open (70/30)." },
-  { icon: FolderOpen, title: "Book of Business", desc: "Drag-drop pipeline. Kanban + list views. Candidate pools. Lead tracking. Pipeline reports." },
-  { icon: Calendar, title: "Calendar & Scheduling", desc: "Availability scheduling. Shift requests. Daily call sheets. Auto-match candidates to shifts." },
-  { icon: BadgeCheck, title: "Compliance Bundles", desc: "Pre-package checklist + credentials + references + resume. One request gets everything." },
-  { icon: Eye, title: "Real-Time Tracking", desc: "See who opened your request, who's at 30% or 90%, who submitted. No more guessing." },
-  { icon: Star, title: "Recruiter Reputation", desc: "Public profile at /r/[your-name]. Reviews from candidates. Verified badges." },
-  { icon: CreditCard, title: "Credit Purchase", desc: "Buy credits via Stripe. Platform admin can also allocate credits." },
-  { icon: Bell, title: "Smart Notifications", desc: "Real-time alerts for submission status changes, new job postings, candidate responses." },
-];
-
-// ─── Employer Features ──────────────────────────────────────────────────
-const employerFeatures = [
-  { icon: Briefcase, title: "Post Jobs Directly", desc: "Create job postings with title, JD, salary, and commission. Set your budget — platform handles the split." },
-  { icon: DollarSign, title: "Set Your Commission", desc: "Post $10,000 commission. Platform shows recruiters $7,000 (70%) + $3,000 platform fee. You see the total." },
-  { icon: Search, title: "Browse Candidates", desc: "Search the healthcare candidate pool. Buy credits to reveal contact info. Same as recruiters." },
-  { icon: Send, title: "Review Submissions", desc: "See candidates submitted to your jobs by recruiters. View profiles, credentials, checklists." },
-  { icon: Eye, title: "Anonymized Recruiter View", desc: "See recruiter initials (e.g., 'SP') and photo only. No email or phone. All communication through platform." },
-  { icon: CheckCircle2, title: "Manage Pipeline", desc: "Update submission status: reviewing → interview → offer → placed. Platform calculates payouts automatically." },
-  { icon: Building2, title: "Your Company Profile", desc: "Your organization is linked to every job. Candidates see your company name on job postings." },
-  { icon: TrendingUp, title: "Analytics Dashboard", desc: "Track job views, applications, submissions, placements, and total spend in one view." },
-  { icon: CreditCard, title: "Credit System", desc: "Buy credits to reveal candidate contact info. Same credit costs as recruiters. Manage via Stripe." },
-  { icon: Lock, title: "Platform-Mediated Payment", desc: "You pay the platform. Platform splits to recruiters (70/30 or per ownership window). No direct payments." },
-  { icon: ShieldCheck, title: "Compliance Built-In", desc: "Every submission has a signed RTR. Every placement has an audit trail. HIPAA-aligned." },
-  { icon: Bell, title: "Smart Notifications", desc: "Real-time alerts for new submissions, status changes, candidate responses, and placement confirmations." },
-];
-
-// ─── Marketplace Flow ───────────────────────────────────────────────────
-const flowSteps = [
-  { icon: Briefcase, title: "Post a Job", desc: "Employer or platform posts a job with commission. Set public for candidate self-apply or private for recruiters." },
-  { icon: Search, title: "Find Candidates", desc: "Recruiters search the pool (Path A) or bring their own (Path B with 90-day exclusive ownership)." },
-  { icon: FileSignature, title: "Send RTR", desc: "Recruiter sends Right to Represent via VaultSign. Candidate e-signs. No RTR, no submission." },
-  { icon: Send, title: "Submit & Win", desc: "First submission wins (millisecond timestamp). 90-day exclusive (75/25), then residual (68/30/2)." },
-];
-
-// ─── Verification Items ─────────────────────────────────────────────────
-const verificationItems = [
-  { icon: CheckCircle2, title: "Skills Checklists", desc: "Industry-standard healthcare checklists. Complete once, reuse for 30 days.", features: ["Complete once, share for 30 days", "Industry-standard templates", "PDF export with your name", "Reminders before expiry"] },
-  { icon: ShieldCheck, title: "Credential Management", desc: "Upload BLS, ACLS, RN License, immunizations. Admin verification + expiry reminders.", features: ["Admin-verified credentials", "Automatic expiry reminders", "Secure storage with audit trail", "One-click share with recruiters"] },
-  { icon: FileSignature, title: "VaultSign E-Signature", desc: "Full e-signature platform: templates, multi-signer, audit trails, PDF export.", features: ["Multi-signer sequential/parallel", "Full audit trail with IP + device", "PDF export with signature data", "Auto-expiry + reminders"] },
-];
-
-// ─── Comparison Table ───────────────────────────────────────────────────
-const comparisonRows = [
-  { feature: "Cost to candidate", mzv: "100% Free", agency: "Free", linkedin: "Free" },
-  { feature: "Candidate data ownership", mzv: "Candidate owns everything", agency: "Agency owns the data", linkedin: "LinkedIn owns the data" },
-  { feature: "Checklist reuse", mzv: "Complete once, reuse 30 days", agency: "Retake every time", linkedin: "No checklists" },
-  { feature: "Reference portability", mzv: "Verified references follow candidate", agency: "References stay with agency", linkedin: "No reference system" },
-  { feature: "Document signing", mzv: "VaultSign e-signature built-in", agency: "Print, sign, scan, email", linkedin: "No signing" },
-  { feature: "Independent operation", mzv: "Recruiters work for themselves", agency: "Recruiters work for agency", linkedin: "Recruiters need company account" },
-  { feature: "Placement protection", mzv: "90-day ownership + circumvention detection", agency: "Varies by contract", linkedin: "None" },
-  { feature: "Employer job posting", mzv: "Employers post directly with commission", agency: "Agency posts on behalf", linkedin: "Employers post (expensive)" },
-];
-
-// ─── Q&A Items ──────────────────────────────────────────────────────────
-const faqSections = [
-  { category: "General", items: [
-    { q: "What is MyZipVault?", a: "A healthcare recruiting marketplace where candidates own their data, recruiters work independently (not for a company), employers post jobs directly, and every placement is monitored and protected." },
-    { q: "Is this free?", a: "100% free for candidates. Recruiters pay nothing upfront — 70/30 split on placements. Employers set their own commission budget." },
-    { q: "Do recruiters need to work for a company?", a: "No. Recruiters work independently. They keep 70% of placement fees. No agency overhead, no retainer." },
-    { q: "Can employers post jobs directly?", a: "Yes. Employers sign up, post jobs with their own commission budget, and receive submissions from recruiters. They set the fee — platform handles the split." },
-  ]},
-  { category: "For Employers", items: [
-    { q: "How does the employer commission work?", a: "Employer posts a job with a commission (e.g., $10,000). Platform shows recruiters: $7,000 recruiter commission + $3,000 platform fee. If a candidate was brought by another recruiter (Path B, within residual window), the split is $6,800 + $3,000 + $200 to original owner." },
-    { q: "Can employers see recruiter contact info?", a: "No. Employers see recruiter initials (e.g., 'SP') and photo only. All communication goes through the platform. This protects both parties." },
-    { q: "Can employers search candidates directly?", a: "Yes. Employers can browse the candidate pool and buy credits to reveal contact info, same as recruiters. This gives employers a direct sourcing option." },
-    { q: "How does payment work?", a: "Employer pays the platform. Platform splits the payment to recruiters based on the ownership window: 75/25 during exclusive, 68/30/2 during residual, 70/30 standard. No direct employer-to-recruiter payments." },
-  ]},
-  { category: "VaultSign", items: [
-    { q: "What is VaultSign?", a: "Our built-in e-signature platform. Used for Right to Represent (RTR), offer letters, and any document requiring signature." },
-    { q: "Is VaultSign legally binding?", a: "Yes. Each signature includes timestamp, IP address, device info, and document hash (SHA-256). Full audit trail stored permanently." },
-    { q: "Can multiple people sign?", a: "Yes. Sequential (one after another) or parallel (all at once) signing orders supported." },
-  ]},
-  { category: "Marketplace & Ownership", items: [
-    { q: "What is the 90-day ownership window?", a: "When a recruiter brings a new candidate (Path B), they get 90 days of exclusive access. No other recruiter can see or submit that candidate. Split: 75/25." },
-    { q: "What happens after 90 days?", a: "Days 90-180: 'residual' phase. Other recruiters can submit, but original owner gets 2% from the new recruiter's 70%. Split: 68/30/2." },
-    { q: "What if two recruiters submit the same candidate?", a: "First submission wins (millisecond timestamp). If tied, reputation score breaks the tie." },
-  ]},
-  { category: "Credits", items: [
-    { q: "How do credits work?", a: "Recruiters and employers buy credits via Stripe. Credits are spent to reveal contact info, submit candidates, send checklists. Each action's cost is configurable." },
-    { q: "Do candidates need credits?", a: "No. Credits are recruiter/employer-side only. Candidates are 100% free." },
-  ]},
-  { category: "Privacy & Security", items: [
-    { q: "Is my data HIPAA compliant?", a: "We are HIPAA-aligned. BAA available for organizations. 256-bit encryption at rest. Full audit trail on every action." },
-    { q: "Who owns my data?", a: "You do. If you delete your account, all recruiter access is killed instantly. Your data is purged." },
-  ]},
-];
-
-// ─── Testimonials ───────────────────────────────────────────────────────
-const testimonials = [
-  { name: "Sarah K.", role: "ICU RN, Travel Nurse", text: "I completed my skills checklist once and shared it with three different agencies. No retakes. This saved me hours." },
-  { name: "Marcus T.", role: "Healthcare Recruiter, Independent", text: "I work for myself now. 70% of every placement fee goes to me. No agency taking 60%. The 90-day ownership protection is real." },
-  { name: "Dr. Patel", role: "Locum Hospitalist", text: "VaultSign eliminated the print-sign-scan cycle. I signed my RTR on my phone in 30 seconds. Full audit trail." },
-];
+// ─── All content (candidateFeatures, recruiterFeatures, employerFeatures, flowSteps,
+//     verificationItems, comparisonRows, faqSections, testimonials) is imported from
+//     src/lib/landing-content.ts — the single source of truth shared with /for-candidates,
+//     /for-recruiters, /for-employers, /marketplace-flow, /credit-system, /faq, /support.
 
 // ─── Component ───────────────────────────────────────────────────────────
 export default function HomePage() {
@@ -202,8 +79,14 @@ export default function HomePage() {
           <span style={{ fontWeight: 700, fontSize: 19, color: C.black }}>MyZipVault</span>
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 32 }}>
-          {["For Candidates", "For Recruiters", "For Employers", "How It Works", "FAQ"].map((label, i) => (
-            <a key={i} href={`#${label.toLowerCase().replace(/\s+/g, "-")}`} style={{ fontSize: 14, color: C.muted, textDecoration: "none", fontWeight: 500 }}>{label}</a>
+          {[
+            { label: "For Candidates", href: "/for-candidates" },
+            { label: "For Recruiters", href: "/for-recruiters" },
+            { label: "For Employers", href: "/for-employers" },
+            { label: "How It Works", href: "/marketplace-flow" },
+            { label: "FAQ", href: "/faq" },
+          ].map((item, i) => (
+            <Link key={i} href={item.href} style={{ fontSize: 14, color: C.muted, textDecoration: "none", fontWeight: 500 }}>{item.label}</Link>
           ))}
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -551,15 +434,32 @@ export default function HomePage() {
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Platform</p>
-              {["Marketplace", "Features", "Verification", "Reputation"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t}</a>)}
+              {[
+                { label: "Marketplace", href: "/marketplace-flow" },
+                { label: "Credit System", href: "/credit-system" },
+                { label: "For Candidates", href: "/for-candidates" },
+                { label: "For Recruiters", href: "/for-recruiters" },
+              ].map((t) => <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t.label}</Link>)}
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Company</p>
-              {["About", "Contact", "Sign Up", "For Employers"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t}</a>)}
+              {[
+                { label: "About", href: "/about" },
+                { label: "Our Story", href: "/our-story" },
+                { label: "Contact", href: "/contact" },
+                { label: "Referral Program", href: "/referral-program" },
+                { label: "Sign Up", href: "/signup" },
+                { label: "For Employers", href: "/for-employers" },
+              ].map((t) => <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t.label}</Link>)}
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Legal</p>
-              {["Terms", "Privacy", "HIPAA", "BAA"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t}</a>)}
+              {[
+                { label: "Terms", href: "/terms" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "FAQ", href: "/faq" },
+                { label: "Support", href: "/support" },
+              ].map((t) => <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}>{t.label}</Link>)}
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Newsletter</p>
