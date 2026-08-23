@@ -21,6 +21,8 @@ function getRoleDashboard(role: string): string {
     case "client_admin":
     case "client_recruiter":
       return "/recruiter/dashboard";
+    case "employer":
+      return "/employer/dashboard";
     case "candidate":
       return "/dashboard";
     default:
@@ -292,6 +294,27 @@ export default function LoginPage() {
             >
               Agency Login
             </Link>
+          </p>
+
+          <p
+            className="text-[0.9375rem] text-center"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Healthcare employer?{" "}
+            <Link
+              href="/employer-signup"
+              className="font-semibold transition-colors"
+              style={{ color: "var(--primary)" }}
+            >
+              Employer Sign Up
+            </Link>
+          </p>
+
+          <p
+            className="text-xs text-center mt-2"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Candidate · Recruiter · Employer — all sign in from this page
           </p>
 
           {/* Security badges — spatial pill */}

@@ -352,6 +352,23 @@ export default function SignupPage() {
             </Link>
           </p>
 
+          <p
+            className="text-[0.9375rem] text-center"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Healthcare employer?{" "}
+            <Link href="/employer-signup" className="font-semibold transition-colors" style={{ color: "var(--primary)" }}>
+              Employer Sign Up
+            </Link>
+          </p>
+
+          <p
+            className="text-xs text-center mt-2"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Candidate · Recruiter · Employer — pick your side
+          </p>
+
           {/* Security badges */}
           <div className="mt-10 pt-6 flex items-center justify-center gap-6 border-t" style={{ borderColor: "var(--border)" }}>
             {[
