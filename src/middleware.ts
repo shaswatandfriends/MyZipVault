@@ -1,5 +1,5 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // ─────────────────────────────────────────────────────────────────────
 // EDGE RATE LIMITER — protects all 311 API routes from abuse
@@ -92,7 +92,7 @@ function checkEdgeRateLimit(
 }
 
 // Extract client IP from request — Vercel provides x-forwarded-for
-function getClientIp(req: NextRequest): string {
+function getClientIp(req: { headers: { get: (name: string) => string | null } }): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
     // x-forwarded-for can be a comma-separated list; take the first (client IP)
@@ -123,7 +123,7 @@ export default withAuth({
           pathname.startsWith("/api/stripe/webhook") ||
           pathname.startsWith("/api/cron/");
         if (!isWebhookOrCron) {
-          const ip = getClientIp(req as unknown as NextRequest);
+          const ip = getClientIp(req);
           const isAuthenticated = !!token?.id;
           const result = checkEdgeRateLimit(ip, isAuthenticated);
 
