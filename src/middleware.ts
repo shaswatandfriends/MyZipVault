@@ -1,5 +1,5 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 // ─────────────────────────────────────────────────────────────────────
 // EDGE RATE LIMITER — protects all 311 API routes from abuse

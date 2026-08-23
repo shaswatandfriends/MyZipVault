@@ -290,6 +290,27 @@ export async function POST(request: Request) {
         });
         return NextResponse.json({ success: true, message: "User unsuspended" });
       }
+      case "approve": {
+        // Approve a pending recruiter/agency account
+        await db.user.update({
+          where: { id: userId },
+          data: {
+            is_approved: true,
+            account_status: "active",
+          },
+        });
+        await db.auditLog.create({
+          data: {
+            user_id: actionerId,
+            role: "super_admin",
+            action: "approve_user",
+            entity_type: "user",
+            entity_id: userId,
+            details: `Approved ${targetUser.email} (${targetUser.role}) — account is now active`,
+          },
+        });
+        return NextResponse.json({ success: true, message: "Account approved — user can now log in" });
+      }
       case "proxy-login": {
         // Log the proxy login
         await db.auditLog.create({

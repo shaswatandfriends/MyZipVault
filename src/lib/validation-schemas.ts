@@ -181,7 +181,7 @@ export const platformSettingSchema = z.object({
 // ─── SuperAdmin: User Management Schemas ──────────────────────────
 
 export const superadminUserActionSchema = z.object({
-  action: z.enum(["force-reset-password", "suspend", "ban", "unsuspend", "proxy-login"]),
+  action: z.enum(["force-reset-password", "suspend", "ban", "unsuspend", "proxy-login", "approve"]),
   userId: positiveIntSchema,
 });
 

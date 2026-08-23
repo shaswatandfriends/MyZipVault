@@ -96,7 +96,17 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (action === "suspend") {
+    if (action === "approve") {
+      // Approve a pending recruiter/agency account — sets is_approved=true
+      // and account_status=active so they can log in immediately
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          is_approved: true,
+          account_status: "active",
+        },
+      });
+    } else if (action === "suspend") {
       await db.user.update({
         where: { id: userId },
         data: { account_status: "suspended" },
@@ -113,7 +123,7 @@ export async function PUT(
       });
     } else {
       return NextResponse.json(
-        { error: "Invalid action. Use 'suspend', 'unsuspend', or 'ban'" },
+        { error: "Invalid action. Use 'approve', 'suspend', 'unsuspend', or 'ban'" },
         { status: 400 }
       );
     }

@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Building2,
   Trash2,
+  CheckCircle2,
 } from "@/lib/icons";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -711,6 +712,17 @@ export default function SuperadminUsersPage() {
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              {user.accountStatus === "pending" && !user.isApproved && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    setConfirmAction({ type: "approve", userId: user.id, userName: fullName })
+                                  }
+                                  className="text-emerald-600 focus:text-emerald-600"
+                                >
+                                  <CheckCircle2 className="size-4 mr-2" />
+                                  Approve Account
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() =>
                                   setConfirmAction({ type: "force-reset-password", userId: user.id, userName: fullName })
@@ -873,7 +885,9 @@ export default function SuperadminUsersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction?.type === "ban"
+              {confirmAction?.type === "approve"
+                ? "Approve Account"
+                : confirmAction?.type === "ban"
                 ? "Ban User"
                 : confirmAction?.type === "suspend"
                 ? "Suspend User"
@@ -886,7 +900,9 @@ export default function SuperadminUsersPage() {
                 : "Proxy Login"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === "proxy-login"
+              {confirmAction?.type === "approve"
+                ? `Approve ${confirmAction.userName}? Their account will be activated immediately and they can log in right away.`
+                : confirmAction?.type === "proxy-login"
                 ? `You are about to log in as ${confirmAction.userName}. This action will be logged.`
                 : confirmAction?.type === "ban"
                 ? `Are you sure you want to ban ${confirmAction.userName}? This action can be reversed by an admin.`
