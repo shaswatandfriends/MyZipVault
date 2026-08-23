@@ -366,9 +366,17 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
               </p>
               {/* Section items */}
               {section.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
+                // Active check: exact match OR subpath match.
+                // Special case: /recruiter/candidates should NOT match
+                // /recruiter/candidates/search (they're siblings, not
+                // parent/child). Add /search to the exclusion.
+                const isExactMatch = pathname === item.href;
+                const isSubPath = pathname.startsWith(item.href + "/");
+                // Exclude /search subpath for /candidates (sibling route)
+                const isSiblingSearch =
+                  item.href === "/recruiter/candidates" &&
+                  pathname === "/recruiter/candidates/search";
+                const isActive = (isExactMatch || isSubPath) && !isSiblingSearch;
                 return (
                   <Link
                     key={item.href}
