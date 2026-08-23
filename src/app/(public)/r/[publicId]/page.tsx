@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Star, Users, Briefcase, MapPin, DollarSign, TrendingUp, Clock,
   ShieldCheck, MessageSquare, Flag, ArrowLeft, CheckCircle2,
-  Loader2, Send,
+  Loader2, Send, MessageCircle, AlertTriangle,
 } from "@/lib/icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,8 +63,14 @@ interface ProfileData {
     recruiter_reply: string | null;
     recruiter_replied_at: string | null;
     admin_annotation: string | null;
+    has_dispute: boolean;
+    dispute_status: string | null; // null | 'pending' | 'upheld' | 'dismissed' | 'review_removed'
+    is_negative: boolean;
+    viewer_can_reply: boolean;
+    viewer_can_dispute: boolean;
     created_at: string;
   }>;
+  viewer_is_recruiter: boolean;
   public_jobs: Array<{
     id: number;
     public_id: string;
@@ -122,6 +128,20 @@ function PublicRecruiterProfileInner() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reply state (recruiter replying to their own review)
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [replyTargetReviewId, setReplyTargetReviewId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+
+  // Dispute state (recruiter disputing a negative review)
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
+  const [disputeTargetReviewId, setDisputeTargetReviewId] = useState<number | null>(null);
+  const [disputeForm, setDisputeForm] = useState({
+    reason_category: "",
+    explanation: "",
+    evidence_urls: "",
+  });
 
   const [reviewForm, setReviewForm] = useState({
     professionalism: 7, communication: 7, job_match: 7, process_speed: 7, post_placement: 7,
@@ -192,6 +212,96 @@ function PublicRecruiterProfileInner() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // ─── Reply handler (recruiter replies to a review on their own profile) ───
+  const handleReplySubmit = async () => {
+    if (!replyTargetReviewId) return;
+    if (replyText.trim().length < 10) {
+      toast.error("Reply too short", { description: "Reply must be at least 10 characters." });
+      return;
+    }
+    if (replyText.length > 300) {
+      toast.error("Reply too long", { description: "Reply must be at most 300 characters." });
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(`/api/reviews/${replyTargetReviewId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: replyText.trim() }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to post reply");
+      toast.success("Reply posted", {
+        description: "Your reply is now visible publicly under the review.",
+      });
+      setReplyDialogOpen(false);
+      setReplyTargetReviewId(null);
+      setReplyText("");
+      fetchProfile();
+    } catch (err) {
+      toast.error("Failed to post reply", { description: err instanceof Error ? err.message : "" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openReplyDialog = (reviewId: number) => {
+    setReplyTargetReviewId(reviewId);
+    setReplyText("");
+    setReplyDialogOpen(true);
+  };
+
+  // ─── Dispute handler (recruiter disputes a negative review) ───
+  const handleDisputeSubmit = async () => {
+    if (!disputeTargetReviewId) return;
+    if (!disputeForm.reason_category) {
+      toast.error("Reason required", { description: "Please select a reason category." });
+      return;
+    }
+    if (disputeForm.explanation.trim().length < 100) {
+      toast.error("Explanation too short", { description: "Explanation must be at least 100 characters." });
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      // Parse evidence URLs (one per line, optional)
+      const evidenceUrls = disputeForm.evidence_urls
+        .split("\n")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      const res = await fetch(`/api/reviews/${disputeTargetReviewId}/dispute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason_category: disputeForm.reason_category,
+          explanation: disputeForm.explanation.trim(),
+          evidence_urls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to file dispute");
+      toast.success("Dispute filed", {
+        description: "Our team will review it and may remove, annotate, or keep the review based on the evidence provided.",
+      });
+      setDisputeDialogOpen(false);
+      setDisputeTargetReviewId(null);
+      setDisputeForm({ reason_category: "", explanation: "", evidence_urls: "" });
+      fetchProfile();
+    } catch (err) {
+      toast.error("Failed to file dispute", { description: err instanceof Error ? err.message : "" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openDisputeDialog = (reviewId: number) => {
+    setDisputeTargetReviewId(reviewId);
+    setDisputeForm({ reason_category: "", explanation: "", evidence_urls: "" });
+    setDisputeDialogOpen(true);
   };
 
   if (isLoading) {
@@ -298,6 +408,15 @@ function PublicRecruiterProfileInner() {
                     <StarRating score={parseFloat(r.avg_score)} />
                     <span className="text-sm font-semibold">{r.avg_score}/10</span>
                     {r.is_verified_placement && <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px]">Verified</Badge>}
+                    {r.has_dispute && r.dispute_status && (
+                      <Badge variant="outline" className={
+                        r.dispute_status === "pending" ? "text-amber-700 border-amber-300 bg-amber-50 text-[10px]"
+                        : r.dispute_status === "upheld" || r.dispute_status === "review_removed" ? "text-rose-700 border-rose-300 bg-rose-50 text-[10px]"
+                        : "text-slate-700 border-slate-300 bg-slate-50 text-[10px]"
+                      }>
+                        Dispute: {r.dispute_status.replace(/_/g, " ")}
+                      </Badge>
+                    )}
                   </div>
                   <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
                 </div>
@@ -315,6 +434,33 @@ function PublicRecruiterProfileInner() {
                     <p className="text-xs text-amber-800"><strong>Platform note:</strong> {r.admin_annotation}</p>
                   </div>
                 )}
+
+                {/* Recruiter-only action buttons (reply + dispute) */}
+                {data.viewer_is_recruiter && (r.viewer_can_reply || r.viewer_can_dispute) && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {r.viewer_can_reply && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openReplyDialog(r.id)}
+                      >
+                        <MessageCircle className="size-3.5" />
+                        Reply to review
+                      </Button>
+                    )}
+                    {r.viewer_can_dispute && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openDisputeDialog(r.id)}
+                        className="text-amber-700 border-amber-300 hover:bg-amber-50"
+                      >
+                        <AlertTriangle className="size-3.5" />
+                        Dispute this review
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </CardContent>
@@ -327,7 +473,7 @@ function PublicRecruiterProfileInner() {
           <CardHeader><CardTitle className="text-base">Active Job Listings</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {jobs.map((j) => (
-              <Link key={j.id} href={`/jobs/${j.id}`}>
+              <Link key={j.id} href={`/browse-jobs/${j.id}`}>
                 <div className="rounded-lg border p-3 hover:border-emerald-300 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <div>
@@ -427,6 +573,134 @@ function PublicRecruiterProfileInner() {
             <Button variant="outline" onClick={() => setReportDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
             <Button onClick={handleReportSubmit} disabled={isSubmitting || !reportForm.reason_category || reportForm.description.length < 50}>
               {isSubmitting ? <><Loader2 className="size-4 mr-2 animate-spin" />Submitting...</> : <><Flag className="size-4 mr-2" />File Report</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reply Dialog (recruiter replying to their own review) */}
+      <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Reply to this review</DialogTitle>
+            <DialogDescription>
+              Your reply will appear publicly under the review. Glassdoor-style — one reply per review, no editing.
+              Be professional. Your response reflects on your reputation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label htmlFor="reply-text">Your reply (10–300 characters)</Label>
+              <Textarea
+                id="reply-text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value.substring(0, 300))}
+                rows={5}
+                placeholder="Thank you for the feedback. I'm glad the placement went smoothly…"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {replyText.length}/300 {replyText.trim().length < 10 && replyText.length > 0 && "· at least 10 characters required"}
+              </p>
+            </div>
+            <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
+              <p className="text-xs text-blue-800">
+                <strong>Tip:</strong> Acknowledge the feedback, address specific concerns, and stay
+                professional — even for negative reviews. Your reply is visible to anyone viewing your profile.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReplyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button
+              onClick={handleReplySubmit}
+              disabled={isSubmitting || replyText.trim().length < 10 || replyText.length > 300}
+            >
+              {isSubmitting
+                ? <><Loader2 className="size-4 mr-2 animate-spin" />Posting…</>
+                : <><MessageCircle className="size-4 mr-2" />Post Reply</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispute Dialog (recruiter disputing a negative review) */}
+      <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Dispute this review</DialogTitle>
+            <DialogDescription>
+              Disputes go to the platform admin moderation queue. Provide a clear, factual explanation
+              and any evidence links. Frivolous disputes may hurt your reputation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="dispute-reason">Reason category</Label>
+              <Select
+                value={disputeForm.reason_category}
+                onValueChange={(v) => setDisputeForm({ ...disputeForm, reason_category: v })}
+              >
+                <SelectTrigger id="dispute-reason">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false_claim">False claim — the reviewer stated something untrue</SelectItem>
+                  <SelectItem value="wrong_recruiter">Wrong recruiter — review was meant for someone else</SelectItem>
+                  <SelectItem value="vindictive">Vindictive — retaliatory review unrelated to actual service</SelectItem>
+                  <SelectItem value="factually_incorrect">Factually incorrect — verifiable facts are wrong</SelectItem>
+                  <SelectItem value="policy_violation">Policy violation — review violates platform policy</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="dispute-explanation">Explanation (min 100 chars, max 1000)</Label>
+              <Textarea
+                id="dispute-explanation"
+                value={disputeForm.explanation}
+                onChange={(e) => setDisputeForm({ ...disputeForm, explanation: e.target.value.substring(0, 1000) })}
+                rows={6}
+                placeholder="Provide a detailed, factual explanation of why this review should be removed or annotated. Include dates, communications, and any evidence you have."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {disputeForm.explanation.length}/1000 {disputeForm.explanation.trim().length < 100 && disputeForm.explanation.length > 0 && "· at least 100 characters required"}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="dispute-evidence">Evidence URLs (optional, one per line)</Label>
+              <Textarea
+                id="dispute-evidence"
+                value={disputeForm.evidence_urls}
+                onChange={(e) => setDisputeForm({ ...disputeForm, evidence_urls: e.target.value })}
+                rows={3}
+                placeholder={"https://example.com/email-thread.pdf\nhttps://example.com/contract.pdf"}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Links to documents, screenshots, or communications that support your dispute.
+              </p>
+            </div>
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
+              <p className="text-xs text-amber-800">
+                <strong>Heads up:</strong> Disputes are reviewed by platform admins. If your dispute is
+                upheld, the review may be removed or annotated with a platform note. If dismissed, the
+                review stays as-is. Filing frivolous disputes may negatively impact your reputation score.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button
+              onClick={handleDisputeSubmit}
+              disabled={
+                isSubmitting ||
+                !disputeForm.reason_category ||
+                disputeForm.explanation.trim().length < 100
+              }
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isSubmitting
+                ? <><Loader2 className="size-4 mr-2 animate-spin" />Filing…</>
+                : <><AlertTriangle className="size-4 mr-2" />File Dispute</>}
             </Button>
           </DialogFooter>
         </DialogContent>

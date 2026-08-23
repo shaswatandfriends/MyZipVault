@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 /**
@@ -7,20 +9,19 @@ import { db } from "@/lib/db";
  * Public recruiter profile — NO AUTH REQUIRED (anyone can view).
  * Returns recruiter info + reputation score + recent reviews (active only).
  *
+ * If the viewer is logged in as the recruiter who owns this profile, the
+ * response also includes:
+ *   - viewer_is_recruiter: true
+ *   - per-review `viewer_can_reply` (true if no reply yet)
+ *   - per-review `viewer_can_dispute` (true if review is negative and no
+ *     dispute has been filed yet)
+ *   - per-review `has_dispute` and `dispute_status` (for display)
+ *
  * Hides:
  *   - email (privacy)
  *   - phone
  *   - password_hash
  *   - any internal IDs (only public_id exposed)
- *
- * Shows:
- *   - first_name, last_name, profession (if available)
- *   - reputation score (overall + 5 sub-dimensions)
- *   - total_reviews, verified_reviews
- *   - total_placements, avg_time_to_fill_days, candidate_retention_pct
- *   - badge_tier (none | verified | top)
- *   - recent reviews (active status, with comments + recruiter replies)
- *   - active job listings (if any, public only)
  */
 export async function GET(
   request: NextRequest,
@@ -28,6 +29,13 @@ export async function GET(
 ) {
   try {
     const { publicId } = await params;
+
+    // Optional auth — if the viewer is logged in, we use their session to
+    // compute viewer_is_recruiter and viewer_can_reply/dispute flags.
+    // If not logged in, all those flags are false (and that's fine —
+    // the page just won't show Reply/Dispute buttons).
+    const session = await getServerSession(authOptions);
+    const viewerUserId = session?.user?.id ? parseInt(session.user.id as string, 10) : null;
 
     // Find the recruiter by public_id (UUID)
     const recruiter = await db.user.findFirst({
@@ -52,12 +60,16 @@ export async function GET(
       return NextResponse.json({ error: "Recruiter not found" }, { status: 404 });
     }
 
+    // Determine if the viewer IS the recruiter being viewed (for reply/dispute UI)
+    const viewerIsRecruiter = viewerUserId !== null && viewerUserId === recruiter.id;
+
     // Get reputation score (may not exist yet)
     const reputation = await db.recruiterReputationScore.findUnique({
       where: { recruiter_user_id: recruiter.id },
     });
 
     // Get recent reviews (active status only, max 10)
+    // Include has_dispute and dispute_status so we can show the right UI
     const reviews = await db.recruiterReview.findMany({
       where: {
         recruiter_user_id: recruiter.id,
@@ -79,6 +91,8 @@ export async function GET(
         recruiter_reply: true,
         recruiter_replied_at: true,
         admin_annotation: true,
+        has_dispute: true,
+        dispute_status: true,
         created_at: true,
       },
     });
@@ -153,25 +167,46 @@ export async function GET(
             is_top_recruiter: false,
             is_verified_recruiter: false,
           },
-      reviews: reviews.map((r) => ({
-        id: r.id,
-        reviewer_role: r.reviewer_role,
-        professionalism: r.professionalism,
-        communication: r.communication,
-        job_match: r.job_match,
-        process_speed: r.process_speed,
-        post_placement: r.post_placement,
-        // Average score for display
-        avg_score: ((r.professionalism + r.communication + r.job_match + r.process_speed + r.post_placement) / 5).toFixed(1),
-        comment: r.comment,
-        is_anonymous: r.is_anonymous,
-        is_verified_placement: r.is_verified_placement,
-        recruiter_reply: r.recruiter_reply,
-        recruiter_replied_at: r.recruiter_replied_at,
-        admin_annotation: r.admin_annotation,
-        created_at: r.created_at,
-      })),
+      reviews: reviews.map((r) => {
+        // Determine whether the review is "negative" (any sub-score ≤ 5)
+        // — only negative reviews can be disputed
+        const isNegative = [r.professionalism, r.communication, r.job_match, r.process_speed, r.post_placement].some((v) => v <= 5);
+
+        // The viewer can reply if: they ARE the recruiter AND no reply exists yet
+        // The viewer can dispute if: they ARE the recruiter AND review is negative
+        //   AND no dispute has been filed yet
+        const viewerCanReply = viewerIsRecruiter && !r.recruiter_reply;
+        const viewerCanDispute = viewerIsRecruiter && isNegative && !r.has_dispute;
+
+        return {
+          id: r.id,
+          reviewer_role: r.reviewer_role,
+          professionalism: r.professionalism,
+          communication: r.communication,
+          job_match: r.job_match,
+          process_speed: r.process_speed,
+          post_placement: r.post_placement,
+          // Average score for display
+          avg_score: ((r.professionalism + r.communication + r.job_match + r.process_speed + r.post_placement) / 5).toFixed(1),
+          comment: r.comment,
+          is_anonymous: r.is_anonymous,
+          is_verified_placement: r.is_verified_placement,
+          recruiter_reply: r.recruiter_reply,
+          recruiter_replied_at: r.recruiter_replied_at,
+          admin_annotation: r.admin_annotation,
+          // New fields for reply/dispute UI
+          has_dispute: r.has_dispute,
+          dispute_status: r.dispute_status, // null | 'pending' | 'upheld' | 'dismissed' | 'review_removed'
+          is_negative: isNegative,
+          viewer_can_reply: viewerCanReply,
+          viewer_can_dispute: viewerCanDispute,
+          created_at: r.created_at,
+        };
+      }),
+      // Top-level flag: is the viewer the recruiter being viewed?
+      viewer_is_recruiter: viewerIsRecruiter,
       public_jobs: publicJobs.map((j) => ({
+        id: j.id,
         public_id: j.public_id,
         title: j.title,
         specialty: j.specialty,
