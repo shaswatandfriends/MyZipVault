@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
+import { ReferralCard } from "@/components/shared/ReferralCard";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface CredentialItem {
@@ -513,7 +514,10 @@ export default function CandidateDashboardPage() {
         </Card>
       </div>
 
-      {/* ════ SECTION 8: VALUE PROPOSITION FOOTER ════ */}
+      {/* ════ SECTION 8: REFERRAL CARD ════ */}
+      <ReferralCard />
+
+      {/* ════ SECTION 9: VALUE PROPOSITION FOOTER ════ */}
       <div className="rounded-[20px] p-5" style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)", border: "0.5px solid var(--material-thin-border)" }}>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
           {[

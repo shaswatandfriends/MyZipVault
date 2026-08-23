@@ -21,6 +21,7 @@ import {
 } from "@/lib/icons";
 
 import { BannerCarousel } from "@/components/banners/banner-carousel";
+import { ReferralCard } from "@/components/shared/ReferralCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import {
@@ -630,6 +631,9 @@ export default function RecruiterDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Referral card */}
+      <ReferralCard />
     </div>
   );
 }

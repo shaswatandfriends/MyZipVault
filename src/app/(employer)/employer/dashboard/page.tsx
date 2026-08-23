@@ -12,6 +12,7 @@ import {
   UserCheck, DollarSign, Bell, ChevronRight, Briefcase as BriefcaseIcon,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
+import { ReferralCard } from "@/components/shared/ReferralCard";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface DashboardStats {
@@ -523,6 +524,9 @@ export default function EmployerDashboard() {
           )}
         </>
       )}
+
+      {/* Referral card */}
+      <ReferralCard />
     </div>
   );
 }

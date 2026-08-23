@@ -6,6 +6,7 @@ import { sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
 import { signupSchema, validateBody } from "@/lib/validation-schemas";
 import { logAuthError } from "@/lib/auth-logger";
+import { findReferrer, grantReferralCredits } from "@/lib/referrals";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -185,6 +186,25 @@ export async function POST(request: Request) {
     } catch (emailError) {
       logAuthError("[SIGNUP] Failed to send verification email", emailError);
       // Don't fail signup if email sending fails
+    }
+
+    // ─── Referral: if the request body or cookie has a ref code, grant
+    // credits to the referrer (or just record it for candidate referrers). ──
+    try {
+      // Body may include `ref` (sent from the client); fall back to the
+      // `mzv_ref` cookie if not in the body.
+      const refCode = (body.ref as string | undefined) || "";
+      const referrer = await findReferrer(refCode);
+      if (referrer && referrer.id !== user.id) {
+        await grantReferralCredits({
+          referrerId: referrer.id,
+          referredUserId: user.id,
+          referredEmail: user.email,
+        });
+      }
+    } catch (refErr) {
+      console.error("[SIGNUP_REFERRAL] Failed to process referral:", refErr);
+      // Non-blocking — signup still succeeds
     }
 
     return NextResponse.json(

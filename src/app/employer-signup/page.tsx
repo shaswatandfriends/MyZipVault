@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Check, X, ArrowRight, ShieldCheck, Lock } from "@/lib/icons";
 import { toast } from "sonner";
@@ -49,7 +49,17 @@ const sharedLabelClass = "block text-xs font-bold uppercase";
 const sharedLabelStyle = { color: "var(--text-secondary)", letterSpacing: "0.15em" } as const;
 
 export default function EmployerSignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-text-muted">Loading…</div>}>
+      <EmployerSignupPageInner />
+    </Suspense>
+  );
+}
+
+function EmployerSignupPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -117,6 +127,7 @@ export default function EmployerSignupPage() {
           companyAddress: companyAddress.trim() || undefined,
           companyWebsite: companyWebsite.trim() || undefined,
           phone: phone.trim() || undefined,
+          ref: refCode || undefined,
         }),
       });
 

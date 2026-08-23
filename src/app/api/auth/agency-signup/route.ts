@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { agencySignupSchema, validateBody } from "@/lib/validation-schemas";
 import { logAuthError } from "@/lib/auth-logger";
+import { findReferrer, grantReferralCredits } from "@/lib/referrals";
 
 /**
  * POST /api/auth/agency-signup
@@ -143,6 +144,23 @@ export async function POST(request: Request) {
         logAuthError("[AGENCY_SIGNUP] Failed to send signup notifications", notifErr);
         // Non-blocking
       }
+    }
+
+    // ─── Referral: if the request body has a ref code, grant credits to the
+    // referrer (or just record it for candidate referrers). ──
+    try {
+      const refCode = (body.ref as string | undefined) || "";
+      const referrer = await findReferrer(refCode);
+      if (referrer && referrer.id !== user.id) {
+        await grantReferralCredits({
+          referrerId: referrer.id,
+          referredUserId: user.id,
+          referredEmail: user.email,
+        });
+      }
+    } catch (refErr) {
+      console.error("[AGENCY_SIGNUP_REFERRAL] Failed to process referral:", refErr);
+      // Non-blocking — signup still succeeds
     }
 
     return NextResponse.json(

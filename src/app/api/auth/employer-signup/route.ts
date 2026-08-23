@@ -6,6 +6,7 @@ import { sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp } from "@/lib/rate-limiter";
 import { logAuthError } from "@/lib/auth-logger";
 import { z } from "zod";
+import { findReferrer, grantReferralCredits } from "@/lib/referrals";
 
 const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -88,6 +89,23 @@ export async function POST(request: Request) {
       console.log(`[EMPLOYER_SIGNUP] Verification email sent — user: ${user.id}, email: ${user.email}`);
     } catch (emailError) {
       logAuthError("[EMPLOYER_SIGNUP] Failed to send verification email", emailError);
+    }
+
+    // ─── Referral: if the request body has a ref code, grant credits to the
+    // referrer (or just record it for candidate referrers). ──
+    try {
+      const refCode = (body.ref as string | undefined) || "";
+      const referrer = await findReferrer(refCode);
+      if (referrer && referrer.id !== user.id) {
+        await grantReferralCredits({
+          referrerId: referrer.id,
+          referredUserId: user.id,
+          referredEmail: user.email,
+        });
+      }
+    } catch (refErr) {
+      console.error("[EMPLOYER_SIGNUP_REFERRAL] Failed to process referral:", refErr);
+      // Non-blocking — signup still succeeds
     }
 
     return NextResponse.json({ message: "Employer account created successfully", userId: user.id }, { status: 201 });
