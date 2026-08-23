@@ -1,662 +1,1017 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  Menu, X, ChevronDown, ShieldCheck, Briefcase, Users, HelpCircle,
-  FileSignature, CreditCard, Mail, ArrowRight, Building2, Globe,
-  Search, Database, Send, Lock, Star, CheckCircle2, Clock, Bell,
-  Stethoscope, Upload, FileText, Calendar, TrendingUp, Award,
-  Zap, Eye, FolderOpen, BadgeCheck, Handshake, Sparkles, Phone,
+  ShieldCheck,
+  Search,
+  ClipboardCheck,
+  FileText,
+  Bell,
+  Users,
+  Lock,
+  Timer,
+  Trash2,
+  Eye,
+  FolderOpen,
+  BadgeCheck,
+  Handshake,
+  ArrowRight,
+  Stethoscope,
+  Briefcase,
+  Shield,
+  Zap,
+  Clock,
+  Upload,
+  CheckCircle2,
+  Menu,
+  X,
+  Mail,
+  Phone,
+  MessageSquare,
+  Send,
 } from "@/lib/icons";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
-// ─── White / Blue / Black Palette ────────────────────────────────────────
-const C = {
-  primary: "#0A66C2",       // LinkedIn blue
-  primaryDark: "#004182",   // Deep navy
-  primaryLight: "#70B5F9",  // Light blue
-  primaryTint: "#EAF3FB",   // Very light blue tint
-  black: "#111827",         // Near-black text
-  white: "#FFFFFF",
-  surface: "#F9FAFB",       // Very light gray (softer than #F3F2F0)
-  surfaceDark: "#0B162A",   // Near-black navy for dark sections
-  muted: "#6B7280",         // Gray for secondary text
-  border: "#E5E7EB",        // Light border
-  shadowLg: "0 10px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
-  shadowMd: "0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03)",
-  shadowSm: "0 2px 8px rgba(0,0,0,0.04)",
-  radius: "12px",
-  radiusLg: "20px",
-  transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
+interface LandingPageContent {
+  hero: {
+    candidateHeadline: string;
+    candidateGradientText: string;
+    candidateSubheadline: string;
+    candidateCtaText: string;
+    recruiterHeadline: string;
+    recruiterGradientText: string;
+    recruiterSubheadline: string;
+    recruiterCtaText: string;
+    trustLine1: string;
+    trustLine2: string;
+    trustLine3: string;
+  };
+  colors: {
+    primary: string;
+    accent: string;
+    background: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
+  featureCards: { icon: string; heading: string; body: string }[];
+  privacySection: { icon: string; heading: string; body: string }[];
+  howItWorks: { title: string; description: string }[];
+  footer: {
+    copyrightText: string;
+    hipaaBadgeText: string;
+  };
+}
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  ClipboardCheck,
+  FileText,
+  Bell,
+  Users,
+  Lock,
+  Timer,
+  Trash2,
+  Eye,
+  FolderOpen,
+  BadgeCheck,
+  Handshake,
+  ShieldCheck,
+  Shield,
+  Zap,
+  Clock,
+  Upload,
+  CheckCircle2,
 };
 
-// ─── Hamburger Menu with icons ───────────────────────────────────────────
-const menuSections = [
-  { title: "ABOUT", items: [
-    { icon: Building2, label: "What is MyZipVault?", href: "#about" },
-    { icon: Users, label: "Our Story", href: "#story" },
-    { icon: Mail, label: "Contact", href: "#contact" },
-    { icon: Handshake, label: "Referral Program", href: "#referral" },
-  ]},
-  { title: "HOW IT WORKS", items: [
-    { icon: Briefcase, label: "For Candidates", href: "#for-candidates" },
-    { icon: Search, label: "For Recruiters", href: "#for-recruiters" },
-    { icon: Send, label: "Marketplace Flow", href: "#marketplace" },
-    { icon: CreditCard, label: "Credit System", href: "#credits" },
-  ]},
-  { title: "HELP", items: [
-    { icon: HelpCircle, label: "FAQ", href: "#faq" },
-    { icon: Phone, label: "Support", href: "#support" },
-    { icon: Lock, label: "Privacy Policy", href: "/privacy" },
-    { icon: FileText, label: "Terms of Service", href: "/terms" },
-  ]},
-];
+function DynamicIcon({
+  name,
+  fallback: Fallback,
+  className,
+}: {
+  name?: string;
+  fallback: React.ComponentType<{ className?: string }>;
+  className: string;
+}) {
+  const Icon = name && iconMap[name] ? iconMap[name] : Fallback;
+  return <Icon className={className} />;
+}
 
-// ─── Data arrays (same content as before) ───────────────────────────────
-const candidateFeatures = [
-  { icon: Briefcase, title: "Browse & Apply to Jobs", desc: "Indeed-style job board. See salary, specialty, location. Apply directly — no recruiter needed. 100% free." },
-  { icon: Sparkles, title: "AI Resume Builder (Tedo)", desc: "Conversational AI assistant builds your resume. ATS scoring, optimization, PDF export. 3 versions." },
-  { icon: CheckCircle2, title: "Skills Checklists", desc: "Complete industry-standard checklists once. Reuse for 30 days. No retakes. PDF export with your name." },
-  { icon: ShieldCheck, title: "Credential Vault", desc: "Upload BLS, ACLS, RN License, immunizations. Admin-verified. Expiry reminders 30 days before renewal." },
-  { icon: Users, title: "Reference Network", desc: "Connect with managers. They verify and sign references via VaultSign. Stored permanently — ready to share." },
-  { icon: FileSignature, title: "VaultSign E-Signature", desc: "Sign RTR documents, offer letters, and more. Full audit trail. No more printing + scanning." },
-  { icon: Calendar, title: "Calendar & Scheduling", desc: "Set availability. Receive shift requests. Share calendar links with recruiters. Daily call sheets." },
-  { icon: Lock, title: "Sharing Controls", desc: "Grant expiring access (7/14/30 days). Revoke anytime. Recruiters see ONLY what you allow. Nothing more." },
-  { icon: Database, title: "Profile Auto-Link", desc: "If your email matches our healthcare pool, your profile is auto-filled — specialty, location, etc." },
-  { icon: Star, title: "Rate Recruiters", desc: "Leave 5-dimensional reviews (professionalism, communication, job match, speed, post-placement). Public on profiles." },
-  { icon: ShieldCheck, title: "Report Recruiters", desc: "File formal complaints for misrepresentation, harassment, RTR violations. Auto-suspension on upheld reports." },
-  { icon: Bell, title: "Smart Notifications", desc: "Real-time alerts for job matches, checklist requests, document views, credential expiry warnings." },
-];
+type ViewMode = "candidate" | "recruiter";
 
-const recruiterFeatures = [
-  { icon: Briefcase, title: "Browse Open Jobs", desc: "See all open positions with commission info. Pick the jobs worth your time." },
-  { icon: Search, title: "Search Candidate Pool", desc: "Search by name, email, phone, specialty, location. Path A — use platform data." },
-  { icon: Users, title: "Bring Your Own", desc: "Path B — add candidates from your network. 90-day exclusive ownership if both email + phone are new." },
-  { icon: FileSignature, title: "Send RTR via VaultSign", desc: "Send Right to Represent. Candidate e-signs. No RTR = no submission. Full consent layer." },
-  { icon: CreditCard, title: "Credit-Gated Reveal", desc: "Pay credits to unlock email + phone. 90-day reveal validity. Costs configurable." },
-  { icon: Send, title: "Submit Candidates", desc: "First-submission-wins (millisecond timestamp + reputation tiebreak). One candidate → one job = one recruiter." },
-  { icon: ShieldCheck, title: "Ownership Windows", desc: "0-90 days: exclusive (75/25). 90-180: residual (68/30/2). 180+: open (70/30)." },
-  { icon: FolderOpen, title: "Book of Business", desc: "Drag-drop pipeline. Kanban + list views. Candidate pools. Lead tracking. Pipeline reports." },
-  { icon: Calendar, title: "Calendar & Scheduling", desc: "Availability scheduling. Shift requests. Daily call sheets. Auto-match candidates to shifts." },
-  { icon: BadgeCheck, title: "Compliance Bundles", desc: "Pre-package checklist + credentials + references + resume. One request gets everything." },
-  { icon: Eye, title: "Real-Time Tracking", desc: "See who opened your request, who's at 30% or 90%, who submitted. No more guessing." },
-  { icon: Star, title: "Recruiter Reputation", desc: "Public profile at /r/[your-name]. Reviews from candidates. Verified badges." },
-  { icon: CreditCard, title: "Credit Purchase", desc: "Buy credits via Stripe. Platform admin can also allocate credits." },
-  { icon: Bell, title: "Smart Notifications", desc: "Real-time alerts for submission status changes, new job postings, candidate responses." },
-];
+const DEFAULT_CONTENT: LandingPageContent = {
+  hero: {
+    candidateHeadline: "Your Credentials.",
+    candidateGradientText: "Your Terms.",
+    candidateSubheadline:
+      "A secure vault for healthcare professionals to store, verify, and share credentials — with full control over who sees what, and for how long.",
+    candidateCtaText: "Build Your Free Vault",
+    recruiterHeadline: "Verified Talent.",
+    recruiterGradientText: "On Demand.",
+    recruiterSubheadline:
+      "Stop chasing paperwork. Send one request, get a complete compliance packet back — verified, organized, and ready to place.",
+    recruiterCtaText: "Start Recruiting Smarter",
+    trustLine1: "HIPAA-aligned",
+    trustLine2: "256-bit encryption",
+    trustLine3: "You own your data",
+  },
+  colors: {
+    primary: "#0A66C2",
+    accent: "#0A66C2",
+    background: "#FFFFFF",
+    textPrimary: "#0A66C2",
+    textSecondary: "#6B7280",
+  },
+  featureCards: [
+    { icon: "FolderOpen", heading: "One Vault. Every Credential.", body: "Resume, certifications, immunizations, skill checklists, references — all in one secure, organized place. Upload once, share forever." },
+    { icon: "Eye", heading: "Share On Your Terms.", body: "Approve every recruiter request individually. Set expiry dates. Revoke access instantly. Your credentials, your rules — always." },
+    { icon: "ClipboardCheck", heading: "Skill Checklists, Done Right.", body: "Complete once, reuse for 30 days. Recruiters still pay to access, but you never redo the same checklist twice in a month." },
+    { icon: "BadgeCheck", heading: "Verified. Trusted. Ready.", body: "Every uploaded credential goes through admin verification. Recruiters see a 'Verified' badge — and trust what they're placing." },
+    { icon: "Timer", heading: "Never Let a Cert Expire.", body: "Automatic 30-day reminders before any credential expires. Stay ahead of compliance, never lose a contract over paperwork." },
+    { icon: "Lock", heading: "Bank-Level Security.", body: "256-bit encryption at rest and in transit. HIPAA-aligned architecture. Pre-signed URLs that expire in 15 minutes. Your data is fortress-grade." },
+  ],
+  privacySection: [
+    { icon: "Lock", heading: "Private by Design", body: "We never sell your data. We never share without your explicit consent. We never use your credentials for marketing." },
+    { icon: "Trash2", heading: "Delete Forever, Anytime", body: "Suspend your account and all recruiter access is killed instantly. 30-day restore window. Permanent purge after — no traces left." },
+    { icon: "ShieldCheck", heading: "Audit Everything", body: "Every view, every share, every download is logged. You can see exactly who accessed what, when. Total transparency." },
+  ],
+  howItWorks: [
+    { title: "Build Your Vault", description: "Sign up free. Upload your resume, certifications, and references. Takes about 5 minutes to get started." },
+    { title: "Receive Requests", description: "When a recruiter needs your compliance packet, you'll get an email + in-app notification showing exactly what they're asking for." },
+    { title: "Approve & Share", description: "Review the request, set an expiry (7/14/30 days), and approve. Recruiter gets instant access. You can revoke anytime." },
+    { title: "Get Placed Faster", description: "Recruiters love MyZipVault candidates because their packets are verified, complete, and ready to submit. You win the contract." },
+  ],
+  footer: {
+    copyrightText: "© 2026 MyZipVault. All rights reserved.",
+    hipaaBadgeText: "HIPAA-aligned · SOC 2 Type II · 256-bit Encryption",
+  },
+};
 
-const flowSteps = [
-  { icon: Briefcase, title: "Post a Job", desc: "Platform creates job postings with commission info. Set public for candidate self-apply or private for recruiters." },
-  { icon: Search, title: "Find Candidates", desc: "Recruiters search the healthcare pool (Path A) or bring their own (Path B with 90-day exclusive ownership)." },
-  { icon: FileSignature, title: "Send RTR", desc: "Recruiter sends Right to Represent via VaultSign. Candidate e-signs. No RTR, no submission." },
-  { icon: Send, title: "Submit & Win", desc: "First submission wins (millisecond timestamp). Ownership: 90-day exclusive (75/25), then residual (68/30/2)." },
-];
+// Reusable Spatial UI eyebrow — terra gradient bar + uppercase tracked text
+function SpatialEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div
+        className="h-0.5 w-8 rounded-full"
+        style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }}
+      />
+      <span
+        className="text-xs font-bold uppercase"
+        style={{ color: "var(--terra)", letterSpacing: "0.2em" }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
 
-const verificationItems = [
-  { icon: CheckCircle2, title: "Skills Checklists", desc: "Industry-standard healthcare checklists. Complete once, reuse for 30 days.", features: ["Complete once, share for 30 days", "Industry-standard templates", "PDF export with your name", "Reminders before expiry"] },
-  { icon: ShieldCheck, title: "Credential Management", desc: "Upload BLS, ACLS, RN License, immunizations. Admin verification + expiry reminders.", features: ["Admin-verified credentials", "Automatic expiry reminders", "Secure storage with audit trail", "One-click share with recruiters"] },
-  { icon: FileSignature, title: "VaultSign E-Signature", desc: "Full e-signature platform: templates, multi-signer, audit trails, PDF export.", features: ["Multi-signer sequential/parallel", "Full audit trail with IP + device", "PDF export with signature data", "Auto-expiry + reminders"] },
-];
-
-const comparisonRows = [
-  { feature: "Cost to candidate", mzv: "100% Free", agency: "Free", linkedin: "Free" },
-  { feature: "Candidate data ownership", mzv: "Candidate owns everything", agency: "Agency owns the data", linkedin: "LinkedIn owns the data" },
-  { feature: "Checklist reuse", mzv: "Complete once, reuse 30 days", agency: "Retake every time", linkedin: "No checklists" },
-  { feature: "Reference portability", mzv: "Verified references follow candidate", agency: "References stay with agency", linkedin: "No reference system" },
-  { feature: "Document signing", mzv: "VaultSign e-signature built-in", agency: "Print, sign, scan, email", linkedin: "No signing" },
-  { feature: "Independent operation", mzv: "Recruiters work for themselves", agency: "Recruiters work for agency", linkedin: "Recruiters need company account" },
-  { feature: "Placement protection", mzv: "90-day ownership + circumvention detection", agency: "Varies by contract", linkedin: "None" },
-  { feature: "Credential verification", mzv: "Admin-verified + expiry tracking", agency: "Manual verification", linkedin: "Self-reported only" },
-];
-
-const faqSections = [
-  { category: "General", items: [
-    { q: "What is MyZipVault?", a: "A healthcare recruiting marketplace where candidates own their data, recruiters work independently (not for a company), and every placement is monitored and protected." },
-    { q: "Is this free?", a: "100% free for candidates. Recruiters pay nothing upfront — 70/30 split on placements only." },
-    { q: "Do recruiters need to work for a company?", a: "No. Recruiters work independently. They keep 70% of placement fees. No agency overhead, no retainer. You build your own brand." },
-    { q: "What makes this different from LinkedIn or Indeed?", a: "We own healthcare candidate records. Recruiters get 90-day exclusive ownership when they bring new candidates. Every placement has legal protection." },
-  ]},
-  { category: "VaultSign", items: [
-    { q: "What is VaultSign?", a: "Our built-in e-signature platform. Used for Right to Represent (RTR), offer letters, and any document requiring signature." },
-    { q: "Do I need to print and scan documents?", a: "No. Everything is digital. Sign on any device. Full audit trail with IP + device info." },
-    { q: "Is VaultSign legally binding?", a: "Yes. Each signature includes timestamp, IP address, device info, and document hash (SHA-256). Full audit trail stored permanently." },
-    { q: "Can multiple people sign the same document?", a: "Yes. Sequential (one after another) or parallel (all at once) signing orders supported." },
-  ]},
-  { category: "Marketplace & Ownership", items: [
-    { q: "What is the 90-day ownership window?", a: "When a recruiter brings a new candidate (Path B), they get 90 days of exclusive access. No other recruiter can see or submit that candidate. Split: 75/25." },
-    { q: "What happens after 90 days?", a: "Days 90-180: 'residual' phase. Other recruiters can submit, but the original owner gets 2% from the new recruiter's 70%. Split: 68/30/2." },
-    { q: "What about after 180 days?", a: "Standard 70/30 split. No residual. Anyone can submit." },
-    { q: "What if two recruiters submit the same candidate?", a: "First submission wins (millisecond timestamp). If tied, reputation score breaks the tie. If still tied, split 35/35/30." },
-    { q: "What is Path A vs Path B?", a: "Path A: search and submit from our candidate pool (no ownership). Path B: bring your own candidate (90-day exclusive ownership if email + phone are both new)." },
-  ]},
-  { category: "Credits", items: [
-    { q: "How do credits work?", a: "Recruiters buy credits via Stripe. Credits are spent to reveal contact info, submit candidates, send checklists. Each action's cost is configurable." },
-    { q: "How much do credits cost?", a: "Default: 2 credits to reveal email, 2 for phone, 2 to submit, 2 to send checklist. Platform admin can change these anytime." },
-    { q: "Do candidates need credits?", a: "No. Credits are recruiter-side only. Candidates are 100% free." },
-  ]},
-  { category: "Checklists & Verification", items: [
-    { q: "How do skills checklists work?", a: "When a recruiter requests a checklist, the candidate completes it once. Stored for 30 days. If another recruiter requests the same checklist, just click Share — no retake." },
-    { q: "What credentials can I upload?", a: "BLS, ACLS, RN License, immunization records, and any other healthcare credential. Admin-verified. Expiry reminders 30 days before renewal." },
-    { q: "Can recruiters see my credentials without permission?", a: "No. Recruiters only see what you explicitly share via expiring access links (7/14/30 days). You can revoke access anytime." },
-  ]},
-  { category: "Privacy & Security", items: [
-    { q: "Is my data HIPAA compliant?", a: "We are HIPAA-aligned. BAA available for organizations. 256-bit encryption at rest. Full audit trail on every action." },
-    { q: "Who owns my data?", a: "You do. If you delete your account, all recruiter access is killed instantly. Your data is purged." },
-  ]},
-  { category: "Jobs & Applications", items: [
-    { q: "Can candidates apply to jobs directly?", a: "Yes. Public jobs are browsable. Candidates apply without a recruiter. 100% of the placement fee goes to the platform." },
-    { q: "What commission structure is used?", a: "Either a flat fee (e.g., $5,000) or a percentage of salary (e.g., 15%). Set per job by the platform." },
-  ]},
-];
-
-const testimonials = [
-  { name: "Sarah K.", role: "ICU RN, Travel Nurse", text: "I completed my skills checklist once and shared it with three different agencies. No retakes. No redundancy. This saved me hours." },
-  { name: "Marcus T.", role: "Healthcare Recruiter, Independent", text: "I work for myself now. 70% of every placement fee goes to me. No agency taking 60% off the top. The 90-day ownership protection is real." },
-  { name: "Dr. Patel", role: "Locum Hospitalist", text: "VaultSign eliminated the print-sign-scan-email cycle. I signed my RTR on my phone in 30 seconds. Full audit trail. No more lost documents." },
-];
-
-// ─── Component ───────────────────────────────────────────────────────────
-export default function HomePage() {
+export default function LandingPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("candidate");
+  const [content, setContent] = useState<LandingPageContent>(DEFAULT_CONTENT);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
-  const [openFaq, setOpenFaq] = useState<string | null>(null);
-  const [viewTab, setViewTab] = useState<"candidate" | "recruiter">("candidate");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    const onResize = () => setIsDesktop(window.innerWidth > 768);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize, { passive: true });
-    onResize();
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onResize); };
+    fetch("/api/landing-content")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Object.keys(data).length > 0) setContent(data);
+      })
+      .catch((err) => {
+        if (process.env.NODE_ENV === "development") console.error("Landing content fetch failed:", err);
+      });
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const isCandidate = viewMode === "candidate";
+
   return (
-    <div style={{ minHeight: "100vh", background: C.white, fontFamily: "'Inter', -apple-system, sans-serif", color: C.black }}>
-      {/* ═══ HEADER ═══ */}
-      <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, height: 68,
-        display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px",
-        background: scrolled ? C.white : C.white,
-        borderBottom: scrolled ? `1px solid ${C.border}` : "none",
-        boxShadow: scrolled ? C.shadowSm : "none",
-        transition: C.transition,
-      }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 19, boxShadow: "0 2px 8px rgba(10,102,194,0.25)" }}>M</div>
-          <span style={{ fontWeight: 700, fontSize: 19, color: C.black }}>MyZipVault</span>
-        </Link>
-        <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 32 }}>
-          {["For Candidates", "For Recruiters", "How It Works", "FAQ"].map((label, i) => (
-            <a key={i} href={`#${label.toLowerCase().replace(/\s+/g, "-")}`} style={{ fontSize: 14, color: C.muted, textDecoration: "none", fontWeight: 500, transition: "color 0.15s ease" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = C.primary; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; }}
-            >{label}</a>
-          ))}
-        </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link href="/login" style={{ display: isDesktop ? "inline" : "none" }}>
-            <button style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: C.primary, background: "transparent", border: "none", cursor: "pointer", borderRadius: 8, transition: C.transition }}>Sign In</button>
+    <div className="relative min-h-screen" style={{ background: "var(--background)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
+      {/* Mesh background — animated gradient orbs */}
+      <div className="mesh-background" />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          NAVIGATION — Spatial header (transparent → material on scroll)
+          ═══════════════════════════════════════════════════════════════ */}
+      <nav
+        className="sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          background: scrolled ? "var(--material-regular-bg)" : "transparent",
+          backdropFilter: scrolled ? "blur(30px) saturate(1.8) brightness(1.04)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(30px) saturate(1.8) brightness(1.04)" : "none",
+          borderBottom: scrolled ? "0.5px solid var(--material-regular-border)" : "0.5px solid transparent",
+          boxShadow: scrolled ? "inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(45,90,61,0.04)" : "none",
+        }}
+      >
+        <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
+            <div
+              className="flex items-center justify-center size-8 rounded-[10px] text-white text-base font-bold"
+              style={{
+                background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
+                fontFamily: "'Lora', serif",
+              }}
+            >
+              M
+            </div>
+            <span
+              className="text-xl font-bold"
+              style={{ fontFamily: "'Lora', serif", color: "var(--text-primary)", letterSpacing: "-0.02em" }}
+            >
+              MyZipVault
+            </span>
           </Link>
-          <Link href="/signup" style={{ display: isDesktop ? "inline" : "none" }}>
-            <button style={{ padding: "9px 22px", fontSize: 14, fontWeight: 600, color: C.white, background: C.primary, border: "none", cursor: "pointer", borderRadius: 24, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 8px rgba(10,102,194,0.25)", transition: C.transition }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryDark; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.primary; e.currentTarget.style.transform = "none"; }}
-            >Get Started <ArrowRight size={14} /></button>
-          </Link>
-          <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{
-            width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center",
-            background: menuOpen ? C.primaryTint : C.surface, border: `1px solid ${C.border}`,
-            borderRadius: 12, cursor: "pointer", transition: C.transition,
-          }}>
-            {menuOpen ? <X size={20} style={{ color: C.primary }} /> : <Menu size={20} style={{ color: C.black }} />}
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-8">
+            <a
+              href="#features"
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              How It Works
+            </a>
+            <a
+              href="#privacy"
+              className="text-sm font-medium transition-colors no-underline hover:opacity-80"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Privacy
+            </a>
+
+            {/* View Mode Toggle — spatial pill segment */}
+            <div
+              className="flex p-1 rounded-full"
+              style={{
+                background: "var(--material-thin-bg)",
+                backdropFilter: "blur(20px) saturate(1.5)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                border: "0.5px solid var(--material-thin-border)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+              }}
+            >
+              <button
+                onClick={() => setViewMode("candidate")}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+                style={
+                  isCandidate
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-secondary)" }
+                }
+              >
+                For Professionals
+              </button>
+              <button
+                onClick={() => setViewMode("recruiter")}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+                style={
+                  !isCandidate
+                    ? {
+                        background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
+                        color: "#fff",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                      }
+                    : { color: "var(--text-secondary)" }
+                }
+              >
+                For Agencies
+              </button>
+            </div>
+
+            <Button asChild size="sm">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? "Sign Up Free" : "Get Started"}
+              </Link>
+            </Button>
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden"
+            style={{ background: "transparent", border: "none", color: "var(--text-primary)", cursor: "pointer", padding: "0.5rem" }}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
         </div>
-      </header>
 
-      {/* Hamburger dropdown — polished */}
-      {menuOpen && (
-        <>
-          <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(17,24,39,0.3)", backdropFilter: "blur(2px)", zIndex: 48 }} />
-          <div style={{
-            position: "fixed", top: 76, right: 24, width: 360, maxHeight: "85vh", overflowY: "auto",
-            background: C.white, borderRadius: C.radiusLg, boxShadow: C.shadowLg,
-            border: `1px solid ${C.border}`, zIndex: 49, padding: 8,
-          }}>
-            {menuSections.map((section, si) => (
-              <div key={si} style={{ marginBottom: si < menuSections.length - 1 ? 4 : 0 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", padding: "12px 16px 6px" }}>{section.title}</p>
-                {section.items.map((item) => (
-                  <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)} style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                    fontSize: 14, color: C.black, textDecoration: "none", borderRadius: 10,
-                    transition: "background 0.15s ease",
+        {/* Mobile menu — spatial material */}
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden p-6 flex flex-col gap-4"
+            style={{
+              background: "var(--material-thick-bg)",
+              backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+              WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
+              borderTop: "0.5px solid var(--material-thick-border)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
+            }}
+          >
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
+              Features
+            </a>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
+              How It Works
+            </a>
+            <a href="#privacy" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium no-underline" style={{ color: "var(--text-secondary)" }}>
+              Privacy
+            </a>
+            <div
+              className="flex p-1 rounded-full mt-2"
+              style={{
+                background: "var(--material-thin-bg)",
+                border: "0.5px solid var(--material-thin-border)",
+              }}
+            >
+              <button
+                onClick={() => { setViewMode("candidate"); setMobileMenuOpen(false); }}
+                className="flex-1 rounded-full px-3 py-2 text-xs font-semibold transition-all"
+                style={
+                  isCandidate
+                    ? { background: "linear-gradient(180deg, var(--primary-vivid), var(--primary))", color: "#fff" }
+                    : { color: "var(--text-secondary)" }
+                }
+              >
+                Pros
+              </button>
+              <button
+                onClick={() => { setViewMode("recruiter"); setMobileMenuOpen(false); }}
+                className="flex-1 rounded-full px-3 py-2 text-xs font-semibold transition-all"
+                style={
+                  !isCandidate
+                    ? { background: "linear-gradient(180deg, var(--primary-vivid), var(--primary))", color: "#fff" }
+                    : { color: "var(--text-secondary)" }
+                }
+              >
+                Agencies
+              </button>
+            </div>
+            <Button asChild className="w-full">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? "Sign Up Free" : "Get Started"}
+              </Link>
+            </Button>
+          </div>
+        )}
+      </nav>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          HERO — Spatial with mesh-background, terra eyebrow, pill CTAs
+          ═══════════════════════════════════════════════════════════════ */}
+      <section className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-4xl">
+          <SpatialEyebrow>
+            {isCandidate ? "For Healthcare Professionals" : "For Staffing Agencies"}
+          </SpatialEyebrow>
+
+          <h1
+            className="font-bold leading-[1.05] mb-6"
+            style={{
+              fontFamily: "'Lora', serif",
+              fontSize: "clamp(2.75rem, 7vw, 5.5rem)",
+              letterSpacing: "-0.025em",
+              color: "var(--text-primary)",
+            }}
+          >
+            {isCandidate ? content.hero.candidateHeadline : content.hero.recruiterHeadline}{" "}
+            <span style={{ fontStyle: "italic", color: "var(--terra)" }}>
+              {isCandidate ? content.hero.candidateGradientText : content.hero.recruiterGradientText}
+            </span>
+          </h1>
+
+          <p
+            className="leading-relaxed mb-10 max-w-2xl"
+            style={{ fontSize: "1.25rem", color: "var(--text-secondary)" }}
+          >
+            {isCandidate ? content.hero.candidateSubheadline : content.hero.recruiterSubheadline}
+          </p>
+
+          <div className="flex gap-3 items-center flex-wrap">
+            <Button asChild size="lg">
+              <Link href={isCandidate ? "/signup" : "/agency-signup"}>
+                {isCandidate ? content.hero.candidateCtaText : content.hero.recruiterCtaText}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/login">
+                Sign In
+              </Link>
+            </Button>
+          </div>
+
+          {/* Trust line — terra checkmark pills */}
+          <div className="mt-12 pt-8 flex items-center gap-6 flex-wrap border-t" style={{ borderColor: "var(--border)" }}>
+            {[
+              { icon: ShieldCheck, label: content.hero.trustLine1 },
+              { icon: Lock, label: content.hero.trustLine2 },
+              { icon: BadgeCheck, label: content.hero.trustLine3 },
+            ].map(({ icon: Icon, label }, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Icon className="size-4" style={{ color: "var(--terra)" }} />
+                <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          STATS BAND — Dark forest green with terra numbers + spatial orbs
+          ═══════════════════════════════════════════════════════════════ */}
+      <section
+        className="relative py-16 px-6 overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #004182 0%, #0A66C2 50%, #004182 100%)", color: "#fff" }}
+      >
+        {/* Spatial orbs */}
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 400, height: 400, top: -100, right: -100, background: "radial-gradient(circle, rgba(74,124,89,0.6) 0%, rgba(74,124,89,0) 70%)", filter: "blur(60px)" }}
+        />
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 350, height: 350, bottom: -100, left: -80, background: "radial-gradient(circle, rgba(201,123,84,0.5) 0%, rgba(201,123,84,0) 70%)", filter: "blur(60px)" }}
+        />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto grid gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+          {[
+            { value: "10,000+", label: "Healthcare Professionals Verified" },
+            { value: "99.9%", label: "Platform Uptime" },
+            { value: "500+", label: "Healthcare Facilities Trust Us" },
+            { value: "< 60s", label: "Average Verification Time" },
+          ].map((stat, i) => (
+            <div key={i}>
+              <div
+                className="mb-2"
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: "3rem",
+                  fontWeight: 700,
+                  color: "#70B5F9",
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {stat.value}
+              </div>
+              <div
+                className="text-white/70"
+                style={{ fontSize: "0.75rem", letterSpacing: "0.1em", textTransform: "uppercase" }}
+              >
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          FEATURES — Spatial cards with gradient icon containers
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="features" className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-3xl mb-16">
+          <SpatialEyebrow>What You Get</SpatialEyebrow>
+          <h2
+            className="font-bold leading-tight mb-6"
+            style={{
+              fontFamily: "'Lora', serif",
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+            }}
+          >
+            Built for the way healthcare actually works.
+          </h2>
+          <p className="leading-relaxed text-lg" style={{ color: "var(--text-secondary)" }}>
+            Not a generic SaaS tool retrofitted for healthcare. MyZipVault was designed from day one for nurses, recruiters, and the unique compliance flow that connects them.
+          </p>
+        </div>
+
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+          {content.featureCards.map((feature, i) => (
+            <div
+              key={i}
+              className="spatial-card p-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                {/* Number — terra serif */}
+                <span
+                  className="font-bold"
+                  style={{
+                    fontFamily: "'Lora', serif",
+                    fontSize: "0.875rem",
+                    color: "var(--terra)",
+                    letterSpacing: "0.1em",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryTint; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <item.icon size={16} style={{ color: C.primary }} />
-                    </div>
-                    {item.label}
-                  </a>
-                ))}
-                {si < menuSections.length - 1 && <div style={{ height: 1, background: C.border, margin: "8px 16px" }} />}
-              </div>
-            ))}
-            {/* Social */}
-            <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 10 }}>
-              {[{ label: "in", color: C.primary }, { label: "f", color: C.primary }, { label: "wa", color: "#25D366" }].map(s => (
-                <a key={s.label} href="#" style={{ width: 40, height: 40, borderRadius: 10, background: C.surface, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: s.color, textDecoration: "none", border: `1px solid ${C.border}`, transition: C.transition }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = C.shadowSm; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-                >{s.label}</a>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ═══ HERO ═══ */}
-      <section style={{ paddingTop: 130, paddingBottom: 80, background: `linear-gradient(160deg, ${C.primaryDark} 0%, ${C.surfaceDark} 100%)`, color: C.white, position: "relative", overflow: "hidden" }}>
-        {/* Decorative orbs */}
-        <div style={{ position: "absolute", top: -100, right: -50, width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, ${C.primary}30 0%, transparent 70%)`, filter: "blur(40px)" }} />
-        <div style={{ position: "absolute", bottom: -100, left: -50, width: 300, height: 300, borderRadius: "50%", background: `radial-gradient(circle, ${C.primaryLight}20 0%, transparent 70%)`, filter: "blur(40px)" }} />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.2fr 0.8fr" : "1fr", gap: 48, alignItems: "center", position: "relative" }}>
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 24, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", marginBottom: 28 }}>
-              <Sparkles size={14} style={{ color: C.primaryLight }} />
-              <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Healthcare Recruiting, Reimagined</span>
-            </div>
-            <h1 style={{ fontSize: isDesktop ? 56 : 36, fontWeight: 800, lineHeight: 1.08, marginBottom: 24, letterSpacing: "-0.02em" }}>
-              Recruiters work for <span style={{ color: C.primaryLight }}>themselves</span>, not for agencies.
-            </h1>
-            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.75)", lineHeight: 1.65, marginBottom: 36, maxWidth: 560 }}>
-              The first platform where healthcare recruiters keep 70% of every placement fee, own their candidates for 90 days, and build a public verified reputation. No agency. No retainer. No overhead.
-            </p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 36 }}>
-              <Link href="/signup"><button style={{ padding: "16px 32px", fontSize: 16, fontWeight: 600, color: C.white, background: C.primary, border: "none", cursor: "pointer", borderRadius: 28, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(10,102,194,0.4)", transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(10,102,194,0.5)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(10,102,194,0.4)"; }}
-              >I'm a Candidate <ArrowRight size={16} /></button></Link>
-              <Link href="/agency-signup"><button style={{ padding: "16px 32px", fontSize: 16, fontWeight: 600, color: C.white, background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.2)", cursor: "pointer", borderRadius: 28, transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-              >I'm a Recruiter</button></Link>
-            </div>
-            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-              {["HIPAA-Aligned", "BAA Available", "VaultSign E-Signature"].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <CheckCircle2 size={16} style={{ color: C.primaryLight }} />
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t}</span>
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, var(--terra), transparent)" }} />
+                {/* Icon — spatial gradient container */}
+                <div
+                  className="flex items-center justify-center size-10 rounded-[12px]"
+                  style={
+                    i % 2 === 0
+                      ? {
+                          background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                          color: "#fff",
+                        }
+                      : {
+                          background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
+                          color: "#fff",
+                        }
+                  }
+                >
+                  <DynamicIcon name={feature.icon} fallback={ShieldCheck} className="size-5" />
                 </div>
-              ))}
-            </div>
-          </div>
-          {/* Stats card */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <div style={{ width: 300, background: "rgba(255,255,255,0.06)", borderRadius: C.radiusLg, padding: 28, border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Platform Stats</p>
-              {[{ v: "155+", l: "Skill checklist combinations" }, { v: "4", l: "Professions covered" }].map((s, i) => (
-                <div key={i} style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: 36, fontWeight: 800, color: C.white, lineHeight: 1 }}>{s.v}</p>
-                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{s.l}</p>
-                </div>
-              ))}
-              <p style={{ fontSize: 18, fontWeight: 700, color: C.primaryLight, marginTop: 8 }}>Verify Once.<br/>Share Anywhere.</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.05)", marginTop: 12 }}>
-                <ShieldCheck size={16} style={{ color: C.primaryLight }} />
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>HIPAA-aligned & BAA ready</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ═══ STATS BAR ═══ */}
-      <section style={{ background: C.surface, padding: "48px 0", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 24 }}>
-          {[{ v: "155+", l: "Skill Checklist Combinations" }, { v: "4", l: "Professions Covered" }, { v: "100%", l: "Free for Candidates" }, { v: "70/30", l: "Recruiter / Platform Split" }].map((s, i) => (
-            <div key={i} style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 36, fontWeight: 800, color: C.primary, marginBottom: 4 }}>{s.v}</p>
-              <p style={{ fontSize: 14, color: C.muted }}>{s.l}</p>
+              <h3
+                className="font-bold mb-3"
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: "1.5rem",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.01em",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {feature.heading}
+              </h3>
+              <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
+                {feature.body}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══ TABBED FEATURES (Candidate OR Recruiter — not both) ═══ */}
-      <section id="features" style={{ padding: "96px 0", background: C.white }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          {/* Tab toggle */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
-            <div style={{ display: "inline-flex", borderRadius: 28, background: C.surface, padding: 4, border: `1px solid ${C.border}` }}>
-              <button onClick={() => setViewTab("candidate")} style={{
-                padding: "10px 24px", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", borderRadius: 24,
-                background: viewTab === "candidate" ? C.primary : "transparent", color: viewTab === "candidate" ? C.white : C.muted,
-                transition: C.transition, display: "flex", alignItems: "center", gap: 8,
-              }}>For Candidates</button>
-              <button onClick={() => setViewTab("recruiter")} style={{
-                padding: "10px 24px", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", borderRadius: 24,
-                background: viewTab === "recruiter" ? C.primary : "transparent", color: viewTab === "recruiter" ? C.white : C.muted,
-                transition: C.transition, display: "flex", alignItems: "center", gap: 8,
-              }}>For Recruiters</button>
-            </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          HOW IT WORKS — Material-thin band with terra numbers
+          ═══════════════════════════════════════════════════════════════ */}
+      <section
+        id="how-it-works"
+        className="py-24 px-6 relative"
+        style={{
+          background: "var(--material-thin-bg)",
+          backdropFilter: "blur(20px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+        }}
+      >
+        <div className="max-w-[1280px] mx-auto relative z-10">
+          <div className="max-w-3xl mb-16">
+            <SpatialEyebrow>
+              {isCandidate ? "For Professionals" : "For Agencies"}
+            </SpatialEyebrow>
+            <h2
+              className="font-bold leading-tight"
+              style={{
+                fontFamily: "'Lora', serif",
+                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                letterSpacing: "-0.02em",
+                color: "var(--text-primary)",
+              }}
+            >
+              How it works.
+            </h2>
           </div>
 
-          {/* Candidate view */}
-          {viewTab === "candidate" && (
-            <>
-              <div style={{ textAlign: "center", marginBottom: 40 }}>
-                <h2 style={{ fontSize: isDesktop ? 36 : 26, fontWeight: 800, color: C.black, letterSpacing: "-0.02em" }}>Everything you need, <span style={{ color: C.primary }}>nothing you don't.</span></h2>
-                <p style={{ fontSize: 15, color: C.muted, marginTop: 10, maxWidth: 600, margin: "10px auto 0" }}>Your credentials, checklists, references, and resume — all in one vault. Share on your terms.</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 16 }}>
-                {candidateFeatures.map((f, i) => (
-                  <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 20, transition: C.transition }}
-                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                      <f.icon size={20} style={{ color: C.primary }} />
-                    </div>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: C.black, marginBottom: 6 }}>{f.title}</h3>
-                    <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-              {/* Your Career Your Data — only for candidates */}
-              <div style={{ marginTop: 48, padding: 40, background: `linear-gradient(160deg, ${C.surfaceDark} 0%, ${C.primaryDark} 100%)`, borderRadius: C.radiusLg, color: C.white, textAlign: "center" }}>
-                <ShieldCheck size={36} style={{ color: C.primaryLight, marginBottom: 16 }} />
-                <h3 style={{ fontSize: isDesktop ? 28 : 22, fontWeight: 800, marginBottom: 12 }}>Your Career, Your Data.</h3>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 24 }}>You own everything. Not the recruiter. Not the agency. Not us.</p>
-                <p style={{ fontSize: 20, fontWeight: 700, color: C.primaryLight }}>Build once. Take it anywhere.</p>
-              </div>
-            </>
-          )}
-
-          {/* Recruiter view */}
-          {viewTab === "recruiter" && (
-            <>
-              <div style={{ textAlign: "center", marginBottom: 40 }}>
-                <h2 style={{ fontSize: isDesktop ? 36 : 26, fontWeight: 800, color: C.black, letterSpacing: "-0.02em" }}>Work for yourself. <span style={{ color: C.primary }}>Keep 70%.</span></h2>
-                <p style={{ fontSize: 15, color: C.muted, marginTop: 10, maxWidth: 600, margin: "10px auto 0" }}>No agency. No retainer. Search our pool, bring your own, send RTR, submit, and earn.</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 16 }}>
-                {recruiterFeatures.map((f, i) => (
-                  <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 20, transition: C.transition }}
-                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                      <f.icon size={20} style={{ color: C.primary }} />
-                    </div>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: C.black, marginBottom: 6 }}>{f.title}</h3>
-                    <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* ═══ MARKETPLACE FLOW ═══ */}
-      <section id="marketplace" style={{ padding: "96px 0", background: C.white }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>How It Works</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>From Job Post to Placement</h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "1fr", gap: 32 }}>
-            {flowSteps.map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ width: 72, height: 72, borderRadius: 18, background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", color: C.white, boxShadow: "0 4px 16px rgba(10,102,194,0.2)" }}>
-                  <s.icon size={32} />
+          <div className="grid gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
+            {content.howItWorks.map((step, i) => (
+              <div key={i}>
+                <div
+                  className="mb-4"
+                  style={{
+                    fontFamily: "'Lora', serif",
+                    fontSize: "4rem",
+                    fontWeight: 700,
+                    color: "var(--terra)",
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
                 </div>
-                <p style={{ fontSize: 32, fontWeight: 800, color: `${C.primary}25`, marginBottom: 8 }}>{String(i + 1).padStart(2, "0")}</p>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: C.black, marginBottom: 10 }}>{s.title}</h3>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>{s.desc}</p>
+                <div className="w-8 h-px mb-6" style={{ background: "var(--terra)" }} />
+                <h3
+                  className="font-bold mb-3"
+                  style={{
+                    fontFamily: "'Lora', serif",
+                    fontSize: "1.5rem",
+                    lineHeight: 1.2,
+                    letterSpacing: "-0.01em",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {step.title}
+                </h3>
+                <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
+                  {step.description}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ TRUST & VERIFICATION ═══ */}
-      <section id="verification" style={{ padding: "96px 0", background: C.surface }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Trust & Verification</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>Verified. Compliant. Auditable.</h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "1fr", gap: 24 }}>
-            {verificationItems.map((v, i) => (
-              <div key={i} style={{ background: C.white, borderRadius: C.radiusLg, padding: 32, border: `1px solid ${C.border}`, boxShadow: C.shadowSm, transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowLg; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = C.shadowSm; }}
+      {/* ═══════════════════════════════════════════════════════════════
+          PRIVACY & TRUST
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="privacy" className="max-w-[1280px] mx-auto px-6 py-24 relative z-10">
+        <div className="max-w-3xl mb-16">
+          <SpatialEyebrow>Privacy &amp; Trust</SpatialEyebrow>
+          <h2
+            className="font-bold leading-tight mb-6"
+            style={{
+              fontFamily: "'Lora', serif",
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+            }}
+          >
+            Your data. Your rules. Always.
+          </h2>
+          <p className="leading-relaxed text-lg" style={{ color: "var(--text-secondary)" }}>
+            Healthcare credentials are deeply personal. We treat them that way — with bank-level encryption, granular sharing controls, and a permanent commitment to never sell your data.
+          </p>
+        </div>
+
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          {content.privacySection.map((item, i) => (
+            <div key={i} className="spatial-card p-8">
+              <div
+                className="flex items-center justify-center size-12 rounded-[14px] mb-4"
+                style={{
+                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                  color: "#fff",
+                }}
               >
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: C.primaryTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                  <v.icon size={26} style={{ color: C.primary }} />
-                </div>
-                <h3 style={{ fontSize: 19, fontWeight: 700, color: C.black, marginBottom: 10 }}>{v.title}</h3>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.65, marginBottom: 20 }}>{v.desc}</p>
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                  {v.features.map((f, j) => (
-                    <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
-                      <CheckCircle2 size={18} style={{ color: C.primary, marginTop: 1, flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: C.muted }}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
+                <DynamicIcon name={item.icon} fallback={ShieldCheck} className="size-6" />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ COMPARISON TABLE ═══ */}
-      <section style={{ padding: "96px 0", background: C.white }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Comparison</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>MyZipVault vs Traditional Agency vs LinkedIn</h2>
-          </div>
-          <div style={{ overflowX: "auto", borderRadius: C.radiusLg, border: `1px solid ${C.border}`, boxShadow: C.shadowSm }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, background: C.white }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: "20px 16px", borderBottom: `2px solid ${C.primary}`, fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" }}>Feature</th>
-                  <th style={{ textAlign: "center", padding: "20px 16px", borderBottom: `2px solid ${C.primary}`, fontSize: 15, fontWeight: 800, color: C.primary, background: C.primaryTint }}>MyZipVault</th>
-                  <th style={{ textAlign: "center", padding: "20px 16px", borderBottom: `1px solid ${C.border}`, fontSize: 14, fontWeight: 600, color: C.muted }}>Traditional Agency</th>
-                  <th style={{ textAlign: "center", padding: "20px 16px", borderBottom: `1px solid ${C.border}`, fontSize: 14, fontWeight: 600, color: C.muted }}>LinkedIn Recruiter</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                    <td style={{ padding: "16px", fontWeight: 600, color: C.black }}>{row.feature}</td>
-                    <td style={{ padding: "16px", textAlign: "center", background: C.primaryTint, color: C.primary, fontWeight: 600 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><CheckCircle2 size={16} />{row.mzv}</div>
-                    </td>
-                    <td style={{ padding: "16px", textAlign: "center", color: C.muted }}>{row.agency}</td>
-                    <td style={{ padding: "16px", textAlign: "center", color: C.muted }}>{row.linkedin}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ PRICING ═══ */}
-      <section id="pricing" style={{ padding: "96px 0", background: C.surface }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px", textAlign: "center" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Pricing</span>
-          <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, marginBottom: 56, letterSpacing: "-0.02em" }}>Simple. Transparent. No surprises.</h2>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "1fr 1fr" : "1fr", gap: 24 }}>
-            <div style={{ background: C.white, borderRadius: C.radiusLg, padding: 40, border: `2px solid ${C.primary}`, boxShadow: C.shadowMd }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>For Candidates</p>
-              <p style={{ fontSize: 56, fontWeight: 800, color: C.black, marginBottom: 4 }}>Free</p>
-              <p style={{ fontSize: 14, color: C.muted, marginBottom: 28 }}>Forever. No credit card.</p>
-              <ul style={{ listStyle: "none", padding: 0, textAlign: "left" }}>
-                {["Browse and apply to jobs", "AI Resume Builder (Tedo)", "Skills checklists", "Credential vault", "Reference network", "VaultSign e-signature"].map((t, i) => (
-                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <CheckCircle2 size={18} style={{ color: C.primary }} /><span style={{ fontSize: 14, color: C.black }}>{t}</span>
-                  </li>
-                ))}
-              </ul>
+              <h3
+                className="font-bold mb-3"
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: "1.375rem",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.01em",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {item.heading}
+              </h3>
+              <p className="leading-relaxed" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>
+                {item.body}
+              </p>
             </div>
-            <div style={{ background: C.white, borderRadius: C.radiusLg, padding: 40, border: `2px solid ${C.border}`, boxShadow: C.shadowSm }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>For Recruiters</p>
-              <p style={{ fontSize: 56, fontWeight: 800, color: C.black, marginBottom: 4 }}>70/30</p>
-              <p style={{ fontSize: 14, color: C.muted, marginBottom: 28 }}>You keep 70%. We keep 30%.</p>
-              <ul style={{ listStyle: "none", padding: 0, textAlign: "left" }}>
-                {["Search candidate pool", "Bring your own candidates", "90-day exclusive ownership", "Credit-gated contact reveal", "Public reputation profile", "First-submission-wins protection"].map((t, i) => (
-                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <CheckCircle2 size={18} style={{ color: C.muted }} /><span style={{ fontSize: 14, color: C.black }}>{t}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
 
-      {/* ═══ Q&A ═══ */}
-      <section id="faq" style={{ padding: "96px 0", background: C.white }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>FAQ</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>Questions, Answered.</h2>
-          </div>
-          {faqSections.map((section, si) => (
-            <div key={si} style={{ marginBottom: 36 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: C.primary, marginBottom: 16, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>{section.category}</h3>
-              {section.items.map((item, ii) => {
-                const key = `${si}-${ii}`;
-                const isOpen = openFaq === key;
-                return (
-                  <div key={key} style={{ marginBottom: 10, border: `1px solid ${C.border}`, borderRadius: C.radius, overflow: "hidden", transition: C.transition }}>
-                    <button onClick={() => setOpenFaq(isOpen ? null : key)} style={{ width: "100%", textAlign: "left", padding: "18px 22px", background: isOpen ? C.surface : "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 15, fontWeight: 600, color: C.black, transition: "background 0.15s ease" }}>
-                      {item.q}
-                      <ChevronDown size={18} style={{ color: C.muted, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.25s ease", flexShrink: 0 }} />
-                    </button>
-                    {isOpen && <div style={{ padding: "0 22px 18px", fontSize: 14, color: C.muted, lineHeight: 1.65 }}>{item.a}</div>}
-                  </div>
-                );
-              })}
+        {/* Trust badges row — spatial icons */}
+        <div
+          className="mt-16 pt-12 grid gap-8 border-t"
+          style={{ borderTopColor: "var(--border)", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
+        >
+          {[
+            { icon: ShieldCheck, label: "HIPAA Aligned", sub: "Full regulatory compliance" },
+            { icon: BadgeCheck, label: "SOC 2 Type II", sub: "Certified security controls" },
+            { icon: Lock, label: "256-bit Encryption", sub: "Bank-level data protection" },
+            { icon: Shield, label: "Background Verified", sub: "Identity authentication" },
+          ].map(({ icon: Icon, label, sub }, i) => (
+            <div key={i} className="text-center">
+              <div
+                className="flex items-center justify-center size-14 mx-auto mb-3 rounded-[16px]"
+                style={{
+                  background: "var(--primary-light)",
+                  border: "0.5px solid var(--status-green-border)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
+                <Icon className="size-7" style={{ color: "var(--primary)" }} />
+              </div>
+              <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{label}</div>
+              <div className="text-xs" style={{ color: "var(--text-muted)" }}>{sub}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══ TESTIMONIALS ═══ */}
-      <section style={{ padding: "96px 0", background: C.surface }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Testimonials</span>
-            <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, color: C.black, marginTop: 10, letterSpacing: "-0.02em" }}>What users say</h2>
+      {/* ═══════════════════════════════════════════════════════════════
+          FINAL CTA — Dark forest green band with terra CTA
+          ═══════════════════════════════════════════════════════════════ */}
+      <section
+        className="relative py-24 px-6 text-center overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #004182 0%, #0A66C2 50%, #004182 100%)",
+          color: "#fff",
+        }}
+      >
+        {/* Spatial orbs */}
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 500, height: 500, top: -150, left: -100, background: "radial-gradient(circle, rgba(74,124,89,0.5) 0%, rgba(74,124,89,0) 70%)", filter: "blur(80px)" }}
+        />
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: 400, height: 400, bottom: -100, right: -80, background: "radial-gradient(circle, rgba(201,123,84,0.4) 0%, rgba(201,123,84,0) 70%)", filter: "blur(70px)" }}
+        />
+
+        <div className="relative z-10 max-w-3xl mx-auto">
+          {/* Eyebrow — terra gradient bars */}
+          <div className="inline-flex items-center gap-3 mb-8">
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, transparent, #70B5F9)" }} />
+            <span className="text-xs font-bold uppercase" style={{ color: "#70B5F9", letterSpacing: "0.2em" }}>
+              Get Started Today
+            </span>
+            <div className="h-0.5 w-8 rounded-full" style={{ background: "linear-gradient(90deg, #70B5F9, transparent)" }} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "1fr", gap: 24 }}>
-            {testimonials.map((t, i) => (
-              <div key={i} style={{ background: C.white, borderRadius: C.radiusLg, padding: 32, border: `1px solid ${C.border}`, boxShadow: C.shadowSm, transition: C.transition }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowLg; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = C.shadowSm; e.currentTarget.style.transform = "none"; }}
-              >
-                <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-                  {[1,2,3,4,5].map(s => <Star key={s} size={18} style={{ color: "#FBBF24", fill: "#FBBF24" }} />)}
-                </div>
-                <p style={{ fontSize: 15, color: C.black, lineHeight: 1.65, marginBottom: 24 }}>"{t.text}"</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.white, fontSize: 17 }}>{t.name[0]}</div>
-                  <div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: C.black }}>{t.name}</p>
-                    <p style={{ fontSize: 13, color: C.muted }}>{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          <h2
+            className="font-bold leading-[1.05] mb-6"
+            style={{
+              fontFamily: "'Lora', serif",
+              fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
+              letterSpacing: "-0.025em",
+            }}
+          >
+            {isCandidate ? (
+              <>
+                <span style={{ color: "#FFFFFF" }}>Build your vault.</span>{" "}
+                <span style={{ fontStyle: "italic", color: "#70B5F9" }}>Free forever.</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: "#FFFFFF" }}>Place talent faster.</span>{" "}
+                <span style={{ fontStyle: "italic", color: "#70B5F9" }}>Pay only for what you use.</span>
+              </>
+            )}
+          </h2>
+          <p className="text-white/85 leading-relaxed mb-10 max-w-2xl mx-auto text-lg">
+            {isCandidate
+              ? "Join thousands of healthcare professionals who trust MyZipVault with their credentials. No credit card. No commitments. Just a better way to manage your career."
+              : "Stop chasing paperwork. Start placing talent. Credit-based pricing means you only pay when you actually access candidate data."}
+          </p>
+
+          {/* CTA — terra gradient pill button with depth-3 shadow */}
+          <Link
+            href={isCandidate ? "/signup" : "/agency-signup"}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-bold transition-all no-underline relative overflow-hidden"
+            style={{
+              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+              color: "#fff",
+              border: "0.5px solid rgba(201,123,84,0.5)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32), 0 2px 4px rgba(201,123,84,0.18)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            {isCandidate ? "Build Your Free Vault" : "Start Recruiting Smarter"}
+            <ArrowRight className="size-4" />
+          </Link>
         </div>
       </section>
 
-      {/* ═══ CTA ═══ */}
-      <section style={{ padding: "96px 0", background: `linear-gradient(160deg, ${C.primaryDark} 0%, ${C.surfaceDark} 100%)`, color: C.white, textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -60, left: "30%", width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, ${C.primary}20 0%, transparent 70%)`, filter: "blur(50px)" }} />
-        <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 32px", position: "relative" }}>
-          <h2 style={{ fontSize: isDesktop ? 42 : 30, fontWeight: 800, marginBottom: 20, letterSpacing: "-0.02em" }}>Ready to get started?</h2>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 36 }}>No credit card. No catch on the tools. Start in about a minute.</p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/signup"><button style={{ padding: "16px 32px", fontSize: 16, fontWeight: 600, color: C.white, background: C.primary, border: "none", cursor: "pointer", borderRadius: 28, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(10,102,194,0.4)", transition: C.transition }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
-            >I'm a Candidate <ArrowRight size={16} /></button></Link>
-            <Link href="/agency-signup"><button style={{ padding: "16px 32px", fontSize: 16, fontWeight: 600, color: C.white, background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.2)", cursor: "pointer", borderRadius: 28, transition: C.transition }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-            >I'm a Recruiter</button></Link>
-          </div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 20 }}>No credit card required · HIPAA compliant · Free during launch</p>
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════════════════════════
+          FOOTER — Dark forest green with terra accents
+          ═══════════════════════════════════════════════════════════════ */}
+      <footer
+        className="px-6 pt-12 pb-8"
+        style={{ background: "#004182", color: "#fff" }}
+      >
+        <div className="max-w-[1280px] mx-auto">
+          <div
+            className="grid gap-12 pb-8 border-b"
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", borderBottomColor: "rgba(255,255,255,0.1)" }}
+          >
+            {/* Brand + Description */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div
+                  className="flex items-center justify-center size-7 rounded-[8px] text-white text-sm font-bold"
+                  style={{
+                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
+                    fontFamily: "'Lora', serif",
+                  }}
+                >
+                  M
+                </div>
+                <span className="text-lg font-bold" style={{ fontFamily: "'Lora', serif" }}>MyZipVault</span>
+              </div>
+              <p className="text-sm leading-relaxed max-w-xs text-white/70">
+                The trusted credential verification platform for healthcare professionals and staffing agencies.
+              </p>
+              {/* Social Media Links */}
+              <div className="flex items-center gap-3 mt-4">
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="size-9 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                  aria-label="LinkedIn"
+                >
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="size-9 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                  aria-label="Facebook"
+                >
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                </a>
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="size-9 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                  aria-label="Instagram"
+                >
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+              </div>
+            </div>
 
-      {/* ═══ FOOTER ═══ */}
-      <footer style={{ background: C.surfaceDark, color: "rgba(255,255,255,0.65)", padding: "64px 0 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "2fr 1fr 1fr 1fr 1.5fr" : "1fr 1fr", gap: 40, marginBottom: 40 }}>
+            {/* Platform Links */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 16 }}>M</div>
-                <span style={{ fontWeight: 700, fontSize: 17, color: C.white }}>MyZipVault</span>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#70B5F9", letterSpacing: "0.1em" }}>Platform</div>
+              <ul className="list-none p-0 m-0 flex flex-col gap-2">
+                <li><Link href="/signup" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Sign Up</Link></li>
+                <li><Link href="/login" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Sign In</Link></li>
+                <li><Link href="/agency-signup" className="text-sm no-underline text-white/70 hover:text-white transition-colors">For Agencies</Link></li>
+              </ul>
+            </div>
+
+            {/* Company Links */}
+            <div>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#70B5F9", letterSpacing: "0.1em" }}>Company</div>
+              <ul className="list-none p-0 m-0 flex flex-col gap-2">
+                <li><Link href="/about" className="text-sm no-underline text-white/70 hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/privacy" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-sm no-underline text-white/70 hover:text-white transition-colors">Terms of Service</Link></li>
+              </ul>
+            </div>
+
+            {/* Contact Us */}
+            <div>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#70B5F9", letterSpacing: "0.1em" }}>Contact Us</div>
+              <div className="flex flex-col gap-3 text-sm text-white/70">
+                <a href="mailto:support@myzipvault.com" className="flex items-center gap-2 hover:text-white transition-colors no-underline">
+                  <Mail className="size-4 shrink-0" style={{ color: "#70B5F9" }} />
+                  support@myzipvault.com
+                </a>
+                <a href="tel:+18005550100" className="flex items-center gap-2 hover:text-white transition-colors no-underline">
+                  <Phone className="size-4 shrink-0" style={{ color: "#70B5F9" }} />
+                  1-800-555-0100
+                </a>
               </div>
-              <p style={{ fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>The healthcare recruiter identity and intelligence layer.</p>
-              <div style={{ display: "flex", gap: 10 }}>
-                {[{ label: "in", href: "#" }, { label: "f", href: "#" }, { label: "wa", href: "#" }].map(s => (
-                  <a key={s.label} href={s.href} style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", transition: C.transition }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "none"; }}
-                  >{s.label}</a>
-                ))}
-              </div>
             </div>
+
+            {/* Trust Badges */}
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Platform</p>
-              {["Marketplace", "Features", "Verification", "Reputation"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10, transition: "color 0.15s ease" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = C.white; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
-              >{t}</a>)}
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Company</p>
-              {["About", "Contact", "Careers", "Blog"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = C.white; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
-              >{t}</a>)}
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Legal</p>
-              {["Terms", "Privacy", "HIPAA", "BAA"].map(t => <a key={t} href="#" style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 10 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = C.white; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
-              >{t}</a>)}
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Newsletter</p>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 12 }}>Get product updates.</p>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input type="email" placeholder="your@email.com" style={{ flex: 1, padding: "10px 14px", fontSize: 13, borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: C.white, outline: "none" }} />
-                <button style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: C.white, background: C.primary, border: "none", borderRadius: 8, cursor: "pointer" }}>→</button>
+              <div className="text-xs font-bold uppercase mb-4" style={{ color: "#70B5F9", letterSpacing: "0.1em" }}>Trust</div>
+              <div className="flex flex-col gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="size-4" style={{ color: "#70B5F9" }} />
+                  HIPAA Aligned
+                </div>
+                <div className="flex items-center gap-2">
+                  <Lock className="size-4" style={{ color: "#70B5F9" }} />
+                  256-bit Encryption
+                </div>
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="size-4" style={{ color: "#70B5F9" }} />
+                  SOC 2 Type II
+                </div>
               </div>
             </div>
           </div>
-          <div style={{ paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>© 2026 MyZipVault. All rights reserved.</p>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>Patent pending · USPTO #64/048,063</p>
+
+          {/* Feedback Section */}
+          <div className="py-8 border-b" style={{ borderBottomColor: "rgba(255,255,255,0.1)" }}>
+            <div className="flex flex-col lg:flex-row items-start gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="size-5" style={{ color: "#70B5F9" }} />
+                  <h3 className="text-base font-bold">Feedback</h3>
+                </div>
+                <p className="text-sm text-white/70 max-w-md">
+                  Have a suggestion, found a bug, or want to request a feature? We'd love to hear from you.
+                </p>
+              </div>
+              <div className="flex-1 w-full max-w-md">
+                <FeedbackForm />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 flex justify-between items-center flex-wrap gap-4">
+            <div className="text-xs text-white/60">{content.footer.copyrightText}</div>
+            <div className="text-xs text-white/60" style={{ letterSpacing: "0.05em" }}>{content.footer.hipaaBadgeText}</div>
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// ─── Feedback Form Component ─────────────────────────────────────────
+function FeedbackForm() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || "anonymous", message: message.trim() }),
+      });
+      setSubmitted(true);
+      setEmail("");
+      setMessage("");
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch {
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="flex items-center gap-2 p-4 rounded-lg" style={{ background: "rgba(74,124,89,0.2)" }}>
+        <CheckCircle2 className="size-5" style={{ color: "#70B5F9" }} />
+        <p className="text-sm text-white/90">Thank you for your feedback!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Input
+        type="email"
+        placeholder="Your email (optional)"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+      />
+      <Textarea
+        placeholder="Your feedback..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={3}
+        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+      />
+      <Button
+        size="sm"
+        onClick={handleSubmit}
+        disabled={submitting || !message.trim()}
+        className="gap-1.5 w-full"
+        style={{ background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 100%)" }}
+      >
+        {submitting ? "Sending..." : "Send Feedback"}
+        {!submitting && <Send className="size-3.5" />}
+      </Button>
     </div>
   );
 }

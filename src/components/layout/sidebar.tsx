@@ -16,12 +16,9 @@ import {
   Share2,
   Settings,
   Send,
-  Search,
   CreditCard,
   FileSignature,
   FileCheck,
-  Flag,
-  MessageSquare,
   Pencil,
   Bell,
   Building2,
@@ -43,7 +40,6 @@ import {
   Layers,
   FolderOpen,
   Inbox,
-  Briefcase,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -97,7 +93,6 @@ const roleLabels: Record<UserRole, string> = {
 // ─── Candidate Nav Items ─────────────────────────────────────────────
 const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Browse Jobs", href: "/candidate/jobs", icon: Briefcase },
   { title: "Checklists", href: "/checklists", icon: ClipboardCheck },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "VaultSign", href: "/vaultsign", icon: FileSignature },
@@ -112,21 +107,6 @@ const candidateNav: NavItem[] = [
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
 ];
-
-// ─── Recruiter: Marketplace Group (Phase 3) ─────────────────────────────
-const marketplaceGroup: NavGroup = {
-  title: "Marketplace",
-  icon: Briefcase,
-  sections: [
-    {
-      title: "JOBS & CANDIDATES",
-      items: [
-        { title: "Open Jobs", href: "/recruiter/jobs", icon: Briefcase },
-        { title: "Find Candidates", href: "/recruiter/candidates/search", icon: Search },
-      ],
-    },
-  ],
-};
 
 // ─── Recruiter: Book of Business Group ─────────────────────────────────
 const bobGroup: NavGroup = {
@@ -246,39 +226,28 @@ const superAdminFlatNav: NavItem[] = [
 
 const superAdminBottomNav: NavItem[] = [
   // Management
-  { title: "Users", href: "/superadmin/users", icon: Users },
-  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
-  { title: "Candidates Pool", href: "/superadmin/candidates", icon: Database },
-  { title: "Jobs", href: "/superadmin/jobs", icon: Briefcase },
-  { title: "Submissions", href: "/superadmin/submissions", icon: Send },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
-  { title: "Documents", href: "/superadmin/documents", icon: FileCheck },
-  { title: "Calendar", href: "/superadmin/calendar", icon: CalendarDays },
   // Communication
   { title: "Templates", href: "/superadmin/templates", icon: Mail },
   { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
   // Configuration
   { title: "Settings", href: "/superadmin/settings", icon: Settings },
-  { title: "Credit Costs", href: "/superadmin/credit-costs", icon: CreditCard },
   { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
   { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
   // Content
   { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
-  { title: "Auth Pages", href: "/superadmin/auth-page-editor", icon: Pencil },
   // Monitoring
   { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
-  { title: "Reports", href: "/superadmin/reports", icon: Flag },
-  { title: "Review Disputes", href: "/superadmin/review-disputes", icon: MessageSquare },
   { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
   { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
 ];
 
 // Section divider positions for superadmin bottom nav
 const superAdminSectionDividers: Record<string, string> = {
-  "/superadmin/users": "MANAGEMENT",
+  "/superadmin/admins": "MANAGEMENT",
   "/superadmin/templates": "COMMUNICATION",
   "/superadmin/settings": "CONFIGURATION",
   "/superadmin/landing-page-editor": "CONTENT",
@@ -337,7 +306,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
         )}
         title={group.title}
       >
-        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#E8A882" : "rgba(255,255,255,0.35)" }} />
+        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#70B5F9" : "rgba(255,255,255,0.35)" }} />
         <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">{group.title}</span>
         <ChevronDown
           className={cn(
@@ -371,7 +340,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                       isActive && "spatial-nav-item-active"
                     )}
                   >
-                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#E8A882" : "rgba(255,255,255,0.35)" }} />
+                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#70B5F9" : "rgba(255,255,255,0.35)" }} />
                     <span>{item.title}</span>
                   </Link>
                 );
@@ -418,7 +387,7 @@ export function AppSidebar() {
   }
 
   // Recruiter groups — filter adminOnly items for client_recruiter
-  const recruiterGroups = isRecruiter ? [marketplaceGroup, bobGroup, sendRequestGroup] : [];
+  const recruiterGroups = isRecruiter ? [bobGroup, sendRequestGroup] : [];
   const recruiterBottom = isRecruiter
     ? role === "client_recruiter"
       ? recruiterBottomNav.filter((item) => !item.adminOnly)
@@ -523,7 +492,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -568,7 +537,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -610,7 +579,7 @@ export function AppSidebar() {
                           isActive && "spatial-nav-item-active"
                         )}
                       >
-                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#E8A882]" : "text-white/35 group-hover:text-white/55")} />
+                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>

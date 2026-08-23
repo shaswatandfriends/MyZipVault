@@ -167,11 +167,11 @@ export default function AuthSlideshowPanel({
           <div className="flex items-center gap-3 mb-6">
             <div
               className="h-0.5 w-8 rounded-full"
-              style={{ background: "linear-gradient(90deg, #E8A882, transparent)" }}
+              style={{ background: "linear-gradient(90deg, #70B5F9, transparent)" }}
             />
             <span
               className="text-xs font-bold uppercase"
-              style={{ color: "#E8A882", letterSpacing: "0.2em" }}
+              style={{ color: "#70B5F9", letterSpacing: "0.2em" }}
             >
               Welcome
             </span>
@@ -203,7 +203,7 @@ export default function AuthSlideshowPanel({
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
                   }}
                 >
-                  <Check className="size-3" style={{ color: "#E8A882" }} />
+                  <Check className="size-3" style={{ color: "#70B5F9" }} />
                 </div>
                 <span
                   className="text-white/85"
@@ -228,7 +228,7 @@ export default function AuthSlideshowPanel({
             >
               <div
                 className="mb-3"
-                style={{ color: "#E8A882", fontSize: "0.75rem", letterSpacing: "0.2em" }}
+                style={{ color: "#70B5F9", fontSize: "0.75rem", letterSpacing: "0.2em" }}
               >
                 ★★★★★
               </div>
@@ -279,7 +279,7 @@ export default function AuthSlideshowPanel({
                       fontFamily: "'Lora', serif",
                       fontSize: "1.875rem",
                       fontWeight: 700,
-                      color: "#E8A882",
+                      color: "#70B5F9",
                       lineHeight: 1,
                       letterSpacing: "-0.02em",
                     }}
@@ -312,7 +312,7 @@ export default function AuthSlideshowPanel({
               { icon: BadgeCheck, label: "SOC 2 Type II" },
             ].map(({ icon: Icon, label }, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <Icon className="size-3.5" style={{ color: "#E8A882" }} />
+                <Icon className="size-3.5" style={{ color: "#70B5F9" }} />
                 <span
                   className="text-white/70"
                   style={{ fontSize: "0.6875rem", letterSpacing: "0.05em" }}
@@ -338,7 +338,7 @@ export default function AuthSlideshowPanel({
                 height: "2px",
                 background:
                   i === currentSlide
-                    ? "#E8A882"
+                    ? "#70B5F9"
                     : "rgba(255,255,255,0.3)",
               }}
             />

@@ -33,7 +33,7 @@ function getPasswordStrength(password: string): PasswordStrength {
 
   if (score <= 1) return { score, label: "Weak", color: "var(--status-red)" };
   if (score <= 2) return { score, label: "Fair", color: "#D97706" };
-  if (score <= 3) return { score, label: "Good", color: "#E8A882" };
+  if (score <= 3) return { score, label: "Good", color: "#70B5F9" };
   if (score <= 4) return { score, label: "Strong", color: "var(--primary-vivid)" };
   return { score, label: "Very Strong", color: "var(--primary)" };
 }

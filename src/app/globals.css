@@ -4,9 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ═══════════════════════════════════════════════════════════════════════
-   MYZIPVAULT DESIGN SYSTEM v6 — "Professional Blue"
-   Style: Glassmorphism + Professional + Healthcare Premium
-   Palette: Navy Blue + White + Black
+   MYZIPVAULT DESIGN SYSTEM v5 — "Glass Warm"
+   Style: Glassmorphism + Warm Nature + Healthcare Premium
+   Palette: Forest Green + Terracotta + Warm Off-White
    Typography: Lora (serif headings) + Inter (body)
    Reference: Glass Warm Dashboard by user
    ═══════════════════════════════════════════════════════════════════════ */
@@ -125,31 +125,31 @@
 }
 
 :root {
-  /* ─── Core Palette — Glass Warm: Forest Green + Terracotta ──────── */
+  /* ─── Core Palette — Professional Blue (White/Blue/Black) ─────────── */
   --background: #FFFFFF;
   --foreground: #111827;
   --surface: #FFFFFF;
-  --surface-2: rgba(249, 250, 251, 0.6);
-  --surface-3: rgba(249, 250, 251, 0.4);
+  --surface-2: #F9FAFB;
+  --surface-3: #F3F4F6;
   --primary: #0A66C2;
   --primary-hover: #004182;
   --primary-light: rgba(10, 102, 194, 0.12);
   --primary-vivid: #70B5F9;
   --primary-foreground: #FFFFFF;
   --accent-cyan: #0A66C2;
-  --accent-teal: #70B5F9;
+  --accent-teal: #0A66C2;
   --accent-light: rgba(10, 102, 194, 0.08);
-  --accent-teal-hover: #3A6A4A;
+  --accent-teal-hover: #004182;
   --terra: #0A66C2;
   --terra-light: #70B5F9;
-  --terra-bg: rgba(10, 102, 194, 0.15);
+  --terra-bg: rgba(10, 102, 194, 0.12);
   --gold: #0A66C2;
-  --gold-light: rgba(10, 102, 194, 0.15);
+  --gold-light: rgba(10, 102, 194, 0.12);
   --text-primary: #111827;
   --text-secondary: #6B7280;
   --text-muted: #9CA3AF;
-  --border: rgba(17, 24, 39, 0.15);
-  --border-strong: rgba(17, 24, 39, 0.25);
+  --border: rgba(17, 24, 39, 0.08);
+  --border-strong: rgba(17, 24, 39, 0.15);
   --badge-red: #B84040;
   --badge-red-bg: rgba(184, 64, 64, 0.12);
   --badge-yellow: #D97706;
@@ -158,7 +158,7 @@
   --badge-blue-bg: #DBEAFE;
   --badge-green: #0A66C2;
   --badge-green-bg: rgba(10, 102, 194, 0.12);
-  --badge-terra: #0A66C2;
+  --badge-terra: #004182;
   --badge-terra-bg: rgba(10, 102, 194, 0.15);
 
   /* ─── Status / Destructive Tokens ──────────────────────────────────── */
@@ -287,7 +287,7 @@
   /* Accent */
   --editorial-gold: #0A66C2;              /* → terra */
   --editorial-gold-light: #70B5F9;        /* → terra-light */
-  --editorial-gold-dark: #0A66C2;         /* → badge-terra */
+  --editorial-gold-dark: #004182;         /* → badge-terra */
 
   /* Text */
   --editorial-ink: #111827;               /* → text-primary */
@@ -296,8 +296,8 @@
   --editorial-ink-faint: #9CA3AF;         /* → text-muted */
 
   /* Dividers */
-  --editorial-rule: rgba(17, 24, 39, 0.15);   /* → border */
-  --editorial-rule-soft: rgba(17, 24, 39, 0.08);
+  --editorial-rule: rgba(17, 24, 39, 0.08);   /* → border */
+  --editorial-rule-soft: rgba(17, 24, 39, 0.04);
 
   /* Status colors */
   --editorial-success: #0A66C2;           /* → primary */
@@ -382,15 +382,15 @@
 
   /* ─── shadcn/ui compatibility ──────────────────────────────────── */
   --card: #FFFFFF;
-  --card-foreground: #111827;
+  --card-foreground: #0A66C2;
   --popover: #FFFFFF;
-  --popover-foreground: #111827;
+  --popover-foreground: #0A66C2;
   --secondary: rgba(249, 250, 251, 0.6);
-  --secondary-foreground: #111827;
+  --secondary-foreground: #0A66C2;
   --muted: rgba(249, 250, 251, 0.5);
   --muted-foreground: #6B7280;
   --accent: rgba(10, 102, 194, 0.15);
-  --accent-foreground: #FFFFFF;
+  --accent-foreground: #004182;
   --destructive: #B84040;
   --input: rgba(17, 24, 39, 0.15);
   --ring: #0A66C2;
@@ -415,7 +415,7 @@
   --pipeline-blacklisted: #8B2C2C;
 
   /* ─── Sidebar — Dark Forest Green Glass ─────────────────────────── */
-  --sidebar: rgba(0, 65, 130, 0.82);
+  --sidebar: rgba(30, 58, 38, 0.82);
   --sidebar-foreground: rgba(255, 255, 255, 0.7);
   --sidebar-primary: #0A66C2;
   --sidebar-primary-foreground: #FFFFFF;
@@ -457,7 +457,7 @@
 }
 
 .glass-dark {
-  background: rgba(0, 65, 130, 0.78);
+  background: rgba(30, 58, 38, 0.78);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -833,7 +833,7 @@
 
 /* Terra button — terracotta accent for warm CTAs */
 .spatial-button-terra {
-  background: linear-gradient(180deg, #70B5F9 0%, var(--terra) 60%, #0A66C2 100%);
+  background: linear-gradient(180deg, #70B5F9 0%, var(--terra) 60%, #004182 100%);
   color: #fff;
   border-color: rgba(10, 102, 194, 0.5);
   box-shadow: var(--specular-top), var(--depth-3);
@@ -1379,7 +1379,7 @@
 }
 
 .btn-terra {
-  background: linear-gradient(180deg, #70B5F9 0%, var(--terra) 55%, #0A66C2 100%);
+  background: linear-gradient(180deg, #70B5F9 0%, var(--terra) 55%, #004182 100%);
   color: #fff;
   border: 1px solid rgba(10, 102, 194, 0.5);
   box-shadow: 0 4px 14px rgba(10, 102, 194, 0.32), 0 2px 4px rgba(10, 102, 194, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
