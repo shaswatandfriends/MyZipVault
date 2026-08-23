@@ -181,15 +181,18 @@ export async function GET() {
       }));
 
     // ── 7. Credit balance ──
+    // credits_balance lives on Organization, not User
     let totalCredits = 0;
-    try {
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { credits_balance: true },
-      });
-      totalCredits = user?.credits_balance ?? 0;
-    } catch {
-      totalCredits = 0;
+    if (organizationId) {
+      try {
+        const org = await db.organization.findUnique({
+          where: { id: organizationId },
+          select: { credits_balance: true },
+        });
+        totalCredits = org?.credits_balance ?? 0;
+      } catch {
+        totalCredits = 0;
+      }
     }
 
     // ── 8. Recent activity feed ──

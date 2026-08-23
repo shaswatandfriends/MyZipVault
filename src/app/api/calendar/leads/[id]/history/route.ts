@@ -53,7 +53,7 @@ export async function GET(
           select: { id: true, first_name: true, last_name: true },
         },
       },
-      orderBy: { called_at: "desc" },
+      orderBy: { call_date: "desc" },
     });
 
     return NextResponse.json({ callLogs });

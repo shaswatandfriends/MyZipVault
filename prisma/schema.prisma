@@ -265,6 +265,7 @@ model CandidateChecklistResponse {
   digital_signature      String?
   candidate_name_signed  String?
   signature_date         DateTime?
+  personal_info_collected Boolean  @default(false) // Admin checklist-requests UI tracks this
   superseded_by_id       Int? @unique        // set when candidate completes a new response for the same template; old one is no longer shareable
 
   candidate_user         User               @relation(fields: [candidate_user_id], references: [id])
@@ -724,6 +725,9 @@ model RecruiterLead {
   pipeline_stage    String    @default("new_lead") // new_lead, doc_pending, interested, submitted, interview_stage, offer_sent, offer_accepted, onboarding, on_assignment, inactive, not_interested, blacklisted
   star_rating       Int?      // 1-5, optional
   is_active         Boolean   @default(true)
+  is_deleted        Boolean   @default(false) // Soft delete — some calendar routes check this
+  is_platform_candidate Boolean @default(false) // Lead was found in platform pool
+  is_no_longer_interested Boolean @default(false) // Lead opted out
   created_at        DateTime  @default(now())
   updated_at        DateTime  @default(now())
 

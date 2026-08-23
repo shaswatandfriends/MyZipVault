@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Optional auth — viewer may be a logged-in candidate (in which case we
     // include has_applied flags), recruiter, employer, or anonymous.
     const session = await getServerSession(authOptions);
-    const viewerUserId = session?.user?.id ? parseInt((session.user as Record<string, unknown>).id as string, 10) : null;
+    const viewerUserId = session?.user ? parseInt((session.user as Record<string, unknown>).id as string, 10) || null : null;
     const viewerRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
     const viewerIsCandidate = viewerRole === "candidate" && viewerUserId !== null;
 

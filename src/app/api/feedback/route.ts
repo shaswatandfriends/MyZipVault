@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   try {
     // Optional auth — works for both anonymous and authenticated users
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id ? parseInt((session.user as Record<string, unknown>).id as string, 10) : null;
+    const userId = session?.user ? parseInt((session.user as Record<string, unknown>).id as string, 10) || null : null;
     const clientIp = getClientIp(request);
 
     // Rate limit key — prefer user_id (more stable), fall back to client IP

@@ -57,26 +57,13 @@ const nextConfig: NextConfig = {
   // Removed "standalone" output — Vercel has its own build system.
   // "standalone" mode strips the Prisma engine binary and breaks DB queries on Vercel.
   typescript: {
-    // TODO(audit-2): Re-enable strict TypeScript checking.
-    //
-    // Background: audit-1 (commit 0f70cd0) found that ignoreBuildErrors=true
-    // was masking 4 P0 production bugs (snake_case session.user.organization_id
-    // in 8 routes, findUnique on a non-existent Prisma partial-index unique,
-    // rtr_document.title referencing a non-existent field, and auth-provider
-    // PUBLIC_ROUTES missing the new marketing routes). All 4 are now fixed.
-    //
-    // Turning it off surfaced additional pre-existing schema mismatches in
-    // legacy code paths (admin/calendar/export, admin/calendar/stats,
-    // admin/checklist-requests, etc.) that predate this session's work.
-    // Those routes have ~30+ schema drift issues that need to be fixed
-    // individually — tracked as audit-2.
-    //
-    // For now we keep ignoreBuildErrors=true to unblock deploys, but the
-    // audit-1 P0 fixes are real and deployed. The remaining audit-2 issues
-    // are in features that may not be in active production use (admin
-    // calendar export, checklist-requests admin view, etc.) and will be
-    // addressed in a follow-up session.
-    ignoreBuildErrors: true,
+    // Strict TypeScript checking enabled (audit-2).
+    // Pre-existing schema drift in 58 legacy files (calendar, vaultsign, pdf)
+    // is suppressed with // @ts-nocheck + TODO(audit-2) comments at the top
+    // of each file. Clean files are fully type-checked.
+    // To remove a @ts-nocheck: fix the schema drift in that file, verify
+    // with `npx tsc --noEmit`, then remove the comment.
+    ignoreBuildErrors: false,
   },
   reactStrictMode: false,
   headers: () => securityHeaders,

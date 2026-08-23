@@ -35,7 +35,7 @@ export async function GET(
     // If not logged in, all those flags are false (and that's fine —
     // the page just won't show Reply/Dispute buttons).
     const session = await getServerSession(authOptions);
-    const viewerUserId = session?.user?.id ? parseInt((session.user as Record<string, unknown>).id as string, 10) : null;
+    const viewerUserId = session?.user ? parseInt((session.user as Record<string, unknown>).id as string, 10) || null : null;
 
     // Find the recruiter by public_id (UUID)
     const recruiter = await db.user.findFirst({
