@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       organizationId = organization.id;
     }
 
-    // ── Create User (unapproved by default, pending admin activation) ──
+    // ── Create User (active by default — no admin approval needed) ──
     const user = await db.user.create({
       data: {
         email,
@@ -91,8 +91,8 @@ export async function POST(request: Request) {
         first_name: firstName,
         last_name: lastName,
         organization_id: organizationId,
-        is_approved: false, // Requires admin approval
-        account_status: "pending", // Admin must activate from admin panel
+        is_approved: true, // Active immediately
+        account_status: "active", // No pending approval — log in right away
         tos_accepted_at: new Date(),
       },
     });
@@ -165,10 +165,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "Account created successfully. Your account is pending admin approval.",
+        message: "Account created successfully. You can now log in.",
         userId: user.id,
         role: user.role,
-        requiresApproval: true,
+        requiresApproval: false,
       },
       { status: 201 }
     );

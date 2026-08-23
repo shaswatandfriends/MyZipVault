@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Lock } from "@/lib/icons";
+import { Loader2, Briefcase, User, Check, X, ArrowRight, Clock, ShieldCheck, Lock, CheckCircle2 } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -199,12 +199,12 @@ function AgencySignupPageInner() {
               <div
                 className="flex items-center justify-center size-16 rounded-[20px]"
                 style={{
-                  background: "var(--status-amber-bg)",
-                  border: "0.5px solid rgba(217,119,6,0.2)",
+                  background: "var(--status-emerald-bg, #ecfdf5)",
+                  border: "0.5px solid rgba(16,185,129,0.3)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                 }}
               >
-                <Clock className="size-8" style={{ color: "var(--status-amber)" }} />
+                <CheckCircle2 className="size-8" style={{ color: "#10b981" }} />
               </div>
             </div>
 
@@ -212,46 +212,46 @@ function AgencySignupPageInner() {
               className="text-[2.5rem] font-bold leading-[1.1] mb-3 text-center text-foreground"
               style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
             >
-              Registration Submitted!
+              Account Created!
             </h1>
             <p className="text-base mb-8 text-center" style={{ color: "var(--text-secondary)" }}>
-              Your account is pending admin approval
+              You can now log in and start recruiting
             </p>
 
             {/* Alert callout — spatial */}
             <div
               className="rounded-[16px] p-4 mb-6"
               style={{
-                background: "var(--status-amber-bg)",
-                border: "0.5px solid rgba(217,119,6,0.25)",
+                background: "var(--status-emerald-bg, #ecfdf5)",
+                border: "0.5px solid rgba(16,185,129,0.25)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
             >
-              <p className="text-sm leading-relaxed" style={{ color: "var(--status-amber-dark)" }}>
-                Thank you for registering{accountType === "agency" ? ` ${agencyName}` : ""}! Our team will review your application and approve your account shortly. You&apos;ll receive an email once your account is activated.
+              <p className="text-sm leading-relaxed" style={{ color: "#065f46" }}>
+                Welcome{accountType === "agency" ? ` ${agencyName}` : ""}! Your account is active. Verify your email to unlock all features, then log in to start searching candidates and posting jobs.
               </p>
             </div>
 
             <div className="space-y-2.5 text-sm mb-8" style={{ color: "var(--text-secondary)" }}>
               <p className="flex items-center gap-2.5">
                 <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
-                Approval typically takes 1-2 business days
+                Check your email for a verification link
               </p>
               <p className="flex items-center gap-2.5">
                 <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
-                You&apos;ll be notified via email once approved
+                Log in with your email and password
               </p>
               <p className="flex items-center gap-2.5">
                 <span className="size-1.5 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
-                Contact support if you have any questions
+                Start searching candidates immediately
               </p>
             </div>
 
             <div className="space-y-3">
-              <Button asChild variant="outline" size="lg" className="w-full">
+              <Button asChild size="lg" className="w-full">
                 <Link href="/agency-login">
-                  Go to Agency Login
+                  Log In Now
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="lg" className="w-full">
