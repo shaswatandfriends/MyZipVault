@@ -4,7 +4,8 @@ export type UserRole =
   | "platform_admin"
   | "client_admin"
   | "client_recruiter"
-  | "candidate";
+  | "candidate"
+  | "employer";
 
 // ─── User ───────────────────────────────────────────────────────────
 export interface User {

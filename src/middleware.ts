@@ -10,7 +10,7 @@ export default withAuth({
       const pathname = req.nextUrl.pathname;
 
       // Public routes - always allowed
-      const publicRoutes = ["/", "/login", "/signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications"];
+      const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document"];
 
       // Allow public GET access to landing page content (so the public landing page can fetch it)
@@ -29,6 +29,7 @@ export default withAuth({
         const loginPage = pathname.startsWith("/superadmin") ? "/superadmin-login"
           : pathname.startsWith("/admin") ? "/admin-login"
           : pathname.startsWith("/recruiter") ? "/agency-login"
+          : pathname.startsWith("/employer") ? "/login"
           : "/login";
 
         // If we're already on the correct login page, allow (don't loop)
@@ -46,6 +47,10 @@ export default withAuth({
       if (pathname.startsWith("/superadmin") && role !== "super_admin") return false;
       if (pathname.startsWith("/admin") && !["super_admin", "platform_admin"].includes(role)) return false;
       if (pathname.startsWith("/recruiter") && !["client_admin", "client_recruiter"].includes(role)) return false;
+      // Employer-only routes
+      if (pathname.startsWith("/employer") && role !== "employer") return false;
+      // Employer API routes
+      if (pathname.startsWith("/api/employer") && role !== "employer") return false;
       // Candidate-only routes (NOT including /notifications — that's shared)
       if (
         pathname.startsWith("/dashboard") ||

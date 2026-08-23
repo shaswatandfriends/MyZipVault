@@ -92,6 +92,14 @@ const roleLabels: Record<UserRole, string> = {
   super_admin: "Super Admin",
 };
 
+// ─── Employer Nav Items ──────────────────────────────────────────────
+const employerNav: NavItem[] = [
+  { title: "Dashboard", href: "/employer/dashboard", icon: LayoutDashboard },
+  { title: "My Jobs", href: "/employer/jobs", icon: Briefcase },
+  { title: "Find Candidates", href: "/employer/candidates/search", icon: Search },
+  { title: "Submissions", href: "/employer/submissions", icon: Send },
+];
+
 // ─── Candidate Nav Items ─────────────────────────────────────────────
 const candidateNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -290,6 +298,8 @@ function getNavItems(role: UserRole): NavItem[] {
   switch (role) {
     case "candidate":
       return candidateNav;
+    case "employer":
+      return employerNav;
     case "client_recruiter":
       return recruiterNav.filter((item) => !item.adminOnly);
     case "client_admin":
