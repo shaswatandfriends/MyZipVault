@@ -952,6 +952,10 @@ function CampaignsTab() {
   const [formSubject, setFormSubject] = useState("");
   const [formBody, setFormBody] = useState("");
   const [formTargetRole, setFormTargetRole] = useState("all");
+  const [formFromName, setFormFromName] = useState("MyZipVault");
+  const [formReplyTo, setFormReplyTo] = useState("");
+  const [formLogoUrl, setFormLogoUrl] = useState("");
+  const [formAccentColor, setFormAccentColor] = useState("#0A66C2");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCampaigns = useCallback(async () => {
@@ -990,6 +994,10 @@ function CampaignsTab() {
           subject: formSubject,
           body: formBody,
           targetRole: formTargetRole,
+          from_name: formFromName || undefined,
+          reply_to: formReplyTo || undefined,
+          logo_url: formLogoUrl || undefined,
+          accent_color: formAccentColor || undefined,
         }),
       });
       if (res.ok) {
@@ -1033,6 +1041,26 @@ function CampaignsTab() {
     } finally {
       setIsSending(false);
       setSendTarget(null);
+    }
+  };
+
+  const handleSendTest = async (campaignId: number) => {
+    try {
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaignId}/send-test`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Test email sent!", {
+          description: "Check your inbox for the preview.",
+        });
+      } else {
+        toast.error("Failed to send test", {
+          description: data.error || "Unknown error",
+        });
+      }
+    } catch {
+      toast.error("Failed to send test email");
     }
   };
 
@@ -1241,6 +1269,16 @@ function CampaignsTab() {
                       {c.status === "draft" && (
                         <>
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendTest(c.id)}
+                            disabled={isSending && sendTarget?.id === c.id}
+                            className="gap-1.5"
+                          >
+                            <Mail className="size-3.5" />
+                            Test
+                          </Button>
+                          <Button
                             size="sm"
                             onClick={() => handleSend(c)}
                             disabled={isSending && sendTarget?.id === c.id}
@@ -1355,6 +1393,60 @@ function CampaignsTab() {
               <p className="text-[11px] text-text-muted">
                 Plain HTML supported. Same variables as subject line. Sent via Brevo from noreply@myzipvault.com.
               </p>
+            </div>
+
+            {/* Branding fields */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Email Branding (optional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">From Name</Label>
+                  <Input
+                    value={formFromName}
+                    onChange={(e) => setFormFromName(e.target.value)}
+                    placeholder="MyZipVault"
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Reply-To Email</Label>
+                  <Input
+                    type="email"
+                    value={formReplyTo}
+                    onChange={(e) => setFormReplyTo(e.target.value)}
+                    placeholder="support@myzipvault.com"
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Logo URL</Label>
+                  <Input
+                    value={formLogoUrl}
+                    onChange={(e) => setFormLogoUrl(e.target.value)}
+                    placeholder="https://myzipvault.com/logo.png"
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Accent Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={formAccentColor}
+                      onChange={(e) => setFormAccentColor(e.target.value)}
+                      className="size-8 rounded border border-border cursor-pointer"
+                    />
+                    <Input
+                      value={formAccentColor}
+                      onChange={(e) => setFormAccentColor(e.target.value)}
+                      className="text-sm flex-1"
+                      placeholder="#0A66C2"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>

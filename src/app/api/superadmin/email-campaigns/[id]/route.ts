@@ -143,3 +143,94 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/superadmin/email-campaigns/[id]
+ *   Updates a DRAFT campaign's fields. Cannot edit a campaign that has
+ *   been sent (for audit trail). Only super_admin can access.
+ *
+ * Body (all optional — only provided fields are updated):
+ *   name, subject, body, target_role, target_filter,
+ *   from_name, reply_to, logo_url, accent_color
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as Record<string, unknown>).role as string;
+    if (role !== "super_admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const campaignId = parseInt(id);
+    if (isNaN(campaignId)) {
+      return NextResponse.json({ error: "Invalid campaign ID" }, { status: 400 });
+    }
+
+    const campaign = await db.emailCampaign.findUnique({
+      where: { id: campaignId },
+      select: { status: true, name: true },
+    });
+
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+
+    if (campaign.status !== "draft") {
+      return NextResponse.json(
+        { error: "Cannot edit a campaign that has been sent. Audit trail preserved." },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const updateData: Record<string, unknown> = {};
+
+    // Only update provided fields
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.subject !== undefined) updateData.subject = body.subject;
+    if (body.body !== undefined) updateData.body = body.body;
+    if (body.target_role !== undefined) updateData.target_role = body.target_role;
+    if (body.target_filter !== undefined) updateData.target_filter = body.target_filter || null;
+    if (body.from_name !== undefined) updateData.from_name = body.from_name || null;
+    if (body.reply_to !== undefined) updateData.reply_to = body.reply_to || null;
+    if (body.logo_url !== undefined) updateData.logo_url = body.logo_url || null;
+    if (body.accent_color !== undefined) updateData.accent_color = body.accent_color || null;
+
+    await db.emailCampaign.update({
+      where: { id: campaignId },
+      data: updateData,
+    });
+
+    // Audit log
+    const actionerId = parseInt((session.user as Record<string, unknown>).id as string, 10);
+    try {
+      await db.auditLog.create({
+        data: {
+          user_id: actionerId,
+          role: "super_admin",
+          action: "edit_email_campaign",
+          entity_type: "email_campaign",
+          entity_id: campaignId,
+          details: `Updated draft campaign "${campaign.name}"`,
+        },
+      });
+    } catch {
+      // Non-critical
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[EMAIL CAMPAIGNS] Patch error:", error);
+    return NextResponse.json(
+      { error: "Failed to update email campaign" },
+      { status: 500 }
+    );
+  }
+}
