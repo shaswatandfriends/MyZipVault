@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Mail, Loader2, AlertCircle } from "@/lib/icons";
@@ -17,6 +17,14 @@ import { CheckCircle2, Mail, Loader2, AlertCircle } from "@/lib/icons";
  *   6. Future campaign sends skip emails in that table
  */
 export default function UnsubscribePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-text-muted">Loading…</div>}>
+      <UnsubscribePageInner />
+    </Suspense>
+  );
+}
+
+function UnsubscribePageInner() {
   const params = useParams<{ token: string }>();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || params.token;

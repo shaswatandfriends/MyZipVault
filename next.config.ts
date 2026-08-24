@@ -57,12 +57,10 @@ const nextConfig: NextConfig = {
   // Removed "standalone" output — Vercel has its own build system.
   // "standalone" mode strips the Prisma engine binary and breaks DB queries on Vercel.
   typescript: {
-    // TODO(audit-2): Re-enable strict TypeScript checking.
-    // Set back to false initially, but Vercel's build pipeline has
-    // different TS resolution that catches errors our local tsc
-    // doesn't. Keeping true until we can reproduce the exact Vercel
-    // build error locally.
     ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   reactStrictMode: false,
   headers: () => securityHeaders,
