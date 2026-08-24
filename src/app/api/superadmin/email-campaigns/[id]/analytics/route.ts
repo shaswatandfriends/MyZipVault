@@ -124,6 +124,58 @@ export async function GET(
     const bounceRate = totalSent > 0 ? Math.round((bouncedCount / totalSent) * 1000) / 10 : 0;
     const deliveryRate = totalSent > 0 ? Math.round((totalDelivered / totalSent) * 1000) / 10 : 0;
 
+    // ─── "Who joined" funnel ──────────────────────────────────────
+    // Count recipients who:
+    //   - Were already platform users (recipient_user_id IS NOT NULL)
+    //   - Opened but haven't logged in since (engaged, not active)
+    //   - Opened AND clicked (highly engaged)
+    //
+    // Also count NEW signups after the campaign started — users whose
+    // email matches a campaign recipient AND who signed up after
+    // campaign.started_at.
+    let newSignupsAfterCampaign = 0;
+    let openedButNotActive = 0;
+    let openedAndClicked = 0;
+
+    if (campaign.started_at) {
+      try {
+        // Get all recipient emails for this campaign
+        const allRecipientEmails = await db.emailCampaignRecipient.findMany({
+          where: { campaign_id: campaignId },
+          select: { recipient_email: true, opened_at: true, clicked_at: true, recipient_user_id: true },
+        });
+
+        const emails = allRecipientEmails.map((r) => r.recipient_email);
+
+        // Find users who signed up AFTER the campaign started (by email match)
+        const newUsers = await db.user.findMany({
+          where: {
+            email: { in: emails },
+            created_at: { gte: campaign.started_at },
+          },
+          select: { email: true, created_at: true, last_activity_at: true },
+        });
+        newSignupsAfterCampaign = newUsers.length;
+
+        // Count opened but not active (opened_at set, but last_activity_at is before campaign)
+        const openedEmails = allRecipientEmails
+          .filter((r) => r.opened_at && !r.recipient_user_id)
+          .map((r) => r.recipient_email);
+        openedButNotActive = openedEmails.length;
+
+        // Count opened AND clicked (highly engaged)
+        openedAndClicked = allRecipientEmails.filter(
+          (r) => r.opened_at && r.clicked_at
+        ).length;
+      } catch (funnelErr) {
+        console.error("[CAMPAIGN_ANALYTICS] Funnel query failed:", funnelErr);
+        // Non-critical — return zeros
+      }
+    }
+
+    // Conversion rate: new signups / total sent
+    const conversionRate = totalSent > 0 ? Math.round((newSignupsAfterCampaign / totalSent) * 1000) / 10 : 0;
+
     return NextResponse.json({
       campaign: {
         id: campaign.id,
@@ -148,12 +200,19 @@ export async function GET(
         click_rate: clickRate,     // percentage
         bounce_rate: bounceRate,   // percentage
         delivery_rate: deliveryRate, // percentage
+        conversion_rate: conversionRate, // new signups / sent
       },
       funnel: {
         sent: totalSent,
         delivered: totalDelivered,
         opened: totalOpened,
         clicked: totalClicked,
+      },
+      conversion: {
+        new_signups: newSignupsAfterCampaign,
+        opened_but_not_active: openedButNotActive,
+        opened_and_clicked: openedAndClicked,
+        conversion_rate: conversionRate,
       },
       recipients: recipients.map((r) => ({
         id: r.id,

@@ -130,12 +130,19 @@ interface CampaignAnalytics {
     click_rate: number;
     bounce_rate: number;
     delivery_rate: number;
+    conversion_rate?: number;
   };
   funnel: {
     sent: number;
     delivered: number;
     opened: number;
     clicked: number;
+  };
+  conversion?: {
+    new_signups: number;
+    opened_but_not_active: number;
+    opened_and_clicked: number;
+    conversion_rate: number;
   };
   recipients: Array<{
     id: number;
@@ -1748,6 +1755,55 @@ function CampaignsTab() {
                           <p className="text-sm font-semibold text-foreground">{analytics.summary.total_recipients}</p>
                         </div>
                       </div>
+
+                      {/* Conversion funnel — "Who joined" */}
+                      {analytics.conversion && (
+                        <div className="space-y-3 pt-2 border-t border-border">
+                          <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide">Conversion Funnel</h4>
+
+                          {/* Conversion rate card */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="text-center bg-violet-50 rounded-lg p-3">
+                              <p className="text-2xl font-bold text-violet-700">{analytics.conversion.new_signups}</p>
+                              <p className="text-[10px] text-violet-600 mt-0.5">New Signups</p>
+                            </div>
+                            <div className="text-center bg-blue-50 rounded-lg p-3">
+                              <p className="text-2xl font-bold text-blue-700">{analytics.conversion.opened_but_not_active}</p>
+                              <p className="text-[10px] text-blue-600 mt-0.5">Opened, Not Joined</p>
+                            </div>
+                            <div className="text-center bg-emerald-50 rounded-lg p-3">
+                              <p className="text-2xl font-bold text-emerald-700">{analytics.rates.conversion_rate ?? 0}%</p>
+                              <p className="text-[10px] text-emerald-600 mt-0.5">Conversion Rate</p>
+                            </div>
+                          </div>
+
+                          {/* Conversion funnel bars */}
+                          <div className="space-y-2">
+                            {[
+                              { label: "Sent", value: analytics.funnel.sent, color: "bg-blue-500", max: analytics.funnel.sent || 1 },
+                              { label: "Opened", value: analytics.funnel.opened, color: "bg-violet-500", max: analytics.funnel.sent || 1 },
+                              { label: "Clicked", value: analytics.funnel.clicked, color: "bg-amber-500", max: analytics.funnel.sent || 1 },
+                              { label: "Joined", value: analytics.conversion.new_signups, color: "bg-emerald-500", max: analytics.funnel.sent || 1 },
+                            ].map((step) => (
+                              <div key={step.label} className="flex items-center gap-3">
+                                <span className="text-xs font-medium text-text-secondary w-20">{step.label}</span>
+                                <div className="flex-1 h-6 bg-muted/30 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full ${step.color} rounded-full transition-all duration-500`}
+                                    style={{ width: `${Math.max((step.value / step.max) * 100, 2)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-foreground w-12 text-right">{step.value}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <p className="text-[10px] text-text-muted">
+                            "New Signups" = users with the same email as a campaign recipient who signed up after the campaign started.
+                            "Opened, Not Joined" = recipients who opened the email but don&apos;t have a platform account.
+                          </p>
+                        </div>
+                      )}
 
                       {/* Recipient event timeline */}
                       <div>
