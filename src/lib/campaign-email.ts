@@ -19,8 +19,6 @@
 const FONT_STACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 interface CampaignEmailOptions {
-  /** The campaign body HTML (already personalized + tracking-injected) */
-  bodyContent: string;
   /** Accent color for the top gradient bar (default: platform blue) */
   accentColor?: string;
   /** Logo image URL (if provided, shows <img> instead of text logo) */
