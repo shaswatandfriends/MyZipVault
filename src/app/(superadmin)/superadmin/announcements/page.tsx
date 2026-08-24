@@ -17,6 +17,7 @@ import {
   Pin,
   Clock,
   Pencil,
+  Copy,
   Upload,
   X,
   AlertTriangle,
@@ -986,31 +987,71 @@ function CampaignsTab() {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/superadmin/email-campaigns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formName,
-          subject: formSubject,
-          body: formBody,
-          targetRole: formTargetRole,
-          from_name: formFromName || undefined,
-          reply_to: formReplyTo || undefined,
-          logo_url: formLogoUrl || undefined,
-          accent_color: formAccentColor || undefined,
-        }),
-      });
-      if (res.ok) {
-        toast.success("Campaign created as draft. Click 'Send' to deliver to recipients.");
-        setShowCreateDialog(false);
-        setFormName("");
-        setFormSubject("");
-        setFormBody("");
-        setFormTargetRole("all");
-        fetchCampaigns();
+      // If editing an existing draft, use PATCH; otherwise create new
+      if (editCampaignId) {
+        const res = await fetch(`/api/superadmin/email-campaigns/${editCampaignId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formName,
+            subject: formSubject,
+            body: formBody,
+            target_role: formTargetRole,
+            from_name: formFromName || undefined,
+            reply_to: formReplyTo || undefined,
+            logo_url: formLogoUrl || undefined,
+            accent_color: formAccentColor || undefined,
+          }),
+        });
+        if (res.ok) {
+          toast.success("Campaign updated.");
+          setShowCreateDialog(false);
+          setEditCampaignId(null);
+          setFormName("");
+          setFormSubject("");
+          setFormBody("");
+          setFormTargetRole("all");
+          setFormFromName("MyZipVault");
+          setFormReplyTo("");
+          setFormLogoUrl("");
+          setFormAccentColor("#0A66C2");
+          fetchCampaigns();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.error || "Failed to update campaign");
+        }
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.error || "Failed to create campaign");
+        // Create new campaign
+        const res = await fetch("/api/superadmin/email-campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formName,
+            subject: formSubject,
+            body: formBody,
+            targetRole: formTargetRole,
+            from_name: formFromName || undefined,
+            reply_to: formReplyTo || undefined,
+            logo_url: formLogoUrl || undefined,
+            accent_color: formAccentColor || undefined,
+          }),
+        });
+        if (res.ok) {
+          toast.success("Campaign created as draft. Click 'Send' to deliver to recipients.");
+          setShowCreateDialog(false);
+          setFormName("");
+          setFormSubject("");
+          setFormBody("");
+          setFormTargetRole("all");
+          setFormFromName("MyZipVault");
+          setFormReplyTo("");
+          setFormLogoUrl("");
+          setFormAccentColor("#0A66C2");
+          fetchCampaigns();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.error || "Failed to create campaign");
+        }
       }
     } catch {
       toast.error("Failed to create campaign");
@@ -1061,6 +1102,70 @@ function CampaignsTab() {
       }
     } catch {
       toast.error("Failed to send test email");
+    }
+  };
+
+  // ─── Edit draft: loads campaign data into the create dialog form ──
+  const [editCampaignId, setEditCampaignId] = useState<number | null>(null);
+
+  const handleEditDraft = async (campaign: EmailCampaignListItem) => {
+    try {
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaign.id}?recipientLimit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        const c = data.campaign;
+        setFormName(c.name || "");
+        setFormSubject(c.subject || "");
+        setFormBody(c.body || "");
+        setFormTargetRole(c.target_role || "all");
+        setFormFromName(c.from_name || "MyZipVault");
+        setFormReplyTo(c.reply_to || "");
+        setFormLogoUrl(c.logo_url || "");
+        setFormAccentColor(c.accent_color || "#0A66C2");
+        setEditCampaignId(campaign.id);
+        setShowCreateDialog(true);
+      } else {
+        toast.error("Failed to load campaign for editing");
+      }
+    } catch {
+      toast.error("Failed to load campaign for editing");
+    }
+  };
+
+  // ─── Duplicate: creates a new draft with same content ──
+  const handleDuplicate = async (campaign: EmailCampaignListItem) => {
+    try {
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaign.id}?recipientLimit=5`);
+      if (!res.ok) throw new Error("Failed to load campaign");
+      const data = await res.json();
+      const c = data.campaign;
+
+      // Create a new draft with the same content
+      const createRes = await fetch("/api/superadmin/email-campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${c.name} (copy)`,
+          subject: c.subject,
+          body: c.body,
+          targetRole: c.target_role,
+          from_name: c.from_name,
+          reply_to: c.reply_to,
+          logo_url: c.logo_url,
+          accent_color: c.accent_color,
+        }),
+      });
+
+      if (createRes.ok) {
+        toast.success("Campaign duplicated", {
+          description: `"${c.name} (copy)" created as a new draft.`,
+        });
+        fetchCampaigns();
+      } else {
+        toast.error("Failed to duplicate campaign");
+      }
+    } catch {
+      toast.error("Failed to duplicate campaign");
     }
   };
 
@@ -1178,7 +1283,18 @@ function CampaignsTab() {
       {/* Action Bar */}
       <div className="flex items-center gap-3">
         <Button
-          onClick={() => setShowCreateDialog(true)}
+          onClick={() => {
+            setEditCampaignId(null);
+            setFormName("");
+            setFormSubject("");
+            setFormBody("");
+            setFormTargetRole("all");
+            setFormFromName("MyZipVault");
+            setFormReplyTo("");
+            setFormLogoUrl("");
+            setFormAccentColor("#0A66C2");
+            setShowCreateDialog(true);
+          }}
           className="gap-2 bg-primary hover:bg-primary-hover"
         >
           <Plus className="size-4" />
@@ -1271,6 +1387,15 @@ function CampaignsTab() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEditDraft(c)}
+                            className="gap-1.5"
+                          >
+                            <Pencil className="size-3.5" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleSendTest(c.id)}
                             disabled={isSending && sendTarget?.id === c.id}
                             className="gap-1.5"
@@ -1290,6 +1415,15 @@ function CampaignsTab() {
                               <Send className="size-3.5" />
                             )}
                             Send
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDuplicate(c)}
+                            className="text-text-muted hover:text-text-secondary"
+                            title="Duplicate as new draft"
+                          >
+                            <Copy className="size-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -1331,10 +1465,12 @@ function CampaignsTab() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Satoshi', sans-serif" }}>
-              Create Email Campaign
+              {editCampaignId ? "Edit Campaign" : "Create Email Campaign"}
             </DialogTitle>
             <DialogDescription>
-              Draft a batch email to send to a specific user segment. After creating, you can review and send it.
+              {editCampaignId
+                ? "Update your draft campaign. Changes are saved when you click 'Save Changes'."
+                : "Draft a batch email to send to a specific user segment. After creating, you can review and send it."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1459,7 +1595,7 @@ function CampaignsTab() {
               className="bg-primary hover:bg-primary-hover"
             >
               {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
-              Save as Draft
+              {editCampaignId ? "Save Changes" : "Save as Draft"}
             </Button>
           </DialogFooter>
         </DialogContent>
