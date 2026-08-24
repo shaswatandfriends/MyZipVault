@@ -91,11 +91,62 @@ interface EmailCampaignRecipient {
   error_message: string | null;
   sent_at: string | null;
   brevo_message_id: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  delivered_at: string | null;
 }
 
 interface EmailCampaignDetail extends EmailCampaignListItem {
   recipients: EmailCampaignRecipient[];
   target_filter: string | null;
+  from_name: string | null;
+  reply_to: string | null;
+  logo_url: string | null;
+  accent_color: string | null;
+}
+
+interface CampaignAnalytics {
+  campaign: {
+    id: number;
+    name: string;
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
+  };
+  summary: {
+    total_recipients: number;
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    failed: number;
+    complained: number;
+    unsubscribed: number;
+  };
+  rates: {
+    open_rate: number;
+    click_rate: number;
+    bounce_rate: number;
+    delivery_rate: number;
+  };
+  funnel: {
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+  };
+  recipients: Array<{
+    id: number;
+    email: string;
+    name: string | null;
+    status: string;
+    sent_at: string | null;
+    delivered_at: string | null;
+    opened_at: string | null;
+    clicked_at: string | null;
+    error: string | null;
+  }>;
 }
 
 
@@ -892,6 +943,9 @@ function CampaignsTab() {
   const [sendTarget, setSendTarget] = useState<EmailCampaignListItem | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EmailCampaignListItem | null>(null);
+  const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState<"recipients" | "analytics">("recipients");
 
   // Create form state
   const [formName, setFormName] = useState("");
@@ -1003,11 +1057,17 @@ function CampaignsTab() {
   const openDetail = async (campaign: EmailCampaignListItem) => {
     setDetailCampaign(null);
     setIsDetailLoading(true);
+    setAnalytics(null);
+    setDetailTab("recipients");
     try {
       const res = await fetch(`/api/superadmin/email-campaigns/${campaign.id}?recipientLimit=100`);
       if (res.ok) {
         const data = await res.json();
         setDetailCampaign(data.campaign);
+        // Auto-fetch analytics if campaign has been sent
+        if (data.campaign?.status && data.campaign.status !== "draft") {
+          fetchAnalytics(campaign.id);
+        }
       } else {
         toast.error("Failed to load campaign details");
       }
@@ -1017,6 +1077,31 @@ function CampaignsTab() {
       setIsDetailLoading(false);
     }
   };
+
+  // Fetch analytics with real-time polling support
+  const fetchAnalytics = async (campaignId: number) => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`/api/superadmin/email-campaigns/${campaignId}/analytics`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setAnalytics(data);
+      }
+    } catch {
+      // Silent fail — analytics is supplementary
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  // Real-time polling: refresh analytics every 5s when analytics tab is active
+  useEffect(() => {
+    if (!detailCampaign || detailTab !== "analytics" || detailCampaign.status === "draft") return;
+    const interval = setInterval(() => {
+      fetchAnalytics(detailCampaign.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [detailCampaign, detailTab]);
 
   // ─── Stats ─────────────────────────────────────────────────────────
   const totalCampaigns = campaigns.length;
@@ -1339,8 +1424,160 @@ function CampaignsTab() {
                 </div>
               </div>
 
-              {/* Recipient list */}
-              <div>
+              {/* ─── Tab selector ─── */}
+              {detailCampaign.status !== "draft" && (
+                <div className="flex gap-2 border-b border-border pb-2">
+                  <button
+                    onClick={() => setDetailTab("recipients")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors ${
+                      detailTab === "recipients" ? "text-primary border-b-2 border-primary" : "text-text-muted hover:text-text-secondary"
+                    }`}
+                  >
+                    Recipients
+                  </button>
+                  <button
+                    onClick={() => { setDetailTab("analytics"); if (!analytics) fetchAnalytics(detailCampaign.id); }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors ${
+                      detailTab === "analytics" ? "text-primary border-b-2 border-primary" : "text-text-muted hover:text-text-secondary"
+                    }`}
+                  >
+                    Analytics {analytics && `(${analytics.summary.opened} opened, ${analytics.summary.clicked} clicked)`}
+                  </button>
+                </div>
+              )}
+
+              {/* ─── Analytics tab ─── */}
+              {detailTab === "analytics" && detailCampaign.status !== "draft" && (
+                <div className="space-y-4">
+                  {analyticsLoading && !analytics ? (
+                    <div className="py-8 flex items-center justify-center">
+                      <Loader2 className="size-5 animate-spin text-text-muted" />
+                    </div>
+                  ) : analytics ? (
+                    <>
+                      {/* Rate cards */}
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="text-center bg-blue-50 rounded-lg p-3">
+                          <p className="text-2xl font-bold text-blue-700">{analytics.rates.open_rate}%</p>
+                          <p className="text-[10px] text-blue-600 mt-0.5">Open Rate</p>
+                        </div>
+                        <div className="text-center bg-emerald-50 rounded-lg p-3">
+                          <p className="text-2xl font-bold text-emerald-700">{analytics.rates.click_rate}%</p>
+                          <p className="text-[10px] text-emerald-600 mt-0.5">Click Rate</p>
+                        </div>
+                        <div className="text-center bg-amber-50 rounded-lg p-3">
+                          <p className="text-2xl font-bold text-amber-700">{analytics.rates.delivery_rate}%</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5">Delivery Rate</p>
+                        </div>
+                        <div className="text-center bg-red-50 rounded-lg p-3">
+                          <p className="text-2xl font-bold text-red-700">{analytics.rates.bounce_rate}%</p>
+                          <p className="text-[10px] text-red-600 mt-0.5">Bounce Rate</p>
+                        </div>
+                      </div>
+
+                      {/* Funnel */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide">Funnel</h4>
+                        {[
+                          { label: "Sent", value: analytics.funnel.sent, color: "bg-blue-500", max: analytics.funnel.sent || 1 },
+                          { label: "Delivered", value: analytics.funnel.delivered, color: "bg-emerald-500", max: analytics.funnel.sent || 1 },
+                          { label: "Opened", value: analytics.funnel.opened, color: "bg-violet-500", max: analytics.funnel.sent || 1 },
+                          { label: "Clicked", value: analytics.funnel.clicked, color: "bg-amber-500", max: analytics.funnel.sent || 1 },
+                        ].map((step) => (
+                          <div key={step.label} className="flex items-center gap-3">
+                            <span className="text-xs font-medium text-text-secondary w-20">{step.label}</span>
+                            <div className="flex-1 h-6 bg-muted/30 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${step.color} rounded-full transition-all duration-500`}
+                                style={{ width: `${Math.max((step.value / step.max) * 100, 2)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-foreground w-12 text-right">{step.value}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summary stats */}
+                      <div className="grid grid-cols-5 gap-2 text-center">
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <p className="text-[9px] text-text-muted">Bounced</p>
+                          <p className="text-sm font-semibold text-red-700">{analytics.summary.bounced}</p>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <p className="text-[9px] text-text-muted">Failed</p>
+                          <p className="text-sm font-semibold text-red-700">{analytics.summary.failed}</p>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <p className="text-[9px] text-text-muted">Complained</p>
+                          <p className="text-sm font-semibold text-amber-700">{analytics.summary.complained}</p>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <p className="text-[9px] text-text-muted">Unsubscribed</p>
+                          <p className="text-sm font-semibold text-text-muted">{analytics.summary.unsubscribed}</p>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <p className="text-[9px] text-text-muted">Total</p>
+                          <p className="text-sm font-semibold text-foreground">{analytics.summary.total_recipients}</p>
+                        </div>
+                      </div>
+
+                      {/* Recipient event timeline */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+                          Recipient Activity
+                        </h4>
+                        <div className="max-h-60 overflow-y-auto border border-border rounded-md">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/50 sticky top-0">
+                              <tr>
+                                <th className="text-left p-2 font-medium text-text-secondary">Recipient</th>
+                                <th className="text-left p-2 font-medium text-text-secondary">Status</th>
+                                <th className="text-left p-2 font-medium text-text-secondary">Sent</th>
+                                <th className="text-left p-2 font-medium text-text-secondary">Opened</th>
+                                <th className="text-left p-2 font-medium text-text-secondary">Clicked</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analytics.recipients.map((r) => (
+                                <tr key={r.id} className="border-t border-border">
+                                  <td className="p-2 text-text-foreground">{r.name || r.email}</td>
+                                  <td className="p-2">
+                                    <Badge variant="outline" className={cn(
+                                      "text-[10px]",
+                                      r.status === "sent" && "text-green-700 bg-green-50 border-green-200",
+                                      r.status === "bounced" && "text-red-700 bg-red-50 border-red-200",
+                                      r.status === "failed" && "text-red-700 bg-red-50 border-red-200",
+                                      r.status === "complained" && "text-amber-700 bg-amber-50 border-amber-200",
+                                      r.status === "unsubscribed" && "text-text-muted bg-muted/30",
+                                    )}>
+                                      {r.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-2 text-text-muted">{r.sent_at ? new Date(r.sent_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</td>
+                                  <td className="p-2 text-text-muted">{r.opened_at ? new Date(r.opened_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</td>
+                                  <td className="p-2 text-text-muted">{r.clicked_at ? new Date(r.clicked_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-text-muted text-center">
+                        Auto-refreshing every 5s. <CheckCircle2 className="size-3 inline" style={{ color: "#10b981" }} /> Live
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-text-muted py-4 text-center">
+                      Analytics will appear after the campaign is sent.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Recipients tab (existing) ─── */}
+              {detailTab === "recipients" && (
+                <>
                 <h4 className="text-sm font-semibold text-foreground mb-2">
                   Recipient Delivery Status
                 </h4>
@@ -1401,7 +1638,8 @@ function CampaignsTab() {
                     Showing first {detailCampaign.recipients.length} of {detailCampaign._count.recipients} recipients.
                   </p>
                 )}
-              </div>
+                </>
+              )}
             </div>
           ) : null}
 
