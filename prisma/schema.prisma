@@ -1083,6 +1083,21 @@ model EmailCampaignRecipient {
   @@index([recipient_email])
 }
 
+// ─── 46b. Unsubscribe Suppression List ──────────────────────────────
+// When a recipient clicks "Unsubscribe" in a campaign email or Brevo
+// reports an unsubscribe/complaint event, their email is added here.
+// The campaign send route filters out any email in this list.
+model EmailUnsubscribe {
+  id                Int       @id @default(autoincrement())
+  email             String    @unique @db.VarChar(255)
+  source            String    @default("manual")
+    // 'manual' (clicked unsubscribe link) | 'brevo' (Brevo webhook) | 'admin' (superadmin added)
+  source_campaign_id Int?
+  created_at        DateTime  @default(now())
+
+  @@index([email])
+}
+
 // ─── 47. Compliance Bundles ─────────────────────────────────────────
 // Agency-specific bundles that group checklist + document requests.
 // Each org gets 5 free bundle slots (controlled via platform_settings

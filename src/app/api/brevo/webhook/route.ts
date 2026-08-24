@@ -124,6 +124,16 @@ export async function POST(request: Request) {
           if (reason) {
             updateData.error_message = `Hard bounce: ${reason}`.substring(0, 500);
           }
+          // Add to suppression list (hard bounces should not be re-sent)
+          if (email) {
+            try {
+              await db.emailUnsubscribe.upsert({
+                where: { email },
+                create: { email, source: "brevo", source_campaign_id: undefined },
+                update: {},
+              });
+            } catch { /* unique constraint = already exists, fine */ }
+          }
           break;
 
         case "complained":
@@ -131,11 +141,31 @@ export async function POST(request: Request) {
           if (reason) {
             updateData.error_message = `Spam complaint: ${reason}`.substring(0, 500);
           }
+          // Add to suppression list (complaints should not be re-sent)
+          if (email) {
+            try {
+              await db.emailUnsubscribe.upsert({
+                where: { email },
+                create: { email, source: "brevo", source_campaign_id: undefined },
+                update: {},
+              });
+            } catch { /* unique constraint = already exists, fine */ }
+          }
           break;
 
         case "unsubscribed":
         case "unsubscribe":
           updateData.status = "unsubscribed";
+          // Add to suppression list
+          if (email) {
+            try {
+              await db.emailUnsubscribe.upsert({
+                where: { email },
+                create: { email, source: "brevo", source_campaign_id: undefined },
+                update: {},
+              });
+            } catch { /* unique constraint = already exists, fine */ }
+          }
           break;
 
         default:

@@ -23,7 +23,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program", "/unsubscribe"];
 
 // PUBLIC_ROUTE_PREFIXES — prefix-matched routes that are public AND that
 // logged-in users can still view (the redirect on line 137 exempts these

@@ -108,6 +108,23 @@ export async function POST(
       take: MAX_RECIPIENTS_PER_SEND,
     });
 
+    // ─── Filter out unsubscribed emails (CAN-SPAM compliance) ────────
+    if (users.length > 0) {
+      const userEmails = users.map((u) => u.email);
+      const unsubscribedEmails = await db.emailUnsubscribe.findMany({
+        where: { email: { in: userEmails } },
+        select: { email: true },
+      });
+      const unsubscribedSet = new Set(unsubscribedEmails.map((u) => u.email));
+      const filteredUsers = users.filter((u) => !unsubscribedSet.has(u.email));
+      if (filteredUsers.length < users.length) {
+        console.log(`[CAMPAIGN_SEND] Filtered ${users.length - filteredUsers.length} unsubscribed recipients`);
+      }
+      // Replace users with filtered list
+      users.length = 0;
+      users.push(...filteredUsers);
+    }
+
     if (users.length === 0) {
       // No recipients — mark as sent with zero counts
       await db.emailCampaign.update({
@@ -248,6 +265,10 @@ export async function POST(
               subject: personalizedSubject,
               htmlContent: brandedHtml,
               tags: [`campaign:${campaignId}`],
+              headers: {
+                "List-Unsubscribe": `<mailto:${BREVO_SENDER_EMAIL}?subject=Unsubscribe>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
               ...(campaign.reply_to ? { replyTo: { email: campaign.reply_to } } : {}),
             }),
           });
