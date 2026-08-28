@@ -158,6 +158,38 @@ export default function BlogPostPage() {
 
         {/* ─── Article header ─── */}
         <article>
+          {/* JSON-LD Article schema — for Google rich results */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Article",
+                headline: post.title,
+                description: post.excerpt,
+                datePublished: new Date(post.published_at).toISOString(),
+                dateModified: new Date(post.published_at).toISOString(),
+                author: {
+                  "@type": "Organization",
+                  name: post.author,
+                },
+                publisher: {
+                  "@type": "Organization",
+                  name: "MyZipVault",
+                  logo: {
+                    "@type": "ImageObject",
+                    url: "https://my-zip-vault.vercel.app/logo.svg",
+                  },
+                },
+                mainEntityOfPage: {
+                  "@type": "WebPage",
+                  "@id": `https://my-zip-vault.vercel.app/blog/${post.slug}`,
+                },
+                articleSection: post.category,
+                keywords: post.title.split(/[\s,:(]+/).slice(0, 10).join(", "),
+              }),
+            }}
+          />
           <Badge variant="outline" className={CATEGORY_COLORS[post.category]}>
             {post.category}
           </Badge>

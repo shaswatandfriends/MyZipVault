@@ -50,21 +50,74 @@ const clashDisplay = localFont({
   display: "swap",
 });
 
+const BASE_URL = "https://my-zip-vault.vercel.app";
+
 export const metadata: Metadata = {
-  title: "MyZipVault — Healthcare Credential Verification",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "MyZipVault — Healthcare Recruiting Marketplace",
+    template: "%s | MyZipVault",
+  },
   description:
-    "Streamline healthcare credential verification with MyZipVault. Secure, compliant, and efficient credential management for candidates, recruiters, and administrators.",
+    "MyZipVault connects healthcare professionals with top recruiters and employers. Find travel nurse jobs, RN positions, and allied health roles. Verify credentials, sign documents, and land your next placement — all in one platform.",
   keywords: [
-    "MyZipVault",
-    "healthcare",
+    "healthcare jobs",
+    "travel nurse jobs",
+    "RN jobs",
+    "allied health jobs",
+    "nurse recruiter",
+    "healthcare recruiter",
+    "healthcare staffing",
+    "nursing jobs",
     "credential verification",
-    "compliance",
-    "SaaS",
+    "MyZipVault",
   ],
   authors: [{ name: "MyZipVault Team" }],
+  creator: "MyZipVault",
+  publisher: "MyZipVault",
   icons: {
     icon: "/logo.svg",
+    apple: "/logo.svg",
   },
+  alternates: {
+    canonical: BASE_URL,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: BASE_URL,
+    siteName: "MyZipVault",
+    title: "MyZipVault — Healthcare Recruiting Marketplace",
+    description:
+      "Connect with top healthcare recruiters and employers. Find travel nurse jobs, RN positions, and allied health roles. Verify credentials, sign documents, and land your next placement.",
+    images: [
+      {
+        url: "/logo.svg",
+        width: 1200,
+        height: 630,
+        alt: "MyZipVault — Healthcare Recruiting Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MyZipVault — Healthcare Recruiting Marketplace",
+    description:
+      "Connect with top healthcare recruiters and employers. Find travel nurse jobs, RN positions, and allied health roles.",
+    images: ["/logo.svg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  category: "Jobs",
 };
 
 export default function RootLayout({
@@ -84,6 +137,51 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${satoshi.variable} ${playfair.variable} ${clashDisplay.variable} antialiased bg-background text-foreground font-sans`}
       >
+        {/* JSON-LD Organization schema — for Google rich results */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "MyZipVault",
+              url: BASE_URL,
+              logo: `${BASE_URL}/logo.svg`,
+              description:
+                "Healthcare recruiting marketplace connecting nurses, allied health professionals, recruiters, and employers.",
+              sameAs: [
+                "https://www.linkedin.com/company/myzipvault",
+                "https://twitter.com/myzipvault",
+              ],
+              contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: "support@myzipvault.com",
+                availableLanguage: ["English"],
+              },
+            }),
+          }}
+        />
+        {/* JSON-LD WebSite schema — enables sitelinks search box in Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "MyZipVault",
+              url: BASE_URL,
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${BASE_URL}/browse-jobs?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
         <ProxyModeBanner />
         <ThemeProvider
           attribute="class"

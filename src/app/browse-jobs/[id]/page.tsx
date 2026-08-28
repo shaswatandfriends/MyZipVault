@@ -222,6 +222,42 @@ export default function PublicJobDetailPage() {
 
       {/* ─── Main ─── */}
       <main className="flex-1 mx-auto w-full max-w-4xl px-6 py-10">
+        {/* JSON-LD JobPosting schema — for Google Jobs rich results */}
+        {job && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "JobPosting",
+                title: job.title,
+                description: job.description || "",
+                employmentType: job.employment_type?.toUpperCase() || "FULL_TIME",
+                hiringOrganization: {
+                  "@type": "Organization",
+                  name: job.organization_name || "MyZipVault",
+                  website: job.organization_website || "https://my-zip-vault.vercel.app",
+                },
+                jobLocation: {
+                  "@type": "Place",
+                  address: {
+                    "@type": "PostalAddress",
+                    addressLocality: job.city || "",
+                    addressRegion: job.state || "",
+                    addressCountry: "US",
+                  },
+                },
+                jobLocationType: job.is_remote ? "TELECOMMUTE" : undefined,
+                datePosted: new Date(job.created_at).toISOString(),
+                validThrough: job.close_date ? new Date(job.close_date).toISOString() : undefined,
+                applicantLocationRequirements: job.is_remote
+                  ? [{ "@type": "Country", name: "United States" }]
+                  : undefined,
+                directApply: true,
+              }),
+            }}
+          />
+        )}
         {/* Back link */}
         <Link href="/browse-jobs" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-6">
           <ArrowLeft className="size-4" /> Back to all jobs

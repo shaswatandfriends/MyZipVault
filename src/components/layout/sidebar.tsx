@@ -46,6 +46,7 @@ import {
   Sparkles,
   Handshake,
   HelpCircle,
+  TrendingUp,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -274,6 +275,7 @@ const superAdminBottomNav: NavItem[] = [
   // Content
   { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
   // Monitoring
+  { title: "Growth", href: "/superadmin/growth", icon: TrendingUp },
   { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
   { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
@@ -287,6 +289,7 @@ const superAdminSectionDividers: Record<string, string> = {
   "/superadmin/templates": "COMMUNICATION",
   "/superadmin/settings": "CONFIGURATION",
   "/superadmin/landing-page-editor": "CONTENT",
+  "/superadmin/growth": "MONITORING",
   "/superadmin/analytics": "MONITORING",
 };
 
