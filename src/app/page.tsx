@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { NewsletterCapture } from "@/components/shared/NewsletterCapture";
 import {
   Menu, X, ArrowRight, Building2, Search, Send, CreditCard,
   ShieldCheck, Lock, Star, CheckCircle2, Briefcase, Users,
@@ -752,6 +753,23 @@ export default function HomePage() {
             <Link href="/employer-signup"><button style={{ padding: "16px 32px", fontSize: 16, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 28, backdropFilter: "blur(20px)" }}>I'm an Employer</button></Link>
           </div>
           <p style={{ fontSize: 12, color: C.textDim, marginTop: 20 }}>No credit card required · HIPAA compliant · Free during launch</p>
+        </div>
+      </section>
+
+      {/* ═══ NEWSLETTER SECTION ═══ */}
+      <section className="scroll-reveal" style={{ padding: "64px 0 96px", position: "relative", zIndex: 1 }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 32px", textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: `${C.primary}15`, border: `1px solid ${C.primary}30`, marginBottom: 20 }}>
+            <span style={{ fontSize: 16 }}>📊</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.primary }}>FREE REPORT</span>
+          </div>
+          <h2 style={{ fontSize: isDesktop ? 34 : 24, fontWeight: 700, color: C.text, marginBottom: 12, fontFamily: "'Clash Display', sans-serif" }}>
+            Get the 2026 Healthcare Salary Report
+          </h2>
+          <p style={{ fontSize: 15, color: C.textMuted, marginBottom: 28, lineHeight: 1.6 }}>
+            See how much nurses, allied health pros, and recruiters are earning in 2026 — broken down by state, specialty, and experience level.
+          </p>
+          <NewsletterCapture />
         </div>
       </section>
 
