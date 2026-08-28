@@ -49,6 +49,27 @@ export async function GET(request: Request) {
 
     const latencyMs = Date.now() - startedAt;
 
+    // ─── Trigger automated email sequences (once per day, at 9am UTC) ───
+    // Vercel Hobby plan only allows 2 cron jobs, so we piggyback on the
+    // keepalive cron (which runs daily at 9am UTC) to also trigger the
+    // automated email sequence (welcome emails, profile nudges, re-engagement).
+    // The automated-emails endpoint is idempotent — safe to call multiple times.
+    try {
+      const emailCronUrl = new URL("/api/cron/automated-emails", request.url);
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret) {
+        // Fire-and-forget — don't block keepalive response
+        fetch(emailCronUrl, {
+          method: "POST",
+          headers: { "x-cron-secret": cronSecret },
+        }).catch((err) => {
+          console.error("[CRON_KEEPALIVE] Failed to trigger automated emails:", err);
+        });
+      }
+    } catch (err) {
+      console.error("[CRON_KEEPALIVE] Error triggering automated emails:", err);
+    }
+
     return NextResponse.json({
       success: true,
       ok: true,
