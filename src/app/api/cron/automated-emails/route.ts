@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           const alreadySent = await db.automatedEmailLog.findUnique({
             where: {
               user_id_sequence_step: {
-                user_id: BigInt(user.id),
+                user_id: user.id,
                 sequence: "welcome",
                 step: step.step,
               },
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
           if (step.skipSend) {
             await db.automatedEmailLog.create({
               data: {
-                user_id: BigInt(user.id),
+                user_id: user.id,
                 sequence: "welcome",
                 step: step.step,
                 template_key: step.templateKey,
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
           // Log the send
           await db.automatedEmailLog.create({
             data: {
-              user_id: BigInt(user.id),
+              user_id: user.id,
               sequence: "welcome",
               step: step.step,
               template_key: step.templateKey,
@@ -231,7 +231,7 @@ export async function POST(request: Request) {
           const alreadySent = await db.automatedEmailLog.findUnique({
             where: {
               user_id_sequence_step: {
-                user_id: BigInt(user.id),
+                user_id: user.id,
                 sequence: "profile_nudge",
                 step: nudge.step,
               },
@@ -253,7 +253,7 @@ export async function POST(request: Request) {
 
           await db.automatedEmailLog.create({
             data: {
-              user_id: BigInt(user.id),
+              user_id: user.id,
               sequence: "profile_nudge",
               step: nudge.step,
               template_key: nudge.templateKey,
@@ -295,7 +295,7 @@ export async function POST(request: Request) {
         const alreadySent = await db.automatedEmailLog.findUnique({
           where: {
             user_id_sequence_step: {
-              user_id: BigInt(user.id),
+              user_id: user.id,
               sequence: "reengage",
               step: "30d",
             },
@@ -334,7 +334,7 @@ export async function POST(request: Request) {
 
         await db.automatedEmailLog.create({
           data: {
-            user_id: BigInt(user.id),
+            user_id: user.id,
             sequence: "reengage",
             step: "30d",
             template_key: "reengage_30d",

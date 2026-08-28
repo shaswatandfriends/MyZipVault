@@ -237,8 +237,8 @@ VALUES
 -- One row per (user_id, sequence, step) — UNIQUE constraint prevents re-sends.
 
 CREATE TABLE IF NOT EXISTS "AutomatedEmailLog" (
-  id BIGSERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
   sequence TEXT NOT NULL,           -- 'welcome', 'profile_nudge', 'reengage'
   step TEXT NOT NULL,                -- 'day0', 'day1', 'day3', 'day7', 'day14', 'nudge_25', etc.
   template_key TEXT NOT NULL,        -- 'welcome_day0', 'profile_nudge_25', etc.

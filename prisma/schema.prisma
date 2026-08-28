@@ -1104,8 +1104,8 @@ model EmailUnsubscribe {
 // re-engagement). Prevents duplicate sends and enables analytics.
 // One row per (user_id, sequence, step) — UNIQUE constraint enforces no re-sends.
 model AutomatedEmailLog {
-  id            BigInt   @id @default(autoincrement()) @db.BigInt
-  user_id       BigInt   @db.BigInt
+  id            Int      @id @default(autoincrement())
+  user_id       Int
   user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   sequence      String   // 'welcome' | 'profile_nudge' | 'reengage'
   step          String   // 'day0' | 'day1' | 'day3' | 'day7' | 'day14' | 'nudge_25' | etc.

@@ -55,11 +55,11 @@ export async function GET(request: Request) {
     // automated email sequence (welcome emails, profile nudges, re-engagement).
     // The automated-emails endpoint is idempotent — safe to call multiple times.
     try {
-      const emailCronUrl = new URL("/api/cron/automated-emails", request.url);
       const cronSecret = process.env.CRON_SECRET;
-      if (cronSecret) {
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || `https://${request.headers.get("host") || "my-zip-vault.vercel.app"}`;
+      if (cronSecret && baseUrl) {
         // Fire-and-forget — don't block keepalive response
-        fetch(emailCronUrl, {
+        fetch(`${baseUrl}/api/cron/automated-emails`, {
           method: "POST",
           headers: { "x-cron-secret": cronSecret },
         }).catch((err) => {
