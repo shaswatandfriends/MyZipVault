@@ -154,7 +154,7 @@ function NewDocumentContent() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/vaultsign/upload", {
+      const res = await fetch("/api/vaultsign/documents", {
         method: "POST",
         body: formData,
       });

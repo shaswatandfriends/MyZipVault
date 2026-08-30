@@ -96,7 +96,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create a new draft document
+// POST: Create a new draft document OR upload a PDF file
+// If content type is multipart/form-data, handle as file upload.
+// Otherwise, handle as JSON document creation.
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -112,6 +114,44 @@ export async function POST(request: NextRequest) {
     const orgId = (session.user as Record<string, unknown>).organizationId as number;
     if (!orgId) {
       return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
+
+    // ─── File upload detection ───────────────────────────────────────
+    // If the request is multipart/form-data, handle as file upload.
+    // Otherwise, handle as JSON document creation.
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const file: any = formData.get("file");
+
+      if (!file) {
+        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const fileName: string = file.name || "upload.pdf";
+      const ext = fileName.split(".").pop()?.toLowerCase();
+      if (ext !== "pdf") {
+        return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
+      }
+
+      const fileSize: number = file.size || 0;
+      if (fileSize > 5 * 1024 * 1024) {
+        return NextResponse.json({ error: "File must be under 5MB" }, { status: 400 });
+      }
+
+      // Convert to base64 data URL
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString("base64");
+      const dataUrl = `data:application/pdf;base64,${base64}`;
+
+      return NextResponse.json({
+        document_url: dataUrl,
+        source_type: "pdf",
+        is_local_storage: true,
+        file_name: fileName,
+        file_size: fileSize,
+      });
     }
 
     // ─── Extract the logged-in user's ID (used for lead creation below) ───
