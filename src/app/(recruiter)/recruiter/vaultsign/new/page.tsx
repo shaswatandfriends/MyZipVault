@@ -205,12 +205,58 @@ function NewDocumentContent() {
     try {
       setCreating(true);
 
+      // ─── Auto-populate RTR template content ──────────────────────
+      // If creating a blank RTR document, pre-fill with standard template
+      let tiptapContent: string | undefined;
+      let placeholderValues: Record<string, string> | undefined;
+      if ((docType === "right_to_represent" || docType === "rtr") && source === "blank") {
+        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        tiptapContent = JSON.stringify({
+          type: "doc",
+          content: [
+            { type: "paragraph", attrs: { textAlign: "center" }, content: [{ type: "text", text: "RIGHT TO REPRESENT", marks: [{ type: "bold" }] }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "Date: " }, { type: "text", text: "{{current_date}}", marks: [{ type: "bold" }] }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "This Right to Represent (\"RTR\") is entered into between:" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "{{agency_name}}", marks: [{ type: "bold" }] }, { type: "hardBreak" }, { type: "text", text: "{{agency_address}}" }, { type: "hardBreak" }, { type: "text", text: "{{agency_phone}}" }, { type: "text", text: " · " }, { type: "text", text: "{{agency_email}}" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "and" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "{{candidate_name}}", marks: [{ type: "bold" }] }, { type: "text", text: " (\"Candidate\")" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "Agency hereby represents Candidate for the following healthcare position:" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "Position: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{position_title}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Facility: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{facility_name}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Location: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{location}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Specialty: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{specialty}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Start Date: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{start_date}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Duration: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{duration}}" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Pay Rate: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{pay_rate}}" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "By signing below, Candidate acknowledges that Agency has the exclusive right to represent them for the above-mentioned position for a period of 90 days from the date of this agreement. Candidate confirms that they have not been previously submitted to this facility by another agency and that the information provided is accurate." }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "Candidate Signature:", marks: [{ type: "bold" }] }] },
+            { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
+            { type: "paragraph", content: [{ type: "text", text: "{{candidate_name}}" }] },
+            { type: "paragraph", content: [] },
+            { type: "paragraph", content: [{ type: "text", text: "Date:", marks: [{ type: "bold" }] }] },
+            { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
+          ],
+        });
+        placeholderValues = { current_date: today };
+      }
+
       const body: any = {
         document_name: docName,
         document_type: docType,
         source_type: source === "template" || source === "blank" ? "word" : uploadedSourceType || "pdf",
         template_id: selectedTemplateId,
         original_file_url: uploadedFileUrl,
+        tiptap_content: tiptapContent,
+        placeholder_values: placeholderValues || {},
         signing_order: signingOrder,
         expiry_date: new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString(),
         personal_message: personalMessage || undefined,
