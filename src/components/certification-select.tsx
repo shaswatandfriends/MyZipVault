@@ -25,10 +25,7 @@ export function CertificationSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [dropUp, setDropUp] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({
-    position: "fixed",
-    maxHeight: "400px",
-  });
+  const [availableHeight, setAvailableHeight] = useState(320);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,10 +54,6 @@ export function CertificationSelect({
     }
   }, [isOpen]);
 
-  // ─── Position the dropdown using `position: fixed` ──────────────────
-  // Using `fixed` instead of `absolute` so the dropdown escapes any parent
-  // containers with `overflow: hidden` or `overflow: auto` (which would
-  // otherwise clip the dropdown).
   useLayoutEffect(() => {
     if (!isOpen || !triggerRef.current) return;
     const measure = () => {
@@ -68,21 +61,10 @@ export function CertificationSelect({
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
-      const shouldFlipUp = spaceBelow < 300 && spaceAbove > spaceBelow;
+      const shouldFlipUp = spaceBelow < 250 && spaceAbove > spaceBelow;
       setDropUp(shouldFlipUp);
-      const maxH = shouldFlipUp
-        ? Math.min(spaceAbove - 16, 500)
-        : Math.min(spaceBelow - 16, 500);
-      const finalHeight = Math.max(320, Math.min(maxH, 500));
-      setDropdownStyle({
-        position: "fixed",
-        top: shouldFlipUp ? undefined : triggerRect.bottom + 4,
-        bottom: shouldFlipUp ? viewportHeight - triggerRect.top + 4 : undefined,
-        left: triggerRect.left,
-        width: triggerRect.width,
-        maxHeight: `${finalHeight}px`,
-        zIndex: 9999,
-      });
+      const maxH = shouldFlipUp ? Math.min(spaceAbove - 16, 400) : Math.min(spaceBelow - 16, 400);
+      setAvailableHeight(Math.max(200, maxH));
     };
     measure();
     window.addEventListener("scroll", measure, true);
@@ -126,10 +108,10 @@ export function CertificationSelect({
         {isOpen && (
           <div
             className={cn(
-              "rounded-md border bg-background shadow-lg flex flex-col",
-              dropUp ? "origin-bottom" : "origin-top"
+              "absolute z-50 w-full rounded-md border bg-background shadow-lg flex flex-col",
+              dropUp ? "bottom-full mb-1" : "top-full mt-1"
             )}
-            style={dropdownStyle}
+            style={{ maxHeight: `${availableHeight}px` }}
           >
             <div className="p-2 border-b bg-background sticky top-0 z-10 shrink-0">
               <div className="relative">
@@ -146,7 +128,7 @@ export function CertificationSelect({
               )}
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b sticky top-9">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b">
                     {cat.category}
                   </div>
                   {cat.certifications.map((cert: CertificationOption) => (
