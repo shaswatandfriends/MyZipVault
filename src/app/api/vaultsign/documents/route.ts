@@ -114,6 +114,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No organization" }, { status: 400 });
     }
 
+    // ─── Extract the logged-in user's ID (used for lead creation below) ───
+    // session.user.id is a string; Prisma expects a number for recruiter_user_id.
+    const userId = parseInt((session.user as Record<string, unknown>).id as string);
+    if (!userId) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       document_name,
