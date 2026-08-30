@@ -1602,34 +1602,31 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               </div>
               )}
               <div className="max-w-4xl mx-auto my-4 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden flex flex-col">
-                {/* ─── Header (minimal — document name only) ─── */}
+                {/* ─── Header (logo only, centered) ─── */}
                 {showHeaderFooter && organization && (
                   <div className="px-12 pt-6 pb-3 border-b border-slate-100">
-                    {docName && (
-                      <p className="text-sm font-bold text-slate-900 text-center">
-                        {docName}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* ─── Editor content (flex-1 so it fills space) ─── */}
-                <EditorContent editor={editor} className="tiptap-editor flex-1" />
-
-                {/* ─── Footer (company info + copyright + Powered by) ─── */}
-                {showHeaderFooter && organization && (
-                  <div className="px-12 pt-4 pb-5 border-t border-slate-100 mt-auto">
-                    {/* Company info — centered */}
                     <div className="flex flex-col items-center text-center">
                       {organization.company_logo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={organization.company_logo_url}
                           alt={`${organization.name || "Company"} logo`}
-                          className="object-contain flex-shrink-0 rounded mb-1.5"
+                          className="object-contain flex-shrink-0 rounded"
                           style={{ width: "200px", height: "60px" }}
                         />
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── Editor content (flex-1 so it fills space) ─── */}
+                <EditorContent editor={editor} className="tiptap-editor flex-1" />
+
+                {/* ─── Footer (company text info + copyright + Powered by) ─── */}
+                {showHeaderFooter && organization && (
+                  <div className="px-12 pt-4 pb-5 border-t border-slate-100 mt-auto">
+                    {/* Company text info — centered (NO logo, logo is in header) */}
+                    <div className="flex flex-col items-center text-center">
                       {organization.name && (
                         <p className="text-sm font-bold text-slate-900 leading-tight">
                           {organization.name}

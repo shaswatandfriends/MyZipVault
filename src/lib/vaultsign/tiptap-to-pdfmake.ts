@@ -701,15 +701,14 @@ export function htmlToPdfmake(
   // Build header and footer based on showHeaderFooter toggle
   const includeHeaderFooter = options.showHeaderFooter !== false;
 
-  // Build header — minimal (document name only, centered)
+  // Build header — logo only (centered)
   if (includeHeaderFooter) {
     const headerStack: Content[] = [];
-    if (options.documentTitle) {
+    if (options.organization?.logo_url) {
       headerStack.push({
-        text: options.documentTitle,
-        fontSize: 14,
-        bold: true,
-        color: "#111827",
+        image: options.organization.logo_url,
+        width: 200,
+        height: 60,
         alignment: "center",
       });
     }
@@ -719,21 +718,12 @@ export function htmlToPdfmake(
     }
   }
 
-  // Build footer — company info + copyright + Powered by
+  // Build footer — company text info + copyright + Powered by (NO logo)
   if (includeHeaderFooter) {
     const footerStack: Content[] = [];
 
-    // Company info — centered
+    // Company text info — centered (logo is in header, not here)
     const companyStack: Content[] = [];
-    if (options.organization?.logo_url) {
-      companyStack.push({
-        image: options.organization.logo_url,
-        width: 200,
-        height: 60,
-        alignment: "center",
-        margin: [0, 0, 0, 2] as any,
-      });
-    }
     if (options.organization?.name) {
       companyStack.push({
         text: options.organization.name,
