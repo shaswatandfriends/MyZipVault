@@ -172,6 +172,60 @@ export const HELVETICA_FONTS = {
 };
 
 /**
+ * Fetch a remote image URL and convert it to a base64 data URL.
+ * pdfmake in Node.js cannot fetch remote URLs — it requires data URLs
+ * or local file paths. This function bridges that gap.
+ */
+export async function fetchImageAsDataUrl(url: string): Promise<string | null> {
+  if (url.startsWith("data:")) return url;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return null;
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) {
+      console.warn(`[VAULTSIGN] Image fetch failed (${response.status})`);
+      return null;
+    }
+    const contentType = response.headers.get("content-type") || "image/png";
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch (err: any) {
+    console.warn(`[VAULTSIGN] Image fetch error:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * Recursively convert all remote image URLs in a pdfmake doc definition
+ * to base64 data URLs. Mutates the object in place.
+ */
+export async function convertRemoteImages(obj: any): Promise<any> {
+  if (obj === null || obj === undefined || typeof obj !== "object") return obj;
+
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = await convertRemoteImages(obj[i]);
+    }
+    return obj;
+  }
+
+  if (obj.image && typeof obj.image === "string" && obj.image.startsWith("http")) {
+    const dataUrl = await fetchImageAsDataUrl(obj.image);
+    if (dataUrl) {
+      obj.image = dataUrl;
+    } else {
+      delete obj.image;
+    }
+  }
+
+  for (const key of Object.keys(obj)) {
+    obj[key] = await convertRemoteImages(obj[key]);
+  }
+  return obj;
+}
+
+/**
  * Generate a PDF buffer from a pdfmake docDefinition.
  *
  * Uses PdfPrinter with Liberation Sans fonts registered in virtualfs.
@@ -193,6 +247,10 @@ export async function generatePdfBuffer(
   } else if (!(docDefinition.defaultStyle as any).font) {
     (docDefinition.defaultStyle as any).font = "Helvetica";
   }
+
+  // Convert remote image URLs (logos) to base64 data URLs
+  // pdfmake can't fetch remote URLs — needs data URLs
+  await convertRemoteImages(docDefinition);
 
   // Create the PDF document (async in pdfmake 0.3.x)
   const pdfDoc = await printer.createPdfKitDocument(docDefinition);
