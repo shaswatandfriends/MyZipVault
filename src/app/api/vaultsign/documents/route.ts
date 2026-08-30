@@ -280,41 +280,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ─── Auto-populate default template for RTR documents ────────────
-    // If no content was provided (blank document) AND the document type
-    // is right_to_represent, auto-fill with the standard RTR template.
-    // This prevents the document from being blank when the recruiter
-    // creates an RTR without typing anything.
-    if (!templateTiptapContent && (document_type === "right_to_represent" || document_type === "rtr")) {
-      try {
-        const { getDefaultTemplate, getDefaultPlaceholderValues } = await import("@/lib/vaultsign/default-templates");
-        const defaultTpl = getDefaultTemplate(document_type);
-        if (defaultTpl) {
-          templateTiptapContent = defaultTpl.tiptap_content;
-
-          // Auto-add sign fields if none provided
-          if (!templateSignFields || templateSignFields.length === 0) {
-            templateSignFields = defaultTpl.sign_fields as any;
-          }
-
-          // Pre-fill placeholder values with today's date + agency info
-          const org = await db.organization.findUnique({
-            where: { id: orgId },
-            select: { name: true, company_address: true, company_phone: true, company_email: true },
-          });
-          const defaultValues = getDefaultPlaceholderValues(defaultTpl, {
-            agencyName: org?.name || undefined,
-            agencyAddress: org?.company_address || undefined,
-            agencyPhone: org?.company_phone || undefined,
-            agencyEmail: org?.company_email || undefined,
-          });
-          templatePlaceholderVars = JSON.stringify(defaultValues);
-        }
-      } catch (err) {
-        console.error("[VAULTSIGN] Failed to load default RTR template:", err);
-      }
-    }
-
     // Default header/footer config for blank documents
     const defaultHeaderConfig = !template_id ? JSON.stringify({
       show_logo: true,
