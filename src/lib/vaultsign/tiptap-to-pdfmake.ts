@@ -366,12 +366,51 @@ function transformNode(node: TipTapNode, placeholders: Record<string, string>): 
     case "signField": {
       const fieldType = node.attrs?.fieldType || "signature";
       const signerIndex = node.attrs?.assignedToSignerIndex ?? 0;
+      const signerLabel = node.attrs?.signerLabel || `Signer ${signerIndex + 1}`;
+      const fieldLabels: Record<string, string> = {
+        signature: "✍ Signature",
+        date: "📅 Date",
+        full_name: "👤 Full Name",
+        initials: "🔤 Initials",
+        email: "📧 Email",
+        text: "📝 Text",
+        checkbox: "☑ Checkbox",
+      };
+      const label = fieldLabels[fieldType] || fieldType;
+      const colors = ["#059669", "#0d9488", "#7C3AED", "#DC2626", "#D97706", "#2563EB"];
+      const color = colors[signerIndex % colors.length];
       return {
-        text: `[${fieldType.toUpperCase()} — Signer ${signerIndex + 1}]`,
-        color: "#166534",
-        background: "#DCFCE7",
-        fontSize: 10,
-        bold: true,
+        stack: [
+          {
+            text: `${label}`,
+            color: color,
+            fontSize: 11,
+            bold: true,
+            marginBottom: 2,
+          },
+          {
+            text: `${signerLabel}`,
+            color: color,
+            fontSize: 9,
+            opacity: 0.7,
+            marginBottom: 4,
+          },
+          {
+            // Dashed line for signature
+            canvas: [
+              {
+                type: "line",
+                x1: 0, y1: 0,
+                x2: 200, y2: 0,
+                lineWidth: 1,
+                dash: { length: 3, space: 3 },
+                lineColor: color,
+              },
+            ],
+            marginBottom: 8,
+          },
+        ],
+        margin: [0, 6, 0, 6],
       };
     }
 
