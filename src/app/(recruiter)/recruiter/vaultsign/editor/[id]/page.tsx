@@ -143,6 +143,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        // Disable underline in StarterKit — we register it explicitly below
+        // to avoid "Duplicate extension names found: ['underline']" warning
+        underline: false,
       }),
       FontFamily,
       TextStyle,
@@ -483,13 +486,36 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     try {
       setSending(true);
       await handleSave(); // Save first
+
+      // ─── Pre-send validation ───────────────────────────────────────
+      // Check that every signer has at least one sign field assigned.
+      // This mirrors the server-side validation but gives the user a
+      // clearer, more prominent error BEFORE making the API call.
+      if (signers.length === 0) {
+        toast.error("Add at least one signer before sending.", { duration: 6000 });
+        setSending(false);
+        return;
+      }
+      const signersWithoutFields = signers.filter(
+        (s) => !signFields.some((f) => f.assigned_to_signer_index === s.signer_index)
+      );
+      if (signersWithoutFields.length > 0) {
+        const names = signersWithoutFields.map((s) => `"${s.name}"`).join(", ");
+        toast.error(
+          `Every signer needs at least one sign field. ${names} has no fields assigned. Add a signature or date field for them in the right panel.`,
+          { duration: 8000 }
+        );
+        setSending(false);
+        return;
+      }
+
       const res = await fetch(`/api/vaultsign/documents/${docId}/send`, { method: "POST" });
       if (res.ok) {
         toast.success("Document sent for signature");
         router.push(`/recruiter/vaultsign/${docId}`);
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || "Failed to send");
+        toast.error(data.error || "Failed to send", { duration: 6000 });
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to send for signature");
@@ -852,14 +878,19 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <p className="text-xs text-text-muted p-2">Add signers first to assign fields</p>
             ) : (
               <>
-                {signers.map((signer, index) => (
-                  <div key={index} className="mb-3">
+                {signers.map((signer, index) => {
+                  const hasFields = signFields.some((f) => f.assigned_to_signer_index === signer.signer_index);
+                  return (
+                  <div key={index} className={`mb-3 rounded-lg p-2 ${!hasFields ? "bg-amber-50 border border-amber-200" : ""}`}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
                         style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
                       />
                       <span className="text-xs font-medium text-foreground">{signer.name}</span>
+                      {!hasFields && (
+                        <span className="ml-auto text-[10px] text-amber-700 font-medium">⚠ No fields</span>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-1">
                       {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
@@ -902,7 +933,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       </div>
                     ))}
                   </div>
-                ))}
+                  );
+                })}
               </>
             )}
           </div>

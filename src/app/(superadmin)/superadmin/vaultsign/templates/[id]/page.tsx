@@ -98,6 +98,8 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        // Disable underline in StarterKit — we register it explicitly below
+        underline: false,
       }),
       FontFamily,
       TextStyle,
