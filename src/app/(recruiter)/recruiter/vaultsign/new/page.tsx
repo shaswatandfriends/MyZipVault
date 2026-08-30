@@ -65,6 +65,8 @@ function NewDocumentContent() {
   const [creating, setCreating] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadedSourceType, setUploadedSourceType] = useState<"pdf" | null>(null);
+  // Organization info for auto-filling RTR template placeholders
+  const [orgInfo, setOrgInfo] = useState<any>(null);
 
   // ─── BOB: Lead selection ──────────────────────────────────────
   // When the recruiter arrives via ?lead=X (from the BOB candidate
@@ -89,6 +91,22 @@ function NewDocumentContent() {
       }
     };
     fetchTemplates();
+  }, []);
+
+  // Fetch organization info for auto-filling RTR placeholders
+  useEffect(() => {
+    const fetchOrgInfo = async () => {
+      try {
+        const res = await fetch("/api/vaultsign/organization");
+        if (res.ok) {
+          const data = await res.json();
+          setOrgInfo(data);
+        }
+      } catch (err) {
+        console.error("Org info fetch error:", err);
+      }
+    };
+    fetchOrgInfo();
   }, []);
 
   // ─── Fetch BOB leads for the lead selector ────────────────────
@@ -254,6 +272,13 @@ function NewDocumentContent() {
           ],
         });
         placeholderValues = { current_date: today };
+        // Auto-fill agency info from the org (fetched when the page loads)
+        if (orgInfo) {
+          placeholderValues.agency_name = orgInfo.name || "";
+          placeholderValues.agency_address = orgInfo.company_address || "";
+          placeholderValues.agency_phone = orgInfo.company_phone || "";
+          placeholderValues.agency_email = orgInfo.company_email || "";
+        }
         templateSignFields = [
           { id: sigFieldId, type: "signature", label: "Signature", assigned_to_signer_index: 0, page: 1, x_percent: 10, y_percent: 82, width_percent: 35, height_percent: 5, required: true, value: null },
           { id: dateFieldId, type: "date", label: "Date", assigned_to_signer_index: 0, page: 1, x_percent: 10, y_percent: 90, width_percent: 20, height_percent: 4, required: true, value: null },
