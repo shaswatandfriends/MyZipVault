@@ -175,23 +175,55 @@ export const HELVETICA_FONTS = {
  * Fetch a remote image URL and convert it to a base64 data URL.
  * pdfmake in Node.js cannot fetch remote URLs — it requires data URLs
  * or local file paths. This function bridges that gap.
+ *
+ * Returns null on failure — the caller should handle by removing the
+ * image node entirely (not just the image property).
  */
 export async function fetchImageAsDataUrl(url: string): Promise<string | null> {
-  if (url.startsWith("data:")) return url;
-  if (!url.startsWith("http://") && !url.startsWith("https://")) return null;
+  // Already a data URL — return as-is
+  if (url.startsWith("data:")) {
+    return url;
+  }
+
+  // Not an HTTP URL — can't fetch
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    console.warn(`[VAULTSIGN] Cannot fetch non-HTTP image: ${url.substring(0, 80)}...`);
+    return null;
+  }
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15000), // 15s timeout (increased)
+      headers: {
+        // Some Supabase storage URLs need a user-agent
+        "User-Agent": "MyZipVault-PDFGenerator/1.0",
+      },
+    });
+
     if (!response.ok) {
-      console.warn(`[VAULTSIGN] Image fetch failed (${response.status})`);
+      console.warn(`[VAULTSIGN] Image fetch failed (${response.status} ${response.statusText}): ${url.substring(0, 100)}...`);
       return null;
     }
+
     const contentType = response.headers.get("content-type") || "image/png";
+    // Only accept image content types
+    if (!contentType.startsWith("image/")) {
+      console.warn(`[VAULTSIGN] Image fetch returned non-image content-type: ${contentType}`);
+      return null;
+    }
+
     const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (buffer.length === 0) {
+      console.warn("[VAULTSIGN] Image fetch returned empty buffer");
+      return null;
+    }
+
+    const base64 = buffer.toString("base64");
     return `data:${contentType};base64,${base64}`;
   } catch (err: any) {
-    console.warn(`[VAULTSIGN] Image fetch error:`, err.message);
+    console.warn(`[VAULTSIGN] Image fetch error for ${url.substring(0, 100)}...:`, err.message);
     return null;
   }
 }
@@ -199,6 +231,10 @@ export async function fetchImageAsDataUrl(url: string): Promise<string | null> {
 /**
  * Recursively convert all remote image URLs in a pdfmake doc definition
  * to base64 data URLs. Mutates the object in place.
+ *
+ * IMPORTANT: If an image fetch fails, the ENTIRE content node is replaced
+ * with an empty text node. This prevents pdfmake from crashing on
+ * orphaned properties like {fit: [...], alignment: "..."} with no image.
  */
 export async function convertRemoteImages(obj: any): Promise<any> {
   if (obj === null || obj === undefined || typeof obj !== "object") return obj;
@@ -210,13 +246,19 @@ export async function convertRemoteImages(obj: any): Promise<any> {
     return obj;
   }
 
-  if (obj.image && typeof obj.image === "string" && obj.image.startsWith("http")) {
-    const dataUrl = await fetchImageAsDataUrl(obj.image);
-    if (dataUrl) {
-      obj.image = dataUrl;
-    } else {
-      delete obj.image;
+  if (obj.image && typeof obj.image === "string") {
+    if (obj.image.startsWith("http")) {
+      // Remote URL — fetch and convert to data URL
+      const dataUrl = await fetchImageAsDataUrl(obj.image);
+      if (dataUrl) {
+        obj.image = dataUrl;
+      } else {
+        // Fetch failed — replace this entire node with empty text
+        // (removing just 'image' leaves orphaned fit/alignment props)
+        return { text: "" };
+      }
     }
+    // If it's already a data URL, leave it as-is
   }
 
   for (const key of Object.keys(obj)) {
