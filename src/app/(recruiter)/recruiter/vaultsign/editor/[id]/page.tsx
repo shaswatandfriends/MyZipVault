@@ -797,14 +797,14 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         <div className="p-3 space-y-4">
           {/* Header & Footer */}
           <div>
-            <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-background border border-border">
-              <div>
-                <span className="text-xs font-medium text-foreground">Header & Footer</span>
+            <div className="flex items-center justify-between gap-2 px-2 py-2 rounded-lg bg-background border border-border">
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-medium text-foreground block">Header & Footer</span>
                 <p className="text-[9px] text-text-muted truncate">Show company header/footer on doc</p>
               </div>
-              <button 
-                onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
-                className={`w-9 h-5 rounded-full transition-colors ${showHeaderFooter ? 'bg-slate-900' : 'bg-slate-300'}`}
+              <button
+                onClick={() => setShowHeaderFooter(!showHeaderFooter)}
+                className={`w-9 h-5 rounded-full transition-colors shrink-0 ${showHeaderFooter ? 'bg-slate-900' : 'bg-slate-300'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${showHeaderFooter ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
@@ -1696,7 +1696,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Right Panel — Signers & Fields (desktop only) */}
-        <div className="hidden lg:flex w-72 border-l border-slate-200 bg-white flex-col">
+        <div className="hidden lg:flex w-80 border-l border-slate-200 bg-white flex-col">
           <div className="p-3 border-b border-slate-200 bg-slate-50">
             <h3 className="font-semibold text-sm text-slate-900">Signers & Fields</h3>
           </div>
