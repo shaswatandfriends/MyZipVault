@@ -5,45 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import crypto from "crypto";
 import type { SignField, AuditTrailEntry } from "@/lib/vaultsign/types";
-
-// ─── Default RTR template (inlined to avoid import issues) ───────────
-function getRtrTiptapContent(): string {
-  return JSON.stringify({
-    type: "doc",
-    content: [
-      { type: "paragraph", attrs: { textAlign: "center" }, content: [{ type: "text", text: "RIGHT TO REPRESENT", marks: [{ type: "bold" }] }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "Date: " }, { type: "text", text: "{{current_date}}", marks: [{ type: "bold" }] }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "This Right to Represent (\"RTR\") is entered into between:" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "{{agency_name}}", marks: [{ type: "bold" }] }, { type: "hardBreak" }, { type: "text", text: "{{agency_address}}" }, { type: "hardBreak" }, { type: "text", text: "{{agency_phone}}" }, { type: "text", text: " · " }, { type: "text", text: "{{agency_email}}" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "and" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "{{candidate_name}}", marks: [{ type: "bold" }] }, { type: "text", text: " (\"Candidate\")" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "Agency hereby represents Candidate for the following healthcare position:" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "Position: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{position_title}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Facility: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{facility_name}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Location: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{location}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Specialty: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{specialty}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Start Date: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{start_date}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Duration: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{duration}}" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Pay Rate: ", marks: [{ type: "bold" }] }, { type: "text", text: "{{pay_rate}}" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "By signing below, Candidate acknowledges that Agency has the exclusive right to represent them for the above-mentioned position for a period of 90 days from the date of this agreement. Candidate confirms that they have not been previously submitted to this facility by another agency and that the information provided is accurate." }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "Candidate Signature:", marks: [{ type: "bold" }] }] },
-      { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
-      { type: "paragraph", content: [{ type: "text", text: "{{candidate_name}}" }] },
-      { type: "paragraph", content: [] },
-      { type: "paragraph", content: [{ type: "text", text: "Date:", marks: [{ type: "bold" }] }] },
-      { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
-    ],
-  });
-}
+import { getDefaultTemplate, getDefaultPlaceholderValues } from "@/lib/vaultsign/default-templates";
 
 // GET: List documents for the recruiter's organization
 export async function GET(request: NextRequest) {
@@ -324,28 +286,28 @@ export async function POST(request: NextRequest) {
     // is right_to_represent, auto-fill with the standard RTR template.
     if (!templateTiptapContent && (document_type === "right_to_represent" || document_type === "rtr")) {
       try {
-        templateTiptapContent = getRtrTiptapContent();
+        const defaultTpl = getDefaultTemplate(document_type);
+        if (defaultTpl) {
+          templateTiptapContent = defaultTpl.tiptap_content;
 
-        // Auto-add sign fields if none provided
-        if (!templateSignFields || templateSignFields.length === 0) {
-          templateSignFields = [
-            { type: "signature", label: "Signature", assigned_to_signer_index: 0 },
-            { type: "date", label: "Date", assigned_to_signer_index: 0 },
-          ] as any;
+          // Auto-add sign fields if none provided
+          if (!templateSignFields || templateSignFields.length === 0) {
+            templateSignFields = defaultTpl.sign_fields as any;
+          }
+
+          // Pre-fill placeholder values with today's date + agency info
+          const org = await db.organization.findUnique({
+            where: { id: orgId },
+            select: { name: true, company_address: true, company_phone: true, company_email: true },
+          });
+          const defaultValues = getDefaultPlaceholderValues(defaultTpl, {
+            agencyName: org?.name || undefined,
+            agencyAddress: org?.company_address || undefined,
+            agencyPhone: org?.company_phone || undefined,
+            agencyEmail: org?.company_email || undefined,
+          });
+          templatePlaceholderVars = JSON.stringify(defaultValues);
         }
-
-        // Pre-fill placeholder values with today's date + agency info
-        const org = await db.organization.findUnique({
-          where: { id: orgId },
-          select: { name: true, company_address: true, company_phone: true, company_email: true },
-        });
-        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-        const defaultValues: Record<string, string> = { current_date: today };
-        if (org?.name) defaultValues.agency_name = org.name;
-        if (org?.company_address) defaultValues.agency_address = org.company_address;
-        if (org?.company_phone) defaultValues.agency_phone = org.company_phone;
-        if (org?.company_email) defaultValues.agency_email = org.company_email;
-        templatePlaceholderVars = JSON.stringify(defaultValues);
       } catch (err) {
         console.error("[VAULTSIGN] Failed to load default RTR template:", err);
       }
