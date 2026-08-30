@@ -209,8 +209,13 @@ function NewDocumentContent() {
       // If creating a blank RTR document, pre-fill with standard template
       let tiptapContent: string | undefined;
       let placeholderValues: Record<string, string> | undefined;
+      let templateSignFields: any[] | undefined;
       if ((docType === "right_to_represent" || docType === "rtr") && source === "blank") {
         const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const sigFieldId = `field_${Date.now()}_sig`;
+        const dateFieldId = `field_${Date.now() + 1}_date`;
+        const signerName = signers[0]?.name || "Candidate";
+
         tiptapContent = JSON.stringify({
           type: "doc",
           content: [
@@ -239,14 +244,20 @@ function NewDocumentContent() {
             { type: "paragraph", content: [{ type: "text", text: "By signing below, Candidate acknowledges that Agency has the exclusive right to represent them for the above-mentioned position for a period of 90 days from the date of this agreement. Candidate confirms that they have not been previously submitted to this facility by another agency and that the information provided is accurate." }] },
             { type: "paragraph", content: [] },
             { type: "paragraph", content: [{ type: "text", text: "Candidate Signature:", marks: [{ type: "bold" }] }] },
-            { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
+            // ─── Embedded signField node — renders as dashed "Click to Sign" box ───
+            { type: "signField", attrs: { fieldType: "signature", assignedToSignerIndex: 0, signerLabel: signerName, fieldId: sigFieldId } },
             { type: "paragraph", content: [{ type: "text", text: "{{candidate_name}}" }] },
             { type: "paragraph", content: [] },
             { type: "paragraph", content: [{ type: "text", text: "Date:", marks: [{ type: "bold" }] }] },
-            { type: "paragraph", content: [{ type: "text", text: "_________________________________" }] },
+            // ─── Embedded signField node for date ───
+            { type: "signField", attrs: { fieldType: "date", assignedToSignerIndex: 0, signerLabel: signerName, fieldId: dateFieldId } },
           ],
         });
         placeholderValues = { current_date: today };
+        templateSignFields = [
+          { id: sigFieldId, type: "signature", label: "Signature", assigned_to_signer_index: 0, page: 1, x_percent: 0, y_percent: 0, width_percent: 30, height_percent: 5, required: true, value: null },
+          { id: dateFieldId, type: "date", label: "Date", assigned_to_signer_index: 0, page: 1, x_percent: 0, y_percent: 0, width_percent: 20, height_percent: 5, required: true, value: null },
+        ];
       }
 
       const body: any = {
@@ -257,6 +268,7 @@ function NewDocumentContent() {
         original_file_url: uploadedFileUrl,
         tiptap_content: tiptapContent,
         placeholder_values: placeholderValues || {},
+        sign_fields: templateSignFields || [],
         signing_order: signingOrder,
         expiry_date: new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString(),
         personal_message: personalMessage || undefined,
