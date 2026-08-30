@@ -30,22 +30,19 @@ export async function POST() {
     }
 
     // Verify the superadmin user exists in the database (case-insensitive)
+    // AND has the super_admin role. This prevents a duplicate non-super-admin
+    // account with the same email from blocking OTP login.
     const user = await db.user.findFirst({
-      where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
+      where: {
+        email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" },
+        role: "super_admin",
+      },
     });
 
     if (!user) {
-      console.error("[OTP SEND] No user found with email:", SUPERADMIN_EMAIL);
+      console.error("[OTP SEND] No super_admin user found with email:", SUPERADMIN_EMAIL);
       return NextResponse.json(
-        { error: "Unable to send verification code — user not found. Check SUPERADMIN_EMAIL env var." },
-        { status: 400 }
-      );
-    }
-
-    if (user.role !== "super_admin") {
-      console.error("[OTP SEND] User found but role is:", user.role, "(expected super_admin)");
-      return NextResponse.json(
-        { error: "Unable to send verification code — user is not a super admin." },
+        { error: "Unable to send verification code — super admin account not found. Check SUPERADMIN_EMAIL env var and ensure the user has super_admin role." },
         { status: 400 }
       );
     }

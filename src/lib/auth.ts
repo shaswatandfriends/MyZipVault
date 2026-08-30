@@ -57,11 +57,17 @@ export const authOptions: NextAuthOptions = {
 
           const otpCode = credentials.password.slice(4);
 
+          // Look up the super_admin user explicitly by role — prevents a
+          // duplicate non-super-admin account with the same email from
+          // blocking OTP login.
           const user = await db.user.findFirst({
-            where: { email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" } },
+            where: {
+              email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" },
+              role: "super_admin",
+            },
           });
 
-          if (!user || user.role !== "super_admin") {
+          if (!user) {
             throw new Error("Invalid credentials");
           }
 
