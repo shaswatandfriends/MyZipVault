@@ -11,6 +11,57 @@ import { PageTransition } from "@/components/motion";
 import { CreditCard, Send } from "@/lib/icons";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+
+// ─── Context-aware header config ────────────────────────────────────
+// Different recruiter pages get different titles/subtitles in the header.
+// Also controls whether the "Send Request" CTA button is shown.
+const HEADER_CONFIG: Record<string, { title: string; subtitle: string; showSendRequest: boolean }> = {
+  "/recruiter/dashboard": {
+    title: "Dashboard",
+    subtitle: "Manage your candidate verification requests and track your organization's activity",
+    showSendRequest: true,
+  },
+  "/recruiter/send": {
+    title: "Send Request",
+    subtitle: "Send checklist and verification requests to healthcare candidates",
+    showSendRequest: false, // Already on the send page
+  },
+  "/recruiter/vaultsign": {
+    title: "VaultSign",
+    subtitle: "Create and send documents for electronic signature",
+    showSendRequest: false, // Different workflow — don't confuse with checklist send
+  },
+  "/recruiter/bob": {
+    title: "Book of Business",
+    subtitle: "Track and manage your candidate pipeline",
+    showSendRequest: true,
+  },
+  "/recruiter/calendar": {
+    title: "Calendar",
+    subtitle: "Schedule calls, manage availability, and track shifts",
+    showSendRequest: false,
+  },
+  "/recruiter/candidates": {
+    title: "Marketplace",
+    subtitle: "Find and connect with healthcare candidates",
+    showSendRequest: true,
+  },
+};
+
+function getHeaderConfig(pathname: string) {
+  // Try exact match first, then prefix match (longest first)
+  if (HEADER_CONFIG[pathname]) return HEADER_CONFIG[pathname];
+  const sortedKeys = Object.keys(HEADER_CONFIG).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (pathname.startsWith(key)) return HEADER_CONFIG[key];
+  }
+  return {
+    title: "Dashboard",
+    subtitle: "Manage your candidate verification requests and track your organization's activity",
+    showSendRequest: true,
+  };
+}
 
 export default function RecruiterLayout({
   children,
@@ -19,6 +70,8 @@ export default function RecruiterLayout({
 }) {
   const { user } = useAuth();
   const isClientAdmin = user?.role === "client_admin";
+  const pathname = usePathname();
+  const headerConfig = getHeaderConfig(pathname);
 
   // Fetch credits balance for header
   const [credits, setCredits] = useState<number | null>(null);
@@ -53,10 +106,10 @@ export default function RecruiterLayout({
           <div className="flex items-center justify-between flex-1 min-w-0">
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-foreground truncate font-heading tracking-tight">
-                Dashboard
+                {headerConfig.title}
               </h1>
               <p className="text-xs text-text-secondary truncate">
-                Manage your candidate verification requests and track your organization&apos;s activity
+                {headerConfig.subtitle}
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
@@ -67,12 +120,14 @@ export default function RecruiterLayout({
                   {credits ?? "..."}
                 </Badge>
               </div>
-              <Button asChild className="h-8 text-xs">
-                <Link href="/recruiter/send">
-                  <Send className="size-3" />
-                  Send Request
-                </Link>
-              </Button>
+              {headerConfig.showSendRequest && (
+                <Button asChild className="h-8 text-xs">
+                  <Link href="/recruiter/send">
+                    <Send className="size-3" />
+                    Send Request
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </header>

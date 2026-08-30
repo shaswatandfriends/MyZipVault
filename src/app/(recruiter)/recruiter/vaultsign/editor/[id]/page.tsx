@@ -35,7 +35,7 @@ import {
   Highlighter, Subscript as SubIcon, Superscript as SupIcon, Plus, Trash2,
   Variable, ChevronDown, X, Loader2, TableIcon, ImagePlus, Minus,
   Menu, PanelLeftIcon, PanelRightIcon, MoreVertical, ArrowUpDown, FileText,
-  Eye, Edit3, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, AlertTriangle
+  Eye, Edit3, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, AlertTriangle, Clock
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,17 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // Header & Footer config
   const [showHeaderFooter, setShowHeaderFooter] = useState(true);
+  // Tip banner dismissible — persists in localStorage per browser
+  const [tipDismissed, setTipDismissed] = useState(false);
+  useEffect(() => {
+    try {
+      setTipDismissed(localStorage.getItem("vaultsign_tip_dismissed") === "true");
+    } catch {}
+  }, []);
+  const dismissTip = () => {
+    setTipDismissed(true);
+    try { localStorage.setItem("vaultsign_tip_dismissed", "true"); } catch {}
+  };
   // Organization info for header/footer live preview
   const [organization, setOrganization] = useState<{
     name: string | null;
@@ -686,86 +697,93 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  // Variables panel content
+  // Variables panel content — merged Variables + Fill Values
   const variablesPanelContent = (
     <>
       <ScrollArea className="flex-1">
         <div className="p-3">
-          <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2">System Variables</h4>
-          <div className="space-y-1.5">
+          <h4 className="text-xs font-semibold text-text-secondary uppercase mb-1">Variables</h4>
+          <p className="text-[10px] text-text-muted mb-3">Click a name to insert it at the cursor. Type a value to fill it in the document.</p>
+
+          {/* ─── Merged System Variables list ─── */}
+          <div className="space-y-2">
             {SYSTEM_VARIABLES.map((v) => (
-              <button
-                key={v.key}
-                onClick={() => { insertVariable(v.key); setShowVariablesPanel(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors border border-transparent hover:border-slate-200"
-              >
-                {v.label}
-              </button>
+              <div key={v.key} className="rounded-lg border border-border bg-background p-2">
+                <button
+                  onClick={() => insertVariable(v.key)}
+                  className="w-full text-left text-xs font-medium text-foreground hover:text-primary transition-colors flex items-center gap-1.5 mb-1"
+                  title={`Insert {{${v.key}}} at cursor`}
+                >
+                  <Variable className="h-3 w-3 text-slate-400" />
+                  {v.label}
+                </button>
+                <Input
+                  value={placeholderValues[v.key] || ""}
+                  onChange={(e) => updatePlaceholder(v.key, e.target.value)}
+                  placeholder={`Enter ${v.label.toLowerCase()}...`}
+                  className="h-7 text-xs placeholder:text-text-muted placeholder:font-normal"
+                />
+              </div>
             ))}
           </div>
 
           <Separator className="my-3" />
 
+          {/* ─── Custom Variables ─── */}
           <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2">Custom Variables</h4>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {customVariables.map((v) => (
-              <div key={v.key} className="flex items-center gap-1">
-                <button
-                  onClick={() => { insertVariable(v.key); setShowVariablesPanel(false); }}
-                  className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-status-blue-bg hover:bg-badge-blue-bg text-status-blue-dark font-medium transition-colors"
-                >
-                  {v.label}
-                </button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 text-text-muted hover:text-status-red"
-                  onClick={() => setCustomVariables(customVariables.filter((cv) => cv.key !== v.key))}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+              <div key={v.key} className="rounded-lg border border-blue-200 bg-blue-50/50 p-2">
+                <div className="flex items-center gap-1 mb-1">
+                  <button
+                    onClick={() => insertVariable(v.key)}
+                    className="flex-1 text-left text-xs font-medium text-status-blue-dark hover:text-blue-700 transition-colors flex items-center gap-1.5"
+                    title={`Insert {{${v.key}}} at cursor`}
+                  >
+                    <Variable className="h-3 w-3 text-blue-400" />
+                    {v.label}
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 text-text-muted hover:text-status-red"
+                    onClick={() => setCustomVariables(customVariables.filter((cv) => cv.key !== v.key))}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <Input
+                  value={placeholderValues[v.key] || ""}
+                  onChange={(e) => updatePlaceholder(v.key, e.target.value)}
+                  placeholder={`Enter ${v.label.toLowerCase()}...`}
+                  className="h-7 text-xs placeholder:text-text-muted placeholder:font-normal"
+                />
               </div>
             ))}
           </div>
 
           <div className="mt-3 p-2 rounded-lg border border-dashed border-border">
             <Input
-              placeholder="Variable key"
+              placeholder="Variable key (no spaces)"
               value={newVarKey}
               onChange={(e) => setNewVarKey(e.target.value)}
-              className="h-7 text-xs mb-1.5"
+              className="h-7 text-xs mb-1.5 placeholder:text-text-muted"
             />
             <Input
               placeholder="Display label"
               value={newVarLabel}
               onChange={(e) => setNewVarLabel(e.target.value)}
-              className="h-7 text-xs mb-1.5"
+              className="h-7 text-xs mb-1.5 placeholder:text-text-muted"
             />
             <Button
               size="sm"
-              className="w-full h-7 text-xs bg-slate-900 hover:bg-slate-800"
+              variant="outline"
+              className="w-full h-7 text-xs"
               onClick={addCustomVariable}
               disabled={!newVarKey || !newVarLabel}
             >
-              <Plus className="h-3 w-3 mr-1" /> Add
+              <Plus className="h-3 w-3 mr-1" /> Add Variable
             </Button>
-          </div>
-
-          <Separator className="my-3" />
-
-          <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2">Fill Values</h4>
-          <div className="space-y-2">
-            {[...SYSTEM_VARIABLES, ...customVariables.map((v) => ({ ...v, category: "custom" as const }))].map((v) => (
-              <div key={v.key}>
-                <label className="text-xs text-text-secondary">{v.label}</label>
-                <Input
-                  value={placeholderValues[v.key] || ""}
-                  onChange={(e) => updatePlaceholder(v.key, e.target.value)}
-                  placeholder={v.label}
-                  className="h-7 text-xs mt-0.5"
-                />
-              </div>
-            ))}
           </div>
         </div>
       </ScrollArea>
@@ -782,7 +800,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             <div className="flex items-center justify-between px-2 py-2 rounded-lg bg-background border border-border">
               <div>
                 <span className="text-xs font-medium text-foreground">Header & Footer</span>
-                <p className="text-[9px] text-text-muted">Company header and footer on document</p>
+                <p className="text-[9px] text-text-muted truncate">Show company header/footer on doc</p>
               </div>
               <button 
                 onClick={() => setShowHeaderFooter(!showHeaderFooter)} 
@@ -938,6 +956,58 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               </>
             )}
           </div>
+
+          {/* ─── Activity / Audit Trail ─── */}
+          <Separator className="my-3" />
+          <div>
+            <h4 className="text-xs font-semibold text-text-secondary uppercase mb-2 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> Activity
+            </h4>
+            {document?.audit_trail ? (
+              <div className="space-y-2">
+                {(() => {
+                  try {
+                    const trail = typeof document.audit_trail === "string"
+                      ? JSON.parse(document.audit_trail)
+                      : document.audit_trail;
+                    if (!Array.isArray(trail) || trail.length === 0) {
+                      return <p className="text-[10px] text-text-muted">No activity yet.</p>;
+                    }
+                    // Show last 5 events (most recent first)
+                    return [...trail].reverse().slice(0, 5).map((entry: any, i: number) => {
+                      const eventLabels: Record<string, string> = {
+                        document_created: "Document created",
+                        document_sent: "Sent for signature",
+                        document_signed: "Signed",
+                        document_viewed: "Viewed by signer",
+                        document_completed: "All signatures collected",
+                        document_declined: "Signature declined",
+                        document_voided: "Document voided",
+                        document_reminded: "Reminder sent",
+                      };
+                      const label = eventLabels[entry.event] || entry.event?.replace(/_/g, " ") || "Event";
+                      const time = entry.timestamp ? new Date(entry.timestamp).toLocaleString("en-US", {
+                        month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+                      }) : "";
+                      return (
+                        <div key={i} className="flex items-start gap-2 text-[10px]">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground font-medium">{label}</p>
+                            <p className="text-text-muted">{entry.user_name || "System"} · {time}</p>
+                          </div>
+                        </div>
+                      );
+                    });
+                  } catch {
+                    return <p className="text-[10px] text-text-muted">No activity yet.</p>;
+                  }
+                })()}
+              </div>
+            ) : (
+              <p className="text-[10px] text-text-muted">No activity yet.</p>
+            )}
+          </div>
         </div>
       </ScrollArea>
     </>
@@ -1044,8 +1114,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Toolbar — Only show in Edit mode, Desktop — Clean professional ribbon */}
+      {/* Sticky so it stays visible when scrolling the document */}
       {viewMode === "edit" && (
-        <div className="hidden lg:flex bg-slate-50 border-b border-slate-200 px-2 py-1 flex-wrap gap-y-0">
+        <div className="hidden lg:flex bg-slate-50 border-b border-slate-200 px-2 py-1 flex-wrap gap-y-0 sticky top-0 z-20 shadow-sm">
           {/* Clipboard Group */}
           <div className="flex flex-col bg-white rounded-md border border-slate-200 mx-1 px-2 py-1">
             <div className="flex items-center gap-0.5">
@@ -1230,7 +1301,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               if (val === "0") editor?.chain().focus().setParagraph().run();
               else editor?.chain().focus().toggleHeading({ level: parseInt(val) as 1 | 2 | 3 }).run();
             }}>
-              <SelectTrigger className="w-[110px] h-7 text-[11px]">
+              <SelectTrigger className="w-[130px] h-7 text-[11px]">
                 <SelectValue placeholder="Style" />
               </SelectTrigger>
               <SelectContent>
@@ -1485,7 +1556,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         <div className="flex-1 overflow-y-auto bg-slate-100">
           {viewMode === "edit" ? (
             <>
-              {/* Info banner for Word documents */}
+              {/* Info banner for Word documents — dismissible */}
+              {!tipDismissed && (
               <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
                 <Eye className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <p className="text-xs text-blue-700">
@@ -1507,8 +1579,16 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   {pdfLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
                   Preview
                 </Button>
+                <button
+                  onClick={dismissTip}
+                  className="text-blue-400 hover:text-blue-600 flex-shrink-0 p-0.5"
+                  title="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <div className="max-w-3xl mx-auto my-6 lg:my-8 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden">
+              )}
+              <div className="max-w-4xl mx-auto my-4 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden">
                 {/* Live header preview — mirrors PDF header layout */}
                 {showHeaderFooter && organization && (
                   <div className="px-12 pt-6 pb-3 border-b border-slate-100">
