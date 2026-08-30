@@ -46,10 +46,14 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as Record<string, unknown>).id as string;
     const orgId = (session.user as Record<string, unknown>).organizationId as number | null;
 
+    // Convert File to Buffer for server-side compatibility
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
+
     // Upload to storage
     const folder = `org-${orgId || "unknown"}/user-${userId}`;
     const uploadResult = await uploadDocument(
-      file,
+      fileBuffer,
       folder,
       file.name,
       "application/pdf"
