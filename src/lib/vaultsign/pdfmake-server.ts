@@ -52,9 +52,15 @@ function registerFonts(): void {
 
   const vfs = getVirtualfs();
 
-  // Try bundled fonts first (works on Vercel), fall back to system fonts (local dev)
-  const bundledPath = path.join(__dirname, "fonts");
-  const systemPath = "/usr/share/fonts/truetype/liberation";
+  // Try multiple paths to find the fonts:
+  // 1. __dirname/fonts (works if bundled next to compiled code)
+  // 2. process.cwd()/src/lib/vaultsign/fonts (works in dev and Vercel)
+  // 3. /usr/share/fonts/truetype/liberation (system fonts, local dev fallback)
+  const possiblePaths = [
+    path.join(__dirname, "fonts"),
+    path.join(process.cwd(), "src", "lib", "vaultsign", "fonts"),
+    "/usr/share/fonts/truetype/liberation",
+  ];
 
   const fontFiles: Record<string, string> = {
     "LiberationSans-Regular.ttf": "LiberationSans-Regular.ttf",
@@ -65,28 +71,37 @@ function registerFonts(): void {
 
   let fontsLoaded = 0;
   for (const [name, fileName] of Object.entries(fontFiles)) {
-    // Try bundled path first
-    const bundledFontPath = path.join(bundledPath, fileName);
-    const systemFontPath = path.join(systemPath, fileName);
-    const fontPath = fs.existsSync(bundledFontPath) ? bundledFontPath : systemFontPath;
+    let fontPath: string | null = null;
 
-    try {
-      if (fs.existsSync(fontPath)) {
+    // Try each possible path until we find the font file
+    for (const basePath of possiblePaths) {
+      const candidatePath = path.join(basePath, fileName);
+      try {
+        if (fs.existsSync(candidatePath)) {
+          fontPath = candidatePath;
+          break;
+        }
+      } catch {
+        // ignore — path might not be accessible
+      }
+    }
+
+    if (fontPath) {
+      try {
         const data = fs.readFileSync(fontPath);
         vfs.writeFileSync(`${FONT_VFS_PREFIX}/${name}`, data);
         fontsLoaded++;
-      } else {
-        console.error(`[VAULTSIGN] Font not found at: ${fontPath}`);
+      } catch (err) {
+        console.error(`[VAULTSIGN] Failed to register font ${name}:`, err);
       }
-    } catch (err) {
-      console.error(`[VAULTSIGN] Failed to register font ${name}:`, err);
+    } else {
+      console.error(`[VAULTSIGN] Font not found in any of:`, possiblePaths);
     }
   }
 
   if (fontsLoaded === 0) {
     console.error("[VAULTSIGN] CRITICAL: No fonts loaded! PDF generation will fail.");
-    console.error(`[VAULTSIGN] Tried bundled: ${bundledPath}`);
-    console.error(`[VAULTSIGN] Tried system: ${systemPath}`);
+    console.error(`[VAULTSIGN] Tried paths:`, possiblePaths);
   } else {
     console.log(`[VAULTSIGN] Loaded ${fontsLoaded}/4 Liberation Sans fonts`);
   }

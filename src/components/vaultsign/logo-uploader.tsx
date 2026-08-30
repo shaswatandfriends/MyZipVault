@@ -1,17 +1,18 @@
 "use client";
 
 /**
- * LogoUploader — image upload for company logos with size enforcement.
+ * LogoUploader — flexible image upload for company logos.
  *
  * Features:
  * - Drag-and-drop + click-to-upload
- * - Enforces standard logo size: 200×60px (3.33:1 aspect ratio)
- * - Auto-resizes uploaded images to 200×60px using canvas
- * - Preview box shows exact size (200×60)
+ * - Accepts ANY shape (circle, square, rectangle, wide, tall)
+ * - No forced resize — logo keeps its natural aspect ratio
+ * - Preview box shows logo at natural size (capped at 200×80 max)
  * - Remove button to clear the logo
  *
- * Standard size: 200×60px — matches the document header layout.
- * This ensures logos always look consistent in VaultSign documents.
+ * Logos are displayed with object-contain in the document header,
+ * so any aspect ratio works. The document header has plenty of space
+ * for both big and small logos.
  *
  * Usage:
  *   <LogoUploader
@@ -24,11 +25,9 @@
 import React, { useRef, useState } from "react";
 import { Upload, Loader2, Trash2, Building2, ImageIcon } from "@/lib/icons";
 
-// ─── Standard logo dimensions ───────────────────────────────────────
-// All company logos are resized to this size for consistency in
-// VaultSign document headers.
-export const LOGO_WIDTH = 200;
-export const LOGO_HEIGHT = 60;
+// Max preview dimensions — logo is shown at natural size, capped at these
+const MAX_PREVIEW_WIDTH = 200;
+const MAX_PREVIEW_HEIGHT = 80;
 
 interface LogoUploaderProps {
   value: string | null | undefined;
@@ -48,62 +47,6 @@ export function LogoUploader({
   const [dragOver, setDragOver] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
-  /**
-   * Resize an image file to exactly LOGO_WIDTH × LOGO_HEIGHT using canvas.
-   * Returns a Blob (PNG) at the exact target size.
-   *
-   * We use object-fit: contain semantics — the image is scaled to fit
-   * within 200×60 while preserving aspect ratio, centered on a white
-   * background. This means:
-   *   - A square logo becomes 60×60 centered in 200×60
-   *   - A wide logo becomes 200×(scaled height) centered
-   *   - Any aspect ratio works, but output is always 200×60
-   */
-  const resizeImage = (file: File): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = LOGO_WIDTH;
-          canvas.height = LOGO_HEIGHT;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            reject(new Error("Could not get canvas context"));
-            return;
-          }
-
-          // Fill white background (for transparent PNGs)
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, LOGO_WIDTH, LOGO_HEIGHT);
-
-          // Scale image to fit within 200×60 (contain, preserve aspect ratio)
-          const scale = Math.min(LOGO_WIDTH / img.width, LOGO_HEIGHT / img.height);
-          const drawWidth = img.width * scale;
-          const drawHeight = img.height * scale;
-          const x = (LOGO_WIDTH - drawWidth) / 2;
-          const y = (LOGO_HEIGHT - drawHeight) / 2;
-
-          ctx.drawImage(img, x, y, drawWidth, drawHeight);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error("Failed to create blob"));
-            },
-            "image/png",
-            0.92
-          );
-        };
-        img.onerror = () => reject(new Error("Failed to load image"));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
     setStatusMsg(null);
@@ -113,29 +56,18 @@ export function LogoUploader({
       setStatusMsg("❌ Please upload an image file (PNG, JPG, SVG, WebP)");
       return;
     }
-    // Validate size (max 5MB before resize)
-    if (file.size > 5 * 1024 * 1024) {
-      setStatusMsg("❌ Logo must be under 5MB. Please compress it first.");
+    // Validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setStatusMsg("❌ Logo must be under 2MB. Please compress it first.");
       return;
     }
 
     try {
       setUploading(true);
-      setStatusMsg("Resizing to 200×60px...");
-
-      // Resize the image to standard 200×60px
-      const resizedBlob = await resizeImage(file);
-
-      // Convert blob to File for upload
-      const resizedFile = new File([resizedBlob], file.name.replace(/\.[^.]+$/, ".png"), {
-        type: "image/png",
-      });
-
       setStatusMsg("Uploading...");
-
-      const url = await onUpload(resizedFile);
+      const url = await onUpload(file);
       onChange(url);
-      setStatusMsg("✅ Logo uploaded (200×60px)");
+      setStatusMsg("✅ Logo uploaded");
     } catch (err: any) {
       setStatusMsg(`❌ ${err?.message || "Upload failed. Please try again."}`);
     } finally {
@@ -163,7 +95,7 @@ export function LogoUploader({
       </label>
 
       <div className="mt-2 flex items-start gap-4">
-        {/* Preview / Drop zone — fixed 200×60 to match standard size */}
+        {/* Preview / Drop zone — flexible size, max 200×80 */}
         <div
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -171,8 +103,8 @@ export function LogoUploader({
           onClick={() => !uploading && inputRef.current?.click()}
           className="relative cursor-pointer rounded-xl border-2 border-dashed transition-colors flex items-center justify-center overflow-hidden bg-white shrink-0"
           style={{
-            width: LOGO_WIDTH,
-            height: LOGO_HEIGHT,
+            width: MAX_PREVIEW_WIDTH,
+            minHeight: MAX_PREVIEW_HEIGHT,
             borderColor: dragOver ? "var(--primary)" : "var(--border)",
             background: dragOver ? "var(--primary-light)" : undefined,
           }}
@@ -182,7 +114,8 @@ export function LogoUploader({
               <img
                 src={value}
                 alt="Logo preview"
-                className="max-w-full max-h-full object-contain"
+                className="max-w-full max-h-full object-contain p-2"
+                style={{ maxHeight: MAX_PREVIEW_HEIGHT }}
               />
               {uploading && (
                 <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
@@ -193,10 +126,10 @@ export function LogoUploader({
           ) : uploading ? (
             <div className="flex flex-col items-center gap-1 text-text-muted">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-[10px]">Processing...</span>
+              <span className="text-[10px]">Uploading...</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-1 text-text-muted text-center">
+            <div className="flex flex-col items-center gap-1 text-text-muted text-center p-3">
               {dragOver ? (
                 <Upload className="h-5 w-5" />
               ) : (
@@ -241,7 +174,7 @@ export function LogoUploader({
             )}
           </div>
           <p className="text-[10px] text-text-muted leading-snug">
-            PNG, JPG, SVG, or WebP. Max 5MB. Any aspect ratio — auto-resized to <strong>200×60px</strong> for document consistency.
+            PNG, JPG, SVG, or WebP. Max 2MB. Any shape (circle, square, rectangle) — displayed at natural size.
           </p>
           {statusMsg && (
             <p className={`text-[10px] leading-snug ${statusMsg.startsWith("✅") ? "text-emerald-600" : statusMsg.startsWith("❌") ? "text-rose-600" : "text-text-muted"}`}>

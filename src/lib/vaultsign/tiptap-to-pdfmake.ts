@@ -701,14 +701,15 @@ export function htmlToPdfmake(
   // Build header and footer based on showHeaderFooter toggle
   const includeHeaderFooter = options.showHeaderFooter !== false;
 
-  // Build header — logo only (centered)
+  // Build header — logo only (centered, natural size capped at 300×80)
   if (includeHeaderFooter) {
     const headerStack: Content[] = [];
     if (options.organization?.logo_url) {
       headerStack.push({
         image: options.organization.logo_url,
-        width: 200,
-        height: 60,
+        // Natural size — capped at 300×80 to fit header space
+        // pdfmake scales automatically if only width OR height is given
+        fit: [300, 80],
         alignment: "center",
       });
     }

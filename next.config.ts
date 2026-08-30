@@ -93,6 +93,7 @@ const nextConfig: NextConfig = {
       "./node_modules/pdfjs-dist/legacy/build/**/*",
       "./node_modules/mammoth/**/*",
       "./node_modules/pdf-parse/**/*",
+      "./src/lib/vaultsign/fonts/**/*",
     ],
   },
 };

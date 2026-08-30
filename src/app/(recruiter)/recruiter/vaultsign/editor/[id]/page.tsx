@@ -1612,7 +1612,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                           src={organization.company_logo_url}
                           alt={`${organization.name || "Company"} logo`}
                           className="object-contain flex-shrink-0 rounded"
-                          style={{ width: "200px", height: "60px" }}
+                          style={{ maxHeight: "80px", maxWidth: "300px" }}
                         />
                       )}
                     </div>
