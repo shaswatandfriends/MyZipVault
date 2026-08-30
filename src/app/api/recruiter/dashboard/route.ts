@@ -1,26 +1,25 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getScopedClientUserIds } from "@/lib/recruiter-scope";
+import { getSessionUser } from "@/lib/session-user";
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = Number((session.user as Record<string, unknown>).id);
-    const userRole = (session.user as Record<string, unknown>).role as string;
-    const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
+    const userId = sessionUser.id;
+    const userRole = sessionUser.role;
+    const organizationId = sessionUser.organizationId;
 
     if (!["client_recruiter", "client_admin"].includes(userRole)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 400 });
+      return NextResponse.json({ error: "No organization found for this account. Please contact support." }, { status: 400 });
     }
 
     // Parse period query param

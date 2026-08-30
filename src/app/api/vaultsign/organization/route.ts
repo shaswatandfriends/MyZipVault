@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/session-user";
 
 // GET: Get current user's organization VaultSign settings
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const role = (session.user as Record<string, unknown>).role as string;
+    const role = sessionUser.role;
     if (role !== "client_admin" && role !== "client_recruiter") {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
-    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    const orgId = sessionUser.organizationId;
     if (!orgId) {
-      return NextResponse.json({ error: "No organization" }, { status: 400 });
+      return NextResponse.json({ error: "No organization found for this account" }, { status: 400 });
     }
 
     const org = await db.organization.findUnique({
