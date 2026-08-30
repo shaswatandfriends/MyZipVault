@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import crypto from "crypto";
 import type { SignField, AuditTrailEntry } from "@/lib/vaultsign/types";
-import { getDefaultTemplate, getDefaultPlaceholderValues } from "@/lib/vaultsign/default-templates";
 
 // GET: List documents for the recruiter's organization
 export async function GET(request: NextRequest) {
@@ -284,8 +283,11 @@ export async function POST(request: NextRequest) {
     // ─── Auto-populate default template for RTR documents ────────────
     // If no content was provided (blank document) AND the document type
     // is right_to_represent, auto-fill with the standard RTR template.
+    // This prevents the document from being blank when the recruiter
+    // creates an RTR without typing anything.
     if (!templateTiptapContent && (document_type === "right_to_represent" || document_type === "rtr")) {
       try {
+        const { getDefaultTemplate, getDefaultPlaceholderValues } = await import("@/lib/vaultsign/default-templates");
         const defaultTpl = getDefaultTemplate(document_type);
         if (defaultTpl) {
           templateTiptapContent = defaultTpl.tiptap_content;
