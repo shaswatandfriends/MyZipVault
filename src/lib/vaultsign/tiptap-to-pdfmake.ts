@@ -104,136 +104,85 @@ export function tiptapToPdfmake(
   // If true (or undefined for backward compat), include all header/footer elements
   const includeHeaderFooter = options.showHeaderFooter !== false;
 
-  // Build header
-  // Layout: Left column = logo + company info stacked; Right column = document title
+  // Build header — logo only (centered, natural size capped at 300×80)
   if (includeHeaderFooter) {
-    const headerParts: Content[] = [];
-    const leftParts: Content[] = [];
-    const rightParts: Content[] = [];
-
-    // Left column: Logo on top, company details below
-    const logoLine: Content[] = [];
-    const companyDetailsStack: Content[] = [];
-
+    const headerStack: Content[] = [];
     if (options.organization?.logo_url) {
-      logoLine.push({
+      headerStack.push({
         image: options.organization.logo_url,
-        width: 36,
-        height: 36,
-        margin: [0, 0, 8, 0] as any,
+        fit: [300, 80],
+        alignment: "center",
       });
     }
+    if (headerStack.length > 0) {
+      headerContent.push({ stack: headerStack, margin: [40, 20, 40, 5] as any });
+      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
+    }
+  }
 
+  // Build footer — company text info + copyright + Powered by (NO logo)
+  if (includeHeaderFooter) {
+    const footerStack: Content[] = [];
+
+    // Company text info — centered (logo is in header, not here)
+    const companyStack: Content[] = [];
     if (options.organization?.name) {
-      logoLine.push({
+      companyStack.push({
         text: options.organization.name,
-        fontSize: 14,
+        fontSize: 12,
         bold: true,
-        color: "#166534",
-        margin: [0, 4, 0, 0] as any,
+        color: "#111827",
+        alignment: "center",
       });
     }
-
-    if (logoLine.length > 0) {
-      leftParts.push({
-        columns: logoLine,
-        margin: [0, 0, 0, 2] as any,
-      });
-    }
-
     if (options.organization) {
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
       if (options.organization.website) contactParts.push(options.organization.website);
       if (contactParts.length > 0) {
-        companyDetailsStack.push({
+        companyStack.push({
           text: contactParts.join(" | "),
           fontSize: 8,
           color: "#6B7280",
+          alignment: "center",
         });
       }
     }
-
     if (options.organization?.address) {
-      companyDetailsStack.push({
+      companyStack.push({
         text: options.organization.address,
         fontSize: 8,
         color: "#6B7280",
+        alignment: "center",
       });
     }
 
-    if (companyDetailsStack.length > 0) {
-      leftParts.push({
-        stack: companyDetailsStack,
-        margin: [0, 0, 0, 0] as any,
+    if (companyStack.length > 0) {
+      footerStack.push({ stack: companyStack });
+      footerStack.push({
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
+        margin: [0, 6, 0, 6] as any,
       });
     }
 
-    // Always show document title in header when header/footer is enabled
-    if (options.documentTitle) {
-      rightParts.push({
-        text: options.documentTitle,
-        fontSize: 10,
-        bold: true,
-        color: "#374151",
-        alignment: "right",
-        margin: [0, 8, 0, 0] as any,
-      });
-    }
-
-    // Always render the header section when header/footer is enabled,
-    // even if leftParts is empty — the document title should always appear
-    headerContent.push({
-      columns: [
-        { stack: leftParts.length > 0 ? leftParts : [{ text: "" }], width: "*" },
-        { stack: rightParts.length > 0 ? rightParts : [{ text: "" }], width: "auto", alignment: "right" },
-      ],
-      margin: [40, 20, 40, 5] as any,
-    });
-    headerContent.push({
-      canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
-      margin: [40, 0, 40, 10] as any,
-    });
-  }
-
-  // Build footer (same condition as header)
-  // Layout: Left/center = rights reserved + powered by; Right = page numbers
-  if (includeHeaderFooter) {
-    const footerLeftParts: Content[] = [];
-
-    footerLeftParts.push({
+    // Copyright
+    footerStack.push({
       text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
       alignment: "center",
       fontSize: 7,
       color: "#9CA3AF",
     });
-    footerLeftParts.push({
+    // Powered by
+    footerStack.push({
       text: "Powered by VaultSign",
       alignment: "center",
       fontSize: 6,
       color: "#B0B0B0",
     });
 
-    const footerColumns: Content[] = [];
-
-    // Center column: rights reserved + powered by
-    footerColumns.push({
-      stack: footerLeftParts,
-      width: "*",
-    });
-
-    // Right column: page numbers
-    footerColumns.push({
-      text: "Page {currentPage} of {totalPages}",
-      alignment: "right",
-      fontSize: 8,
-      color: "#9CA3AF",
-      width: "auto",
-    });
-
     footerContent.push({
-      columns: footerColumns,
+      stack: footerStack,
       margin: [40, 0, 40, 20] as any,
     });
   }
