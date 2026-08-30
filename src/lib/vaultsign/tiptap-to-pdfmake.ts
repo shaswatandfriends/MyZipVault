@@ -701,39 +701,55 @@ export function htmlToPdfmake(
   // Build header and footer based on showHeaderFooter toggle
   const includeHeaderFooter = options.showHeaderFooter !== false;
 
-  // Build header (same layout as tiptapToPdfmake — centered logo)
+  // Build header — minimal (document name only, centered)
   if (includeHeaderFooter) {
-    const centeredStack: Content[] = [];
+    const headerStack: Content[] = [];
+    if (options.documentTitle) {
+      headerStack.push({
+        text: options.documentTitle,
+        fontSize: 14,
+        bold: true,
+        color: "#111827",
+        alignment: "center",
+      });
+    }
+    if (headerStack.length > 0) {
+      headerContent.push({ stack: headerStack, margin: [40, 20, 40, 5] as any });
+      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
+    }
+  }
 
-    // Logo — centered, 200x60px standard size
+  // Build footer — company info + copyright + Powered by
+  if (includeHeaderFooter) {
+    const footerStack: Content[] = [];
+
+    // Company info — centered
+    const companyStack: Content[] = [];
     if (options.organization?.logo_url) {
-      centeredStack.push({
+      companyStack.push({
         image: options.organization.logo_url,
         width: 200,
         height: 60,
         alignment: "center",
-        margin: [0, 0, 0, 4] as any,
-      });
-    }
-    // Company name — centered
-    if (options.organization?.name) {
-      centeredStack.push({
-        text: options.organization.name,
-        fontSize: 14,
-        bold: true,
-        color: "#166534",
-        alignment: "center",
         margin: [0, 0, 0, 2] as any,
       });
     }
-    // Contact info — centered
+    if (options.organization?.name) {
+      companyStack.push({
+        text: options.organization.name,
+        fontSize: 12,
+        bold: true,
+        color: "#111827",
+        alignment: "center",
+      });
+    }
     if (options.organization) {
       const contactParts: string[] = [];
       if (options.organization.phone) contactParts.push(options.organization.phone);
       if (options.organization.email) contactParts.push(options.organization.email);
       if (options.organization.website) contactParts.push(options.organization.website);
       if (contactParts.length > 0) {
-        centeredStack.push({
+        companyStack.push({
           text: contactParts.join(" | "),
           fontSize: 8,
           color: "#6B7280",
@@ -741,46 +757,41 @@ export function htmlToPdfmake(
         });
       }
     }
-    // Address — centered
     if (options.organization?.address) {
-      centeredStack.push({
+      companyStack.push({
         text: options.organization.address,
         fontSize: 8,
         color: "#6B7280",
         alignment: "center",
       });
     }
-    // Document title — centered, small, below company info
-    if (options.documentTitle) {
-      centeredStack.push({
-        text: options.documentTitle,
-        fontSize: 10,
-        bold: true,
-        color: "#374151",
-        alignment: "center",
-        margin: [0, 4, 0, 0] as any,
+
+    if (companyStack.length > 0) {
+      footerStack.push({ stack: companyStack });
+      // Divider line
+      footerStack.push({
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
+        margin: [0, 6, 0, 6] as any,
       });
     }
 
-    if (centeredStack.length > 0) {
-      headerContent.push({ stack: centeredStack, margin: [40, 20, 40, 5] as any });
-    }
-    headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
-  }
-
-  // Build footer (same condition as header)
-  if (includeHeaderFooter) {
-    const footerLeftParts: Content[] = [];
-
-    footerLeftParts.push({ text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`, alignment: "center", fontSize: 7, color: "#9CA3AF" });
-    footerLeftParts.push({ text: "Powered by VaultSign", alignment: "center", fontSize: 6, color: "#B0B0B0" });
-
-    const footerColumns: Content[] = [];
-    footerColumns.push({ stack: footerLeftParts, width: "*" });
-    footerColumns.push({ text: "Page {currentPage} of {totalPages}", alignment: "right", fontSize: 8, color: "#9CA3AF", width: "auto" });
+    // Copyright
+    footerStack.push({
+      text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
+      alignment: "center",
+      fontSize: 7,
+      color: "#9CA3AF",
+    });
+    // Powered by
+    footerStack.push({
+      text: "Powered by VaultSign",
+      alignment: "center",
+      fontSize: 6,
+      color: "#B0B0B0",
+    });
 
     footerContent.push({
-      columns: footerColumns,
+      stack: footerStack,
       margin: [40, 0, 40, 20] as any,
     });
   }

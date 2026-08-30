@@ -1601,33 +1601,41 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </button>
               </div>
               )}
-              <div className="max-w-4xl mx-auto my-4 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden">
-                {/* Live header preview — mirrors PDF header layout */}
+              <div className="max-w-4xl mx-auto my-4 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden flex flex-col">
+                {/* ─── Header (minimal — document name only) ─── */}
                 {showHeaderFooter && organization && (
-                  <div className="px-12 pt-6 pb-3 border-b border-slate-100 relative">
-                    {/* Document name (top-right) */}
+                  <div className="px-12 pt-6 pb-3 border-b border-slate-100">
                     {docName && (
-                      <p className="text-[10px] font-semibold text-text-secondary text-right absolute top-2 right-4">
+                      <p className="text-sm font-bold text-slate-900 text-center">
                         {docName}
                       </p>
                     )}
-                    {/* Centered logo + company info */}
+                  </div>
+                )}
+
+                {/* ─── Editor content (flex-1 so it fills space) ─── */}
+                <EditorContent editor={editor} className="tiptap-editor flex-1" />
+
+                {/* ─── Footer (company info + copyright + Powered by) ─── */}
+                {showHeaderFooter && organization && (
+                  <div className="px-12 pt-4 pb-5 border-t border-slate-100 mt-auto">
+                    {/* Company info — centered */}
                     <div className="flex flex-col items-center text-center">
                       {organization.company_logo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={organization.company_logo_url}
                           alt={`${organization.name || "Company"} logo`}
-                          className="object-contain flex-shrink-0 rounded mb-2"
+                          className="object-contain flex-shrink-0 rounded mb-1.5"
                           style={{ width: "200px", height: "60px" }}
                         />
                       )}
                       {organization.name && (
-                        <p className="text-base font-bold text-slate-900 leading-tight">
+                        <p className="text-sm font-bold text-slate-900 leading-tight">
                           {organization.name}
                         </p>
                       )}
-                      <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                      <div className="text-[10px] text-slate-400 leading-relaxed mt-0.5">
                         {organization.company_phone && <span>{organization.company_phone}</span>}
                         {organization.company_phone && organization.company_email && <span> · </span>}
                         {organization.company_email && <span>{organization.company_email}</span>}
@@ -1644,24 +1652,17 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                         </p>
                       )}
                     </div>
-                  </div>
-                )}
 
-                {/* Editor content */}
-                <EditorContent editor={editor} className="tiptap-editor" />
+                    {/* Divider */}
+                    <div className="border-t border-slate-100 my-3" />
 
-                {/* Live footer preview — mirrors PDF footer layout */}
-                {showHeaderFooter && (
-                  <div className="px-12 pt-3 pb-5 border-t border-slate-100 mt-2">
+                    {/* Copyright + Powered by */}
                     <p className="text-[9px] text-slate-400 text-center leading-relaxed">
-                      © {new Date().getFullYear()} {organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.
+                      © {new Date().getFullYear()} {organization.name || "MyZipVault"}. All rights reserved. This is a legally binding document.
                     </p>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <p className="text-[8px] text-slate-300 text-center flex-1">
+                    <div className="flex items-center justify-center mt-1">
+                      <p className="text-[8px] text-slate-300 text-center">
                         Powered by VaultSign
-                      </p>
-                      <p className="text-[9px] text-slate-400 italic flex-shrink-0">
-                        Page 1
                       </p>
                     </div>
                   </div>
