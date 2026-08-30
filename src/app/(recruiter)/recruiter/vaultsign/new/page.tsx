@@ -255,8 +255,8 @@ function NewDocumentContent() {
         });
         placeholderValues = { current_date: today };
         templateSignFields = [
-          { id: sigFieldId, type: "signature", label: "Signature", assigned_to_signer_index: 0, page: 1, x_percent: 0, y_percent: 0, width_percent: 30, height_percent: 5, required: true, value: null },
-          { id: dateFieldId, type: "date", label: "Date", assigned_to_signer_index: 0, page: 1, x_percent: 0, y_percent: 0, width_percent: 20, height_percent: 5, required: true, value: null },
+          { id: sigFieldId, type: "signature", label: "Signature", assigned_to_signer_index: 0, page: 1, x_percent: 10, y_percent: 82, width_percent: 35, height_percent: 5, required: true, value: null },
+          { id: dateFieldId, type: "date", label: "Date", assigned_to_signer_index: 0, page: 1, x_percent: 10, y_percent: 90, width_percent: 20, height_percent: 4, required: true, value: null },
         ];
       }
 
