@@ -3,10 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 /**
- * POST /api/vaultsign/documents/upload
+ * POST /api/vaultsign/upload
  *
  * Upload a PDF file to use as a VaultSign document source.
- * Returns the document URL as a base64 data URL (works without Supabase Storage).
+ * Returns the document URL as a base64 data URL.
+ *
+ * NOTE: This route is at /api/vaultsign/upload (not /api/vaultsign/documents/upload)
+ * to avoid routing conflicts with the [id] dynamic route.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,14 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
     const fileName: string = file.name || "upload.pdf";
     const ext = fileName.split(".").pop()?.toLowerCase();
     if (ext !== "pdf") {
       return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
     }
 
-    // Validate file size (max 5MB for base64 — avoids Vercel function limits)
     const fileSize: number = file.size || 0;
     if (fileSize > 5 * 1024 * 1024) {
       return NextResponse.json({ error: "File must be under 5MB" }, { status: 400 });
