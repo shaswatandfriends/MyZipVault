@@ -7,11 +7,6 @@ import { uploadDocument } from "@/lib/vaultsign/supabase-storage";
  * POST /api/vaultsign/documents/upload
  *
  * Upload a PDF file to use as a VaultSign document source.
- * Returns the document URL and source type.
- *
- * Body: FormData with:
- *   - file: File (PDF, max 10MB)
- *   - organizationId: string (optional, for folder path)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -20,33 +15,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const role = (session.user as Record<string, unknown>).role as string;
+    const role = (session.user as any).role as string;
     if (role !== "client_recruiter" && role !== "client_admin" && role !== "super_admin") {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const file: any = formData.get("file");
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     // Validate file type
-    const ext = file.name.split(".").pop()?.toLowerCase();
+    const fileName: string = file.name || "upload.pdf";
+    const ext = fileName.split(".").pop()?.toLowerCase();
     if (ext !== "pdf") {
       return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
     }
 
     // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    const fileSize: number = file.size || 0;
+    if (fileSize > 10 * 1024 * 1024) {
       return NextResponse.json({ error: "File must be under 10MB" }, { status: 400 });
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
-    const orgId = (session.user as Record<string, unknown>).organizationId as number | null;
+    const userId = (session.user as any).id as string;
+    const orgId = (session.user as any).organizationId as number | null;
 
-    // Convert File to Buffer for server-side compatibility
+    // Convert to Buffer for server-side compatibility
     const arrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
 
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
     const uploadResult = await uploadDocument(
       fileBuffer,
       folder,
-      file.name,
+      fileName,
       "application/pdf"
     );
 
@@ -63,10 +60,10 @@ export async function POST(request: NextRequest) {
       document_url: uploadResult.url,
       source_type: "pdf",
       is_local_storage: uploadResult.isLocalStorage,
-      file_name: file.name,
-      file_size: file.size,
+      file_name: fileName,
+      file_size: fileSize,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[VAULTSIGN UPLOAD] Error:", error);
     return NextResponse.json(
       { error: "Failed to upload file. Please try again." },
