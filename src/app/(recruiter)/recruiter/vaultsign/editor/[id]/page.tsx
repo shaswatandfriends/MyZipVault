@@ -902,24 +902,25 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                   <div key={index} className={`mb-3 rounded-lg p-2 ${!hasFields ? "bg-amber-50 border border-amber-200" : ""}`}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <div
-                        className="w-2.5 h-2.5 rounded-full"
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: SIGNER_COLORS[index % SIGNER_COLORS.length] }}
                       />
-                      <span className="text-xs font-medium text-foreground">{signer.name}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{signer.name}</span>
                       {!hasFields && (
-                        <span className="ml-auto text-[10px] text-amber-700 font-medium">⚠ No fields</span>
+                        <span className="ml-auto text-[10px] text-amber-700 font-medium shrink-0">⚠ No fields</span>
                       )}
                     </div>
+                    {/* Add field buttons — 2-column grid with fixed-width icon for alignment */}
                     <div className="grid grid-cols-2 gap-1">
                       {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
                         <TooltipProvider key={type}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-slate-300 hover:bg-slate-100 transition-colors text-foreground cursor-pointer"
+                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:border-slate-300 hover:bg-slate-100 transition-colors text-foreground cursor-pointer w-full text-left"
                                 onClick={() => addSignField(type, index)}
                               >
-                                <span className="text-sm">{FIELD_TYPE_ICONS[type]}</span>
+                                <span className="text-sm w-4 text-center shrink-0">{FIELD_TYPE_ICONS[type]}</span>
                                 <span className="truncate">{FIELD_TYPE_LABELS[type]}</span>
                               </button>
                             </TooltipTrigger>
@@ -931,25 +932,29 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       ))}
                     </div>
 
-                    {/* Assigned fields */}
-                    {signFields.filter((f) => f.assigned_to_signer_index === index).map((field) => (
-                      <div
-                        key={field.id}
-                        className="flex items-center justify-between mt-1 px-2 py-1 rounded bg-background border border-border"
-                      >
-                        <span className="text-[10px] text-text-secondary">
-                          {FIELD_TYPE_ICONS[field.type]} {field.label}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 text-text-muted hover:text-status-red"
-                          onClick={() => removeSignField(field.id)}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </Button>
+                    {/* Assigned fields — full-width rows with consistent layout */}
+                    {signFields.filter((f) => f.assigned_to_signer_index === index).length > 0 && (
+                      <div className="mt-1.5 space-y-1">
+                        {signFields.filter((f) => f.assigned_to_signer_index === index).map((field) => (
+                          <div
+                            key={field.id}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-background border border-border"
+                          >
+                            <span className="text-sm w-4 text-center shrink-0">{FIELD_TYPE_ICONS[field.type]}</span>
+                            <span className="text-[10px] text-text-secondary flex-1 truncate">
+                              {field.label}
+                            </span>
+                            <button
+                              className="text-text-muted hover:text-status-red shrink-0 p-0.5"
+                              onClick={() => removeSignField(field.id)}
+                              title="Remove field"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                   );
                 })}
