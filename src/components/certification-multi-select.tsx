@@ -21,7 +21,10 @@ export function CertificationMultiSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [dropUp, setDropUp] = useState(false);
-  const [availableHeight, setAvailableHeight] = useState(300);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({
+    position: "fixed",
+    maxHeight: "400px",
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -49,19 +52,45 @@ export function CertificationMultiSelect({
     }
   }, [isOpen]);
 
+  // ─── Position the dropdown using `position: fixed` ──────────────────
+  // Using `fixed` instead of `absolute` so the dropdown escapes any parent
+  // containers with `overflow: hidden` or `overflow: auto` (which would
+  // otherwise clip the dropdown). We calculate the position from the
+  // trigger button's getBoundingClientRect() (viewport-relative).
   useLayoutEffect(() => {
     if (!isOpen || !triggerRef.current) return;
+
     const measure = () => {
       const triggerRect = triggerRef.current!.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
-      const shouldFlipUp = spaceBelow < 250 && spaceAbove > spaceBelow;
+
+      // Flip up if there's not enough space below AND more space above
+      const shouldFlipUp = spaceBelow < 300 && spaceAbove > spaceBelow;
       setDropUp(shouldFlipUp);
-      const maxH = shouldFlipUp ? Math.min(spaceAbove - 16, 400) : Math.min(spaceBelow - 16, 400);
-      setAvailableHeight(Math.max(200, maxH));
+
+      // Calculate max height — minimum 320px so the list is always usable
+      const maxH = shouldFlipUp
+        ? Math.min(spaceAbove - 16, 500)
+        : Math.min(spaceBelow - 16, 500);
+      const finalHeight = Math.max(320, Math.min(maxH, 500));
+
+      // Position relative to viewport (fixed positioning)
+      setDropdownStyle({
+        position: "fixed",
+        top: shouldFlipUp ? undefined : triggerRect.bottom + 4,
+        bottom: shouldFlipUp ? viewportHeight - triggerRect.top + 4 : undefined,
+        left: triggerRect.left,
+        width: triggerRect.width,
+        maxHeight: `${finalHeight}px`,
+        zIndex: 9999,
+      });
     };
+
     measure();
+    // Reposition on scroll/resize. Use capture phase to catch scrolls in
+    // nested containers.
     window.addEventListener("scroll", measure, true);
     window.addEventListener("resize", measure);
     return () => {
@@ -117,10 +146,13 @@ export function CertificationMultiSelect({
           <ChevronDown className={cn("size-4 shrink-0 opacity-50 transition-transform", isOpen && !dropUp && "rotate-180")} />
         </button>
         {isOpen && (
-          <div className={cn(
-            "absolute z-50 w-full rounded-md border bg-background shadow-lg flex flex-col",
-            dropUp ? "bottom-full mb-1" : "top-full mt-1"
-          )} style={{ maxHeight: `${availableHeight}px` }}>
+          <div
+            className={cn(
+              "rounded-md border bg-background shadow-lg flex flex-col",
+              dropUp ? "origin-bottom" : "origin-top"
+            )}
+            style={dropdownStyle}
+          >
             <div className="p-2 border-b sticky top-0 bg-background z-10 shrink-0">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -134,7 +166,7 @@ export function CertificationMultiSelect({
               )}
               {filteredCategories.map((cat) => (
                 <div key={cat.category}>
-                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b">
+                  <div className="px-3 py-2 text-sm font-bold uppercase tracking-wider bg-muted text-foreground border-b sticky top-9">
                     {cat.category}
                   </div>
                   {cat.certifications.map((cert) => {
