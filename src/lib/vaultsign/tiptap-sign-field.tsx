@@ -47,13 +47,13 @@ function SignFieldComponent({ node }: { node: any }) {
   const display = FIELD_DISPLAY[fieldType] || FIELD_DISPLAY.text;
 
   return (
-    <NodeViewWrapper as="div" style={{ display: "block", margin: "8px 0" }}>
+    <NodeViewWrapper as="div" style={{ display: "block", margin: "12px 0" }}>
       <div
         style={{
           display: "inline-flex",
           flexDirection: "column",
-          minWidth: "200px",
-          padding: "8px 12px",
+          minWidth: "240px",
+          padding: "10px 14px",
           borderRadius: "6px",
           border: `2px dashed ${color}`,
           backgroundColor: `${color}08`,
@@ -71,14 +71,26 @@ function SignFieldComponent({ node }: { node: any }) {
           <span style={{ fontSize: "16px" }}>{display.icon}</span>
           <span>{display.label}</span>
         </div>
+        {/* Signature line — visible underscore-style line */}
+        <div
+          style={{
+            marginTop: "8px",
+            marginBottom: "4px",
+            height: "1px",
+            borderBottom: `1px solid ${color}60`,
+            width: "100%",
+          }}
+        />
         {/* Bottom row: signer name + hint */}
         <div style={{
           fontSize: "11px",
           fontWeight: 400,
           opacity: 0.8,
-          marginTop: "2px",
+          display: "flex",
+          justifyContent: "space-between",
         }}>
-          {signerLabel} · {display.hint}
+          <span>{signerLabel}</span>
+          <span style={{ fontStyle: "italic" }}>{display.hint}</span>
         </div>
       </div>
     </NodeViewWrapper>

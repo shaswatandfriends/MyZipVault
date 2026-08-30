@@ -613,12 +613,20 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     if (editor) {
       // Cast to any because SignFieldExtension adds `insertSignField` via
       // TipTap's addCommands but the type isn't augmented globally.
-      (editor.chain().focus() as any).insertSignField({
-        fieldType: type,
-        assignedToSignerIndex: signerIndex,
-        signerLabel: signers[signerIndex]?.name || `Signer ${signerIndex + 1}`,
-        fieldId: newField.id,
-      }).run();
+      // Insert at the END of the document — signature fields should
+      // default to the bottom, not wherever the cursor happens to be.
+      (editor.chain().focus() as any)
+        .command(({ commands }: any) => {
+          // Move cursor to end of document
+          return commands.focus("end");
+        })
+        .insertSignField({
+          fieldType: type,
+          assignedToSignerIndex: signerIndex,
+          signerLabel: signers[signerIndex]?.name || `Signer ${signerIndex + 1}`,
+          fieldId: newField.id,
+        })
+        .run();
     }
   };
 
@@ -1596,44 +1604,43 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
               <div className="max-w-4xl mx-auto my-4 shadow-lg rounded-lg border border-slate-200 bg-white min-h-[800px] overflow-hidden">
                 {/* Live header preview — mirrors PDF header layout */}
                 {showHeaderFooter && organization && (
-                  <div className="px-12 pt-6 pb-3 border-b border-slate-100">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3 min-w-0">
-                        {organization.company_logo_url && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={organization.company_logo_url}
-                            alt={`${organization.name || "Company"} logo`}
-                            className="w-10 h-10 object-contain flex-shrink-0 rounded"
-                          />
+                  <div className="px-12 pt-6 pb-3 border-b border-slate-100 relative">
+                    {/* Document name (top-right) */}
+                    {docName && (
+                      <p className="text-[10px] font-semibold text-text-secondary text-right absolute top-2 right-4">
+                        {docName}
+                      </p>
+                    )}
+                    {/* Centered logo + company info */}
+                    <div className="flex flex-col items-center text-center">
+                      {organization.company_logo_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={organization.company_logo_url}
+                          alt={`${organization.name || "Company"} logo`}
+                          className="object-contain flex-shrink-0 rounded mb-2"
+                          style={{ width: "200px", height: "60px" }}
+                        />
+                      )}
+                      {organization.name && (
+                        <p className="text-base font-bold text-slate-900 leading-tight">
+                          {organization.name}
+                        </p>
+                      )}
+                      <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                        {organization.company_phone && <span>{organization.company_phone}</span>}
+                        {organization.company_phone && organization.company_email && <span> · </span>}
+                        {organization.company_email && <span>{organization.company_email}</span>}
+                        {organization.company_website && (
+                          <>
+                            {(organization.company_phone || organization.company_email) && <span> · </span>}
+                            <span>{organization.company_website}</span>
+                          </>
                         )}
-                        <div className="min-w-0">
-                          {organization.name && (
-                            <p className="text-base font-bold text-slate-900 leading-tight">
-                              {organization.name}
-                            </p>
-                          )}
-                          <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
-                            {organization.company_phone && <span>{organization.company_phone}</span>}
-                            {organization.company_phone && organization.company_email && <span> · </span>}
-                            {organization.company_email && <span>{organization.company_email}</span>}
-                            {organization.company_website && (
-                              <>
-                                {(organization.company_phone || organization.company_email) && <span> · </span>}
-                                <span>{organization.company_website}</span>
-                              </>
-                            )}
-                          </div>
-                          {organization.company_address && (
-                            <p className="text-[10px] text-slate-400 leading-relaxed">
-                              {organization.company_address}
-                            </p>
-                          )}
-                        </div>
                       </div>
-                      {docName && (
-                        <p className="text-[10px] font-semibold text-text-secondary text-right flex-shrink-0 mt-1">
-                          {docName}
+                      {organization.company_address && (
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {organization.company_address}
                         </p>
                       )}
                     </div>
