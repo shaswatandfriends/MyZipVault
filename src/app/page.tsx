@@ -455,13 +455,6 @@ export default function HomePage() {
 
       {/* ═══ HERO SECTION — Split Layout ═══ */}
       <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden" }}>
-        {/* ─── Healthcare doodles (emoji-based, uses existing CSS animations) ─── */}
-        <div style={{ position:"absolute", top:"12%", left:"4%", fontSize:42, opacity:0.12, animation:"floatLeaf 6s ease-in-out infinite", willChange:"transform", pointerEvents:"none" }}>🩺</div>
-        <div style={{ position:"absolute", top:"65%", left:"7%", fontSize:36, opacity:0.15, animation:"heartbeat 3s ease-in-out infinite", willChange:"transform", pointerEvents:"none" }}>❤️</div>
-        <div style={{ position:"absolute", top:"18%", right:"7%", fontSize:36, opacity:0.15, animation:"floatLeaf 4s ease-in-out infinite reverse", willChange:"transform", pointerEvents:"none" }}>💰</div>
-        <div style={{ position:"absolute", top:"68%", right:"5%", fontSize:32, opacity:0.15, animation:"floatLeaf 7s ease-in-out infinite", willChange:"transform", pointerEvents:"none" }}>⭐</div>
-        <div style={{ position:"absolute", top:"8%", left:"48%", fontSize:24, opacity:0.12, animation:"heartbeat 5s ease-in-out infinite", willChange:"transform", pointerEvents:"none" }}>➕</div>
-        <div style={{ position:"absolute", top:"38%", right:"2%", fontSize:38, opacity:0.12, animation:"floatLeaf 5s ease-in-out infinite reverse", willChange:"transform", pointerEvents:"none" }}>⚕️</div>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 48, alignItems: "center" }}>
           {/* Left: Headline + CTAs */}
           <div className="hero-text">
