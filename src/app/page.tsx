@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { NewsletterCapture } from "@/components/shared/NewsletterCapture";
-import { AnimatedDoodles } from "@/components/shared/AnimatedDoodles";
 import {
   Menu, X, ArrowRight, Building2, Search, Send, CreditCard,
   ShieldCheck, Lock, Star, CheckCircle2, Briefcase, Users,
@@ -456,8 +455,6 @@ export default function HomePage() {
 
       {/* ═══ HERO SECTION — Split Layout ═══ */}
       <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden" }}>
-        {/* Animated doodles */}
-        <AnimatedDoodles />
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 48, alignItems: "center" }}>
           {/* Left: Headline + CTAs */}
           <div className="hero-text">
