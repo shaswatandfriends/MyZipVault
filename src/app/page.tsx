@@ -455,6 +455,49 @@ export default function HomePage() {
 
       {/* ═══ HERO SECTION — Split Layout ═══ */}
       <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden" }}>
+        {/* ─── Animated healthcare doodles (inline, no external deps) ─── */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes mzv-doodle-float { 0%,100%{transform:translateY(0) rotate(0);opacity:.5} 50%{transform:translateY(-18px) rotate(4deg);opacity:.8} }
+          @keyframes mzv-doodle-pulse { 0%,100%{transform:scale(1);opacity:.4} 50%{transform:scale(1.12);opacity:.7} }
+          @keyframes mzv-doodle-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+          @keyframes mzv-doodle-sway { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
+        `}} />
+        {/* Stethoscope — top left, floating */}
+        <div style={{ position:"absolute", top:"12%", left:"4%", width:56, height:56, color:"rgba(255,255,255,0.12)", animation:"mzv-doodle-float 6s ease-in-out infinite", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M30 20 L30 45 C30 55 35 60 40 60 C45 60 50 55 50 45 L50 20"/><path d="M25 20 L25 15 L35 15 L35 20"/><path d="M50 45 C50 65 60 75 70 75 C80 75 85 65 85 55"/><circle cx="85" cy="50" r="8"/>
+          </svg>
+        </div>
+        {/* Heart — bottom left, pulsing */}
+        <div style={{ position:"absolute", top:"65%", left:"7%", width:44, height:44, color:"rgba(251,113,133,0.18)", animation:"mzv-doodle-pulse 4s ease-in-out infinite", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M50 85 C50 85 15 60 15 38 C15 25 25 18 35 18 C42 18 47 22 50 28 C53 22 58 18 65 18 C75 18 85 25 85 38 C85 60 50 85 50 85 Z"/>
+          </svg>
+        </div>
+        {/* Dollar $ — top right, bouncing */}
+        <div style={{ position:"absolute", top:"18%", right:"7%", width:40, height:40, color:"rgba(74,222,128,0.18)", animation:"mzv-doodle-bounce 3s ease-in-out infinite", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M50 15 L50 85"/><path d="M65 30 C65 22 58 18 50 18 C42 18 35 22 35 30 C35 38 42 42 50 44 C58 46 65 50 65 58 C65 66 58 70 50 70 C42 70 35 66 35 58"/>
+          </svg>
+        </div>
+        {/* Star — bottom right, floating */}
+        <div style={{ position:"absolute", top:"68%", right:"5%", width:38, height:38, color:"rgba(251,191,36,0.18)", animation:"mzv-doodle-float 7s ease-in-out infinite reverse", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M50 15 L58 38 L82 38 L63 53 L70 77 L50 62 L30 77 L37 53 L18 38 L42 38 Z"/>
+          </svg>
+        </div>
+        {/* Medical cross — center top, swaying */}
+        <div style={{ position:"absolute", top:"8%", left:"48%", width:26, height:26, color:"rgba(167,139,250,0.15)", animation:"mzv-doodle-sway 4s ease-in-out infinite", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <path d="M50 20 L50 80 M20 50 L80 50"/>
+          </svg>
+        </div>
+        {/* Caduceus — right middle, swaying */}
+        <div style={{ position:"absolute", top:"38%", right:"2%", width:48, height:48, color:"rgba(96,165,250,0.15)", animation:"mzv-doodle-sway 5s ease-in-out infinite", willChange:"transform", pointerEvents:"none", zIndex:0 }}>
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="50" y1="20" x2="50" y2="85"/><path d="M35 35 C35 30 42 25 50 30 C58 25 65 30 65 35"/><path d="M30 50 C30 45 40 42 50 48 C60 42 70 45 70 50"/><path d="M30 65 C30 60 40 57 50 63 C60 57 70 60 70 65"/><path d="M50 20 L45 15 M50 20 L55 15"/>
+          </svg>
+        </div>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 48, alignItems: "center" }}>
           {/* Left: Headline + CTAs */}
           <div className="hero-text">
