@@ -1288,6 +1288,76 @@
   50% { box-shadow: 0 0 0 8px rgba(10, 102, 194, 0.1); }
 }
 
+/* ─── Doodle Animations ────────────────────────────────────────────── */
+@keyframes doodleFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translateY(-20px) rotate(5deg); opacity: 1; }
+}
+
+@keyframes doodleFloatReverse {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translateY(15px) rotate(-5deg); opacity: 1; }
+}
+
+@keyframes doodleWiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-2deg); }
+}
+
+@keyframes doodlePulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes doodleDrawIn {
+  from { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  to { opacity: 0.8; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes doodleOrbit {
+  from { transform: rotate(0deg) translateX(30px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(30px) rotate(-360deg); }
+}
+
+@keyframes doodleBlink {
+  0%, 90%, 100% { opacity: 0.7; }
+  95% { opacity: 0.3; }
+}
+
+@keyframes doodleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes doodleSway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.doodle {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.doodle svg {
+  width: 100%;
+  height: 100%;
+}
+
+.doodle-float { animation: doodleFloat 6s ease-in-out infinite; }
+.doodle-float-reverse { animation: doodleFloatReverse 7s ease-in-out infinite; }
+.doodle-wiggle { animation: doodleWiggle 3s ease-in-out infinite; }
+.doodle-pulse { animation: doodlePulse 4s ease-in-out infinite; }
+.doodle-draw { animation: doodleDrawIn 1.5s ease-out forwards; }
+.doodle-orbit { animation: doodleOrbit 20s linear infinite; }
+.doodle-blink { animation: doodleBlink 5s ease-in-out infinite; }
+.doodle-bounce { animation: doodleBounce 2.5s ease-in-out infinite; }
+.doodle-sway { animation: doodleSway 4s ease-in-out infinite; }
+
 /* ─── Background Canvas (animated gradient blobs) ─────────────────── */
 .bg-canvas {
   position: fixed;
