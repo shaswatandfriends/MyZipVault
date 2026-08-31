@@ -148,7 +148,7 @@ function ProfitChartDoodle({ className, style }: DoodleProps) {
         <line x1="20" y1="80" x2="20" y2="20" />
         <path d="M25 70 L40 55 L55 60 L80 25" />
         <path d="M70 25 L80 25 L80 35" />
-        <path d="M38 42 L42 42 M40 40 L40 44" strokeWidth="3" />
+        <text x="35" y="45" fontSize="14" fill="currentColor" stroke="none" fontWeight="bold">$</text>
       </svg>
     </div>
   );
@@ -159,9 +159,7 @@ function OfferBadgeDoodle({ className, style }: DoodleProps) {
     <div className={`doodle ${className || ""}`} style={style}>
       <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M50 15 L60 30 L78 25 L73 43 L88 53 L73 63 L78 81 L60 76 L50 91 L40 76 L22 81 L27 63 L12 53 L27 43 L22 25 L40 30 Z" />
-        <path d="M38 50 L38 58 M38 50 L46 50 M38 58 L48 58 M48 50 L48 58" strokeWidth="2.5" />
-        <path d="M52 50 L52 58 M52 50 L58 50 M52 54 L57 54 M52 58 L58 58 M58 50 L58 58" strokeWidth="2.5" />
-        <path d="M62 50 L62 58 M62 50 L70 50 M62 54 L68 54" strokeWidth="2.5" />
+        <text x="38" y="58" fontSize="16" fill="currentColor" stroke="none" fontWeight="bold">OFFER</text>
       </svg>
     </div>
   );
