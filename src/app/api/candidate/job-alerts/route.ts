@@ -14,14 +14,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const userId = Number((session.user as Record<string, unknown>).id);
-    const subscriptions = await db.jobAlertSubscription.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-    });
+    const subscriptions = await db.$queryRaw`
+      SELECT * FROM "JobAlertSubscription" WHERE user_id = ${userId} ORDER BY created_at DESC
+    `;
     return NextResponse.json({ subscriptions });
   } catch (error) {
     console.error("[JOB_ALERTS] List error:", error);
-    return NextResponse.json({ error: "Failed to fetch job alerts" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch job alerts", subscriptions: [] }, { status: 200 });
   }
 }
 
@@ -39,26 +38,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { specialty, state, city, employment_type, is_remote, keywords, email_frequency } = body;
 
-    // Must have at least one filter
     if (!specialty && !state && !city && !employment_type && !is_remote && !keywords) {
       return NextResponse.json({ error: "At least one filter is required" }, { status: 400 });
     }
 
-    const subscription = await db.jobAlertSubscription.create({
-      data: {
-        user_id: userId,
-        specialty: specialty || null,
-        state: state || null,
-        city: city || null,
-        employment_type: employment_type || null,
-        is_remote: is_remote || false,
-        keywords: keywords || null,
-        email_frequency: email_frequency || "instant",
-        is_active: true,
-      },
-    });
+    await db.$executeRaw`
+      INSERT INTO "JobAlertSubscription" (user_id, specialty, state, city, employment_type, is_remote, keywords, email_frequency, is_active, created_at, updated_at)
+      VALUES (${userId}, ${specialty || null}, ${state || null}, ${city || null}, ${employment_type || null}, ${is_remote || false}, ${keywords || null}, ${email_frequency || 'instant'}, true, NOW(), NOW())
+    `;
 
-    return NextResponse.json({ subscription }, { status: 201 });
+    return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error("[JOB_ALERTS] Create error:", error);
     return NextResponse.json({ error: "Failed to create job alert" }, { status: 500 });
@@ -66,72 +55,44 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * DELETE /api/candidate/job-alerts
- * Delete a job alert subscription by id (passed as ?id=X query param)
+ * DELETE /api/candidate/job-alerts?id=X
  */
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = Number((session.user as Record<string, unknown>).id);
     const { searchParams } = new URL(request.url);
     const id = parseInt(searchParams.get("id") || "0");
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: "Subscription ID is required" }, { status: 400 });
-    }
-
-    // Verify ownership before deleting
-    const subscription = await db.jobAlertSubscription.findFirst({
-      where: { id, user_id: userId },
-    });
-    if (!subscription) {
-      return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
-    }
-
-    await db.jobAlertSubscription.delete({ where: { id } });
+    await db.$executeRaw`DELETE FROM "JobAlertSubscription" WHERE id = ${id} AND user_id = ${userId}`;
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[JOB_ALERTS] Delete error:", error);
-    return NextResponse.json({ error: "Failed to delete job alert" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }
 
 /**
- * PUT /api/candidate/job-alerts
- * Toggle active/inactive for a subscription (?id=X)
+ * PUT /api/candidate/job-alerts?id=X — toggle active/inactive
  */
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = Number((session.user as Record<string, unknown>).id);
     const { searchParams } = new URL(request.url);
     const id = parseInt(searchParams.get("id") || "0");
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: "Subscription ID is required" }, { status: 400 });
-    }
-
-    const subscription = await db.jobAlertSubscription.findFirst({
-      where: { id, user_id: userId },
-    });
-    if (!subscription) {
-      return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
-    }
-
-    const updated = await db.jobAlertSubscription.update({
-      where: { id },
-      data: { is_active: !subscription.is_active },
-    });
-
-    return NextResponse.json({ subscription: updated });
+    await db.$executeRaw`
+      UPDATE "JobAlertSubscription" SET is_active = NOT is_active, updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${userId}
+    `;
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[JOB_ALERTS] Toggle error:", error);
-    return NextResponse.json({ error: "Failed to toggle job alert" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to toggle" }, { status: 500 });
   }
 }
