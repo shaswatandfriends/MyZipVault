@@ -85,7 +85,6 @@ model User {
   admin_permissions    AdminPermission[]
   candidate_profile    CandidateProfile?
   automated_email_logs AutomatedEmailLog[]
-  job_alert_subscriptions JobAlertSubscription[]
   checklist_requests_as_client   ChecklistRequest[]   @relation("ClientChecklistRequests")
   checklist_requests_as_candidate ChecklistRequest[]   @relation("CandidateChecklistRequests")
   credentials          Credential[]
@@ -1119,31 +1118,6 @@ model AutomatedEmailLog {
   @@index([user_id])
   @@index([sequence, step])
   @@index([sent_at])
-}
-
-// ─── 46c. Job Alert Subscriptions ───────────────────────────────────
-// Candidates subscribe to job alerts by specialty + location.
-// When a matching job is posted, they get an email notification.
-model JobAlertSubscription {
-  id             Int       @id @default(autoincrement())
-  user_id        Int
-  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  specialty      String?
-  state          String?
-  city           String?
-  employment_type String?
-  is_remote      Boolean   @default(false)
-  keywords       String?
-  email_frequency String   @default("instant") // 'instant' | 'daily' | 'weekly'
-  is_active      Boolean   @default(true)
-  last_sent_at   DateTime?
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
-
-  @@index([user_id])
-  @@index([is_active])
-  @@index([specialty])
-  @@index([state])
 }
 
 // ─── 47. Compliance Bundles ─────────────────────────────────────────
