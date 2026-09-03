@@ -64,12 +64,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Sign in directly — NextAuth replaces any existing session automatically.
-      // Use redirect: true with callbackUrl so NextAuth handles the cookie
-      // + redirect in one step — no extra session fetch needed.
-      // The AuthProvider on the dashboard page will read the role from
-      // the session and redirect to the correct role-specific dashboard
-      // if the user lands on the wrong one.
       const result = await signIn("credentials", {
         email,
         password,
@@ -81,15 +75,38 @@ export default function LoginPage() {
           description: result.error || "Invalid email or password",
         });
       } else {
-        // Session cookie is set by NextAuth — no need to fetch it separately.
-        // Redirect to /dashboard — the AuthProvider will read the role from
-        // the session and redirect to the correct role-specific dashboard
-        // (candidate → /dashboard, recruiter → /recruiter/dashboard,
-        //  employer → /employer/dashboard, etc.)
-        // This eliminates the 300ms delay + extra /api/auth/session fetch.
+        // Fetch the session to determine the user's role and redirect accordingly.
+        // This prevents recruiters from briefly landing on the candidate dashboard
+        // before being redirected by AuthProvider.
         toast.success("Welcome back!", {
           description: "You have been signed in successfully.",
         });
+
+        try {
+          const sessionRes = await fetch("/api/auth/session");
+          if (sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            const role = sessionData?.user?.role;
+            if (role === "client_recruiter" || role === "client_admin") {
+              window.location.href = "/recruiter/dashboard";
+              return;
+            }
+            if (role === "employer") {
+              window.location.href = "/employer/dashboard";
+              return;
+            }
+            if (role === "super_admin") {
+              window.location.href = "/superadmin/dashboard";
+              return;
+            }
+            if (role === "platform_admin") {
+              window.location.href = "/admin/dashboard";
+              return;
+            }
+          }
+        } catch {
+          // If session fetch fails, fall back to /dashboard
+        }
         window.location.href = "/dashboard";
       }
     } catch {
