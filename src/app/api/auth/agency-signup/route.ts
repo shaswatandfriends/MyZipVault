@@ -67,6 +67,9 @@ export async function POST(request: Request) {
     const role = accountType === "agency" ? "client_admin" : "client_recruiter";
 
     // ── For Agency: create Organization first ──
+    // ── For Independent Recruiter: auto-create a personal org so all
+    //    API routes (credits, VaultSign, checklists) work without changes.
+    //    The org name is "FirstName LastName — Independent Recruiter".
     let organizationId: number | null = null;
 
     if (accountType === "agency") {
@@ -80,6 +83,19 @@ export async function POST(request: Request) {
         },
       });
       organizationId = organization.id;
+    } else {
+      // Independent recruiter — auto-create a personal org
+      const personalOrgName = `${firstName} ${lastName} — Independent Recruiter`;
+      const personalOrg = await db.organization.create({
+        data: {
+          name: personalOrgName,
+          credits_balance: 10, // Free trial: 10 credits
+          baa_status: "pending",
+          seat_limit: 1, // Solo — just themselves
+          account_status: "active", // Active immediately
+        },
+      });
+      organizationId = personalOrg.id;
     }
 
     // ── Create User (active by default — no admin approval needed) ──
