@@ -125,9 +125,11 @@ export const authOptions: NextAuthOptions = {
         if (credentials.email === "__superadmin__" && SUPERADMIN_EMAIL) {
           lookupEmail = SUPERADMIN_EMAIL;
         }
+        // Normalize email to lowercase for case-insensitive lookup
+        lookupEmail = lookupEmail.toLowerCase().trim();
 
         const user = await db.user.findUnique({
-          where: { email: lookupEmail.toLowerCase().trim() },
+          where: { email: lookupEmail },
         });
 
         if (!user) {
