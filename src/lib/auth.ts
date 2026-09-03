@@ -126,8 +126,9 @@ export const authOptions: NextAuthOptions = {
           lookupEmail = SUPERADMIN_EMAIL;
         }
 
-        const user = await db.user.findUnique({
-          where: { email: lookupEmail },
+        // Use findFirst with case-insensitive match — findUnique is case-sensitive
+        const user = await db.user.findFirst({
+          where: { email: { equals: lookupEmail, mode: "insensitive" } },
         });
 
         if (!user) {
