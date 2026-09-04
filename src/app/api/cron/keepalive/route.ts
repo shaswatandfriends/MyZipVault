@@ -51,28 +51,23 @@ export async function GET(request: Request) {
 
     // ─── Trigger automated email sequences (once per day, at 9am UTC) ───
     // Vercel Hobby plan only allows 2 cron jobs, so we piggyback on the
-    // keepalive cron (which runs daily at 9am UTC) to also trigger:
-    //   1. Automated email sequences (welcome, nudges, re-engagement)
-    //   2. Status updates (expire checklist requests, send reminders)
-    //   3. Profile completion recalculation
-    // All endpoints are idempotent — safe to call multiple times.
+    // keepalive cron (which runs daily at 9am UTC) to also trigger the
+    // automated email sequence (welcome emails, profile nudges, re-engagement).
+    // The automated-emails endpoint is idempotent — safe to call multiple times.
     try {
       const cronSecret = process.env.CRON_SECRET;
       const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || `https://${request.headers.get("host") || "my-zip-vault.vercel.app"}`;
       if (cronSecret && baseUrl) {
-        // Trigger all 3 cron jobs fire-and-forget
-        const endpoints = ["/api/cron/automated-emails", "/api/cron/status-update", "/api/cron/profile-recalc"];
-        for (const ep of endpoints) {
-          fetch(`${baseUrl}${ep}`, {
-            method: "POST",
-            headers: { "x-cron-secret": cronSecret },
-          }).catch((err) => {
-            console.error(`[CRON_KEEPALIVE] Failed to trigger ${ep}:`, err);
-          });
-        }
+        // Fire-and-forget — don't block keepalive response
+        fetch(`${baseUrl}/api/cron/automated-emails`, {
+          method: "POST",
+          headers: { "x-cron-secret": cronSecret },
+        }).catch((err) => {
+          console.error("[CRON_KEEPALIVE] Failed to trigger automated emails:", err);
+        });
       }
     } catch (err) {
-      console.error("[CRON_KEEPALIVE] Error triggering cron jobs:", err);
+      console.error("[CRON_KEEPALIVE] Error triggering automated emails:", err);
     }
 
     return NextResponse.json({
