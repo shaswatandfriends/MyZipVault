@@ -461,13 +461,25 @@ export async function POST(request: Request) {
       });
     }
 
-    // Deduct credits for the request (1 credit per document requested)
+    // ─── FIX #3: Use configurable credit cost from credit-gating.ts ───
+    // Previously used hardcoded formula: totalCredits = 1 + docCount
+    // Now reads the superadmin-configured credit_cost.send_skill_checklist
+    // setting (default: 2) + 1 per additional document.
     const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
-    const totalCredits = 1 + docCount; // 1 for checklist request + 1 per document
+    let checklistCost = 2; // Default fallback
+    try {
+      const { checkCreditAccess } = await import("@/lib/credit-gating");
+      const access = await checkCreditAccess(organizationId, "send_skill_checklist");
+      checklistCost = access.cost || 2;
+    } catch { /* fall back to default 2 */ }
+    const totalCredits = checklistCost + docCount; // Configured checklist cost + 1 per document
 
     if (org && org.credits_balance < totalCredits) {
-      // Not enough credits — still create the request but don't deduct
-      // In production, we'd block this; for now, allow it
+      // ─── FIX #3: Block the request if not enough credits ───
+      return NextResponse.json(
+        { error: `Insufficient credits. This request requires ${totalCredits} credits (checklist: ${checklistCost} + ${docCount} documents). Your organization has ${org.credits_balance} credits remaining.` },
+        { status: 402 }
+      );
     }
 
     if (org && org.credits_balance >= totalCredits) {

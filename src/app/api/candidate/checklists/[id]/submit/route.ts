@@ -122,6 +122,46 @@ export async function POST(
       },
     });
 
+    // ─── FIX #4: Notify the recruiter that the candidate submitted ───
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+      const candidateName = (session.user as Record<string, unknown>).firstName || session.user?.email || "Candidate";
+      const template = await db.checklistTemplate.findUnique({
+        where: { id: checklistRequest.checklist_template_id },
+        select: { name: true },
+      }).catch(() => null);
+
+      await createNotification({
+        userId: checklistRequest.client_user_id,
+        category: "checklist",
+        priority: "high",
+        title: `Checklist completed: ${template?.name || "Skills Checklist"}`,
+        message: `${candidateName} has completed and submitted their ${template?.name || "skills checklist"}. You can now view the signed PDF.`,
+        actionUrl: `/recruiter/requests`,
+        actionLabel: "View checklist",
+        relatedEntityId: requestId,
+        relatedEntityType: "checklist_request",
+      });
+    } catch (notifErr) {
+      console.error("[SUBMIT] Failed to notify recruiter:", notifErr);
+    }
+
+    // ─── FIX #6: Recalculate candidate profile completion ───
+    try {
+      const { recalcProfileCompletion } = await import("@/lib/profile-completion");
+      await recalcProfileCompletion(userId);
+    } catch (recalcErr) {
+      console.error("[SUBMIT] Failed to recalc profile:", recalcErr);
+    }
+
+    // Update candidate's last_activity_at
+    try {
+      await db.user.update({
+        where: { id: userId },
+        data: { last_activity_at: new Date() },
+      });
+    } catch { /* non-critical */ }
+
     return NextResponse.json({
       message: "Checklist submitted successfully",
       completionPct: 100,

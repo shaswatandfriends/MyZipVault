@@ -58,13 +58,21 @@ export async function POST(
       );
     }
 
-    // Check 24-hour cooldown
-    const lastCreatedAt = new Date(checklistRequest.created_at);
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    if (lastCreatedAt > twentyFourHoursAgo) {
+    // Check 24-hour cooldown based on last reminder sent (not request creation time)
+    // FIX #5: Was using checklistRequest.created_at (when request was first sent)
+    //         Now checks for recent Notification rows for this request
+    const recentReminder = await db.notification.findFirst({
+      where: {
+        user_id: checklistRequest.candidate_user_id,
+        category: "checklist",
+        related_entity_id: requestId,
+        created_at: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+    });
+    if (recentReminder) {
       return NextResponse.json(
-        { error: "Please wait at least 24 hours before sending a reminder" },
-        { status: 400 }
+        { error: "A reminder was already sent recently. Please wait 24 hours." },
+        { status: 429 }
       );
     }
 
@@ -87,12 +95,43 @@ export async function POST(
       console.log(`[EMAIL] Checklist reminder sent to ${candidateEmail}`);
     } catch (emailErr) {
       console.error("[EMAIL] Failed to send reminder email:", emailErr);
-      // Still return success since the reminder was attempted
     }
+
+    // Also create an in-app notification (shares cooldown state with /api/recruiter/send-reminder)
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({
+        userId: checklistRequest.candidate_user_id,
+        category: "checklist",
+        priority: "info",
+        title: `Reminder: ${checklistRequest.checklist_template?.name || "Skills Checklist"}`,
+        message: `This is a friendly reminder to complete your skills checklist.`,
+        actionUrl: `/checklists/${requestId}`,
+        actionLabel: "Complete now",
+        relatedEntityId: requestId,
+        relatedEntityType: "checklist_request",
+      });
+    } catch (notifErr) {
+      console.error("[REMIND] Failed to create in-app notification:", notifErr);
+    }
+
+    // Audit log
+    try {
+      const session = await getServerSession(authOptions);
+      await db.auditLog.create({
+        data: {
+          user_id: Number((session?.user as Record<string, unknown>)?.id || 0),
+          role: (session?.user as Record<string, unknown>)?.role as string || "unknown",
+          action: "CHECKLIST_REMIND",
+          entity_type: "ChecklistRequest",
+          entity_id: requestId,
+        },
+      });
+    } catch { /* non-critical */ }
 
     return NextResponse.json({
       success: true,
-      message: `Reminder email sent to ${checklistRequest.candidate_user.email}`,
+      message: `Reminder sent to ${checklistRequest.candidate_user.email}`,
     });
   } catch (error) {
     console.error("Remind POST error:", error);
