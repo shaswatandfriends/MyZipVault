@@ -122,17 +122,10 @@ export async function POST(
       },
     });
 
-    // FIX #4: Notify recruiter that candidate submitted
-    try {
-      const { createNotification } = await import("@/lib/notifications/create");
-      const tmpl = await db.checklistTemplate.findUnique({ where: { id: checklistRequest.checklist_template_id }, select: { name: true } }).catch(() => null);
-      await createNotification({ userId: checklistRequest.client_user_id, category: "checklist", priority: "high", title: `Checklist completed: ${tmpl?.name || "Skills Checklist"}`, message: "A candidate has submitted their skills checklist.", actionUrl: "/recruiter/requests", actionLabel: "View", relatedEntityId: requestId, relatedEntityType: "checklist_request" });
-    } catch {}
-
-    // FIX #6: Recalc profile completion
-    try { const { recalcProfileCompletion } = await import("@/lib/profile-completion"); await recalcProfileCompletion(userId); } catch {}
-
-    return NextResponse.json({ message: "Checklist submitted successfully", completionPct: 100 });
+    return NextResponse.json({
+      message: "Checklist submitted successfully",
+      completionPct: 100,
+    });
   } catch (error) {
     console.error("Submit checklist error:", error);
     return NextResponse.json(
