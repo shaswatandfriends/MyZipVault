@@ -272,41 +272,44 @@ export async function POST(request: Request) {
     } catch (e) { console.error("[SCHEMA_DRIFT]", e); }
 
     if (existingResponse) {
-      // ─── Option B: explicit candidate consent ───────────────────────
-      // Don't auto-share. Create a ChecklistRequest with status
-      // "reuse_pending" + send the candidate an in-app notification asking
-      // them to choose: "Approve Share" or "Complete New".
-      //
-      // The request links to the existing response so the candidate UI can
-      // show "You completed this on [date]" and offer the two actions.
-      //
-      // expires_at is still set using the org's pending-expiry config so
-      // that if the candidate ignores the consent prompt, it eventually
-      // expires and frees the pipeline.
-      const expiryDays = await getPendingRequestExpiryDays(organizationId);
-      const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+      // ─── AUTO-SHARE: candidate already has a valid response ───────
+      // Instead of reuse_pending (which makes the candidate manually approve),
+      // we auto-create a ConsentShare with 30-day default expiry.
+      // The candidate gets an in-app notification and can adjust expiry
+      // or revoke access anytime from /sharing.
+      const defaultExpiryDays = 30;
+      const shareExpiresAt = new Date(Date.now() + defaultExpiryDays * 24 * 60 * 60 * 1000);
+      const now = new Date();
 
+      // Create the checklist request as completed
       const checklistRequest = await db.checklistRequest.create({
         data: {
           client_user_id: userId,
           candidate_user_id: candidateUserId,
           checklist_template_id: Number(checklistTemplateId),
-          status: 'reuse_pending',
+          status: 'completed',
           completion_pct: 100,
           candidate_response_id: existingResponse.id,
-          opened_at: new Date(),
-          expires_at: expiresAt,
+          opened_at: now,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
 
-      // ─── Auto-create a RecruiterLead so the candidate appears in BOB ──
-      // (same as fresh request path — ensures candidate detail page works)
+      // Auto-create ConsentShare
+      await db.consentShare.create({
+        data: {
+          candidate_user_id: candidateUserId,
+          client_user_id: userId,
+          checklist_response_id: existingResponse.id,
+          shared_at: now,
+          expires_at: shareExpiresAt,
+        },
+      }).catch((e: any) => console.error("[SEND_REQUEST] ConsentShare create failed:", e));
+
+      // Auto-create RecruiterLead
       try {
         const existingLead = await db.recruiterLead.findFirst({
-          where: {
-            candidate_user_id: candidateUserId,
-            organization_id: organizationId,
-          },
+          where: { candidate_user_id: candidateUserId, organization_id: organizationId },
           select: { id: true },
         });
         if (!existingLead) {
@@ -324,24 +327,25 @@ export async function POST(request: Request) {
               source: "other",
               pipeline_stage: "doc_pending",
               tag: "warm",
-              last_activity_at: new Date(),
-              last_activity_type: "checklist_request_sent",
+              last_activity_at: now,
+              last_activity_type: "checklist_auto_shared",
             },
           });
         }
       } catch (leadErr) {
-        console.error("[SEND_REQUEST] Failed to auto-create RecruiterLead (reuse path):", leadErr);
+        console.error("[SEND_REQUEST] Failed to auto-create RecruiterLead:", leadErr);
       }
 
-      // Notify candidate: consent prompt
+      // In-app notification to candidate (auto-shared, no action needed)
       try {
-        const recruiterName = (session.user as Record<string, unknown>).name as string || "A recruiter";
+        const recruiterName = (session.user as Record<string, unknown>).firstName || session.user?.email || "A recruiter";
+        const org = await db.organization.findUnique({ where: { id: organizationId }, select: { name: true } }).catch(() => null);
         await db.notification.create({
           data: {
             user_id: candidateUserId,
-            title: "Checklist share request",
-            message: `${recruiterName} requested your ${checklistTemplateName} checklist. You already have a valid one — share it or complete a new one?`,
-            type: "checklist_share_request",
+            title: `Checklist auto-shared with ${org?.name || recruiterName}`,
+            message: `Your ${checklistTemplateName} checklist has been shared with ${org?.name || recruiterName} for 30 days. You can adjust the expiry or revoke access anytime.`,
+            type: "checklist_auto_shared",
             related_entity_id: checklistRequest.id,
             related_entity_type: "checklist_request",
             metadata: JSON.stringify({
@@ -350,39 +354,79 @@ export async function POST(request: Request) {
               checklist_name: checklistTemplateName,
               recruiter_user_id: userId,
               recruiter_name: recruiterName,
-              submitted_at: existingResponse.submitted_at,
+              org_name: org?.name,
+              share_expires_at: shareExpiresAt.toISOString(),
             }),
           },
         });
       } catch (e) {
-        console.error("[SEND_REQUEST] Failed to create reuse_pending notification:", e);
+        console.error("[SEND_REQUEST] Failed to create auto-share notification:", e);
       }
 
-      // Send email to candidate (existing-candidate path)
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
-      const loginLink = `${appUrl}/checklists`;
-      const candidateName = `${firstName} ${lastName}`;
-      sendEmail({
-        to: email,
-        templateKey: "checklist_request",
-        variables: {
-          candidate_name: candidateName,
-          client_name: org?.name || "MyZipVault",
-          checklist_name: checklistTemplateName,
-          login_link: loginLink,
-        },
-        phone: phone || undefined,
-      }).catch((err) => {
-        console.error("[EMAIL] Failed to send checklist reuse-request email:", err);
-      });
+      // Deduct credits (same as fresh request)
+      const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
+      let checklistCost = 2;
+      try {
+        const { checkCreditAccess } = await import("@/lib/credit-gating");
+        const access = await checkCreditAccess(organizationId, "send_skill_checklist");
+        checklistCost = access.cost || 2;
+      } catch {}
+      const totalCredits = checklistCost + docCount;
+
+      if (org && org.credits_balance < totalCredits) {
+        return NextResponse.json(
+          { error: `Insufficient credits. Need ${totalCredits}, have ${org.credits_balance}.` },
+          { status: 402 }
+        );
+      }
+
+      if (org && org.credits_balance >= totalCredits) {
+        const deductResult = await db.organization.updateMany({
+          where: { id: organizationId, credits_balance: { gte: totalCredits } },
+          data: { credits_balance: { decrement: totalCredits } },
+        });
+        if (deductResult.count > 0) {
+          await db.creditTransaction.create({
+            data: {
+              organization_id: organizationId,
+              transaction_type: "deduction",
+              credit_amount: -totalCredits,
+              description: `Checklist auto-shared to ${firstName} ${lastName} (existing response)`,
+            },
+          });
+          try { const { logCreditsDeducted } = await import("@/lib/audit"); await logCreditsDeducted(userId, organizationId, totalCredits); } catch {}
+        }
+      }
+
+      // Audit log
+      try {
+        await db.auditLog.create({
+          data: {
+            user_id: userId,
+            role: userRole,
+            action: "CHECKLIST_AUTO_SHARED",
+            entity_type: "ChecklistRequest",
+            entity_id: checklistRequest.id,
+          },
+        });
+      } catch {}
+
+      // BOB hook
+      try {
+        const { onDocShared } = await import("@/lib/bob/status-engine");
+        await onDocShared({
+          leadId: (await db.recruiterLead.findFirst({ where: { candidate_user_id: candidateUserId, organization_id: organizationId }, select: { id: true } }))?.id || 0,
+          actorUserId: userId,
+          documentType: "checklist",
+          documentName: checklistTemplateName,
+        });
+      } catch {}
 
       return NextResponse.json({
-        success: true,
-        checklistRequestId: checklistRequest.id,
-        candidateUserId,
-        isNewCandidate,
-        reusePending: true,
-        message: `${firstName} ${lastName} already has a valid ${checklistTemplateName} checklist. We've asked them to share it or complete a new one.`,
+        message: "Checklist auto-shared — candidate already has a valid response",
+        requestId: checklistRequest.id,
+        autoShared: true,
+        shareExpiresAt,
       }, { status: 201 });
     }
 
