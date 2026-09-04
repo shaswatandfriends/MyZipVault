@@ -58,14 +58,12 @@ export async function POST(
       );
     }
 
-    // Check 24-hour cooldown
-    const lastCreatedAt = new Date(checklistRequest.created_at);
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    if (lastCreatedAt > twentyFourHoursAgo) {
-      return NextResponse.json(
-        { error: "Please wait at least 24 hours before sending a reminder" },
-        { status: 400 }
-      );
+    // Check 24-hour cooldown — query Notification table for recent reminders
+    const recentReminder = await db.notification.findFirst({
+      where: { user_id: checklistRequest.candidate_user_id, related_entity_id: requestId, created_at: { gte: new Date(Date.now() - 86400000) } },
+    });
+    if (recentReminder) {
+      return NextResponse.json({ error: "A reminder was already sent recently. Please wait 24 hours." }, { status: 429 });
     }
 
     // Send reminder email
