@@ -461,13 +461,15 @@ export async function POST(request: Request) {
       });
     }
 
-    // Deduct credits for the request (1 credit per document requested)
+    // FIX #3: Block if insufficient credits (was silently allowing)
     const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
-    const totalCredits = 1 + docCount; // 1 for checklist request + 1 per document
+    const totalCredits = 1 + docCount;
 
     if (org && org.credits_balance < totalCredits) {
-      // Not enough credits — still create the request but don't deduct
-      // In production, we'd block this; for now, allow it
+      return NextResponse.json(
+        { error: `Insufficient credits. Need ${totalCredits} (1 checklist + ${docCount} docs), have ${org.credits_balance}.` },
+        { status: 402 }
+      );
     }
 
     if (org && org.credits_balance >= totalCredits) {
