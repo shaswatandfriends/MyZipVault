@@ -77,15 +77,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if a reminder was already sent recently (within last 24 hours)
+    // FIX C4: Check for recent reminders using category 'compliance' (not 'checklist_reminder')
+    // The createNotification below sets category='compliance', which maps to type='compliance' in DB.
+    // Previous check used type='checklist_reminder' which NEVER matched → no rate limit.
     const recentReminder = await db.notification.findFirst({
       where: {
         user_id: candidateId,
-        type: "checklist_reminder",
         related_entity_id: checklistRequest.id,
         related_entity_type: "checklist_request",
         created_at: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // last 24 hours
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
         },
       },
       orderBy: { created_at: "desc" },

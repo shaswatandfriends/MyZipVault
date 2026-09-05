@@ -49,19 +49,20 @@ export async function GET() {
 }
 
 // PATCH: Update current user's organization VaultSign settings (client_admin only)
+// FIX C1: Use getSessionUser instead of missing getServerSession import
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const role = (session.user as Record<string, unknown>).role as string;
+    const role = sessionUser.role;
     if (role !== "client_admin") {
       return NextResponse.json({ error: "Only client admins can update organization settings" }, { status: 403 });
     }
 
-    const orgId = (session.user as Record<string, unknown>).organizationId as number;
+    const orgId = sessionUser.organizationId;
     if (!orgId) {
       return NextResponse.json({ error: "No organization" }, { status: 400 });
     }
