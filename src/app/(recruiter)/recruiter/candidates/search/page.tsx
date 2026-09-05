@@ -366,7 +366,7 @@ function RecruiterCandidateSearchInner() {
                       </Button>
                     )}
                     {!c.has_revealed && !c.contact_info_locked && !c.primary_email && !c.primary_phone && (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={async () => { try { const r = await fetch(`/api/recruiter/candidates/${c.id}/reveal`, { method: "POST" }); if (r.ok) { toast.success("Contact revealed"); fetchCandidates(); } else { const d = await r.json().catch(() => ({})); toast.error(d.error || "Failed"); } } catch { toast.error("Failed"); } }}>
                         <Eye className="size-3.5 mr-1" />Reveal (2 cr)
                       </Button>
                     )}
