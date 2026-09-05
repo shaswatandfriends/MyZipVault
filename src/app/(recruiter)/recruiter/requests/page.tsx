@@ -18,7 +18,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   ClipboardCheck, FileText, FileSignature, Search, Loader2,
-  Eye, ArrowRight, Clock, CheckCircle2, XCircle, Send,
+  Eye, ArrowRight, Clock, CheckCircle2, XCircle, Send, Share2,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,6 +99,14 @@ export default function RequestsPage() {
           }
         }
         setChecklistRequests(allChecklists);
+        // FIX C8: Populate share requests from dashboard data
+        const allSharesData: ShareRequest[] = [];
+        for (const candidate of data.candidates || []) {
+          for (const sr of candidate.shareRequests || []) {
+            allSharesData.push(sr);
+          }
+        }
+        setShareRequests(allSharesData);
       }
 
       if (vaultsignRes.ok) {
@@ -176,6 +184,10 @@ export default function RequestsPage() {
             <ClipboardCheck className="h-3.5 w-3.5" />
             Checklists ({checklistRequests.length})
           </TabsTrigger>
+          <TabsTrigger value="shares" className="flex items-center gap-1.5">
+            <Share2 className="h-3.5 w-3.5" />
+            Shares ({shareRequests.length})
+          </TabsTrigger>
           <TabsTrigger value="vaultsign" className="flex items-center gap-1.5">
             <FileSignature className="h-3.5 w-3.5" />
             VaultSign ({vaultSignDocs.length})
@@ -246,6 +258,48 @@ export default function RequestsPage() {
                         })}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Share Requests (FIX C8: previously missing tab) ─── */}
+        <TabsContent value="shares">
+          <Card>
+            <CardContent className="p-0">
+              {shareRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Share2 className="h-10 w-10 text-text-muted mx-auto mb-2" />
+                  <p className="text-sm font-medium text-foreground">No document share requests</p>
+                  <p className="text-xs text-text-muted mt-1">
+                    Share requests are created when you request documents alongside checklists.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {shareRequests.filter(sr => matchesSearch(`${sr.candidate_user?.first_name || ""} ${sr.candidate_user?.last_name || ""}`, sr.candidate_user?.email || "")).map((sr) => (
+                    <div key={sr.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground">
+                            {sr.candidate_user?.first_name} {sr.candidate_user?.last_name}
+                          </span>
+                          <span className="text-xs text-text-muted">{sr.candidate_user?.email}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {sr.request_checklists && <Badge variant="outline" className="text-xs">Checklist</Badge>}
+                          {sr.request_credentials && <Badge variant="outline" className="text-xs">Credentials</Badge>}
+                          {sr.request_resume && <Badge variant="outline" className="text-xs">Resume</Badge>}
+                          {sr.request_references && <Badge variant="outline" className="text-xs">References</Badge>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(sr.status)}
+                        <span className="text-xs text-text-muted">{new Date(sr.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
