@@ -71,8 +71,8 @@ export default function CandidateSettingsPage() {
         const res = await fetch("/api/candidate/profile");
         if (res.ok) {
           const data = await res.json();
-          setFirstName(data.first_name || "");
-          setLastName(data.last_name || "");
+          setFirstName(data.firstName || data.first_name || "");
+          setLastName(data.lastName || data.last_name || "");
           setPhone(data.phone || "");
           if (data.notification_preferences) {
             setNotificationPrefs(data.notification_preferences);

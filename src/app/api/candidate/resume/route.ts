@@ -23,6 +23,7 @@ export async function GET() {
 
     const resume = await db.resume.findFirst({
       where: { candidate_user_id: userId },
+      orderBy: { created_at: "desc" }, // FIX BUG #31: return most recent, not oldest
     });
 
     if (!resume) {
@@ -131,6 +132,16 @@ export async function POST(request: Request) {
         is_builder_resume: false,
       },
     });
+
+    // FIX BUG #32: Link resume to candidate_profile so profile completion bumps
+    try {
+      await db.candidateProfile.updateMany({
+        where: { user_id: userId },
+        data: { resume_id: resume.id },
+      });
+      // Recalc profile completion
+      try { const { recalcProfileCompletion } = await import("@/lib/profile-completion"); await recalcProfileCompletion(userId); } catch {}
+    } catch {}
 
     return NextResponse.json(
       {

@@ -240,7 +240,7 @@ export async function POST(
         priority: "info",
         title: "Application submitted ✓",
         message: `Your application for "${job.title}" has been received. The employer will review and reach out if there's a fit.`,
-        actionUrl: `/candidate/jobs/${jobId}`,
+        actionUrl: `/jobs/${jobId}`,
         actionLabel: "View application",
       });
     } catch (notifErr) {

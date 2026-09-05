@@ -60,18 +60,19 @@ export async function GET(request: NextRequest) {
     if (state) where.state = state;
     if (isRemote) where.is_remote = true;
     if (search) {
-      where.OR = [
-        { title: { ilike: `%${search}%` } },
-        { specialty: { ilike: `%${search}%` } },
-        { job_title: { ilike: `%${search}%` } },
+      where.AND = [
+        { OR: [
+          { title: { ilike: `%${search}%` } },
+          { specialty: { ilike: `%${search}%` } },
+          { job_title: { ilike: `%${search}%` } },
+        ]},
       ];
     }
 
-    // Filter out jobs that have already closed
-    where.OR = [
-      ...(Array.isArray(where.OR) ? where.OR : []),
-      { close_date: null },
-      { close_date: { gte: new Date() } },
+    // Filter out jobs that have already closed (use AND, not OR — fixes BUG #19)
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      { OR: [{ close_date: null }, { close_date: { gte: new Date() } }] },
     ];
 
     const [jobs, total] = await Promise.all([

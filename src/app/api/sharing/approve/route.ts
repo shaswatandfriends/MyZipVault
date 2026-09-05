@@ -73,6 +73,23 @@ export async function POST(request: Request) {
     // Audit log
     await logCandidateShared(userId, consentShare.id);
 
+    // FIX BUG #22: Check if all requested items now have active ConsentShares.
+    // If so, mark the ShareRequest as completed so it leaves the "pending" list.
+    try {
+      const updatedReq = await db.shareRequest.findUnique({ where: { id: shareRequestId } });
+      if (updatedReq) {
+        const allItemsActioned = (!updatedReq.request_checklists || updatedReq.request_checklists === false || await db.consentShare.findFirst({ where: { candidate_user_id: userId, client_user_id: updatedReq.client_user_id, is_deleted: false, expires_at: { gt: new Date() }, checklist_response_id: { not: null } } }))
+          && (!updatedReq.request_credentials || updatedReq.request_credentials === false || await db.consentShare.findFirst({ where: { candidate_user_id: userId, client_user_id: updatedReq.client_user_id, is_deleted: false, expires_at: { gt: new Date() }, credential_id: { not: null } } }))
+          && (!updatedReq.request_resume || updatedReq.request_resume === false || await db.consentShare.findFirst({ where: { candidate_user_id: userId, client_user_id: updatedReq.client_user_id, is_deleted: false, expires_at: { gt: new Date() }, resume_id: { not: null } } }))
+          && (!updatedReq.request_references || updatedReq.request_references === false || await db.consentShare.findFirst({ where: { candidate_user_id: userId, client_user_id: updatedReq.client_user_id, is_deleted: false, expires_at: { gt: new Date() } } }));
+        if (allItemsActioned) {
+          await db.shareRequest.update({ where: { id: shareRequestId }, data: { status: "approved" } });
+        }
+      }
+    } catch (statusErr) {
+      console.error("[SHARE_APPROVE] Failed to update request status:", statusErr);
+    }
+
     // Check if all items in the request have been actioned
     const { createNotification } = await import("@/lib/notifications/create");
     await createNotification({
