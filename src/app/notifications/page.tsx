@@ -152,7 +152,9 @@ export default function NotificationCenterPage() {
       });
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {}
+    } catch {
+      toast.error("Failed to mark notification as read");
+    }
   }
 
   async function handleDelete(id: number) {
