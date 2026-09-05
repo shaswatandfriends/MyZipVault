@@ -212,6 +212,22 @@ function RecruiterCandidateSearchInner() {
     }
   };
 
+  // FIX C7: Reveal contact info
+  const handleReveal = async (candidateId: number) => {
+    try {
+      const res = await fetch(`/api/recruiter/candidates/${candidateId}/reveal`, { method: "POST" });
+      if (res.ok) {
+        toast.success("Contact info revealed");
+        fetchCandidates();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error("Reveal failed", { description: data.error || "Insufficient credits" });
+      }
+    } catch {
+      toast.error("Failed to reveal contact info");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -240,6 +256,8 @@ function RecruiterCandidateSearchInner() {
           <Database className="size-5 text-emerald-600" />
           <div><p className="text-xs text-muted-foreground">Showing</p><p className="text-lg font-bold">{candidates.length}</p></div>
         </CardContent></Card>
+      </div>
+
         <Card><CardContent className="p-4 flex items-center gap-2">
           <CheckCircle2 className="size-5 text-purple-600" />
           <div><p className="text-xs text-muted-foreground">Page</p><p className="text-lg font-bold">{page} / {totalPages || 1}</p></div>
@@ -366,7 +384,7 @@ function RecruiterCandidateSearchInner() {
                       </Button>
                     )}
                     {!c.has_revealed && !c.contact_info_locked && !c.primary_email && !c.primary_phone && (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleReveal(c.id)}>
                         <Eye className="size-3.5 mr-1" />Reveal (2 cr)
                       </Button>
                     )}

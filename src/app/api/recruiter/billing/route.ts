@@ -36,11 +36,11 @@ export async function GET(request: Request) {
       },
     });
 
-    // Get credit price from platform settings
+    // FIX C2: Unify credit price key with purchase route (both use 'credit_cost_per_document')
     const priceSetting = await db.platformSetting.findUnique({
-      where: { setting_key: "credit_price_per_unit" },
+      where: { setting_key: "credit_cost_per_document" },
     });
-    const pricePerCredit = priceSetting ? Number(priceSetting.setting_value) : 2.99;
+    const pricePerCredit = priceSetting ? Number(priceSetting.setting_value) : 2.0;
 
     // Build transaction query
     const where: { organization_id: number; transaction_type?: string } = {
