@@ -62,8 +62,10 @@ export async function POST(request: Request) {
     // Send email notification to manager (non-blocking)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
     const referenceFormLink = `${appUrl}/reference/${reference.id}`;
-    const candidateFirstName = (session.user as Record<string, unknown>).firstName as string || "";
-    const candidateLastName = (session.user as Record<string, unknown>).lastName as string || "";
+    // FIX BUG #18: Fetch user from DB to get reliable firstName/lastName
+    const dbUser = await db.user.findUnique({ where: { id: userId }, select: { first_name: true, last_name: true } });
+    const candidateFirstName = dbUser?.first_name || (session.user as Record<string, unknown>).firstName as string || "";
+    const candidateLastName = dbUser?.last_name || (session.user as Record<string, unknown>).lastName as string || "";
     const candidateName = `${candidateFirstName} ${candidateLastName}`.trim() || "A candidate";
 
     sendEmail({

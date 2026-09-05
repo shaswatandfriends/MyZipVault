@@ -177,15 +177,21 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { parsedData } = body;
+    const { parsedData, resumeId } = body;
 
-    const existing = await db.resume.findFirst({
-      where: { candidate_user_id: userId },
-    });
+    // FIX BUG #33: If resumeId provided, update that specific resume.
+    // Otherwise find the most recent builder resume or create a new one.
+    let targetResume: any = null;
+    if (resumeId) {
+      targetResume = await db.resume.findFirst({ where: { id: resumeId, candidate_user_id: userId } });
+    } else {
+      // Find most recent builder resume
+      targetResume = await db.resume.findFirst({ where: { candidate_user_id: userId, is_builder_resume: true }, orderBy: { created_at: "desc" } });
+    }
 
-    if (existing) {
+    if (targetResume) {
       const updated = await db.resume.update({
-        where: { id: existing.id },
+        where: { id: targetResume.id },
         data: {
           is_builder_resume: true,
           parsed_data: parsedData ? JSON.stringify(parsedData) : null,
@@ -254,8 +260,10 @@ export async function DELETE() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // FIX BUG #34: Delete most recent resume, not first inserted
     const existing = await db.resume.findFirst({
       where: { candidate_user_id: userId },
+      orderBy: { created_at: "desc" },
     });
 
     if (!existing) {
