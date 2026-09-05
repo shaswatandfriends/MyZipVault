@@ -45,8 +45,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // If the invoice already has a pdf_url, generate a signed URL and return it
-    if (invoice.pdf_url) {
+    // FIX C3: If pdf_url is a stripe marker (stripe_session/stripe_paid),
+    // don't try to generate a signed URL from it — generate a real PDF instead.
+    if (invoice.pdf_url && !invoice.pdf_url.startsWith("stripe_") && !invoice.pdf_url.startsWith("placement_")) {
       const signedUrl = await getSignedUrl(
         STORAGE_BUCKETS.INVOICES,
         invoice.pdf_url,
