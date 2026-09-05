@@ -35,22 +35,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Also find signers by email match (for external signers)
-    const emailSigners = await db.vaultSignSigner.findMany({
-      where: {
-        email: session.user.email,
-        user_id: null,
-      },
+    // FIX #39: Guard against undefined email
+    const userEmail = session.user.email || "";
+    const emailSigners = userEmail ? await db.vaultSignSigner.findMany({
+      where: { email: userEmail, user_id: null },
       include: {
         document: {
           include: {
-            organization: {
-              select: { id: true, name: true },
-            },
+            organization: { select: { id: true, name: true } },
           },
         },
       },
       orderBy: { created_at: "desc" },
-    });
+    }) : [];
 
     // Combine and deduplicate
     const allSigners = [...signers, ...emailSigners];
