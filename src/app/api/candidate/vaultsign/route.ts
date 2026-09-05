@@ -35,11 +35,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Also find signers by email match (for external signers)
-    // FIX BUG #39: Guard against undefined email
-    const userEmail = session.user.email || "";
-    const emailSigners = userEmail ? await db.vaultSignSigner.findMany({
+    const emailSigners = await db.vaultSignSigner.findMany({
       where: {
-        email: userEmail,
+        email: session.user.email,
         user_id: null,
       },
       include: {
