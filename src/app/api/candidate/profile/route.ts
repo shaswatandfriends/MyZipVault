@@ -54,6 +54,16 @@ export async function GET() {
       }
     }
 
+    // FIX BUG #28: Use canonical recalcProfileCompletion instead of inline calc
+    let profileCompletionPct = 0;
+    try {
+      const { recalcProfileCompletion } = await import("@/lib/profile-completion");
+      profileCompletionPct = await recalcProfileCompletion(user.id);
+    } catch {
+      // Fallback: basic inline calc
+      profileCompletionPct = (user.first_name && user.last_name ? 20 : 0) + (user.email_verified_at ? 15 : 0) + (user.resumes.length > 0 ? 25 : 0) + (user.credentials.length > 0 ? 15 : 0) + (user.candidate_references.length > 0 ? 15 : 0) + (user.calendar_availabilities.length > 0 ? 10 : 0);
+    }
+
     return NextResponse.json({
       email: user.email,
       firstName: user.first_name,
@@ -64,15 +74,7 @@ export async function GET() {
       credentialCount: user.credentials.length,
       referenceCount: user.candidate_references.length,
       hasAvailability: user.calendar_availabilities.length > 0,
-      // Calculate profile completion dynamically with new weights:
-      // Profile info 20%, Email verified 15%, Resume 25%, Credential 15%, Reference 15%, Calendar 10%
-      profileCompletionPct:
-        (user.first_name && user.last_name && user.phone ? 20 : 0) +
-        (user.email_verified_at ? 15 : 0) +
-        (user.resumes.length > 0 ? 25 : 0) +
-        (user.credentials.length > 0 ? 15 : 0) +
-        (user.candidate_references.length > 0 ? 15 : 0) +
-        (user.calendar_availabilities.length > 0 ? 10 : 0),
+      profileCompletionPct,
       notification_preferences: notificationPreferences,
     });
   } catch (error) {
