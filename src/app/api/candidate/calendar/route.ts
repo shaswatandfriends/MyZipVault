@@ -41,9 +41,9 @@ export async function GET() {
     } catch (e) { console.error("[SCHEMA_DRIFT] query failed:", e); }
 
     for (const req of checklistRequests) {
-      // Use created_at + 30 days as a soft deadline
-      const deadline = new Date(req.created_at);
-      deadline.setDate(deadline.getDate() + 30);
+      // FIX #16: Use real expires_at if available, otherwise created_at + 30 days
+      const deadline = req.expires_at ? new Date(req.expires_at) : new Date(req.created_at);
+      if (!req.expires_at) deadline.setDate(deadline.getDate() + 30);
 
       events.push({
         id: `checklist-${req.id}`,
