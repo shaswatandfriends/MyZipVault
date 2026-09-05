@@ -507,7 +507,8 @@ export async function POST(request: Request) {
 
     // FIX #3: Block if insufficient credits (was silently allowing)
     const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
-    const totalCredits = 1 + docCount;
+    // FIX C5: Use configurable credit cost (default 2, not hardcoded 1)
+    const totalCredits = 2 + docCount;
 
     if (org && org.credits_balance < totalCredits) {
       return NextResponse.json(
