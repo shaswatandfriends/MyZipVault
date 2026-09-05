@@ -427,7 +427,7 @@ export default function CandidateChecklistsPage() {
                           {checklist.template.name}
                         </h3>
                         <Badge className={cn("text-[11px] font-semibold border gap-1.5 px-2.5 py-0.5 rounded-lg", statusConfig.badgeClass)}>
-                          <StatusIcon className={cn("size-3", displayStatus === "in_progress" && "animate-pulse")} />
+                          <StatusIcon className={cn("size-3", displayStatus === "in_progress" && "animate-spin")} />
                           {statusConfig.label}
                         </Badge>
                       </div>

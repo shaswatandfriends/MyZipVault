@@ -86,7 +86,7 @@ export default function CandidateJobDetailPage() {
       if (!res.ok) {
         if (res.status === 404) {
           toast.error("Job not available", { description: "This job may have been closed or removed." });
-          router.push("/browse-jobs");
+          router.push("/jobs");
           return;
         }
         throw new Error("Failed to fetch");
@@ -96,7 +96,7 @@ export default function CandidateJobDetailPage() {
       setMyApplication(data.my_application);
     } catch (err) {
       toast.error("Failed to load job", { description: err instanceof Error ? err.message : "" });
-      router.push("/browse-jobs");
+      router.push("/jobs");
     } finally {
       setIsLoading(false);
     }
