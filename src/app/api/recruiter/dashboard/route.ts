@@ -284,19 +284,65 @@ export async function GET(request: Request) {
       shareRequests = await db.shareRequest.findMany({
         where: {
           client_user_id: { in: scopedUserIds },
-          status: "pending", // only pending requests matter for fulfillment
         },
         select: {
           id: true,
           candidate_user_id: true,
+          client_user_id: true,
+          status: true,
           request_checklists: true,
           request_credentials: true,
           request_resume: true,
           request_references: true,
+          message: true,
+          created_at: true,
+          client_user: {
+            select: { id: true, first_name: true, last_name: true, email: true },
+          },
         },
+        orderBy: { created_at: "desc" },
       });
     } catch (srErr) {
       console.error("[RECRUITER_DASHBOARD] ShareRequest query failed:", srErr);
+    }
+
+    // Group share requests by candidate_user_id for the requests page Shares tab
+    const shareRequestsByCandidate = new Map<number, any[]>();
+    for (const sr of shareRequests) {
+      const cId = sr.candidate_user_id;
+      if (!shareRequestsByCandidate.has(cId)) shareRequestsByCandidate.set(cId, []);
+      shareRequestsByCandidate.get(cId)!.push({
+        id: sr.id,
+        status: sr.status,
+        request_checklists: sr.request_checklists,
+        request_credentials: sr.request_credentials,
+        request_resume: sr.request_resume,
+        request_references: sr.request_references,
+        message: sr.message,
+        created_at: sr.created_at,
+        candidate_user: {
+          id: 0, // populated per-candidate in the map below
+          first_name: "",
+          last_name: "",
+          email: "",
+        },
+        client_user: sr.client_user,
+      });
+    }
+
+    // Attach shareRequests to each candidate (used by /recruiter/requests Shares tab)
+    for (const candidate of candidates) {
+      const srs = shareRequestsByCandidate.get(candidate.id) || [];
+      // Populate candidate_user info on each share request (so the UI's name/email works)
+      for (const sr of srs) {
+        sr.candidate_user = {
+          id: candidate.id,
+          first_name: candidate.firstName,
+          last_name: candidate.lastName,
+          email: candidate.email,
+        };
+      }
+      (candidate as any).shareRequests = srs;
     }
 
     // ─── Fetch consent shares (what candidates have shared) ───
@@ -335,8 +381,10 @@ export async function GET(request: Request) {
     }
 
     // Check each candidate's share requests against what they've shared
-    const candidatesWithShareRequests = new Set(shareRequests.map(sr => sr.candidate_user_id));
-    for (const sr of shareRequests) {
+    // Use only pending share requests for fulfillment computation (others are completed/denied)
+    const pendingShareRequests = shareRequests.filter(sr => sr.status === "pending");
+    const candidatesWithShareRequests = new Set(pendingShareRequests.map(sr => sr.candidate_user_id));
+    for (const sr of pendingShareRequests) {
       const cId = sr.candidate_user_id;
       const shared = candidateSharedItems.get(cId) ?? {
         checklist: false, credential: false, resume: false, reference: false,
@@ -366,7 +414,7 @@ export async function GET(request: Request) {
     // Pending = candidates with pending ShareRequests OR pending ChecklistRequests
     // FIX: was only counting ShareRequests — missing pending checklists
     const candidatesWithPendingChecklists = new Set<number>();
-    for (const req of checklists || []) {
+    for (const req of checklistRequests) {
       if (["sent", "opened", "in_progress", "reuse_pending"].includes(req.status)) {
         candidatesWithPendingChecklists.add(req.candidate_user_id);
       }

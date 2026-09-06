@@ -281,6 +281,23 @@ export async function POST(request: Request) {
       const shareExpiresAt = new Date(Date.now() + defaultExpiryDays * 24 * 60 * 60 * 1000);
       const now = new Date();
 
+      // FIX C6 (auto-share path): Check credits BEFORE creating any records
+      const docCountAuto = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
+      let checklistCostAuto = 2;
+      try {
+        const { checkCreditAccess } = await import("@/lib/credit-gating");
+        const accessAuto = await checkCreditAccess(organizationId, "send_skill_checklist");
+        checklistCostAuto = accessAuto.creditsRequired || 2;
+      } catch {}
+      const totalCreditsAuto = checklistCostAuto + docCountAuto;
+
+      if (org && org.credits_balance < totalCreditsAuto) {
+        return NextResponse.json(
+          { error: `Insufficient credits. Need ${totalCreditsAuto}, have ${org.credits_balance}.` },
+          { status: 402 }
+        );
+      }
+
       // Create the checklist request as completed
       const checklistRequest = await db.checklistRequest.create({
         data: {
@@ -363,22 +380,9 @@ export async function POST(request: Request) {
         console.error("[SEND_REQUEST] Failed to create auto-share notification:", e);
       }
 
-      // Deduct credits (same as fresh request)
+      // Deduct credits (already checked above BEFORE creating records)
       const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
-      let checklistCost = 2;
-      try {
-        const { checkCreditAccess } = await import("@/lib/credit-gating");
-        const access = await checkCreditAccess(organizationId, "send_skill_checklist");
-        checklistCost = access.cost || 2;
-      } catch {}
-      const totalCredits = checklistCost + docCount;
-
-      if (org && org.credits_balance < totalCredits) {
-        return NextResponse.json(
-          { error: `Insufficient credits. Need ${totalCredits}, have ${org.credits_balance}.` },
-          { status: 402 }
-        );
-      }
+      const totalCredits = totalCreditsAuto; // reuse the value computed above
 
       if (org && org.credits_balance >= totalCredits) {
         const deductResult = await db.organization.updateMany({

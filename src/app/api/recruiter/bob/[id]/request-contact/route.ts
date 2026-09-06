@@ -34,6 +34,7 @@ export async function POST(
 
     const role = (session.user as Record<string, unknown>).role as string;
     const userId = Number((session.user as Record<string, unknown>).id);
+    const organizationId = (session.user as Record<string, unknown>).organizationId as number | null;
     const { id } = await params;
     const leadId = parseInt(id);
 

@@ -208,10 +208,35 @@ export default function RecruiterBillingPage() {
     fetchBilling();
   }, [fetchBilling]);
 
-  const handleBuyCredits = (pkg: CreditPackage) => {
-    toast.info("Payment setup in progress", {
-      description: `Credit purchases (${pkg.credits} for ${formatCurrency(pkg.totalPrice)}) require Stripe configuration. Please contact your administrator or check back shortly.`,
-    });
+  const [purchasingPackage, setPurchasingPackage] = useState<number | null>(null);
+
+  const handleBuyCredits = async (pkg: CreditPackage) => {
+    setPurchasingPackage(pkg.credits);
+    try {
+      const res = await fetch("/api/recruiter/credits/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: pkg.credits }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to start purchase");
+      }
+      if (data.checkoutUrl) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast.success("Purchase initiated", {
+          description: data.message || "Your credits will appear shortly.",
+        });
+        fetchBilling();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to purchase credits";
+      toast.error("Purchase failed", { description: message });
+    } finally {
+      setPurchasingPackage(null);
+    }
   };
 
   const totalPages = data?.pagination.totalPages ?? 1;
@@ -332,9 +357,19 @@ export default function RecruiterBillingPage() {
                     <Button
                       className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => handleBuyCredits(pkg)}
+                      disabled={purchasingPackage === pkg.credits}
                     >
-                      <ShoppingCart className="size-4" />
-                      Buy {pkg.credits} Credits
+                      {purchasingPackage === pkg.credits ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Redirecting...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="size-4" />
+                          Buy {pkg.credits} Credits
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>

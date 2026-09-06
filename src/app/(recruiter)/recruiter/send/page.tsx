@@ -391,8 +391,9 @@ function RecruiterSendPage() {
   };
 
   // ─── Credit Calculation ────────────────────────────────────────────────
-
-  const totalCredits = 1 + selectedDocuments.length + requestedDocuments.length;
+  // FIX: API charges 2 credits for checklist base + 1 per requested document
+  // (was 1 + docs — wrong base cost shown to recruiter)
+  const totalCredits = 2 + selectedDocuments.length + requestedDocuments.length;
 
   // ─── Selected Template ─────────────────────────────────────────────────
 
