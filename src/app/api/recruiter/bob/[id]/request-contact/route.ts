@@ -76,10 +76,10 @@ export async function POST(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    // Visibility check
+    // FIX: Add org scope check — admin in different org shouldn't access
     if (role !== "super_admin") {
       const isOwner = lead.recruiter_user_id === userId;
-      const isAdmin = role === "client_admin";
+      const isAdmin = role === "client_admin" && lead.organization_id === organizationId;
       if (!isOwner && !isAdmin) {
         return NextResponse.json({ error: "Not authorized" }, { status: 403 });
       }
