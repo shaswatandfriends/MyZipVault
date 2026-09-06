@@ -431,8 +431,18 @@ export async function POST(request: Request) {
     }
 
     // ─── Fresh request path ───────────────────────────────────────────
+    // FIX C6: Check credits BEFORE creating any DB records
+    const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
+    const totalCredits = 2 + docCount; // 2 for checklist + 1 per doc
+
+    if (org && org.credits_balance < totalCredits) {
+      return NextResponse.json(
+        { error: `Insufficient credits. Need ${totalCredits} (checklist + ${docCount} docs), have ${org.credits_balance}.` },
+        { status: 402 }
+      );
+    }
+
     // No existing valid response — candidate must complete from scratch.
-    // Set expires_at based on the org's pending-request-expiry config.
     const expiryDays = await getPendingRequestExpiryDays(organizationId);
     const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
@@ -505,18 +515,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // FIX #3: Block if insufficient credits (was silently allowing)
-    const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
-    // FIX C5: Use configurable credit cost (default 2, not hardcoded 1)
-    const totalCredits = 2 + docCount;
-
-    if (org && org.credits_balance < totalCredits) {
-      return NextResponse.json(
-        { error: `Insufficient credits. Need ${totalCredits} (1 checklist + ${docCount} docs), have ${org.credits_balance}.` },
-        { status: 402 }
-      );
-    }
-
+    // FIX C6: Credits already checked above BEFORE creating records
     if (org && org.credits_balance >= totalCredits) {
       // ─── Gap 11 fix: atomic conditional update ───
       // Only succeeds if credits_balance is still >= totalCredits at the
