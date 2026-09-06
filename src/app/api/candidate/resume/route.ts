@@ -225,6 +225,8 @@ export async function PUT(request: Request) {
         where: { user_id: userId },
         data: { resume_id: resume.id },
       });
+      // FIX BUG #4: Recalc profile completion after linking new builder resume
+      try { const { recalcProfileCompletion } = await import("@/lib/profile-completion"); await recalcProfileCompletion(userId); } catch {}
     }
 
     return NextResponse.json(

@@ -58,9 +58,10 @@ export async function POST(
       );
     }
 
-    // Check 24-hour cooldown — query Notification table for recent reminders
+    // FIX BUG #1: requestId → checklistRequestId (was undefined → 500 crash)
+    // FIX BUG #2: Create notification after email so cooldown actually works
     const recentReminder = await db.notification.findFirst({
-      where: { user_id: checklistRequest.candidate_user_id, related_entity_id: requestId, created_at: { gte: new Date(Date.now() - 86400000) } },
+      where: { user_id: checklistRequest.candidate_user_id, related_entity_id: checklistRequestId, related_entity_type: "checklist_request", created_at: { gte: new Date(Date.now() - 86400000) } },
     });
     if (recentReminder) {
       return NextResponse.json({ error: "A reminder was already sent recently. Please wait 24 hours." }, { status: 429 });
@@ -85,8 +86,13 @@ export async function POST(
       console.log(`[EMAIL] Checklist reminder sent to ${candidateEmail}`);
     } catch (emailErr) {
       console.error("[EMAIL] Failed to send reminder email:", emailErr);
-      // Still return success since the reminder was attempted
     }
+
+    // FIX BUG #2: Create notification so the 24h cooldown actually works
+    try {
+      const { createNotification } = await import("@/lib/notifications/create");
+      await createNotification({ userId: checklistRequest.candidate_user_id, category: "compliance", priority: "info", title: `Reminder: ${checklistRequest.checklist_template?.name || "Checklist"}`, message: "This is a friendly reminder to complete your skills checklist.", actionUrl: `/checklists/${checklistRequestId}`, actionLabel: "Complete now", relatedEntityId: checklistRequestId, relatedEntityType: "checklist_request" });
+    } catch {}
 
     return NextResponse.json({
       success: true,
