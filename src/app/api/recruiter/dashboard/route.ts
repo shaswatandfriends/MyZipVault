@@ -355,10 +355,16 @@ export async function GET(request: Request) {
     // Total Candidates = all leads in pipeline (new_lead, doc_pending, interested, etc.)
     const totalCandidates = allLeads.length;
 
-    // Pending = candidates who have at least one unfulfilled request item
-    // (requested something but haven't shared all of it yet)
+    // Pending = candidates with pending ShareRequests OR pending ChecklistRequests
+    // FIX: was only counting ShareRequests — missing pending checklists
+    const candidatesWithPendingChecklists = new Set<number>();
+    for (const req of checklists || []) {
+      if (["sent", "opened", "in_progress", "reuse_pending"].includes(req.status)) {
+        candidatesWithPendingChecklists.add(req.candidate_user_id);
+      }
+    }
     const pendingRequests = Array.from(candidateFulfillment.values())
-      .filter(f => f.hasPendingRequests).length;
+      .filter(f => f.hasPendingRequests).length + candidatesWithPendingChecklists.size;
 
     // Completed = candidates who have fulfilled ALL requested items
     // (they had requests, and all are fulfilled)
