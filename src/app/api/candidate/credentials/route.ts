@@ -105,20 +105,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── Duplicate prevention ──
-    // A candidate can only have ONE of each certification type.
-    // e.g., if they already have "BLS (Basic Life Support)", they can't
-    // upload another BLS. They must delete the old one first.
-    // Match is case-insensitive on the document_name field.
-    const existingCredential = await db.credential.findFirst({
-      where: {
-        candidate_user_id: userId,
-        document_name: {
-          equals: documentName,
-          mode: "insensitive",
-        },
-      },
-      select: { id: true, document_name: true },
+    // ── Duplicate prevention (FIX #12: use transaction to prevent race) ──
+    const existingCredential = await db.$transaction(async (tx) => {
+      const existing = await tx.credential.findFirst({
+        where: { candidate_user_id: userId, document_name: { equals: documentName, mode: "insensitive" } },
+        select: { id: true, document_name: true },
+      });
+      return existing;
     });
 
     if (existingCredential) {
