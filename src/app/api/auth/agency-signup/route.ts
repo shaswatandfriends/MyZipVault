@@ -79,7 +79,7 @@ export async function POST(request: Request) {
           credits_balance: 0,
           baa_status: "pending",
           seat_limit: 5,
-          account_status: "pending", // Admin must activate from admin panel
+          account_status: "active", // FIX: was 'pending' — recruiters are active immediately
         },
       });
       organizationId = organization.id;
@@ -160,6 +160,23 @@ export async function POST(request: Request) {
         logAuthError("[AGENCY_SIGNUP] Failed to send signup notifications", notifErr);
         // Non-blocking
       }
+    }
+
+    // ── FIX: Send verification email (success screen says 'Check your email') ──
+    try {
+      const crypto = await import("crypto");
+      const verifyToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await db.platformSetting.upsert({
+        where: { setting_key: `verify_${verifyToken}` },
+        update: { setting_value: JSON.stringify({ userId: user.id, email: user.email, expiresAt }) },
+        create: { setting_key: `verify_${verifyToken}`, setting_value: JSON.stringify({ userId: user.id, email: user.email, expiresAt }) },
+      });
+      const { sendVerificationEmail } = await import("@/lib/email");
+      const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://my-zip-vault.vercel.app";
+      await sendVerificationEmail(user.email, `${appUrl}/verify-email?token=${verifyToken}`);
+    } catch (emailErr) {
+      logAuthError("[AGENCY_SIGNUP] Failed to send verification email", emailErr);
     }
 
     // ─── Referral: if the request body has a ref code, grant credits to the
