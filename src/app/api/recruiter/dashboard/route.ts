@@ -152,40 +152,48 @@ export async function GET(request: Request) {
       candidateMap.get(cId)!.checklistRequests.push(cr);
     }
 
-    // Then, add leads who DON'T have checklist requests yet (so they appear
-    // in the candidates table). This ensures Total Candidates stat matches
-    // the table count.
-    for (const lead of allLeads) {
-      if (lead.candidate_user_id && !candidateMap.has(lead.candidate_user_id)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let leadUser: any = null;
-        try {
-          leadUser = await db.user.findUnique({
-            where: { id: lead.candidate_user_id },
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              email: true,
-              last_activity_at: true,
-              candidate_profile: { select: { phone: true } },
-            },
-          });
-        } catch (e) {
-          console.error("[RECRUITER_DASHBOARD] Lead user fetch failed:", e);
-        }
-        if (leadUser) {
-          candidateMap.set(lead.candidate_user_id, {
-            id: lead.candidate_user_id,
-            firstName: leadUser.first_name,
-            lastName: leadUser.last_name,
-            email: leadUser.email,
-            phone: leadUser.candidate_profile?.phone ?? null,
-            lastActivity: leadUser.last_activity_at,
-            specialty: lead.specialty ?? "—",
-            checklistRequests: [],
-            sharedDocuments: [],
-          });
+    // Then, add leads who DON'T have checklist requests yet.
+    // FIX N+1: Batch fetch all missing users in one query instead of per-lead
+    const missingUserIds = allLeads
+      .filter(l => l.candidate_user_id && !candidateMap.has(l.candidate_user_id))
+      .map(l => l.candidate_user_id)
+      .filter((v): v is number => v !== null);
+
+    if (missingUserIds.length > 0) {
+      let leadUsers: any[] = [];
+      try {
+        leadUsers = await db.user.findMany({
+          where: { id: { in: missingUserIds } },
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            last_activity_at: true,
+            candidate_profile: { select: { phone: true } },
+          },
+        });
+      } catch (e) {
+        console.error("[RECRUITER_DASHBOARD] Batch user fetch failed:", e);
+      }
+
+      const userMap = new Map(leadUsers.map(u => [u.id, u]));
+      for (const lead of allLeads) {
+        if (lead.candidate_user_id && !candidateMap.has(lead.candidate_user_id)) {
+          const leadUser = userMap.get(lead.candidate_user_id);
+          if (leadUser) {
+            candidateMap.set(lead.candidate_user_id, {
+              id: lead.candidate_user_id,
+              firstName: leadUser.first_name,
+              lastName: leadUser.last_name,
+              email: leadUser.email,
+              phone: leadUser.candidate_profile?.phone ?? null,
+              lastActivity: leadUser.last_activity_at,
+              specialty: lead.specialty ?? "—",
+              checklistRequests: [],
+              sharedDocuments: [],
+            });
+          }
         }
       }
     }
