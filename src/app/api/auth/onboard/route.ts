@@ -52,11 +52,53 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
+      // ─── FIX: existing user may be a candidate who was pre-created by the
+      // recruiter's send-request flow. They have must_change_pass=true and
+      // a placeholder password hash. We should let them SET their password
+      // here, not block them with "account already exists".
+      //
+      // Two cases:
+      //   A) must_change_pass=true → pre-created candidate, allow password reset
+      //   B) must_change_pass=false → already onboarded, block (link reused)
+      if (!existingUser.must_change_pass) {
+        // User already completed onboarding — this invite link is being reused
+        return NextResponse.json(
+          { error: "This email has already been set up. Please log in instead." },
+          { status: 409 }
+        );
+      }
+
+      // Case A: pre-created candidate — set their real password now
+      const passwordHash = await hash(password, 12);
+
+      await db.user.update({
+        where: { id: existingUser.id },
+        data: {
+          password_hash: passwordHash,
+          must_change_pass: false,
+          is_approved: true,
+          account_status: "active",
+          tos_accepted_at: new Date(),
+        },
+      });
+
+      // Mark token as used
+      await db.inviteToken.update({
+        where: { id: inviteToken.id },
+        data: { is_used: true },
+      });
+
       return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
+        {
+          message: "Account set up successfully",
+          userId: existingUser.id,
+          email: existingUser.email,
+        },
+        { status: 200 }
       );
     }
+
+    // ─── New user path — create the user record (original logic) ──────
 
     const passwordHash = await hash(password, 12);
 
