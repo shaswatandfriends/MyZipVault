@@ -604,16 +604,54 @@ export async function POST(request: Request) {
     const candidateName = `${firstName} ${lastName}`;
     const checklistDisplayName = checklistTemplateName;
 
-    if (isNewCandidate && inviteTokenValue) {
-      // New candidate: send invite email with link to set up account
-      const inviteLink = `${appUrl}/onboard?token=${inviteTokenValue}`;
+    // ─── Determine the right email + link to send ──────────────────
+    // FIX ISSUE #3 (first-time login):
+    //   - New candidates have must_change_pass=true + placeholder password
+    //     → they cannot log in via /login. They MUST go to /onboard?token=...
+    //   - Existing candidates who completed onboarding (must_change_pass=false)
+    //     → they have a real password, can log in via /login
+    //   - Existing candidates who NEVER completed onboarding (must_change_pass=true)
+    //     → they cannot log in either. Generate a fresh invite token + send /onboard link.
+    let shouldSendInvite = isNewCandidate;
+    let inviteLinkForEmail: string | null = null;
+
+    if (!isNewCandidate && existingUser) {
+      // Existing candidate — check if they ever set their password
+      // must_change_pass=true means the placeholder hash is still in place
+      // and the candidate has never been through /onboard.
+      if (existingUser.must_change_pass === true) {
+        shouldSendInvite = true;
+      }
+    }
+
+    if (shouldSendInvite) {
+      // Generate (or regenerate) the invite token
+      // If the existing user has an unused token already, we could reuse it,
+      // but simplest: generate a fresh one. Old tokens still work until expiry.
+      const freshToken = uuidv4();
+      inviteTokenValue = freshToken; // overwrite for new candidates (already set above)
+      await db.inviteToken.create({
+        data: {
+          token: freshToken,
+          email,
+          role: "candidate",
+          token_type: "candidate_invite",
+          invited_by: userId,
+          organization_id: organizationId,
+          nurse_name: `${firstName} ${lastName}`,
+          is_used: false,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+      inviteLinkForEmail = `${appUrl}/onboard?token=${freshToken}`;
+
       sendEmail({
         to: email,
         templateKey: "candidate_invite",
         variables: {
           candidate_name: candidateName,
           client_name: companyName,
-          invite_link: inviteLink,
+          invite_link: inviteLinkForEmail,
           checklist_name: checklistDisplayName,
         },
         phone: phone || undefined,
@@ -621,7 +659,7 @@ export async function POST(request: Request) {
         console.error("[EMAIL] Failed to send candidate invite email:", err);
       });
     } else {
-      // Existing candidate: send checklist request email with login link
+      // Existing candidate who has completed onboarding — send them to /login
       const loginLink = `${appUrl}/login`;
       sendEmail({
         to: email,
@@ -639,6 +677,10 @@ export async function POST(request: Request) {
     }
 
     // ─── In-app notification to candidate ──────────────────────────
+    // FIX ISSUE #1 (duplicate email):
+    //   createNotification() sends its own Brevo email for urgent priority.
+    //   We already sent a dedicated template email above. Skipping the email
+    //   here prevents the candidate from receiving TWO emails for one action.
     try {
       const orgName = (await db.organization.findUnique({
         where: { id: organizationId },
@@ -649,13 +691,14 @@ export async function POST(request: Request) {
       await createNotification({
         userId: candidateUserId,
         category: "compliance",
-        priority: "urgent",
+        priority: "important", // FIX #1: was "urgent" — urgent forces a duplicate email
         title: `New request from ${orgName}`,
         message: `${orgName} sent you a ${checklistTemplateName} checklist${documents?.length ? ` and requested ${documents.join(", ")}` : ""}. Log in to complete it.`,
         actionUrl: "/dashboard",
         actionLabel: "View request",
         relatedEntityId: checklistRequest.id,
         relatedEntityType: "checklist_request",
+        skipEmail: true, // FIX #1: don't send another email — we already sent the template email above
       });
     } catch (notifErr) {
       console.error("[SEND_REQUEST] Failed to create candidate notification:", notifErr);
