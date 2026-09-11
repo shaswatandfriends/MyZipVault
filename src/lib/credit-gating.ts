@@ -14,6 +14,10 @@ const FEATURE_CREDIT_COSTS: Record<string, number> = {
   // Marketplace additions (Phase 0)
   reveal_email: 2,
   reveal_phone: 2,
+  // NOTE: submit_candidate is declared here and visible in superadmin credit-costs
+  // UI, but is NOT currently deducted by /api/recruiter/jobs/[id]/submit. This is
+  // intentional pending a product decision: do recruiters pay to submit candidates,
+  // or is submission free (revenue comes from placement payouts)?
   submit_candidate: 2,
   send_skill_checklist: 2,
 };

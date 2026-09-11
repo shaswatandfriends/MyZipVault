@@ -89,7 +89,7 @@ async function getUserNotificationPreferences(
 function categorizeTemplate(templateKey: string): "reminder" | "email" | "critical" {
   // Reminder templates (credential expiry, reference reminders, etc.)
   const reminderKeys = [
-    "credential_expiry_reminder",
+    "credential_expiry_warning",
     "reference_reminder",
     "low_credit_alert",
     "checklist_reminder",
@@ -274,7 +274,7 @@ export async function sendManagerInviteEmail(email: string, nurseName: string, f
 export async function sendCredentialExpiryEmail(email: string, documentName: string, daysRemaining: string, loginLink: string, phone?: string) {
   return sendEmail({
     to: email,
-    templateKey: "credential_expiry",
+    templateKey: "credential_expiry_warning",
     variables: {
       candidate_name: email.split("@")[0],
       document_name: documentName,

@@ -3,10 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { LANDING_PAGE_CONFIG_KEY as SETTING_KEY } from "@/lib/landing-page-config";
 
 export const dynamic = 'force-dynamic';
-
-const SETTING_KEY = "landing_page_content";
 
 export async function GET() {
   try {
