@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "platform_admin") {
+    if (userRole !== "platform_admin" && userRole !== "super_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "platform_admin") {
+    if (userRole !== "platform_admin" && userRole !== "super_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

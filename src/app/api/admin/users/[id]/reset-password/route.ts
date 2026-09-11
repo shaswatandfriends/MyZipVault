@@ -16,7 +16,7 @@ export async function POST(
     }
 
     const userRole = (session.user as Record<string, unknown>).role as string;
-    if (userRole !== "platform_admin") {
+    if (userRole !== "platform_admin" && userRole !== "super_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -28,9 +28,8 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate a temporary password
-    const tempPassword = randomBytes(8).toString("hex");
-    const hashedPassword = await hash(tempPassword, 12);
+    // Generate a random hashed password — user must use forgot-password flow to set their own
+    const hashedPassword = await hash(randomBytes(16).toString("hex"), 12);
 
     await db.user.update({
       where: { id: userId },
@@ -42,7 +41,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      temporary_password: tempPassword,
+      message: "Password reset. User must use the forgot-password flow to set a new one.",
     });
   } catch (error) {
     console.error("[ADMIN_USER_RESET_PASSWORD]", error);
