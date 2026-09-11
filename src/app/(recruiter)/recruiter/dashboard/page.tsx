@@ -22,6 +22,7 @@ import {
 
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { ReferralCard } from "@/components/shared/ReferralCard";
+import { TourHost } from "@/components/onboarding/tour-host";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import {
@@ -305,6 +306,7 @@ export default function RecruiterDashboardPage() {
 
   return (
     <div className="space-y-3">
+      <TourHost />
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 

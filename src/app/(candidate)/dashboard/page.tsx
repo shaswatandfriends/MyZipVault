@@ -16,6 +16,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { ReferralCard } from "@/components/shared/ReferralCard";
+import { TourHost } from "@/components/onboarding/tour-host";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface CredentialItem {
@@ -229,6 +230,7 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="space-y-4">
+      <TourHost />
       <BannerCarousel />
 
       {/* ════ SECTION 1: SMART HERO BANNER ════ */}

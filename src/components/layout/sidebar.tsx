@@ -671,6 +671,21 @@ export function AppSidebar() {
             style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }}
           />
 
+          {/* Take a tour button — dispatches custom event caught by <TourHost /> */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("mzv:tour:start"))}
+            className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/60 hover:text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+            title="Take a tour"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <HelpCircle className="size-4 shrink-0 text-amber-400/80" />
+            <span className="group-data-[collapsible=icon]:hidden">Take a tour</span>
+          </button>
+
           {/* User Info — glass container */}
           <div
             className="flex items-center gap-2.5 px-2.5 py-2 rounded-[12px] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9"

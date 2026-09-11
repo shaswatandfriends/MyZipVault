@@ -76,6 +76,16 @@ interface ResumeVersion {
   hasParsedData: boolean;
   parsedData: ResumeParsedData | null;
   createdAt: string;
+  // Phase 5.3 — template picker fields
+  resumeTemplateId?: number | null;
+  isDefaultVersion?: boolean;
+}
+
+interface ResumeTemplateOption {
+  id: number;
+  name: string;
+  description: string | null;
+  layout_config: { font_family?: string; heading_color?: string; section_order?: string[] } | null;
 }
 
 interface ATSScore {
