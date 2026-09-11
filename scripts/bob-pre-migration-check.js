@@ -7,9 +7,13 @@
 const { Pool } = require("pg");
 const fs = require("fs");
 
-// HARDCODED to Supabase — never use process.env.DATABASE_URL here because
-// the shell has it set to a local SQLite path which would override.
-const SUPABASE_DB_URL = "postgresql://postgres.hzmxgzcdiaofpznvlmrz:Shaswat%400047@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
+// Read from env var (set SUPABASE_DB_URL in your shell before running).
+// Do NOT use process.env.DATABASE_URL — it may point to a local SQLite path.
+const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
+if (!SUPABASE_DB_URL) {
+  console.error("ERROR: SUPABASE_DB_URL env var is not set. Export it first, e.g.:\n  export SUPABASE_DB_URL='postgresql://postgres.hzmxgzcdiaofpznvlmrz:YOUR_PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true'");
+  process.exit(1);
+}
 
 async function main() {
   const pool = new Pool({

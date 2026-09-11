@@ -1,6 +1,11 @@
 const { Pool } = require("pg");
+const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
+if (!SUPABASE_DB_URL) {
+  console.error("ERROR: SUPABASE_DB_URL env var is not set. Export it first, e.g.:\n  export SUPABASE_DB_URL='postgresql://postgres.hzmxgzcdiaofpznvlmrz:YOUR_PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true'");
+  process.exit(1);
+}
 const pool = new Pool({
-  connectionString: "postgresql://postgres.hzmxgzcdiaofpznvlmrz:Shaswat%400047@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true",
+  connectionString: SUPABASE_DB_URL,
   ssl: { rejectUnauthorized: false },
 });
 (async () => {
