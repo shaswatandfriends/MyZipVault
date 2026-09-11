@@ -79,7 +79,7 @@ VALUES
   ('checklist_reminder_email_enabled', 'true'),
   ('checklist_reminder_inapp_enabled', 'true'),
   ('checklist_reminder_sms_enabled', 'false')
-ON CONFLICT ("setting_key") DO NOTHING;
+ON CONFLICT ("setting_key") DO UPDATE SET setting_value = EXCLUDED.setting_value;
 
 -- ─── 4b. Seed the checklist_expiry_reminder email template ──────────
 INSERT INTO "EmailTemplate" ("template_key", "subject", "body")
@@ -89,7 +89,9 @@ VALUES
     'Action needed: Your skills checklist expires in {{days_remaining}} days',
     '<p>Hello {{candidate_name}},</p><p>This is a friendly reminder that the skills checklist <strong>{{checklist_name}}</strong> requested by <strong>{{recruiter_name}}</strong> will expire in <strong>{{days_remaining}} days</strong>.</p><p>If you don''t complete it before the expiry date, the request will be cancelled and the recruiter will need to send a new one.</p><p><a href="{{login_link}}" style="background-color:#166534;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;">Complete Checklist</a></p><p>Thank you,<br/>MyZipVault Team</p>'
   )
-ON CONFLICT ("template_key") DO NOTHING;
+ON CONFLICT ("template_key") DO UPDATE SET
+  subject = EXCLUDED.subject,
+  body = EXCLUDED.body;
 
 -- ─── 5. Backfill existing pending requests ──────────────────────────
 -- Per user decision: expires_at = created_at + 7 days for all existing
