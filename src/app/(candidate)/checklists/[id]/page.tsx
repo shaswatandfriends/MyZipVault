@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion";
+import { ProficiencyScaleLegend } from "@/components/checklist/proficiency-scale-legend";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 interface SkillItem {
@@ -970,6 +971,9 @@ export default function ChecklistAssessmentPage({
                   </div>
                 </div>
               </FadeIn>
+
+              {/* Phase 4.3 — Proficiency Scale legend (above rating UI) */}
+              <ProficiencyScaleLegend />
 
               {/* Skills by Category */}
               {categoryList.map((category, catIndex) => {

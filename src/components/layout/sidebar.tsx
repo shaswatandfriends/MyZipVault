@@ -135,6 +135,7 @@ const myWorkGroup: NavGroup = {
       items: [
         { title: "My Submittals", href: "/recruiter/jobs?filter=submittals", icon: Send },
         { title: "My Placements", href: "/recruiter/jobs?filter=placements", icon: Handshake },
+        { title: "Messages", href: "/recruiter/messages", icon: Mail },
       ],
     },
   ],

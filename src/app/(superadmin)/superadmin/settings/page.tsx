@@ -86,6 +86,13 @@ export default function SuperadminSettingsPage() {
   const [creditCostCredential, setCreditCostCredential] = useState("");
   const [creditCostReference, setCreditCostReference] = useState("");
   const [creditCostChecklist, setCreditCostChecklist] = useState("");
+  // Phase 2.2 — Commission & Splits config
+  const [platformSplitPercent, setPlatformSplitPercent] = useState("");
+  const [bonusPercent, setBonusPercent] = useState("");
+  const [ownershipResidualPercent, setOwnershipResidualPercent] = useState("");
+  const [ownershipExclusiveDays, setOwnershipExclusiveDays] = useState("");
+  const [ownershipResidualDays, setOwnershipResidualDays] = useState("");
+  const [inviteCooldownHours, setInviteCooldownHours] = useState("");
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [triggeringNotifications, setTriggeringNotifications] = useState(false);
   const [notificationResult, setNotificationResult] = useState<Record<string, number> | null>(null);
@@ -108,6 +115,13 @@ export default function SuperadminSettingsPage() {
       setCreditCostCredential(getSettingValue(json.settings, "credit_cost_credential"));
       setCreditCostReference(getSettingValue(json.settings, "credit_cost_reference"));
       setCreditCostChecklist(getSettingValue(json.settings, "credit_cost_checklist"));
+      // Phase 2.2 — Commission & Splits
+      setPlatformSplitPercent(getSettingValue(json.settings, "platform_split_percent"));
+      setBonusPercent(getSettingValue(json.settings, "bonus_percent"));
+      setOwnershipResidualPercent(getSettingValue(json.settings, "ownership_residual_percent"));
+      setOwnershipExclusiveDays(getSettingValue(json.settings, "ownership_exclusive_days"));
+      setOwnershipResidualDays(getSettingValue(json.settings, "ownership_residual_days"));
+      setInviteCooldownHours(getSettingValue(json.settings, "invite_cooldown_hours"));
 
       const flags: Record<string, boolean> = {};
       for (const f of json.featureFlags) {
@@ -216,6 +230,87 @@ export default function SuperadminSettingsPage() {
               >
                 <Save className="size-4" />
                 {saving["Checklist Validity"] ? "Saving…" : "Save"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* ── Phase 2.2: Commission & Splits ─────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <CreditCard className="size-4 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Commission & Splits</CardTitle>
+                  <CardDescription>Recruiter payout percentages, bonus incentives, ownership windows, and invite cooldown.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="platform-split">Platform Split % (recruiter share)</Label>
+                  <Input id="platform-split" type="number" min="0" max="100" value={platformSplitPercent} onChange={(e) => setPlatformSplitPercent(e.target.value)} placeholder="70" />
+                  <p className="text-xs text-muted-foreground">Recruiter's default share of the placement fee.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bonus-percent">Bonus % (extra on urgent jobs)</Label>
+                  <Input id="bonus-percent" type="number" min="0" max="100" value={bonusPercent} onChange={(e) => setBonusPercent(e.target.value)} placeholder="5" />
+                  <p className="text-xs text-muted-foreground">Added on top of platform_split_percent for ⚡ bonus jobs (e.g., 70→75).</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ownership-residual-percent">Ownership Residual %</Label>
+                  <Input id="ownership-residual-percent" type="number" min="0" max="100" value={ownershipResidualPercent} onChange={(e) => setOwnershipResidualPercent(e.target.value)} placeholder="5" />
+                  <p className="text-xs text-muted-foreground">When Recruiter B submits + closes Recruiter A's candidate, A gets this %.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ownership-exclusive-days">Exclusive Ownership Window (days)</Label>
+                  <Input id="ownership-exclusive-days" type="number" min="1" value={ownershipExclusiveDays} onChange={(e) => setOwnershipExclusiveDays(e.target.value)} placeholder="90" />
+                  <p className="text-xs text-muted-foreground">First-submission-wins exclusive window.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ownership-residual-days">Residual Ownership Window (days)</Label>
+                  <Input id="ownership-residual-days" type="number" min="1" value={ownershipResidualDays} onChange={(e) => setOwnershipResidualDays(e.target.value)} placeholder="180" />
+                  <p className="text-xs text-muted-foreground">After exclusive ends, other recruiters can submit but original keeps residual %.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-cooldown">Invite Cooldown (hours)</Label>
+                  <Input id="invite-cooldown" type="number" min="1" value={inviteCooldownHours} onChange={(e) => setInviteCooldownHours(e.target.value)} placeholder="72" />
+                  <p className="text-xs text-muted-foreground">Min hours between re-invites to the same candidate email.</p>
+                </div>
+              </div>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                onClick={async () => {
+                  setSaving((prev) => ({ ...prev, "Commission": true }));
+                  try {
+                    const updates = [
+                      ["platform_split_percent", platformSplitPercent],
+                      ["bonus_percent", bonusPercent],
+                      ["ownership_residual_percent", ownershipResidualPercent],
+                      ["ownership_exclusive_days", ownershipExclusiveDays],
+                      ["ownership_residual_days", ownershipResidualDays],
+                      ["invite_cooldown_hours", inviteCooldownHours],
+                    ] as const;
+                    await Promise.all(updates.map(([k, v]) =>
+                      fetch("/api/superadmin/settings", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ settingKey: k, settingValue: v }),
+                      })
+                    ));
+                    toast.success("Commission & Splits saved");
+                  } catch (e: any) {
+                    toast.error(e.message || "Save failed");
+                  } finally {
+                    setSaving((prev) => ({ ...prev, "Commission": false }));
+                  }
+                }}
+                disabled={saving["Commission"]}
+              >
+                <Save className="size-4" />
+                {saving["Commission"] ? "Saving…" : "Save Commission Settings"}
               </Button>
             </CardContent>
           </Card>
