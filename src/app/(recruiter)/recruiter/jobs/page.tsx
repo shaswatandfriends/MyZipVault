@@ -44,6 +44,8 @@ interface JobRow {
   commission_type: string | null;
   commission_amount: number | null;
   commission_percentage: number | null;
+  is_bonus: boolean;
+  bonus_amount: number | null;
   total_submissions: number;
   my_submission: { id: number; status: string; submitted_at: string } | null;
   close_date: string | null;
@@ -207,6 +209,11 @@ export default function RecruiterJobsPage() {
                       {job.salary_display && (
                         <span className="flex items-center gap-1 text-emerald-700 font-medium">
                           <DollarSign className="size-3" /> {job.salary_display}
+                        </span>
+                      )}
+                      {job.is_bonus && (
+                        <span className="flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                          ⚡ Bonus{job.bonus_amount ? `: +$${job.bonus_amount.toLocaleString()}` : " job"}
                         </span>
                       )}
                       {job.commission_type === "flat" && job.commission_amount && (

@@ -134,6 +134,42 @@ export async function POST(
       await createNotification({ userId: checklistRequest.client_user_id, category: "checklist", priority: "high", title: `Checklist completed: ${tmpl?.name || "Skills Checklist"}`, message: "A candidate has submitted their skills checklist.", actionUrl: "/recruiter/requests", actionLabel: "View", relatedEntityId: requestId, relatedEntityType: "checklist_request" });
     } catch {}
 
+    // PHASE 1.2: Auto-share checklist with the requesting recruiter (30-day default expiry).
+    // Only auto-share if the checklist was REQUESTED by a recruiter (client_user_id set).
+    if (checklistRequest.client_user_id && checklistRequest.candidate_response) {
+      try {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        await db.consentShare.create({
+          data: {
+            candidate_user_id: userId,
+            client_user_id: checklistRequest.client_user_id,
+            checklist_response_id: checklistRequest.candidate_response.id,
+            shared_at: now,
+            expires_at: expiresAt,
+          },
+        });
+        // Notify candidate it was auto-shared (they can revoke from /sharing)
+        try {
+          const { createNotification } = await import("@/lib/notifications/create");
+          await createNotification({
+            userId,
+            category: "checklist",
+            priority: "info",
+            title: "Checklist auto-shared with recruiter",
+            message: "Your submitted checklist was automatically shared with the requesting recruiter. You can revoke this from the Sharing page.",
+            actionUrl: "/sharing",
+            actionLabel: "Manage sharing",
+            relatedEntityId: requestId,
+            relatedEntityType: "checklist_request",
+          });
+        } catch {}
+      } catch (shareErr) {
+        console.error("[SUBMIT_AUTOSHARE] failed:", shareErr);
+        // Non-fatal — submit still succeeds, just no auto-share
+      }
+    }
+
     // FIX #6: Recalc profile completion
     try { const { recalcProfileCompletion } = await import("@/lib/profile-completion"); await recalcProfileCompletion(userId); } catch {}
 

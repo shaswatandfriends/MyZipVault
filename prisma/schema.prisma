@@ -177,6 +177,17 @@ model User {
   recruiter_reports_handled       RecruiterReport[]         @relation("RecruiterReportsHandled")
   // Disputes handled by this admin
   review_disputes_handled         RecruiterReviewDispute[]  @relation("ReviewDisputeHandled")
+
+  // Phase 3 — Invites + Messaging
+  invites_sent                    RecruiterInvite[]          @relation("RecruiterInviteRecruiter")
+  invites_received_as_candidate  RecruiterInvite[]          @relation("RecruiterInviteCandidate")
+  messages_sent                   Message[]                  @relation("MessageSender")
+
+  // Phase 5.1 — superadmin user who last updated a ResumeTemplate
+  resume_templates_updated        ResumeTemplate[]          @relation("ResumeTemplateUpdater")
+
+  // Phase 6.4 — onboarding tour completion timestamp (null = tour pending)
+  onboarding_tour_completed_at    DateTime?
 }
 
 // ─── 3. Admin Permissions ────────────────────────────────────────────
@@ -202,8 +213,18 @@ model CandidateProfile {
   profile_completion_pct Int       @default(0)
   notification_preferences String? // JSON string: { email_notifications, sms_notifications, reminder_notifications }
 
+  // Phase 4.1 — candidate-fillable fields (stored permanently, editable)
+  ssn_encrypted          String?   // AES-256-CBC ciphertext (src/lib/encryption.ts)
+  city                   String?
+  state                  String?   @db.Char(2)
+  years_experience_total Int?
+  years_experience_specialty Int?
+  zip_code               String?
+
   user                   User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   resume                 Resume?   @relation("CandidateProfileResume", fields: [resume_id], references: [id])
+
+  @@index([state])
 }
 
 // ─── 5. Checklist Templates ─────────────────────────────────────────
@@ -326,13 +347,36 @@ model Resume {
   version_name        String            @default("Master Resume") // e.g., "ICU Resume", "Travel Nurse Resume"
   is_active           Boolean           @default(true) // which version is currently active
   template_id         String?           // reference to template used (clinical, rn, icu, er, etc.)
+  // Phase 5.1 — FK to ResumeTemplate (superadmin-managed templates)
+  resume_template_id  Int?
+  is_default_version  Boolean           @default(false) // which version auto-shares on recruiter request
   ats_score           Int?              // ATS compatibility score (0-100)
   created_at          DateTime          @default(now())
   updated_at          DateTime          @default(now())
 
   candidate_user      User              @relation(fields: [candidate_user_id], references: [id])
   candidate_profile   CandidateProfile? @relation("CandidateProfileResume")
+  resume_template     ResumeTemplate?   @relation("ResumeTemplateResumes", fields: [resume_template_id], references: [id], onDelete: SetNull)
   consent_shares      ConsentShare[]
+
+  @@index([candidate_user_id])
+}
+
+// ─── 10b. Phase 5.1 — ResumeTemplate (superadmin-managed resume layouts) ───
+model ResumeTemplate {
+  id              Int       @id @default(autoincrement())
+  name            String
+  description     String?
+  layout_config   Json      // fonts, colors, section order, spacing
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+  updated_by      Int?
+
+  resumes         Resume[]  @relation("ResumeTemplateResumes")
+  updater         User?     @relation("ResumeTemplateUpdater", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([is_active])
 }
 
 // ─── 12. Candidate References ───────────────────────────────────────
@@ -1319,6 +1363,10 @@ model JobPosting {
   commission_percentage    Decimal?  @db.Decimal(5, 2)
   commission_type          String?   // 'flat' | 'percentage'
 
+  // Bonus (Phase 2.3 — incentive layer)
+  is_bonus                 Boolean   @default(false)
+  bonus_amount             Decimal?  @db.Decimal(10, 2) // populated only when is_bonus=TRUE
+
   // Description
   description              String?
   requirements             String?   // JSON array
@@ -1347,6 +1395,8 @@ model JobPosting {
   submissions               CandidateSubmission[]
   reports                   RecruiterReport[]
   employer_reviews          RecruiterReview[]  @relation("JobPostingEmployerReviews")
+  // Phase 3 — Invites tied to this job
+  recruiter_invites         RecruiterInvite[]  @relation("RecruiterInviteJob")
 
   @@index([status, is_public])
   @@index([profession, specialty])
@@ -1690,4 +1740,59 @@ model RecruiterReviewDispute {
 
   @@unique([review_id])
   @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 60. Phase 3 — RecruiterInvite: candidate invitation with 72-hr cooldown
+// ─────────────────────────────────────────────────────────────────────
+// Replaces the IronBase "AI Outreach Writer" with a simpler flow:
+// recruiter types candidate email + Job ID → fixed email template sent.
+// Recruiters can re-invite the same candidate only after invite_cooldown_hours
+// (default 72h, configurable via PlatformSetting).
+model RecruiterInvite {
+  id                 Int       @id @default(autoincrement())
+  public_id          String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recruiter_user_id  Int
+  candidate_email    String
+  candidate_user_id  Int?
+  job_id             Int?
+  email_subject      String
+  email_body         String    @db.Text
+  status             String    @default("sent") // sent | accepted | denied | expired
+  sent_at            DateTime  @default(now())
+  accepted_at        DateTime?
+  denied_at          DateTime?
+  expires_at         DateTime?
+
+  // Relations
+  recruiter          User        @relation("RecruiterInviteRecruiter", fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  candidate          User?       @relation("RecruiterInviteCandidate", fields: [candidate_user_id], references: [id], onDelete: SetNull)
+  job                JobPosting? @relation("RecruiterInviteJob", fields: [job_id], references: [id], onDelete: SetNull)
+  messages           Message[]
+
+  @@index([candidate_email, sent_at(sort: Desc)])
+  @@index([candidate_user_id, status])
+  @@index([recruiter_user_id])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 61. Phase 3.4 — Message: in-app chat between candidate and recruiter
+// ─────────────────────────────────────────────────────────────────────
+// Scoped to a RecruiterInvite so chat only opens after the candidate
+// accepts the invite. v1 uses polling (10s refresh); WebSocket deferred to v2.
+model Message {
+  id               Int       @id @default(autoincrement())
+  invite_id        Int
+  sender_user_id   Int
+  body             String    @db.Text
+  sent_at          DateTime  @default(now())
+  read_at          DateTime?
+
+  // Relations
+  invite           RecruiterInvite @relation(fields: [invite_id], references: [id], onDelete: Cascade)
+  sender           User            @relation("MessageSender", fields: [sender_user_id], references: [id], onDelete: Cascade)
+
+  @@index([invite_id, sent_at(sort: Desc)])
+  @@index([invite_id])
+  @@index([read_at])
 }

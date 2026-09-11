@@ -125,6 +125,21 @@ const recruiterNav: NavItem[] = [
   { title: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
 ];
 
+// ─── Recruiter: My Work Group (quick-access shortcuts) ────────────────
+const myWorkGroup: NavGroup = {
+  title: "My Work",
+  icon: Inbox,
+  sections: [
+    {
+      title: "SHORTCUTS",
+      items: [
+        { title: "My Submittals", href: "/recruiter/jobs?filter=submittals", icon: Send },
+        { title: "My Placements", href: "/recruiter/jobs?filter=placements", icon: Handshake },
+      ],
+    },
+  ],
+};
+
 // ─── Recruiter: Marketplace Group ───────────────────────────────────────
 const marketplaceGroup: NavGroup = {
   title: "Marketplace",
@@ -436,7 +451,7 @@ export function AppSidebar() {
   }
 
   // Recruiter groups — filter adminOnly items for client_recruiter
-  const recruiterGroups = isRecruiter ? [marketplaceGroup, bobGroup, sendRequestGroup] : [];
+  const recruiterGroups = isRecruiter ? [myWorkGroup, marketplaceGroup, bobGroup, sendRequestGroup] : [];
   const recruiterBottom = isRecruiter
     ? role === "client_recruiter"
       ? recruiterBottomNav.filter((item) => !item.adminOnly)

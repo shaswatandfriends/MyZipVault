@@ -826,37 +826,16 @@ function Step1CandidateInfo({
           </div>
           <div className="space-y-2">
             <Label htmlFor="specialty">Specialty</Label>
-            <Select
-              value={candidateInfo.specialty}
-              onValueChange={(val) => updateField("specialty", val)}
-            >
-              <SelectTrigger className="w-full">
-                <Stethoscope className="mr-2 size-4 text-muted-foreground" />
-                <SelectValue placeholder="Select specialty" />
-              </SelectTrigger>
-              <SelectContent>
-                {specialtyOptions.length > 0 ? (
-                  specialtyOptions.map((spec) => (
-                    <SelectItem key={spec} value={spec}>
-                      {spec}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <>
-                    <SelectItem value="ICU">ICU</SelectItem>
-                    <SelectItem value="ER">ER</SelectItem>
-                    <SelectItem value="MedSurg">MedSurg</SelectItem>
-                    <SelectItem value="Tele">Telemetry</SelectItem>
-                    <SelectItem value="L&D">Labor & Delivery</SelectItem>
-                    <SelectItem value="OR">OR</SelectItem>
-                    <SelectItem value="NICU">NICU</SelectItem>
-                    <SelectItem value="PACU">PACU</SelectItem>
-                    <SelectItem value="Oncology">Oncology</SelectItem>
-                    <SelectItem value="Behavioral Health">Behavioral Health</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Stethoscope className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="specialty"
+                placeholder="e.g., ICU, ER, MedSurg, Labor & Delivery, Sleep Medicine..."
+                value={candidateInfo.specialty}
+                onChange={(e) => updateField("specialty", e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
         </div>
 
