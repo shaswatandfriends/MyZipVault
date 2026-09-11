@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadFile } from "@/lib/storage";
+import { requireEmailVerified } from "@/lib/email-verification";
 
 export async function GET() {
   try {
@@ -50,6 +51,10 @@ export async function POST(request: Request) {
     }
 
     const userId = Number((session.user as Record<string, unknown>).id);
+
+    // Block uploads for unverified email (per Gap 5 spec)
+    const emailCheck = await requireEmailVerified(userId);
+    if (!emailCheck.allowed) return emailCheck.errorResponse!;
 
     // ── Parse request body (FormData or JSON) ──
     let documentName: string;

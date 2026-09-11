@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { requireEmailVerified } from "@/lib/email-verification";
 
 export async function POST(
   request: Request,
@@ -18,6 +19,10 @@ export async function POST(
     if (userRole !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Block submit for unverified email (per Gap 5 spec)
+    const emailCheck = await requireEmailVerified(userId);
+    if (!emailCheck.allowed) return emailCheck.errorResponse!;
 
     const { id } = await params;
     const requestId = Number(id);

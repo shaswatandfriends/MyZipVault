@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { onDocShared, onDocDenied } from "@/lib/bob/status-engine";
 import { findLeadByCandidateUserId } from "@/lib/bob/lead-finder";
+import { requireEmailVerified } from "@/lib/email-verification";
 
 /**
  * POST /api/candidate/share-requests/[id]/respond
@@ -43,6 +44,10 @@ export async function POST(
     if (role !== "candidate") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Block share-request response for unverified email (per Gap 5 spec)
+    const emailCheck = await requireEmailVerified(userId);
+    if (!emailCheck.allowed) return emailCheck.errorResponse!;
 
     const { id } = await params;
     const requestId = parseInt(id);
