@@ -51,6 +51,12 @@ function getViewAllHref(role: UserRole): string {
 // ─── SSE: Real-time notification push ────────────────────────────────
 // Opens an EventSource connection to /api/notifications/stream.
 // When new notifications arrive, the bell updates instantly (no polling).
+//
+// CRITICAL: Reconnect logic must stop after consecutive failures to
+// prevent infinite polling loops when the session is expired. Previously,
+// a single error triggered a 3-second reconnect indefinitely — this
+// caused Vercel function invocation + storage exhaustion (19K+ invocations
+// per day per idle browser tab).
 
 function useNotificationStream(
   onNewNotification: (data: any) => void,
@@ -61,10 +67,18 @@ function useNotificationStream(
 
     let es: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout | null = null;
+    let consecutiveErrors = 0;
+    const MAX_CONSECUTIVE_ERRORS = 3;  // Stop after 3 errors (~30s of retries)
+    const RECONNECT_INTERVAL_MS = 10_000;  // 10s between retries (was 3s)
 
     function connect() {
       try {
         es = new EventSource("/api/notifications/stream");
+
+        es.onopen = () => {
+          // Reset error counter on successful connection
+          consecutiveErrors = 0;
+        };
 
         es.onmessage = (e) => {
           try {
@@ -77,10 +91,23 @@ function useNotificationStream(
 
         es.onerror = () => {
           es?.close();
-          // Auto-reconnect after 3 seconds (EventSource does this natively,
-          // but we handle it explicitly to avoid duplicate connections)
+          consecutiveErrors++;
+
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            // Stop reconnecting — likely session expired or persistent network issue.
+            // The 30-second fetch() poll below will retry in the background; if the
+            // user's session is restored (re-login), the next page load will re-open
+            // the SSE stream with a fresh component mount.
+            console.warn(
+              `[NotificationStream] Stopping reconnection after ${consecutiveErrors} consecutive errors. ` +
+              `Session may be expired — the 30s polling fallback will continue to retry. ` +
+              `If the issue persists, refresh the page or re-login.`
+            );
+            return;
+          }
+
           if (reconnectTimer) clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(connect, 3000);
+          reconnectTimer = setTimeout(connect, RECONNECT_INTERVAL_MS);
         };
       } catch {
         // EventSource not available (older browsers) — fall back to polling
