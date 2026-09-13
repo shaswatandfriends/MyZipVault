@@ -242,9 +242,20 @@ export const authOptions: NextAuthOptions = {
         console.warn(
           `[AUTH] Session expired due to inactivity — userId: ${token.id}, lastActivity: ${new Date(lastActivity).toISOString()}, inactive for: ${Math.round((Date.now() - lastActivity) / 60000)}min`
         );
-        // Clear the token id — middleware and AuthProvider will treat this as
-        // unauthenticated and redirect to login
-        return { ...token, id: "" } as typeof token;
+        // Clear ALL user-identifying fields — middleware and AuthProvider will
+        // treat this as unauthenticated and redirect to login. Previously only
+        // `id` was cleared, which left email/role/firstName in the JWT and
+        // exposed them via /api/auth/session even after invalidation.
+        return {
+          ...token,
+          id: "",
+          email: "",
+          role: "",
+          organizationId: null,
+          isApproved: false,
+          firstName: "",
+          lastName: "",
+        } as typeof token;
       }
 
       // Update lastActivity on every request (user is still active)
