@@ -149,7 +149,7 @@ export default function LoginPage() {
             <div
               className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
               style={{
-                background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
                 fontFamily: "'Lora', serif",
               }}

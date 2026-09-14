@@ -147,8 +147,8 @@ function StatCard({
   accent?: "primary" | "terra" | "amber" | "emerald" | "violet";
 }) {
   const accentBg: Record<string, string> = {
-    primary: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-    terra: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+    primary: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+    terra: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
     amber: "linear-gradient(180deg, #FBBF24 0%, #D97706 100%)",
     emerald: "linear-gradient(180deg, #34D399 0%, #059669 100%)",
     violet: "linear-gradient(180deg, #A78BFA 0%, #7C3AED 100%)",
@@ -161,7 +161,7 @@ function StatCard({
             className="flex size-10 items-center justify-center rounded-xl flex-shrink-0"
             style={{
               background: accentBg[accent],
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.18)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.18)",
               color: "#fff",
             }}
           >
@@ -294,8 +294,8 @@ export default function EmployerDashboard() {
                 <div
                   className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl"
                   style={{
-                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                    boxShadow: "0 8px 20px rgba(10,102,194,0.25)",
+                    background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                    boxShadow: "0 8px 20px rgba(23,74,67,0.25)",
                     color: "#fff",
                   }}
                 >
@@ -443,7 +443,7 @@ export default function EmployerDashboard() {
                       <div
                         className="flex size-9 items-center justify-center rounded-full"
                         style={{
-                          background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                          background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                           color: "#fff",
                         }}
                       >

@@ -140,7 +140,7 @@ export default function EmployerSubmissionsPage() {
                       <TableCell>
                         {s.recruiter ? (
                           <div className="flex items-center gap-2">
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0A66C2, #004182)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 12 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #174A43, #0F3631)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 12 }}>
                               {s.recruiter.initials}
                             </div>
                             <span className="text-sm">{s.recruiter.full_name}</span>

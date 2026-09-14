@@ -963,7 +963,7 @@ function CampaignsTab() {
   const [formFromName, setFormFromName] = useState("MyZipVault");
   const [formReplyTo, setFormReplyTo] = useState("");
   const [formLogoUrl, setFormLogoUrl] = useState("");
-  const [formAccentColor, setFormAccentColor] = useState("#0A66C2");
+  const [formAccentColor, setFormAccentColor] = useState("#174A43");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCampaigns = useCallback(async () => {
@@ -1021,7 +1021,7 @@ function CampaignsTab() {
           setFormFromName("MyZipVault");
           setFormReplyTo("");
           setFormLogoUrl("");
-          setFormAccentColor("#0A66C2");
+          setFormAccentColor("#174A43");
           fetchCampaigns();
         } else {
           const data = await res.json().catch(() => ({}));
@@ -1053,7 +1053,7 @@ function CampaignsTab() {
           setFormFromName("MyZipVault");
           setFormReplyTo("");
           setFormLogoUrl("");
-          setFormAccentColor("#0A66C2");
+          setFormAccentColor("#174A43");
           fetchCampaigns();
         } else {
           const data = await res.json().catch(() => ({}));
@@ -1128,7 +1128,7 @@ function CampaignsTab() {
         setFormFromName(c.from_name || "MyZipVault");
         setFormReplyTo(c.reply_to || "");
         setFormLogoUrl(c.logo_url || "");
-        setFormAccentColor(c.accent_color || "#0A66C2");
+        setFormAccentColor(c.accent_color || "#174A43");
         setEditCampaignId(campaign.id);
         setShowCreateDialog(true);
       } else {
@@ -1299,7 +1299,7 @@ function CampaignsTab() {
             setFormFromName("MyZipVault");
             setFormReplyTo("");
             setFormLogoUrl("");
-            setFormAccentColor("#0A66C2");
+            setFormAccentColor("#174A43");
             setShowCreateDialog(true);
           }}
           className="gap-2 bg-primary hover:bg-primary-hover"
@@ -1585,7 +1585,7 @@ function CampaignsTab() {
                       value={formAccentColor}
                       onChange={(e) => setFormAccentColor(e.target.value)}
                       className="text-sm flex-1"
-                      placeholder="#0A66C2"
+                      placeholder="#174A43"
                     />
                   </div>
                 </div>

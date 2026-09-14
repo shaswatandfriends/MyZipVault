@@ -73,7 +73,7 @@ export default function AuthSlideshowPanel({
   return (
     <div
       className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #004182 0%, #0A66C2 50%, #004182 100%)" }}
+      style={{ background: "linear-gradient(135deg, #0F3631 0%, #174A43 50%, #0F3631 100%)" }}
     >
       {/* Slideshow Images — full-bleed, with subtle crossfade */}
       {images.map((src, i) =>
@@ -145,7 +145,7 @@ export default function AuthSlideshowPanel({
             <div
               className="flex items-center justify-center size-10 rounded-[10px] text-white text-xl font-bold"
               style={{
-                background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
                 fontFamily: "'Lora', serif",
               }}
@@ -167,11 +167,11 @@ export default function AuthSlideshowPanel({
           <div className="flex items-center gap-3 mb-6">
             <div
               className="h-0.5 w-8 rounded-full"
-              style={{ background: "linear-gradient(90deg, #70B5F9, transparent)" }}
+              style={{ background: "linear-gradient(90deg, #8FA99C, transparent)" }}
             />
             <span
               className="text-xs font-bold uppercase"
-              style={{ color: "#70B5F9", letterSpacing: "0.2em" }}
+              style={{ color: "#8FA99C", letterSpacing: "0.2em" }}
             >
               Welcome
             </span>
@@ -203,7 +203,7 @@ export default function AuthSlideshowPanel({
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
                   }}
                 >
-                  <Check className="size-3" style={{ color: "#70B5F9" }} />
+                  <Check className="size-3" style={{ color: "#8FA99C" }} />
                 </div>
                 <span
                   className="text-white/85"
@@ -223,12 +223,12 @@ export default function AuthSlideshowPanel({
             <div
               className="relative pl-6 py-1.5"
               style={{
-                borderLeft: "2px solid #0A66C2",
+                borderLeft: "2px solid #174A43",
               }}
             >
               <div
                 className="mb-3"
-                style={{ color: "#70B5F9", fontSize: "0.75rem", letterSpacing: "0.2em" }}
+                style={{ color: "#8FA99C", fontSize: "0.75rem", letterSpacing: "0.2em" }}
               >
                 ★★★★★
               </div>
@@ -279,7 +279,7 @@ export default function AuthSlideshowPanel({
                       fontFamily: "'Lora', serif",
                       fontSize: "1.875rem",
                       fontWeight: 700,
-                      color: "#70B5F9",
+                      color: "#8FA99C",
                       lineHeight: 1,
                       letterSpacing: "-0.02em",
                     }}
@@ -312,7 +312,7 @@ export default function AuthSlideshowPanel({
               { icon: BadgeCheck, label: "SOC 2 Type II" },
             ].map(({ icon: Icon, label }, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <Icon className="size-3.5" style={{ color: "#70B5F9" }} />
+                <Icon className="size-3.5" style={{ color: "#8FA99C" }} />
                 <span
                   className="text-white/70"
                   style={{ fontSize: "0.6875rem", letterSpacing: "0.05em" }}
@@ -338,7 +338,7 @@ export default function AuthSlideshowPanel({
                 height: "2px",
                 background:
                   i === currentSlide
-                    ? "#70B5F9"
+                    ? "#8FA99C"
                     : "rgba(255,255,255,0.3)",
               }}
             />

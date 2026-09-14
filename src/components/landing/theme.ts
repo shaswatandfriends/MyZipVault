@@ -1,21 +1,23 @@
 // Shared design tokens for landing page components
+// Aligned with brand palette: Deep Teal + Sage + Ivory + Terracotta + Charcoal
+// Hero sections use a deep teal gradient (instead of dark navy) for brand consistency.
 
 export const C = {
-  bg: "#0A0F1A",
-  bgCard: "rgba(255,255,255,0.03)",
-  bgCardHover: "rgba(255,255,255,0.06)",
-  border: "rgba(255,255,255,0.08)",
-  borderHover: "rgba(59,130,246,0.4)",
-  text: "#F1F5F9",
-  textMuted: "rgba(241,245,249,0.5)",
-  textDim: "rgba(241,245,249,0.35)",
-  primary: "#3B82F6",
-  primaryGlow: "rgba(59,130,246,0.4)",
-  accent: "#06B6D4",
-  accentGlow: "rgba(6,182,212,0.3)",
-  emerald: "#10B981",
-  amber: "#F59E0B",
-  violet: "#8B5CF6",
+  bg: "#0F3631",                       // Deep teal-dark (was #0A0F1A navy) — hero background
+  bgCard: "rgba(255,255,255,0.04)",
+  bgCardHover: "rgba(255,255,255,0.07)",
+  border: "rgba(247,243,232,0.10)",    // Ivory-tinted border
+  borderHover: "rgba(143,169,156,0.45)", // Sage hover border
+  text: "#F7F3E8",                     // Warm Ivory text (was #F1F5F9 cool white)
+  textMuted: "rgba(247,243,232,0.55)",
+  textDim: "rgba(247,243,232,0.38)",
+  primary: "#8FA99C",                  // Sage primary (pops on dark teal bg)
+  primaryGlow: "rgba(143,169,156,0.4)",
+  accent: "#D98F78",                   // Terracotta accent — small highlights
+  accentGlow: "rgba(217,143,120,0.3)",
+  emerald: "#8FA99C",                  // Repurposed to sage
+  amber: "#D98F78",                    // Repurposed to terracotta
+  violet: "#8FA99C",                   // Repurposed to sage (no more purple)
   white: "#FFFFFF",
 };
 

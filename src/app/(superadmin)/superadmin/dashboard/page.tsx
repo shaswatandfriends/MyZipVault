@@ -336,8 +336,8 @@ export default function SuperadminDashboardPage() {
               <div
                 className="empty-state-icon"
                 style={{
-                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(10,102,194,0.32)",
+                  background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(23,74,67,0.32)",
                   color: "#fff",
                 }}
               >
@@ -383,9 +383,9 @@ export default function SuperadminDashboardPage() {
               className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/users")}
               style={{
-                background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
+                background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(10,102,194,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
               }}
             >
@@ -433,9 +433,9 @@ export default function SuperadminDashboardPage() {
               className="cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/analytics")}
               style={{
-                background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
+                background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(10,102,194,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
               }}
             >
@@ -502,7 +502,7 @@ export default function SuperadminDashboardPage() {
                     ? "linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)"
                     : healthStatus === "warning"
                     ? "linear-gradient(135deg, #D97706 0%, #92400E 100%)"
-                    : "linear-gradient(135deg, #70B5F9 0%, #0A66C2 100%)",
+                    : "linear-gradient(135deg, #8FA99C 0%, #174A43 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08)",
                 color: "#fff",
@@ -569,8 +569,8 @@ export default function SuperadminDashboardPage() {
                 <div
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
-                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)",
+                    background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
                     color: "#fff",
                   }}
                 >
@@ -593,12 +593,12 @@ export default function SuperadminDashboardPage() {
                         fontSize: "12px",
                         backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                         WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                        boxShadow: "0 24px 64px rgba(10,102,194,0.18), 0 8px 24px rgba(0,0,0,0.06)",
+                        boxShadow: "0 24px 64px rgba(23,74,67,0.18), 0 8px 24px rgba(0,0,0,0.06)",
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="candidates" name="Candidates" fill="#70B5F9" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="recruiters" name="Recruiters" fill="#0A66C2" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="candidates" name="Candidates" fill="#8FA99C" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="recruiters" name="Recruiters" fill="#174A43" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -615,8 +615,8 @@ export default function SuperadminDashboardPage() {
                 <div
                   className="flex items-center justify-center size-8 rounded-[10px]"
                   style={{
-                    background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(10,102,194,0.28)",
+                    background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
                     color: "#fff",
                   }}
                 >

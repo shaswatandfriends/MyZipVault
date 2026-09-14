@@ -126,7 +126,7 @@ export function HelpFloater() {
           <div
             className="px-4 py-3 flex items-center justify-between"
             style={{
-              background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
+              background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
               color: "white",
             }}
           >
@@ -266,9 +266,9 @@ export function HelpFloater() {
         aria-expanded={open}
         className="pointer-events-auto flex size-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-110"
         style={{
-          background: open ? "#111827" : "linear-gradient(135deg, #0A66C2 0%, #004182 100%)",
+          background: open ? "#111827" : "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
           color: "white",
-          boxShadow: "0 4px 16px rgba(10,102,194,0.3)",
+          boxShadow: "0 4px 16px rgba(23,74,67,0.3)",
         }}
       >
         {open ? <X className="size-5" /> : <HelpCircle className="size-5" />}

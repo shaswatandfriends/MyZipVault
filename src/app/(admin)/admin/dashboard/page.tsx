@@ -222,7 +222,7 @@ export default function AdminDashboardPage() {
               <div
                 className="empty-state-icon"
                 style={{
-                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                  background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
                   color: "#fff",
                 }}
@@ -326,8 +326,8 @@ export default function AdminDashboardPage() {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="candidates" name="Candidates" fill="#70B5F9" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="recruiters" name="Recruiters" fill="#0A66C2" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="candidates" name="Candidates" fill="#8FA99C" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="recruiters" name="Recruiters" fill="#174A43" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

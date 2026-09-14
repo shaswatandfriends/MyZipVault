@@ -9,7 +9,7 @@
  * campaigns instead of e-signature notifications.
  *
  * Key differences from the VaultSign wrapper:
- *   - Uses platform blue (#0A66C2) instead of VaultSign green
+ *   - Uses platform blue (#174A43) instead of VaultSign green
  *   - Shows "MyZipVault" branding (not "VaultSign")
  *   - Includes an unsubscribe link in the footer (CAN-SPAM compliance)
  *   - Supports custom accent color per campaign
@@ -56,13 +56,13 @@ export function buildCampaignEmailHtml(
   options: CampaignEmailOptions = {}
 ): string {
   const {
-    accentColor = "#0A66C2",
+    accentColor = "#174A43",
     logoUrl,
     unsubscribeUrl,
     campaignName,
   } = options;
 
-  const accentGradient = `linear-gradient(135deg, ${accentColor} 0%, #004182 100%)`;
+  const accentGradient = `linear-gradient(135deg, ${accentColor} 0%, #0F3631 100%)`;
 
   // Logo: if logoUrl provided, use <img>. Otherwise use text logo.
   const logoHtml = logoUrl
@@ -125,7 +125,7 @@ export function buildCampaignEmailHtml(
           <!-- Accent stripe before footer -->
           <tr>
             <td style="background-color:#FFFFFF; padding:0 40px;">
-              <div style="height:1px; background:linear-gradient(90deg, ${accentColor}, #004182); border-radius:1px;">&nbsp;</div>
+              <div style="height:1px; background:linear-gradient(90deg, ${accentColor}, #0F3631); border-radius:1px;">&nbsp;</div>
             </td>
           </tr>
 

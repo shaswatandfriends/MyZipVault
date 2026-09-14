@@ -276,14 +276,14 @@ async function sendNotificationEmail(params: CreateNotificationParams): Promise<
 
   const htmlContent = `
     <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-      <div style="background: #0B1F3A; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-        <span style="color: #C9A961; font-weight: 600;">MyZipVault</span>
+      <div style="background: #174A43; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+        <span style="color: #D98F78; font-weight: 600;">MyZipVault</span>
         <span style="color: #fff; margin-left: 8px;">${params.category.toUpperCase()}</span>
       </div>
       <div style="background: ${accentBg}; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid ${accentColor}40;">
         <h2 style="color: ${accentColor}; margin: 0 0 12px;">${params.title}</h2>
-        <p style="color: #1A1A1A; font-size: 15px; line-height: 1.6;">Hi ${userName},</p>
-        <p style="color: #5B5A56; font-size: 15px; line-height: 1.6;">${params.message}</p>
+        <p style="color: #263633; font-size: 15px; line-height: 1.6;">Hi ${userName},</p>
+        <p style="color: #5C6B66; font-size: 15px; line-height: 1.6;">${params.message}</p>
         ${actionUrl ? `
           <p style="margin: 24px 0;">
             <a href="${actionUrl}" style="background: ${accentColor}; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
@@ -291,7 +291,7 @@ async function sendNotificationEmail(params: CreateNotificationParams): Promise<
             </a>
           </p>
         ` : ""}
-        <p style="color: #8C8A83; font-size: 12px; margin-top: 24px;">
+        <p style="color: #8B9994; font-size: 12px; margin-top: 24px;">
           You received this because you have notifications enabled for ${params.category} on MyZipVault.
         </p>
       </div>

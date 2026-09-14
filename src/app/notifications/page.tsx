@@ -49,19 +49,19 @@ type FilterTab = "all" | "unread" | "urgent";
 
 // ─── Constants — Spatial UI palette ─────────────────────────────────
 const CATEGORY_META: Record<string, { icon: string; label: string; color: string }> = {
-  rtr:        { icon: "✍️", label: "RTR & Signatures", color: "#0A66C2" },     // terra
+  rtr:        { icon: "✍️", label: "RTR & Signatures", color: "#174A43" },     // terra
   document:   { icon: "📄", label: "Documents",        color: "#3B82F6" },     // blue
-  status:     { icon: "📊", label: "Status Changes",   color: "#0A66C2" },     // primary
+  status:     { icon: "📊", label: "Status Changes",   color: "#174A43" },     // primary
   calendar:   { icon: "📅", label: "Calendar",         color: "#D97706" },     // amber
   credit:     { icon: "💳", label: "Credits",          color: "#B84040" },     // red
-  compliance: { icon: "🛡️", label: "Compliance",       color: "#70B5F9" },     // primary-vivid
+  compliance: { icon: "🛡️", label: "Compliance",       color: "#8FA99C" },     // primary-vivid
   system:     { icon: "⚙️", label: "System",           color: "#6B7280" },     // text-secondary
 };
 
 const PRIORITY_META: Record<string, { color: string; bg: string; label: string }> = {
   urgent:    { color: "#B84040", bg: "rgba(184,64,64,0.1)", label: "Urgent" },
   important: { color: "#D97706", bg: "rgba(217,119,6,0.12)", label: "Important" },
-  info:      { color: "#0A66C2", bg: "rgba(45,90,61,0.08)", label: "Info" },
+  info:      { color: "#174A43", bg: "rgba(45,90,61,0.08)", label: "Info" },
 };
 
 function timeAgo(dateStr: string): string {
@@ -265,7 +265,7 @@ export default function NotificationCenterPage() {
                       <span
                         className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full text-white"
                         style={{
-                          background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 100%)",
+                          background: "linear-gradient(180deg, #8FA99C 0%, #174A43 100%)",
                           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
                         }}
                       >
@@ -309,7 +309,7 @@ export default function NotificationCenterPage() {
                     <div
                       className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto"
                       style={{
-                        background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                        background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
                         color: "#fff",
                       }}
@@ -485,7 +485,7 @@ export default function NotificationCenterPage() {
                 transition={{ duration: 8, repeat: Infinity }}
                 className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
                 style={{
-                  background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                  background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
                   color: "#fff",
                 }}
@@ -549,7 +549,7 @@ function LeftPanel({
           <div
             className="w-12 h-12 rounded-[14px] flex items-center justify-center mb-3"
             style={{
-              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
               color: "#fff",
             }}
@@ -565,7 +565,7 @@ function LeftPanel({
             transition={{ duration: 5, repeat: Infinity }}
             className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white z-20"
             style={{
-              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.4)",
             }}
           >
@@ -595,9 +595,9 @@ function LeftPanel({
           Quick Stats
         </h4>
 
-        <StatCard icon="✍️" label="RTR & Signature" count={urgentCount} color="#0A66C2" />
+        <StatCard icon="✍️" label="RTR & Signature" count={urgentCount} color="#174A43" />
         <StatCard icon="📄" label="Documents" count={docCount} color="#3B82F6" />
-        <StatCard icon="🛡️" label="Compliance" count={complianceCount} color="#70B5F9" />
+        <StatCard icon="🛡️" label="Compliance" count={complianceCount} color="#8FA99C" />
       </div>
     </div>
   );
@@ -657,7 +657,7 @@ function RightPanel({ notifications, unreadCount, onMarkAllRead }: { notificatio
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
             style={{
-              background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
               color: "#fff",
             }}

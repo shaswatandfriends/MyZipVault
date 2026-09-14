@@ -83,11 +83,11 @@ function UnsubscribePageInner() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(160deg, #0B162A 0%, #004182 100%)" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(160deg, #0B162A 0%, #0F3631 100%)" }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #0A66C2, #004182)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 20 }}>M</div>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #174A43, #0F3631)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 20 }}>M</div>
           <span style={{ fontWeight: 700, fontSize: 20, color: "white" }}>MyZipVault</span>
         </Link>
 

@@ -363,7 +363,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
         )}
         title={group.title}
       >
-        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#70B5F9" : "rgba(255,255,255,0.35)" }} />
+        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#8FA99C" : "rgba(255,255,255,0.35)" }} />
         <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">{group.title}</span>
         <ChevronDown
           className={cn(
@@ -405,7 +405,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                       isActive && "spatial-nav-item-active"
                     )}
                   >
-                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#70B5F9" : "rgba(255,255,255,0.35)" }} />
+                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#8FA99C" : "rgba(255,255,255,0.35)" }} />
                     <span>{item.title}</span>
                   </Link>
                 );
@@ -494,7 +494,7 @@ export function AppSidebar() {
             <div
               className="flex size-7 items-center justify-center rounded-[6px] shrink-0"
               style={{
-                background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
               }}
             >
@@ -557,7 +557,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -602,7 +602,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -644,7 +644,7 @@ export function AppSidebar() {
                           isActive && "spatial-nav-item-active"
                         )}
                       >
-                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#70B5F9]" : "text-white/35 group-hover:text-white/55")} />
+                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>
@@ -707,7 +707,7 @@ export function AppSidebar() {
             <div
               className="flex size-8 items-center justify-center rounded-full shrink-0 group-data-[collapsible=icon]:size-7"
               style={{
-                background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
               }}
             >

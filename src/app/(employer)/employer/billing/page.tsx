@@ -342,7 +342,7 @@ function EmployerBillingPageInner() {
                           fontSize: 12,
                         }}
                       />
-                      <Bar dataKey="used" fill="#0A66C2" radius={[4, 4, 0, 0]} name="Credits used" />
+                      <Bar dataKey="used" fill="#174A43" radius={[4, 4, 0, 0]} name="Credits used" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

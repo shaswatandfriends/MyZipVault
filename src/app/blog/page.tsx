@@ -148,7 +148,7 @@ export default function BlogListPage() {
                       {/* Cover */}
                       <div
                         className="h-48 md:h-auto flex items-center justify-center text-7xl"
-                        style={{ background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)" }}
+                        style={{ background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)" }}
                       >
                         <span>{featured.cover_emoji}</span>
                       </div>
@@ -192,7 +192,7 @@ export default function BlogListPage() {
                       {/* Cover */}
                       <div
                         className="h-32 flex items-center justify-center text-5xl"
-                        style={{ background: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)" }}
+                        style={{ background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)" }}
                       >
                         <span>{post.cover_emoji}</span>
                       </div>

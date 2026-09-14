@@ -535,7 +535,7 @@ export default function BOBPage() {
                           onClick={() => router.push(`/recruiter/candidates/${lead.id}`)}
                         >
                           <div className="flex size-7 items-center justify-center rounded-full shrink-0"
-                            style={{ background: "linear-gradient(180deg, #70B5F9 0%, #0A66C2 60%, #004182 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+                            style={{ background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
                           >
                             <span className="text-[10px] font-bold">{lead.first_name?.[0] ?? "?"}</span>
                           </div>
