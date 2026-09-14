@@ -76,11 +76,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { email: SUPERADMIN_EMAIL },
+    const user = await db.user.findFirst({
+      where: {
+        email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" },
+        role: "super_admin",
+      },
     });
 
-    if (!user || user.role !== "super_admin") {
+    if (!user) {
       return NextResponse.json(
         { error: "Unable to verify code" },
         { status: 400 }

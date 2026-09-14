@@ -121,13 +121,26 @@ export const authOptions: NextAuthOptions = {
 
         // ── Standard email/password login ──
         let lookupEmail = credentials.email;
+        let isSuperadminOtpLogin = false;
         if (credentials.email === "__superadmin__" && SUPERADMIN_EMAIL) {
           lookupEmail = SUPERADMIN_EMAIL;
+          isSuperadminOtpLogin = true;
         }
 
-        const user = await db.user.findUnique({
-          where: { email: lookupEmail },
-        });
+        // Use case-insensitive lookup to avoid issues where the user's email
+        // was stored with different capitalization than what they're typing.
+        // For superadmin OTP login, also filter by role=super_admin to avoid
+        // matching a duplicate non-super-admin user with the same email.
+        const user = isSuperadminOtpLogin
+          ? await db.user.findFirst({
+              where: {
+                email: { equals: lookupEmail, mode: "insensitive" },
+                role: "super_admin",
+              },
+            })
+          : await db.user.findFirst({
+              where: { email: { equals: lookupEmail, mode: "insensitive" } },
+            });
 
         if (!user) {
           // ─── Timing-attack mitigation ─────────────────────────────────
