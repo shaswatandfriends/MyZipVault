@@ -9,15 +9,21 @@ import { sendOtpEmail } from "@/lib/otp-email";
  * TEMPORARY DEBUG ENDPOINT — generates a fresh OTP, stores it in DB,
  * sends the email, AND returns the OTP directly in the HTTP response.
  *
+ * Also runs the verify logic internally to confirm the OTP would pass verification.
+ *
  * Protected by a hardcoded debug secret to prevent public abuse.
  *
  * ⚠️ REMOVE THIS ENDPOINT BEFORE PRODUCTION GO-LIVE.
- *
- * Usage (either works):
- *   - Browser: paste https://my-zip-vault.vercel.app/api/auth/otp/debug-send?secret=mzv-debug-2026
- *   - curl:    curl "https://my-zip-vault.vercel.app/api/auth/otp/debug-send?secret=mzv-debug-2026"
  */
 const DEBUG_SECRET = "mzv-debug-2026";
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 export async function GET(request: NextRequest) {
   return handleDebugSend(request);
@@ -29,7 +35,6 @@ export async function POST(request: NextRequest) {
 
 async function handleDebugSend(request: NextRequest) {
   try {
-    // Verify debug secret
     const { searchParams } = new URL(request.url);
     const secret = searchParams.get("secret");
     if (secret !== DEBUG_SECRET) {
@@ -42,11 +47,10 @@ async function handleDebugSend(request: NextRequest) {
         success: false,
         step: "env_check",
         error: "SUPERADMIN_EMAIL env var is not set on Vercel",
-        env_var_value: "(empty)",
       }, { status: 500 });
     }
 
-    // Find the superadmin user
+    // Find the superadmin user (same query as /api/auth/otp/send)
     const user = await db.user.findFirst({
       where: {
         email: { equals: SUPERADMIN_EMAIL, mode: "insensitive" },
@@ -55,12 +59,18 @@ async function handleDebugSend(request: NextRequest) {
     });
 
     if (!user) {
+      // Diagnostic: how many super_admin users exist? What emails?
+      const allSuperAdmins = await db.user.findMany({
+        where: { role: "super_admin" },
+        select: { id: true, email: true, account_status: true },
+      });
       return NextResponse.json({
         success: false,
         step: "user_lookup",
-        error: "No super_admin user found with the configured email",
+        error: "No super_admin user found matching SUPERADMIN_EMAIL env var",
         superadmin_email_env: SUPERADMIN_EMAIL,
-        db_users_with_super_admin_role: await db.user.count({ where: { role: "super_admin" } }),
+        all_super_admin_users_in_db: allSuperAdmins,
+        hint: "The env var value must EXACTLY match one of the emails above (case-insensitive).",
       }, { status: 400 });
     }
 
@@ -90,24 +100,81 @@ async function handleDebugSend(request: NextRequest) {
     // Send the email
     const emailSent = await sendOtpEmail(SUPERADMIN_EMAIL, otp);
 
-    // Read back from DB to confirm what's stored
-    const dbOtpRecord = await db.platformSetting.findUnique({
+    // ─── SIMULATE THE VERIFY ROUTE LOGIC (in-line) ───────────────────
+    // This is the exact same code as /api/auth/otp/verify/route.ts
+    // We run it here to confirm the OTP would pass verification.
+    const otpRecord = await db.platformSetting.findUnique({
       where: { setting_key: "superadmin_otp_code" },
     });
+    const expiryRecord = await db.platformSetting.findUnique({
+      where: { setting_key: "superadmin_otp_expires" },
+    });
+
+    let verifySimulation: any = {
+      otp_record_found: !!otpRecord?.setting_value,
+      expiry_record_found: !!expiryRecord?.setting_value,
+    };
+
+    if (!otpRecord?.setting_value || !expiryRecord?.setting_value) {
+      verifySimulation.would_pass = false;
+      verifySimulation.failure_reason = "OTP record not found in DB after write (DB write failed silently)";
+    } else {
+      const expiryDate = new Date(expiryRecord.setting_value);
+      verifySimulation.expiry_date = expiryRecord.setting_value;
+      verifySimulation.is_expired = new Date() > expiryDate;
+
+      if (verifySimulation.is_expired) {
+        verifySimulation.would_pass = false;
+        verifySimulation.failure_reason = "OTP expired (shouldn't happen — we just generated it)";
+      } else {
+        // Timing-safe comparison (same as verify route)
+        const matches = timingSafeEqual(otp, otpRecord.setting_value);
+        verifySimulation.otp_matches_db = matches;
+        verifySimulation.generated_otp = otp;
+        verifySimulation.db_otp = otpRecord.setting_value;
+
+        if (!matches) {
+          verifySimulation.would_pass = false;
+          verifySimulation.failure_reason = "Generated OTP doesn't match DB OTP (race condition?)";
+        } else {
+          // Check user role one more time (same as verify route)
+          const verifyUser = await db.user.findUnique({
+            where: { email: SUPERADMIN_EMAIL },
+          });
+          verifySimulation.verify_route_user_found = !!verifyUser;
+          verifySimulation.verify_route_user_role = verifyUser?.role;
+          verifySimulation.verify_route_user_status = verifyUser?.account_status;
+
+          if (!verifyUser || verifyUser.role !== "super_admin") {
+            verifySimulation.would_pass = false;
+            verifySimulation.failure_reason = `Verify route user check failed — user found: ${!!verifyUser}, role: ${verifyUser?.role}`;
+          } else if (verifyUser.account_status === "suspended" || verifyUser.account_status === "deleted") {
+            verifySimulation.would_pass = false;
+            verifySimulation.failure_reason = `Account status: ${verifyUser.account_status}`;
+          } else {
+            verifySimulation.would_pass = true;
+          }
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
       debug: true,
       generated_otp: otp,
-      db_otp_after_write: dbOtpRecord?.setting_value,
-      db_otp_matches_generated: dbOtpRecord?.setting_value === otp,
       email_sent: emailSent,
       email_address: SUPERADMIN_EMAIL,
-      user_id: user.id,
-      user_role: user.role,
-      user_account_status: user.account_status,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        account_status: user.account_status,
+      },
       expires_at: expiresAt,
-      instructions: "Use the 'generated_otp' value above in the superadmin login form within 5 minutes.",
+      verify_simulation: verifySimulation,
+      instructions: verifySimulation.would_pass
+        ? "✅ Verify route WOULD pass. The OTP login should work. If it doesn't, the issue is in the NextAuth signIn flow, not the verify route."
+        : `❌ Verify route would FAIL with reason: ${verifySimulation.failure_reason}`,
     });
   } catch (error: any) {
     console.error("[OTP DEBUG SEND] Error:", error);
