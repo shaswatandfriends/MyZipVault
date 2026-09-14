@@ -159,14 +159,14 @@ export const SYSTEM_VARIABLES: PlaceholderVariable[] = [
 
 // ─── Signer Colors ───────────────────────────────────────────────────
 export const SIGNER_COLORS = [
-  "#166534", // green
-  "#0D9488", // teal
-  "#7C3AED", // purple
+  "#0F3631", // green
+  "#174A43", // teal
+  "#8FA99C", // purple
   "#DC2626", // red
   "#D97706", // amber
-  "#2563EB", // blue
+  "#174A43", // blue
   "#DB2777", // pink
-  "#059669", // emerald
+  "#8FA99C", // emerald
 ];
 
 export function getSignerColor(index: number): string {

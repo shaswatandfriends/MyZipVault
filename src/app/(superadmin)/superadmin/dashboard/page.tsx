@@ -385,7 +385,7 @@ export default function SuperadminDashboardPage() {
               style={{
                 background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(38,54,51,0.08)",
                 color: "#fff",
               }}
             >
@@ -435,7 +435,7 @@ export default function SuperadminDashboardPage() {
               style={{
                 background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(23,74,67,0.22), 0 4px 12px rgba(38,54,51,0.08)",
                 color: "#fff",
               }}
             >
@@ -504,7 +504,7 @@ export default function SuperadminDashboardPage() {
                     ? "linear-gradient(135deg, #D97706 0%, #92400E 100%)"
                     : "linear-gradient(135deg, #8FA99C 0%, #174A43 100%)",
                 border: "0.5px solid rgba(255,255,255,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 16px 40px rgba(38,54,51,0.14), 0 4px 12px rgba(38,54,51,0.08)",
                 color: "#fff",
               }}
             >
@@ -593,7 +593,7 @@ export default function SuperadminDashboardPage() {
                         fontSize: "12px",
                         backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                         WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                        boxShadow: "0 24px 64px rgba(23,74,67,0.18), 0 8px 24px rgba(0,0,0,0.06)",
+                        boxShadow: "0 24px 64px rgba(23,74,67,0.18), 0 8px 24px rgba(38,54,51,0.06)",
                       }}
                     />
                     <Legend />

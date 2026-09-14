@@ -437,7 +437,7 @@ export default function SuperAdminVaultSignPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 vaultsign-stagger animate-vaultsign-fade-in">
                 {filteredTemplates.map((template: any) => (
-                  <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border hover:shadow-md transition-shadow">
+                  <Card key={template.id} className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border-border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
@@ -507,7 +507,7 @@ export default function SuperAdminVaultSignPage() {
 
             {/* Filters Panel */}
             {showFilters && (
-              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-4 animate-vaultsign-fade-in">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] mb-4 animate-vaultsign-fade-in">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div>
@@ -573,7 +573,7 @@ export default function SuperAdminVaultSignPage() {
               </CardContent></Card>
             ) : (
               <>
-                <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                   <CardContent className="p-0 overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -694,7 +694,7 @@ export default function SuperAdminVaultSignPage() {
                     { label: "Completion Rate", value: `${analytics.overview.completionRate}%`, icon: TrendingUp, color: "bg-status-green-bg", iconColor: "text-primary" },
                     { label: "Avg Sign Time", value: `${analytics.overview.avgSigningHours}h`, icon: Clock, color: "bg-status-blue-bg", iconColor: "text-status-blue" },
                   ].map((stat, i) => (
-                    <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                    <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                       <CardContent className="p-3">
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-lg ${stat.color} flex items-center justify-center flex-shrink-0`}>
@@ -712,7 +712,7 @@ export default function SuperAdminVaultSignPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* By Status */}
-                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">Documents by Status</CardTitle></CardHeader>
                     <CardContent>
                       <div className="space-y-2">
@@ -735,7 +735,7 @@ export default function SuperAdminVaultSignPage() {
                   </Card>
 
                   {/* By Document Type */}
-                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">Documents by Type</CardTitle></CardHeader>
                     <CardContent>
                       <div className="space-y-2">
@@ -757,7 +757,7 @@ export default function SuperAdminVaultSignPage() {
                   </Card>
 
                   {/* Monthly Trend */}
-                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Trend</CardTitle></CardHeader>
                     <CardContent>
                       {analytics.byMonth?.length > 0 ? (
@@ -791,7 +791,7 @@ export default function SuperAdminVaultSignPage() {
                   </Card>
 
                   {/* Organization Usage */}
-                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">Top Organizations</CardTitle></CardHeader>
                     <CardContent>
                       {analytics.byOrganization?.length > 0 ? (
@@ -817,7 +817,7 @@ export default function SuperAdminVaultSignPage() {
                 </div>
 
                 {/* Signer Stats */}
-                <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mt-6">
+                <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] mt-6">
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Signer Statistics</CardTitle></CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-3 gap-4">
@@ -875,7 +875,7 @@ export default function SuperAdminVaultSignPage() {
                 <p className="text-sm text-text-secondary">Activity will be logged here</p>
               </CardContent></Card>
             ) : (
-              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                 <CardContent className="p-0 overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -931,7 +931,7 @@ export default function SuperAdminVaultSignPage() {
 
           {/* ==================== ORG SETTINGS TAB ==================== */}
           <TabsContent value="org-settings" className="mt-6">
-            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
               <CardHeader>
                 <CardTitle className="text-lg">Organization Document Settings</CardTitle>
                 <p className="text-sm text-text-secondary">Configure company details, branding, and defaults that appear in document headers and footers</p>

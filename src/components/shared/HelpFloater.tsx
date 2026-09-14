@@ -120,7 +120,7 @@ export function HelpFloater() {
           aria-modal="false"
           aria-labelledby="help-floater-title"
           className="pointer-events-auto w-[360px] max-w-[calc(100vw-3rem)] rounded-2xl border border-border bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
-          style={{ boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)" }}
+          style={{ boxShadow: "0 10px 40px rgba(38,54,51,0.12), 0 4px 12px rgba(38,54,51,0.06)" }}
         >
           {/* Header */}
           <div
@@ -266,7 +266,7 @@ export function HelpFloater() {
         aria-expanded={open}
         className="pointer-events-auto flex size-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-110"
         style={{
-          background: open ? "#111827" : "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
+          background: open ? "#263633" : "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
           color: "white",
           boxShadow: "0 4px 16px rgba(23,74,67,0.3)",
         }}

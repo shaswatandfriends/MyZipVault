@@ -109,16 +109,16 @@ export const STATUS_META: Record<
     isActive: boolean;
   }
 > = {
-  new_lead:        { label: "New Lead",        color: "#1D4ED8", bgColor: "#DBEAFE", borderColor: "#93C5FD", icon: "✨", description: "Just added, no action yet",                        kanbanOrder: 1,  isActive: true },
+  new_lead:        { label: "New Lead",        color: "#174A43", bgColor: "#E5DFCF", borderColor: "#8FA99C", icon: "✨", description: "Just added, no action yet",                        kanbanOrder: 1,  isActive: true },
   doc_pending:     { label: "Doc Pending",     color: "#B45309", bgColor: "#FEF3C7", borderColor: "#FCD34D", icon: "📄", description: "Documents requested, awaiting response",          kanbanOrder: 2,  isActive: true },
   interested:      { label: "Interested",      color: "#047857", bgColor: "#D1FAE5", borderColor: "#6EE7B7", icon: "✅", description: "Candidate agreed to work with you",                kanbanOrder: 3,  isActive: true },
   submitted:       { label: "Submitted",       color: "#6D28D9", bgColor: "#EDE9FE", borderColor: "#C4B5FD", icon: "📤", description: "Profile submitted to a facility",                  kanbanOrder: 4,  isActive: true },
   interview_stage: { label: "Interview Stage", color: "#0E7490", bgColor: "#CFFAFE", borderColor: "#67E8F9", icon: "📅", description: "Interview scheduled",                               kanbanOrder: 5,  isActive: true },
   offer_sent:      { label: "Offer Sent",      color: "#C2410C", bgColor: "#FFEDD5", borderColor: "#FDBA74", icon: "✉️", description: "Offer letter sent via VaultSign",                   kanbanOrder: 6,  isActive: true },
-  offer_accepted:  { label: "Offer Accepted",  color: "#15803D", bgColor: "#DCFCE7", borderColor: "#86EFAC", icon: "🎉", description: "Candidate signed the offer",                        kanbanOrder: 7,  isActive: true },
+  offer_accepted:  { label: "Offer Accepted",  color: "#174A43", bgColor: "#DCFCE7", borderColor: "#86EFAC", icon: "🎉", description: "Candidate signed the offer",                        kanbanOrder: 7,  isActive: true },
   onboarding:      { label: "Onboarding",      color: "#0284C7", bgColor: "#E0F2FE", borderColor: "#7DD3FC", icon: "🔑", description: "Compliance in progress",                            kanbanOrder: 8,  isActive: true },
-  on_assignment:   { label: "On Assignment",   color: "#166534", bgColor: "#BBF7D0", borderColor: "#4ADE80", icon: "💼", description: "Contract started — actively working",               kanbanOrder: 9,  isActive: true },
-  inactive:        { label: "Inactive",        color: "#4B5563", bgColor: "#F3F4F6", borderColor: "#D1D5DB", icon: "⏸️", description: "No activity 30+ days — in Company Pool",            kanbanOrder: 10, isActive: false },
+  on_assignment:   { label: "On Assignment",   color: "#0F3631", bgColor: "#BBF7D0", borderColor: "#4ADE80", icon: "💼", description: "Contract started — actively working",               kanbanOrder: 9,  isActive: true },
+  inactive:        { label: "Inactive",        color: "#4B5563", bgColor: "#F7F3E8", borderColor: "#E5DFCF", icon: "⏸️", description: "No activity 30+ days — in Company Pool",            kanbanOrder: 10, isActive: false },
   not_interested:  { label: "Not Interested",  color: "#B91C1C", bgColor: "#FEE2E2", borderColor: "#FCA5A5", icon: "❌", description: "Candidate declined — in Company Pool",              kanbanOrder: 11, isActive: false },
   blacklisted:     { label: "Blacklisted",     color: "#7F1D1D", bgColor: "#FECACA", borderColor: "#F87171", icon: "🚫", description: "Do not contact — prompt on any activity",           kanbanOrder: 12, isActive: false },
 };
@@ -129,8 +129,8 @@ export const TAG_META: Record<
 > = {
   hot:      { label: "Hot",      emoji: "🔥", color: "#DC2626", description: "Active in last 7 days" },
   warm:     { label: "Warm",     emoji: "🌡️", color: "#F59E0B", description: "Active in last 8-14 days" },
-  cold:     { label: "Cold",     emoji: "❄️", color: "#3B82F6", description: "No activity 15-30 days" },
-  inactive: { label: "Inactive", emoji: "⏸️", color: "#6B7280", description: "No activity 30+ days" },
+  cold:     { label: "Cold",     emoji: "❄️", color: "#8FA99C", description: "No activity 15-30 days" },
+  inactive: { label: "Inactive", emoji: "⏸️", color: "#5C6B66", description: "No activity 30+ days" },
 };
 
 // ─── Source options (dropdown + Other) ──────────────────────────────

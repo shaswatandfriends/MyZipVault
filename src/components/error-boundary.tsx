@@ -39,7 +39,7 @@ export function ErrorBoundary({
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem",
-        background: "var(--background, #F0FDFA)",
+        background: "var(--background, #FBF8EE)",
       }}
     >
       <div
@@ -73,7 +73,7 @@ export function ErrorBoundary({
           style={{
             fontSize: "1.5rem",
             fontWeight: 700,
-            color: "var(--foreground, #0F172A)",
+            color: "var(--foreground, #0F3631)",
             marginBottom: "0.75rem",
           }}
         >
@@ -85,7 +85,7 @@ export function ErrorBoundary({
           style={{
             fontSize: "0.9375rem",
             lineHeight: 1.6,
-            color: "var(--text-secondary, #475569)",
+            color: "var(--text-secondary, #263633)",
             marginBottom: "2rem",
           }}
         >
@@ -97,7 +97,7 @@ export function ErrorBoundary({
           <p
             style={{
               fontSize: "0.75rem",
-              color: "var(--text-muted, #94A3B8)",
+              color: "var(--text-muted, #8B9994)",
               marginBottom: "2rem",
               fontFamily: "monospace",
             }}
@@ -122,7 +122,7 @@ export function ErrorBoundary({
               alignItems: "center",
               gap: "0.5rem",
               padding: "0.75rem 1.5rem",
-              background: "var(--primary, #059669)",
+              background: "var(--primary, #8FA99C)",
               color: "#FFFFFF",
               fontSize: "0.875rem",
               fontWeight: 600,
@@ -143,10 +143,10 @@ export function ErrorBoundary({
               gap: "0.5rem",
               padding: "0.75rem 1.5rem",
               background: "transparent",
-              color: "var(--text-secondary, #475569)",
+              color: "var(--text-secondary, #263633)",
               fontSize: "0.875rem",
               fontWeight: 600,
-              border: "1px solid var(--border, #E2E8F0)",
+              border: "1px solid var(--border, #E5DFCF)",
               borderRadius: "0.5rem",
               textDecoration: "none",
               transition: "background 150ms",

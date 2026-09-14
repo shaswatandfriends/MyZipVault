@@ -50,12 +50,12 @@ type FilterTab = "all" | "unread" | "urgent";
 // ─── Constants — Spatial UI palette ─────────────────────────────────
 const CATEGORY_META: Record<string, { icon: string; label: string; color: string }> = {
   rtr:        { icon: "✍️", label: "RTR & Signatures", color: "#174A43" },     // terra
-  document:   { icon: "📄", label: "Documents",        color: "#3B82F6" },     // blue
+  document:   { icon: "📄", label: "Documents",        color: "#8FA99C" },     // blue
   status:     { icon: "📊", label: "Status Changes",   color: "#174A43" },     // primary
   calendar:   { icon: "📅", label: "Calendar",         color: "#D97706" },     // amber
   credit:     { icon: "💳", label: "Credits",          color: "#B84040" },     // red
   compliance: { icon: "🛡️", label: "Compliance",       color: "#8FA99C" },     // primary-vivid
-  system:     { icon: "⚙️", label: "System",           color: "#6B7280" },     // text-secondary
+  system:     { icon: "⚙️", label: "System",           color: "#5C6B66" },     // text-secondary
 };
 
 const PRIORITY_META: Record<string, { color: string; bg: string; label: string }> = {
@@ -596,7 +596,7 @@ function LeftPanel({
         </h4>
 
         <StatCard icon="✍️" label="RTR & Signature" count={urgentCount} color="#174A43" />
-        <StatCard icon="📄" label="Documents" count={docCount} color="#3B82F6" />
+        <StatCard icon="📄" label="Documents" count={docCount} color="#8FA99C" />
         <StatCard icon="🛡️" label="Compliance" count={complianceCount} color="#8FA99C" />
       </div>
     </div>

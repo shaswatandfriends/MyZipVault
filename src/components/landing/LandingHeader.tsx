@@ -39,8 +39,8 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
       </header>
       {menuOpen && (
         <>
-          <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 48 }} />
-          <div style={{ position: "fixed", top: 76, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(10,15,26,0.95)", backdropFilter: "blur(24px)", borderRadius: 20, border: `1px solid ${C.border}`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+          <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(38,54,51,0.5)", backdropFilter: "blur(4px)", zIndex: 48 }} />
+          <div style={{ position: "fixed", top: 76, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(10,15,26,0.95)", backdropFilter: "blur(24px)", borderRadius: 20, border: `1px solid ${C.border}`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(38,54,51,0.5)" }}>
             {menuSections.map((section, si) => (
               <div key={si} style={{ marginBottom: si < menuSections.length - 1 ? 4 : 0 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.15em", padding: "12px 16px 6px" }}>{section.title}</p>

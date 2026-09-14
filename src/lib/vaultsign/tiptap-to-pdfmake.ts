@@ -68,30 +68,30 @@ export function tiptapToPdfmake(
       fontSize: 24,
       bold: true,
       marginBottom: 8,
-      color: "#111827",
+      color: "#263633",
     },
     heading2: {
       fontSize: 20,
       bold: true,
       marginBottom: 6,
-      color: "#111827",
+      color: "#263633",
     },
     heading3: {
       fontSize: 16,
       bold: true,
       marginBottom: 4,
-      color: "#111827",
+      color: "#263633",
     },
     paragraph: {
       fontSize: 11,
       lineHeight: 1.5,
-      color: "#374151",
+      color: "#3D4F4A",
       marginBottom: 4,
     },
     variable: {
       fontSize: 11,
       bold: true,
-      color: "#166534",
+      color: "#0F3631",
       background: "#DCFCE7",
     },
   };
@@ -116,7 +116,7 @@ export function tiptapToPdfmake(
     }
     if (headerStack.length > 0) {
       headerContent.push({ stack: headerStack, margin: [40, 20, 40, 5] as any });
-      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
+      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5DFCF" }], margin: [40, 0, 40, 10] as any });
     }
   }
 
@@ -131,7 +131,7 @@ export function tiptapToPdfmake(
         text: options.organization.name,
         fontSize: 12,
         bold: true,
-        color: "#111827",
+        color: "#263633",
         alignment: "center",
       });
     }
@@ -144,7 +144,7 @@ export function tiptapToPdfmake(
         companyStack.push({
           text: contactParts.join(" | "),
           fontSize: 8,
-          color: "#6B7280",
+          color: "#5C6B66",
           alignment: "center",
         });
       }
@@ -153,7 +153,7 @@ export function tiptapToPdfmake(
       companyStack.push({
         text: options.organization.address,
         fontSize: 8,
-        color: "#6B7280",
+        color: "#5C6B66",
         alignment: "center",
       });
     }
@@ -161,7 +161,7 @@ export function tiptapToPdfmake(
     if (companyStack.length > 0) {
       footerStack.push({ stack: companyStack });
       footerStack.push({
-        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5DFCF" }],
         margin: [0, 6, 0, 6] as any,
       });
     }
@@ -171,7 +171,7 @@ export function tiptapToPdfmake(
       text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
       alignment: "center",
       fontSize: 7,
-      color: "#9CA3AF",
+      color: "#8B9994",
     });
     // Powered by
     footerStack.push({
@@ -326,7 +326,7 @@ function transformNode(node: TipTapNode, placeholders: Record<string, string>): 
         checkbox: "☑ Checkbox",
       };
       const label = fieldLabels[fieldType] || fieldType;
-      const colors = ["#059669", "#0d9488", "#7C3AED", "#DC2626", "#D97706", "#2563EB"];
+      const colors = ["#8FA99C", "#0d9488", "#8FA99C", "#DC2626", "#D97706", "#174A43"];
       const color = colors[signerIndex % colors.length];
       return {
         stack: [
@@ -466,7 +466,7 @@ function transformInlineContent(nodes: TipTapNode[], placeholders: Record<string
       const signerIndex = node.attrs?.assignedToSignerIndex ?? 0;
       result.push({
         text: `[${fieldType.toUpperCase()} — Signer ${signerIndex + 1}]`,
-        color: "#166534",
+        color: "#0F3631",
         background: "#DCFCE7",
         fontSize: 10,
         bold: true,
@@ -533,7 +533,7 @@ function applyMarks(text: string, marks: TipTapMark[]): any {
         break;
       case "link":
         result.link = mark.attrs?.href;
-        result.color = "#0D9488";
+        result.color = "#174A43";
         result.decoration = "underline";
         break;
     }
@@ -559,7 +559,7 @@ function transformTable(node: TipTapNode, placeholders: Record<string, string>):
       rowCells.push({
         stack: cellContent,
         margin: [4, 4, 4, 4] as any,
-        fillColor: isHeader ? "#F3F4F6" : undefined,
+        fillColor: isHeader ? "#F7F3E8" : undefined,
         bold: isHeader,
       });
     }
@@ -577,8 +577,8 @@ function transformTable(node: TipTapNode, placeholders: Record<string, string>):
     layout: {
       hLineWidth: () => 0.5,
       vLineWidth: () => 0.5,
-      hLineColor: () => "#E5E7EB",
-      vLineColor: () => "#E5E7EB",
+      hLineColor: () => "#E5DFCF",
+      vLineColor: () => "#E5DFCF",
       paddingLeft: () => 6,
       paddingRight: () => 6,
       paddingTop: () => 4,
@@ -638,10 +638,10 @@ export function htmlToPdfmake(
   const content = parseHtmlToPdfmakeContent(htmlContent, options.placeholderValues || {});
 
   const styles: StyleDictionary = {
-    heading1: { fontSize: 24, bold: true, marginBottom: 8, color: "#111827" },
-    heading2: { fontSize: 20, bold: true, marginBottom: 6, color: "#111827" },
-    heading3: { fontSize: 16, bold: true, marginBottom: 4, color: "#111827" },
-    paragraph: { fontSize: 11, lineHeight: 1.5, color: "#374151", marginBottom: 4 },
+    heading1: { fontSize: 24, bold: true, marginBottom: 8, color: "#263633" },
+    heading2: { fontSize: 20, bold: true, marginBottom: 6, color: "#263633" },
+    heading3: { fontSize: 16, bold: true, marginBottom: 4, color: "#263633" },
+    paragraph: { fontSize: 11, lineHeight: 1.5, color: "#3D4F4A", marginBottom: 4 },
   };
 
   const headerContent: Content[] = [];
@@ -664,7 +664,7 @@ export function htmlToPdfmake(
     }
     if (headerStack.length > 0) {
       headerContent.push({ stack: headerStack, margin: [40, 20, 40, 5] as any });
-      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }], margin: [40, 0, 40, 10] as any });
+      headerContent.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5DFCF" }], margin: [40, 0, 40, 10] as any });
     }
   }
 
@@ -679,7 +679,7 @@ export function htmlToPdfmake(
         text: options.organization.name,
         fontSize: 12,
         bold: true,
-        color: "#111827",
+        color: "#263633",
         alignment: "center",
       });
     }
@@ -692,7 +692,7 @@ export function htmlToPdfmake(
         companyStack.push({
           text: contactParts.join(" | "),
           fontSize: 8,
-          color: "#6B7280",
+          color: "#5C6B66",
           alignment: "center",
         });
       }
@@ -701,7 +701,7 @@ export function htmlToPdfmake(
       companyStack.push({
         text: options.organization.address,
         fontSize: 8,
-        color: "#6B7280",
+        color: "#5C6B66",
         alignment: "center",
       });
     }
@@ -710,7 +710,7 @@ export function htmlToPdfmake(
       footerStack.push({ stack: companyStack });
       // Divider line
       footerStack.push({
-        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5E7EB" }],
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: "#E5DFCF" }],
         margin: [0, 6, 0, 6] as any,
       });
     }
@@ -720,7 +720,7 @@ export function htmlToPdfmake(
       text: `© ${new Date().getFullYear()} ${options.organization?.name || "MyZipVault"}. All rights reserved. This is a legally binding document.`,
       alignment: "center",
       fontSize: 7,
-      color: "#9CA3AF",
+      color: "#8B9994",
     });
     // Powered by
     footerStack.push({
@@ -955,7 +955,7 @@ function convertHtmlBlock(block: HtmlBlock, placeholders: Record<string, string>
           // Remove HTML tags from cell content for simple text extraction
           const cellText = inner.replace(/<[^>]+>/g, "").trim();
           const cellContent: any = { text: cellText, margin: [4, 4, 4, 4] as any };
-          if (isHeader) { cellContent.bold = true; cellContent.fillColor = "#F3F4F6"; }
+          if (isHeader) { cellContent.bold = true; cellContent.fillColor = "#F7F3E8"; }
           if (cellStyle.backgroundColor) cellContent.fillColor = cellStyle.backgroundColor;
           if (cellStyle.color) cellContent.color = cellStyle.color;
 
@@ -970,7 +970,7 @@ function convertHtmlBlock(block: HtmlBlock, placeholders: Record<string, string>
         table: { headerRows: 1, body: tableBody },
         layout: {
           hLineWidth: () => 0.5, vLineWidth: () => 0.5,
-          hLineColor: () => "#E5E7EB", vLineColor: () => "#E5E7EB",
+          hLineColor: () => "#E5DFCF", vLineColor: () => "#E5DFCF",
           paddingLeft: () => 6, paddingRight: () => 6,
           paddingTop: () => 4, paddingBottom: () => 4,
         },

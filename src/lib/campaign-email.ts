@@ -74,25 +74,25 @@ export function buildCampaignEmailHtml(
 
   // Footer with unsubscribe link
   const footerHtml = `
-    <p style="margin:0 0 8px 0; font-size:12px; color:#6B7280; line-height:1.5;">
-      This email was sent by <strong style="color:#374151;">MyZipVault</strong>${campaignName ? ` — ${campaignName}` : ""}.
+    <p style="margin:0 0 8px 0; font-size:12px; color:#5C6B66; line-height:1.5;">
+      This email was sent by <strong style="color:#3D4F4A;">MyZipVault</strong>${campaignName ? ` — ${campaignName}` : ""}.
     </p>
-    <p style="margin:0 0 8px 0; font-size:11px; color:#9CA3AF; line-height:1.5;">
+    <p style="margin:0 0 8px 0; font-size:11px; color:#8B9994; line-height:1.5;">
       You received this email because you have an account on MyZipVault.
     </p>
-    ${unsubscribeUrl ? `<p style="margin:0 0 8px 0; font-size:11px; color:#9CA3AF; line-height:1.5;">
-      <a href="${unsubscribeUrl}" style="color:#6B7280; text-decoration:underline;">Unsubscribe</a> &middot;
-      <a href="https://myzipvault.com/privacy" style="color:#6B7280; text-decoration:underline;">Privacy Policy</a>
+    ${unsubscribeUrl ? `<p style="margin:0 0 8px 0; font-size:11px; color:#8B9994; line-height:1.5;">
+      <a href="${unsubscribeUrl}" style="color:#5C6B66; text-decoration:underline;">Unsubscribe</a> &middot;
+      <a href="https://myzipvault.com/privacy" style="color:#5C6B66; text-decoration:underline;">Privacy Policy</a>
     </p>` : ""}
-    <p style="margin:0; font-size:11px; color:#9CA3AF; line-height:1.5;">
+    <p style="margin:0; font-size:11px; color:#8B9994; line-height:1.5;">
       &copy; ${new Date().getFullYear()} MyZipVault. All rights reserved.
     </p>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0; padding:0; background-color:#F3F4F6; font-family:${FONT_STACK};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F3F4F6; padding:32px 16px;">
+<body style="margin:0; padding:0; background-color:#F7F3E8; font-family:${FONT_STACK};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F7F3E8; padding:32px 16px;">
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px; width:100%;">
@@ -104,7 +104,7 @@ export function buildCampaignEmailHtml(
 
           <!-- Header with Logo -->
           <tr>
-            <td style="background-color:#FFFFFF; padding:28px 40px 20px 40px; text-align:center; border-bottom:1px solid #E5E7EB;">
+            <td style="background-color:#FFFFFF; padding:28px 40px 20px 40px; text-align:center; border-bottom:1px solid #E5DFCF;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center">
@@ -117,7 +117,7 @@ export function buildCampaignEmailHtml(
 
           <!-- Body Card -->
           <tr>
-            <td style="background-color:#FFFFFF; padding:36px 40px 32px 40px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+            <td style="background-color:#FFFFFF; padding:36px 40px 32px 40px; box-shadow:0 1px 3px rgba(38,54,51,0.06);">
               ${bodyContent}
             </td>
           </tr>

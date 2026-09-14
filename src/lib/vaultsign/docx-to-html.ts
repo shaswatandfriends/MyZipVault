@@ -149,7 +149,7 @@ function resolveColor(val: string | undefined, themeVal: string | undefined): st
   }
   // Theme color mapping (simplified – maps common theme indices)
   const themeColors: Record<string, string> = {
-    "1": "#000000", // dark1
+    "1": "#263633", // dark1
     "2": "#FFFFFF", // light1
     "3": "#44546A", // dark2 (default blue-gray)
     "4": "#E7E6E6", // light2
@@ -206,7 +206,7 @@ function extractRunFormatting(rPr: XElem | undefined): RunFormatting {
       magenta: "#FF00FF", blue: "#0000FF", red: "#FF0000",
       darkBlue: "#00008B", darkCyan: "#008B8B", darkGreen: "#006400",
       darkMagenta: "#8B008B", darkRed: "#8B0000", darkYellow: "#8B8B00",
-      darkGray: "#808080", lightGray: "#C0C0C0", black: "#000000",
+      darkGray: "#808080", lightGray: "#C0C0C0", black: "#263633",
     };
     fmt.backgroundColor = hlMap[highlight.attrs["w:val"]] || highlight.attrs["w:val"];
   }
@@ -871,7 +871,7 @@ function convertParagraph(pElem: XElem, styleMap: Map<string, StyleDef>): { html
 
       const linkContent = linkTextParts.join("");
       if (linkContent) {
-        contentParts.push(`<a href="#" style="color: #2563EB; text-decoration: underline;">${linkContent}</a>`);
+        contentParts.push(`<a href="#" style="color: #174A43; text-decoration: underline;">${linkContent}</a>`);
       }
     } else if (localName === "bookmarkStart" || localName === "bookmarkEnd") {
       // Skip bookmarks
@@ -1072,7 +1072,7 @@ function convertTable(tblElem: XElem, styleMap: Map<string, StyleDef>): string {
       const headerStyle = isFirstRow ? "font-weight: 600; background-color: #f9fafb;" : "";
 
       cellHtmlParts.push(
-        `<${tag} style="border: 1px solid #d1d5db; padding: 6px 8px;${headerStyle ? " " + headerStyle : ""}${cellStyle ? " " + cellStyle : ""}"${cellAttrs}>${cellContent || "&nbsp;"}</${tag}>`
+        `<${tag} style="border: 1px solid #E5DFCF; padding: 6px 8px;${headerStyle ? " " + headerStyle : ""}${cellStyle ? " " + cellStyle : ""}"${cellAttrs}>${cellContent || "&nbsp;"}</${tag}>`
       );
 
       colIdx += gridSpan;
@@ -1089,7 +1089,7 @@ function convertTable(tblElem: XElem, styleMap: Map<string, StyleDef>): string {
     }).join('')}</div>`;
   }
 
-  return `<table style="border-collapse: collapse; width: 100%; border: 1px solid #d1d5db; margin: 12px 0;">${rowHtmlParts.join("")}</table>`;
+  return `<table style="border-collapse: collapse; width: 100%; border: 1px solid #E5DFCF; margin: 12px 0;">${rowHtmlParts.join("")}</table>`;
 }
 
 // ── Utility ────────────────────────────────────────────────────────────────

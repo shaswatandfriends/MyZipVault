@@ -333,12 +333,12 @@ function EmployerBillingPageInner() {
                 <div className="h-[260px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data.creditsByMonth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                      <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                      <YAxis stroke="#6B7280" fontSize={12} allowDecimals={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5DFCF" vertical={false} />
+                      <XAxis dataKey="month" stroke="#5C6B66" fontSize={12} />
+                      <YAxis stroke="#5C6B66" fontSize={12} allowDecimals={false} />
                       <Tooltip
                         contentStyle={{
-                          borderRadius: 8, border: "1px solid #E5E7EB",
+                          borderRadius: 8, border: "1px solid #E5DFCF",
                           fontSize: 12,
                         }}
                       />

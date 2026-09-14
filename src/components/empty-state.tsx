@@ -51,7 +51,7 @@ export function EmptyState({
       >
         <Icon
           className={variant === "compact" ? "size-6" : "size-8"}
-          style={{ color: "var(--primary, #059669)" }}
+          style={{ color: "var(--primary, #8FA99C)" }}
         />
       </div>
 
@@ -60,7 +60,7 @@ export function EmptyState({
         style={{
           fontSize: variant === "compact" ? "1rem" : "1.125rem",
           fontWeight: 600,
-          color: "var(--foreground, #0F172A)",
+          color: "var(--foreground, #0F3631)",
           marginBottom: "0.5rem",
         }}
       >
@@ -72,7 +72,7 @@ export function EmptyState({
         style={{
           fontSize: "0.875rem",
           lineHeight: 1.6,
-          color: "var(--text-secondary, #475569)",
+          color: "var(--text-secondary, #263633)",
           maxWidth: "400px",
           margin: "0 auto 1.5rem",
         }}
@@ -89,7 +89,7 @@ export function EmptyState({
             alignItems: "center",
             gap: "0.5rem",
             padding: "0.625rem 1.5rem",
-            background: "var(--primary, #059669)",
+            background: "var(--primary, #8FA99C)",
             color: "#FFFFFF",
             fontSize: "0.875rem",
             fontWeight: 600,

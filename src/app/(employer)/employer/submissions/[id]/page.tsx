@@ -340,8 +340,8 @@ export default function EmployerSubmissionDetailPage() {
                     className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium"
                     style={{
                       background: isCurrent ? "#174A43" : isPast ? "#EAF3FB" : "#F9FAFB",
-                      color: isCurrent ? "#fff" : isPast ? "#174A43" : "#9CA3AF",
-                      border: isPast && !isCurrent ? "1px solid #DBEAFE" : "1px solid #E5E7EB",
+                      color: isCurrent ? "#fff" : isPast ? "#174A43" : "#8B9994",
+                      border: isPast && !isCurrent ? "1px solid #E5DFCF" : "1px solid #E5DFCF",
                     }}
                   >
                     {isPast && !isCurrent && <CheckCircle2 className="size-3" />}

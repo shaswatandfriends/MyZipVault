@@ -115,14 +115,14 @@ export async function GET(request: Request) {
             body: tableBody,
           },
           layout: {
-            fillColor: (rowIndex: number) => (rowIndex === 0 ? "#f3f4f6" : null) as string | null,
+            fillColor: (rowIndex: number) => (rowIndex === 0 ? "#F7F3E8" : null) as string | null,
           },
         },
       ],
       styles: {
         title: { fontSize: 18, bold: true, margin: [0, 0, 0, 10] as [number, number, number, number] },
         subtitle: { fontSize: 12, margin: [0, 0, 0, 5] as [number, number, number, number] },
-        tableHeader: { bold: true, fontSize: 10, color: "#374151" },
+        tableHeader: { bold: true, fontSize: 10, color: "#3D4F4A" },
       },
       defaultStyle: { font: "Helvetica" },
     };

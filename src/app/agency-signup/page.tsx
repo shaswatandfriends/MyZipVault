@@ -199,7 +199,7 @@ function AgencySignupPageInner() {
               <div
                 className="flex items-center justify-center size-16 rounded-[20px]"
                 style={{
-                  background: "var(--status-emerald-bg, #ecfdf5)",
+                  background: "var(--status-emerald-bg, #FBF8EE)",
                   border: "0.5px solid rgba(16,185,129,0.3)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                 }}
@@ -222,13 +222,13 @@ function AgencySignupPageInner() {
             <div
               className="rounded-[16px] p-4 mb-6"
               style={{
-                background: "var(--status-emerald-bg, #ecfdf5)",
+                background: "var(--status-emerald-bg, #FBF8EE)",
                 border: "0.5px solid rgba(16,185,129,0.25)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
             >
-              <p className="text-sm leading-relaxed" style={{ color: "#065f46" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "#0F3631" }}>
                 Welcome{accountType === "agency" ? ` ${agencyName}` : ""}! Your account is active. Verify your email to unlock all features, then log in to start searching candidates and posting jobs.
               </p>
             </div>

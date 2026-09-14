@@ -179,7 +179,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Skeleton Timeline */}
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-6">
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-1 overflow-x-auto">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -199,7 +199,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Skeleton Signers */}
             <div className="lg:col-span-2">
-              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                 <CardHeader>
                   <Skeleton className="h-6 w-16" />
                 </CardHeader>
@@ -225,7 +225,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Skeleton Details & Audit */}
             <div className="space-y-6">
-              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                 <CardHeader>
                   <Skeleton className="h-5 w-16" />
                 </CardHeader>
@@ -238,7 +238,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   ))}
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                 <CardHeader>
                   <Skeleton className="h-5 w-20" />
                 </CardHeader>
@@ -334,7 +334,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Status Timeline — horizontally scrollable on mobile */}
-        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-6 animate-vaultsign-scale-in">
+        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] mb-6 animate-vaultsign-scale-in">
           <CardContent className="p-4">
             <div className="flex items-center gap-1 overflow-x-auto pb-1">
               {TIMELINE_STEPS.map((step, i) => (
@@ -372,7 +372,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left — Signers */}
           <div className="lg:col-span-2">
-            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
               <CardHeader>
                 <CardTitle className="text-lg">Signers</CardTitle>
               </CardHeader>
@@ -423,7 +423,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
           {/* Right — Details & Audit */}
           <div className="space-y-6">
-            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
               <CardHeader>
                 <CardTitle className="text-base">Details</CardTitle>
               </CardHeader>
@@ -461,7 +461,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
               <CardHeader>
                 <CardTitle className="text-base">Audit Trail</CardTitle>
               </CardHeader>

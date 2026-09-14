@@ -46,7 +46,7 @@ export default function SigningCompletePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-lg w-full text-center">
+        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border border-border p-8 max-w-lg w-full text-center">
           {/* Skeleton Success Icon */}
           <Skeleton className="w-16 h-16 rounded-full mx-auto mb-6" />
 
@@ -73,7 +73,7 @@ export default function SigningCompletePage() {
   return (
     <VaultSignErrorBoundary>
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-lg w-full text-center animate-vaultsign-fade-in">
+      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border border-border p-8 max-w-lg w-full text-center animate-vaultsign-fade-in">
         {/* Success icon */}
         <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-6 animate-vaultsign-success-bounce">
           <CheckCircle2 className="h-8 w-8 text-primary" />

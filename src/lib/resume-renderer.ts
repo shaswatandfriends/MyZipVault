@@ -71,7 +71,7 @@ export function renderResumeToHtml(
   const fontFamily = cfg.font_family || "Inter, sans-serif";
   const fontSize = cfg.font_size || 11;
   const headingColor = cfg.heading_color || "#0b3d91";
-  const accentColor = cfg.accent_color || "#64748b";
+  const accentColor = cfg.accent_color || "#5C6B66";
   const spacing = cfg.spacing === "tight" ? "8px" : cfg.spacing === "comfortable" ? "20px" : "12px";
   const margins = cfg.page_margins || "0.75in";
 
@@ -124,7 +124,7 @@ function renderContact(data: ResumeParsedData, headingColor: string): string {
   return `
     <div style="text-align:center;margin-bottom:12px;">
       ${data.full_name ? `<h1 style="font-size:18px;color:${headingColor};margin:0 0 4px 0;">${escapeHtml(data.full_name)}</h1>` : ""}
-      <p style="font-size:10px;color:#666;margin:0;">${parts.slice(1).map(escapeHtml).join(" · ")}</p>
+      <p style="font-size:10px;color:#5C6B66;margin:0;">${parts.slice(1).map(escapeHtml).join(" · ")}</p>
     </div>
   `;
 }
@@ -145,9 +145,9 @@ function renderExperience(experience: ResumeParsedData["experience"], headingCol
     <div style="margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
         <strong style="font-size:${11}px;">${escapeHtml(job.title || "")}</strong>
-        <span style="font-size:10px;color:#666;">${escapeHtml([job.start_date, job.end_date || "Present"].filter(Boolean).join(" — "))}</span>
+        <span style="font-size:10px;color:#5C6B66;">${escapeHtml([job.start_date, job.end_date || "Present"].filter(Boolean).join(" — "))}</span>
       </div>
-      <div style="font-size:10px;color:#666;font-style:italic;margin-bottom:2px;">
+      <div style="font-size:10px;color:#5C6B66;font-style:italic;margin-bottom:2px;">
         ${escapeHtml([job.company, job.location].filter(Boolean).join(" · "))}
       </div>
       ${job.description ? `<p style="font-size:10px;margin:2px 0 0 0;">${escapeHtml(job.description)}</p>` : ""}
@@ -161,7 +161,7 @@ function renderEducation(education: ResumeParsedData["education"], headingColor:
   const items = education.map((edu) => `
     <div style="margin-bottom:4px;">
       <strong style="font-size:10px;">${escapeHtml(edu.degree || "")}</strong>
-      <span style="font-size:10px;color:#666;"> — ${escapeHtml([edu.institution, edu.location, edu.graduation_date].filter(Boolean).join(", "))}</span>
+      <span style="font-size:10px;color:#5C6B66;"> — ${escapeHtml([edu.institution, edu.location, edu.graduation_date].filter(Boolean).join(", "))}</span>
     </div>
   `).join("");
   return `<div>${renderHeading("Education", headingColor)}${items}</div>`;
@@ -182,8 +182,8 @@ function renderCertifications(certs: ResumeParsedData["certifications"], heading
   const items = certs.map((c) => `
     <div style="margin-bottom:2px;font-size:10px;">
       <strong>${escapeHtml(c.name || "")}</strong>
-      ${c.issuer ? `<span style="color:#666;"> — ${escapeHtml(c.issuer)}</span>` : ""}
-      ${c.year ? `<span style="color:#666;">, ${escapeHtml(c.year)}</span>` : ""}
+      ${c.issuer ? `<span style="color:#5C6B66;"> — ${escapeHtml(c.issuer)}</span>` : ""}
+      ${c.year ? `<span style="color:#5C6B66;">, ${escapeHtml(c.year)}</span>` : ""}
     </div>
   `).join("");
   return `<div>${renderHeading("Certifications", headingColor)}${items}</div>`;
@@ -194,8 +194,8 @@ function renderLicenses(licenses: ResumeParsedData["licenses"], headingColor: st
   const items = licenses.map((l) => `
     <div style="margin-bottom:2px;font-size:10px;">
       <strong>${escapeHtml(l.name || "")}</strong>
-      ${l.number ? `<span style="color:#666;"> #${escapeHtml(l.number)}</span>` : ""}
-      ${l.state ? `<span style="color:#666;"> (${escapeHtml(l.state)})</span>` : ""}
+      ${l.number ? `<span style="color:#5C6B66;"> #${escapeHtml(l.number)}</span>` : ""}
+      ${l.state ? `<span style="color:#5C6B66;"> (${escapeHtml(l.state)})</span>` : ""}
     </div>
   `).join("");
   return `<div>${renderHeading("Licenses", headingColor)}${items}</div>`;

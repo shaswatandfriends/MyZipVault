@@ -50,7 +50,7 @@ export default function CandidateVaultSignPage() {
           {/* Skeleton Document Cards */}
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border">
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ export default function CandidateVaultSignPage() {
         </div>
 
         {documents.length === 0 ? (
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
             <CardContent className="p-8 text-center">
               <FileSignature className="h-12 w-12 text-text-muted mx-auto mb-3" />
               <h3 className="font-medium text-foreground mb-1">No Documents Yet</h3>
@@ -102,7 +102,7 @@ export default function CandidateVaultSignPage() {
               const docStatus = vaultSignStatusColors[item.document?.status] || vaultSignStatusColors.draft;
               const signerStatus = signerStatusColors[item.signer_status] || signerStatusColors.pending;
               return (
-                <Card key={index} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border">
+                <Card key={index} className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">

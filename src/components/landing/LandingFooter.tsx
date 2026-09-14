@@ -7,7 +7,7 @@ export function LandingFooter() {
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => { const onResize = () => setIsDesktop(window.innerWidth > 768); window.addEventListener("resize", onResize); onResize(); return () => window.removeEventListener("resize", onResize); }, []);
   return (
-    <footer style={{ background: "rgba(0,0,0,0.3)", borderTop: `1px solid ${C.border}`, padding: "64px 0 24px", position: "relative", zIndex: 1 }}>
+    <footer style={{ background: "rgba(38,54,51,0.3)", borderTop: `1px solid ${C.border}`, padding: "64px 0 24px", position: "relative", zIndex: 1 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "2fr 1fr 1fr 1fr 1.5fr" : "1fr 1fr", gap: 40, marginBottom: 40 }}>
           <div>

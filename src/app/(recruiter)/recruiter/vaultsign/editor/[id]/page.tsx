@@ -1206,7 +1206,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2" align="start">
                   <div className="grid grid-cols-6 gap-1">
-                    {["#000000", "#374151", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
+                    {["#263633", "#3D4F4A", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#8FA99C", "#D97706", "#DB2777", "#174A43"].map((color) => (
                       <button key={color} className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
                     ))}
                   </div>
@@ -1224,7 +1224,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                     {[
                       { color: "#FEF08A", label: "Yellow" },
                       { color: "#BBF7D0", label: "Green" },
-                      { color: "#BFDBFE", label: "Blue" },
+                      { color: "#E5DFCF", label: "Blue" },
                       { color: "#FECACA", label: "Red" },
                       { color: "#E9D5FF", label: "Purple" },
                     ].map(({ color, label }) => (
@@ -1415,7 +1415,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2" align="start">
               <div className="grid grid-cols-5 gap-1">
-                {["#000000", "#374151", "#DC2626", "#166534", "#0D9488", "#7C3AED", "#D97706", "#DB2777", "#2563EB", "#9CA3AF"].map((color) => (
+                {["#263633", "#3D4F4A", "#DC2626", "#0F3631", "#174A43", "#8FA99C", "#D97706", "#DB2777", "#174A43", "#8B9994"].map((color) => (
                   <button key={color} className="w-7 h-7 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
                 ))}
               </div>
@@ -1434,7 +1434,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                 {[
                   { color: "#FEF08A", label: "Yellow" },
                   { color: "#BBF7D0", label: "Green" },
-                  { color: "#BFDBFE", label: "Blue" },
+                  { color: "#E5DFCF", label: "Blue" },
                   { color: "#FECACA", label: "Red" },
                 ].map(({ color, label }) => (
                   <button key={color} className="w-7 h-7 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()} title={label} />
@@ -1880,12 +1880,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           background: linear-gradient(to bottom,
             #ffffff 0%,
             #ffffff 38%,
-            #E5E7EB 38%,
-            #E5E7EB 40%,
+            #E5DFCF 38%,
+            #E5DFCF 40%,
             #ffffff 40%,
             #ffffff 60%,
-            #E5E7EB 60%,
-            #E5E7EB 62%,
+            #E5DFCF 60%,
+            #E5DFCF 62%,
             #ffffff 62%,
             #ffffff 100%
           );
@@ -1918,12 +1918,12 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
           background: linear-gradient(to bottom,
             #ffffff 0%,
             #ffffff 38%,
-            #E5E7EB 38%,
-            #E5E7EB 40%,
+            #E5DFCF 38%,
+            #E5DFCF 40%,
             #ffffff 40%,
             #ffffff 60%,
-            #E5E7EB 60%,
-            #E5E7EB 62%,
+            #E5DFCF 60%,
+            #E5DFCF 62%,
             #ffffff 62%,
             #ffffff 100%
           );

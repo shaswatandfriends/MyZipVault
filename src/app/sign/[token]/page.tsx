@@ -370,7 +370,7 @@ export default function PublicSigningPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-border p-8 max-w-md text-center">
+        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] border border-border p-8 max-w-md text-center">
           <AlertTriangle className="h-12 w-12 text-status-amber mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Sign</h2>
           <p className="text-text-secondary">{error}</p>

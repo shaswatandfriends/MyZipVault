@@ -231,7 +231,7 @@ export default function SuperadminAnalyticsPage() {
                   contentStyle={{
                     borderRadius: "8px",
                     border: "1px solid var(--border)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    boxShadow: "0 2px 8px rgba(38,54,51,0.08)",
                   }}
                 />
                 <Legend />

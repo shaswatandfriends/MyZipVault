@@ -123,14 +123,14 @@ function getNotificationIconBg(type: string): React.CSSProperties {
     case "share_request":
       // Blue
       return {
-        background: "linear-gradient(180deg, #60A5FA 0%, #3B82F6 60%, #1E40AF 100%)",
+        background: "linear-gradient(180deg, #8FA99C 0%, #8FA99C 60%, #0F3631 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(59,130,246,0.28)",
         color: "#fff",
       };
     default:
       // Muted neutral — text-secondary gradient
       return {
-        background: "linear-gradient(180deg, #9CA3AF 0%, #6B7280 60%, #374151 100%)",
+        background: "linear-gradient(180deg, #8B9994 0%, #5C6B66 60%, #3D4F4A 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(106,138,106,0.28)",
         color: "#fff",
       };

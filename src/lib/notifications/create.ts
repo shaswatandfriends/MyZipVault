@@ -269,10 +269,10 @@ async function sendNotificationEmail(params: CreateNotificationParams): Promise<
   // Priority-based accent colors
   const accentColor = params.priority === "urgent" ? "#DC2626"
     : params.priority === "important" ? "#F59E0B"
-    : "#3B82F6";
+    : "#8FA99C";
   const accentBg = params.priority === "urgent" ? "#FEE2E2"
     : params.priority === "important" ? "#FEF3C7"
-    : "#DBEAFE";
+    : "#E5DFCF";
 
   const htmlContent = `
     <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">

@@ -12,14 +12,14 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
         <h1 style="color: white; margin: 0; font-size: 22px;">MyZipVault</h1>
         <p style="color: #fecdd3; margin: 4px 0 0 0; font-size: 13px;">Super Admin Verification</p>
       </div>
-      <div style="background: #ffffff; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+      <div style="background: #ffffff; padding: 32px; border: 1px solid #E5DFCF; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="color: #1f2937; font-size: 15px; margin: 0 0 20px 0;">Your verification code is:</p>
         <div style="background: #fef2f2; border: 2px dashed #dc2626; border-radius: 8px; padding: 16px; text-align: center; margin: 0 0 20px 0;">
           <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #991b1b; font-family: 'Courier New', monospace;">${otpCode}</span>
         </div>
-        <p style="color: #6b7280; font-size: 13px; margin: 0 0 8px 0;">This code expires in <strong>5 minutes</strong>.</p>
-        <p style="color: #6b7280; font-size: 13px; margin: 0;">If you did not request this code, please ignore this email and ensure your account is secure.</p>
-        <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 20px 0;">
+        <p style="color: #5C6B66; font-size: 13px; margin: 0 0 8px 0;">This code expires in <strong>5 minutes</strong>.</p>
+        <p style="color: #5C6B66; font-size: 13px; margin: 0;">If you did not request this code, please ignore this email and ensure your account is secure.</p>
+        <hr style="border: none; border-top: 1px solid #F7F3E8; margin: 20px 0;">
         <p style="color: #9ca3af; font-size: 11px; margin: 0;">This is an automated message from MyZipVault. Do not reply to this email.</p>
       </div>
     </div>

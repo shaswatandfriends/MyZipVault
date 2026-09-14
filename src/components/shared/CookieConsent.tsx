@@ -131,7 +131,7 @@ export function CookieConsent() {
         className={`pointer-events-auto w-full max-w-3xl rounded-2xl border border-border bg-white shadow-lg transition-all duration-300 ${
           animateIn ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
         }`}
-        style={{ boxShadow: "0 -4px 24px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06)" }}
+        style={{ boxShadow: "0 -4px 24px rgba(38,54,51,0.08), 0 8px 24px rgba(38,54,51,0.06)" }}
       >
         <div className="p-4 sm:p-5">
           <div className="flex items-start gap-3">

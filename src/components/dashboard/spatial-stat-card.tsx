@@ -35,12 +35,12 @@ const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"
     color: "#fff",
   },
   blue: {
-    background: "linear-gradient(180deg, #60A5FA 0%, #3B82F6 60%, #1E40AF 100%)",
+    background: "linear-gradient(180deg, #8FA99C 0%, #8FA99C 60%, #0F3631 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(59,130,246,0.28)",
     color: "#fff",
   },
   green: {
-    background: "linear-gradient(180deg, #86EFAC 0%, #22C55E 60%, #15803D 100%)",
+    background: "linear-gradient(180deg, #86EFAC 0%, #22C55E 60%, #174A43 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(34,197,94,0.28)",
     color: "#fff",
   },

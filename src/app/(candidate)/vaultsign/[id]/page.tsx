@@ -46,7 +46,7 @@ export default function CandidateVaultSignDetailPage() {
           <Skeleton className="h-8 w-32 mb-4" />
 
           {/* Skeleton Card */}
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -87,7 +87,7 @@ export default function CandidateVaultSignDetailPage() {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Documents
         </Button>
 
-        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

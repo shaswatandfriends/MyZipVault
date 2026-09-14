@@ -189,7 +189,7 @@ const defaultData: LandingPageData = {
     accent: "#174A43",
     background: "#F2EDE4",
     textPrimary: "#174A43",
-    textSecondary: "#6B7280",
+    textSecondary: "#5C6B66",
   },
   featureCards: [
     {
@@ -630,17 +630,17 @@ function FormField({
 
 // ─── Resolve CSS var strings to hex for color picker compatibility ──
 const CSS_VAR_TO_HEX: Record<string, string> = {
-  "var(--primary)": "#059669",
-  "var(--accent-teal)": "#0D9488",
-  "var(--background)": "#F0FDFA",
-  "var(--foreground)": "#0F172A",
-  "var(--text-primary)": "#0F172A",
-  "var(--text-secondary)": "#475569",
+  "var(--primary)": "#8FA99C",
+  "var(--accent-teal)": "#174A43",
+  "var(--background)": "#FBF8EE",
+  "var(--foreground)": "#0F3631",
+  "var(--text-primary)": "#0F3631",
+  "var(--text-secondary)": "#263633",
 };
 
 function resolveColor(value: string | undefined): string {
-  if (!value) return "#059669";
-  if (value.startsWith("var(")) return CSS_VAR_TO_HEX[value] || "#059669";
+  if (!value) return "#8FA99C";
+  if (value.startsWith("var(")) return CSS_VAR_TO_HEX[value] || "#8FA99C";
   return value;
 }
 

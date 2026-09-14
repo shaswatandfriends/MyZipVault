@@ -43,7 +43,7 @@ export async function GET() {
       { wch: 12 },  // Has N/A Option
     ];
 
-    // Style header row: background #166534, white text, bold
+    // Style header row: background #0F3631, white text, bold
     for (let col = 0; col < headers.length; col++) {
       const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
       if (ws1[cellRef]) {

@@ -743,7 +743,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               </PopoverTrigger>
               <PopoverContent className="w-auto p-2" align="start">
                 <div className="grid grid-cols-6 gap-1">
-                  {["#000000", "#374151", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#7C3AED", "#D97706", "#DB2777", "#2563EB"].map((color) => (
+                  {["#263633", "#3D4F4A", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#8FA99C", "#D97706", "#DB2777", "#174A43"].map((color) => (
                     <button key={color} className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
                   ))}
                 </div>
@@ -761,7 +761,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
                   {[
                     { color: "#FEF08A", label: "Yellow" },
                     { color: "#BBF7D0", label: "Green" },
-                    { color: "#BFDBFE", label: "Blue" },
+                    { color: "#E5DFCF", label: "Blue" },
                     { color: "#FECACA", label: "Red" },
                     { color: "#E9D5FF", label: "Purple" },
                   ].map(({ color, label }) => (
@@ -940,7 +940,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
 
         {/* Center — Editor */}
         <div className="flex-1 overflow-y-auto bg-surface-2">
-          <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-2xl border border-border bg-white min-h-[800px]">
+          <div className="max-w-3xl mx-auto my-4 lg:my-6 shadow-[0_1px_2px_rgba(38,54,51,0.05)] rounded-2xl border border-border bg-white min-h-[800px]">
             <EditorContent editor={editor} className="tiptap-editor" />
           </div>
         </div>

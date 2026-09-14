@@ -17,12 +17,12 @@ import React from "react";
 
 // Color map for signer indices
 const SIGNER_COLORS = [
-  "#059669", // emerald-600
+  "#8FA99C", // emerald-600
   "#0d9488", // teal-600
-  "#7C3AED", // violet-600
+  "#8FA99C", // violet-600
   "#DC2626", // red-600
   "#D97706", // amber-600
-  "#2563EB", // blue-600
+  "#174A43", // blue-600
   "#DB2777", // pink-600
   "#4F46E5", // indigo-600
 ];

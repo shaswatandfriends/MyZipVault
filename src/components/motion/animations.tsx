@@ -257,7 +257,7 @@ export function AnimatedCard({
         hoverLift
           ? {
               y: -4,
-              boxShadow: "0 20px 60px rgba(5, 150, 105, 0.12), 0 8px 20px rgba(0,0,0,0.06)",
+              boxShadow: "0 20px 60px rgba(5, 150, 105, 0.12), 0 8px 20px rgba(38,54,51,0.06)",
             }
           : undefined
       }
@@ -290,7 +290,7 @@ export function TiltCard({
         rotateX: -tiltAmount / 3,
         rotateY: tiltAmount / 3,
         scale: 1.02,
-        boxShadow: "0 30px 80px rgba(5,150,105,0.15), 0 10px 30px rgba(0,0,0,0.06)",
+        boxShadow: "0 30px 80px rgba(5,150,105,0.15), 0 10px 30px rgba(38,54,51,0.06)",
       }}
       whileTap={{ scale: 0.98 }}
       style={{ perspective: 1000, transformStyle: "preserve-3d" }}

@@ -44,14 +44,14 @@ interface Pool {
 }
 
 const POOL_COLORS = [
-  { value: "#059669", label: "Emerald" },
-  { value: "#0D9488", label: "Teal" },
-  { value: "#2563EB", label: "Blue" },
-  { value: "#7C3AED", label: "Purple" },
+  { value: "#8FA99C", label: "Emerald" },
+  { value: "#174A43", label: "Teal" },
+  { value: "#174A43", label: "Blue" },
+  { value: "#8FA99C", label: "Purple" },
   { value: "#D97706", label: "Amber" },
   { value: "#DC2626", label: "Red" },
   { value: "#DB2777", label: "Pink" },
-  { value: "#0B1F3A", label: "Navy" },
+  { value: "#174A43", label: "Navy" },
 ];
 
 export default function PoolsPage() {
@@ -66,7 +66,7 @@ export default function PoolsPage() {
   // Form state
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formColor, setFormColor] = useState("#059669");
+  const [formColor, setFormColor] = useState("#8FA99C");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchPools = useCallback(async () => {
@@ -112,7 +112,7 @@ export default function PoolsPage() {
         setShowCreateDialog(false);
         setFormName("");
         setFormDescription("");
-        setFormColor("#059669");
+        setFormColor("#8FA99C");
         fetchPools();
       } else {
         toast.error(data.error || "Failed to create pool");

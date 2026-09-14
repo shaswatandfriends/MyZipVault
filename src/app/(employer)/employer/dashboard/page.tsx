@@ -150,8 +150,8 @@ function StatCard({
     primary: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
     terra: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
     amber: "linear-gradient(180deg, #FBBF24 0%, #D97706 100%)",
-    emerald: "linear-gradient(180deg, #34D399 0%, #059669 100%)",
-    violet: "linear-gradient(180deg, #A78BFA 0%, #7C3AED 100%)",
+    emerald: "linear-gradient(180deg, #34D399 0%, #8FA99C 100%)",
+    violet: "linear-gradient(180deg, #A78BFA 0%, #8FA99C 100%)",
   };
   const content = (
     <Card className="hover:shadow-md transition-shadow h-full">

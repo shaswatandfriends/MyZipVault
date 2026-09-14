@@ -71,7 +71,7 @@ export function HeroSection() {
                 </div>
               </div>
             </div>
-            <div className="absolute -top-4 -right-4 rounded-xl px-4 py-2" style={{ background: `linear-gradient(135deg, ${C.emerald}, #059669)`, boxShadow: `0 8px 24px ${C.emerald}40`, animation: "float-card 4s ease-in-out infinite 0.5s" }}><p className="text-xs font-bold text-white">✓ HIPAA Aligned</p></div>
+            <div className="absolute -top-4 -right-4 rounded-xl px-4 py-2" style={{ background: `linear-gradient(135deg, ${C.emerald}, #8FA99C)`, boxShadow: `0 8px 24px ${C.emerald}40`, animation: "float-card 4s ease-in-out infinite 0.5s" }}><p className="text-xs font-bold text-white">✓ HIPAA Aligned</p></div>
             <div className="absolute -bottom-6 -left-6 rounded-xl px-4 py-3" style={{ background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, boxShadow: `0 8px 24px ${C.primaryGlow}`, animation: "float-card 5s ease-in-out infinite 1s" }}><div className="flex items-center gap-2"><CreditCard className="size-4 text-white" /><div><p className="text-[9px] text-white/70">Credits</p><p className="text-sm font-bold text-white">84</p></div></div></div>
           </div>
         </div>

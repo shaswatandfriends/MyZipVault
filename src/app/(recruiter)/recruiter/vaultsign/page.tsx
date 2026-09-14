@@ -265,7 +265,7 @@ export default function VaultSignDashboardPage() {
           {/* Skeleton Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <Card key={i} className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Skeleton className="w-10 h-10 rounded-lg" />
@@ -280,7 +280,7 @@ export default function VaultSignDashboardPage() {
           </div>
 
           {/* Skeleton Table */}
-          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-6 w-24" />
@@ -367,7 +367,7 @@ export default function VaultSignDashboardPage() {
         {/* Stats cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-vaultsign-fade-in">
           <Card
-            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-all ${
               statusFilter === "sent" || statusFilter === "partially_signed" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "sent" || statusFilter === "partially_signed" ? "all" : "sent")}
@@ -386,7 +386,7 @@ export default function VaultSignDashboardPage() {
             </CardContent>
           </Card>
           <Card
-            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-all ${
               statusFilter === "completed" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "completed" ? "all" : "completed")}
@@ -405,7 +405,7 @@ export default function VaultSignDashboardPage() {
             </CardContent>
           </Card>
           <Card
-            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-all ${
               statusFilter === "declined" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "declined" ? "all" : "declined")}
@@ -424,7 +424,7 @@ export default function VaultSignDashboardPage() {
             </CardContent>
           </Card>
           <Card
-            className={`rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-all ${
+            className={`rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-all ${
               statusFilter === "sent" ? "ring-2 ring-[var(--primary)]/30 border-primary" : ""
             }`}
             onClick={() => setStatusFilter(statusFilter === "sent" ? "all" : "sent")}
@@ -457,7 +457,7 @@ export default function VaultSignDashboardPage() {
                   {templates.filter((t: any) => t.source === "shared").slice(0, 4).map((template: any) => (
                     <Card
                       key={template.id}
-                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
                       onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                     >
                       <CardContent className="p-4">
@@ -493,7 +493,7 @@ export default function VaultSignDashboardPage() {
                   {templates.filter((t: any) => t.source === "platform").slice(0, 4).map((template: any) => (
                     <Card
                       key={template.id}
-                      className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
+                      className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)] cursor-pointer hover:shadow-md transition-shadow border-border hover:scale-[1.02] transition-transform"
                       onClick={() => router.push(`/recruiter/vaultsign/new?template_id=${template.id}`)}
                     >
                       <CardContent className="p-4">
@@ -515,7 +515,7 @@ export default function VaultSignDashboardPage() {
         )}
 
         {/* Documents */}
-        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <Card className="rounded-2xl shadow-[0_1px_2px_rgba(38,54,51,0.05)]">
           <CardHeader className="pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle className="text-lg">Documents</CardTitle>

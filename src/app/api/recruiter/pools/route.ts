@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pool name is required" }, { status: 400 });
     }
 
-    const validColors = ["#059669", "#0D9488", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#DB2777", "#0B1F3A"];
-    const poolColor = validColors.includes(color) ? color : "#059669";
+    const validColors = ["#8FA99C", "#174A43", "#174A43", "#8FA99C", "#D97706", "#DC2626", "#DB2777", "#174A43"];
+    const poolColor = validColors.includes(color) ? color : "#8FA99C";
 
     const pool = await db.candidatePool.create({
       data: {

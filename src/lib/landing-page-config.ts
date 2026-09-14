@@ -176,7 +176,7 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
     accent: "#174A43",        // Glass Warm terracotta
     background: "#F2EDE4",    // Glass Warm warm off-white
     textPrimary: "#174A43",   // Same as primary (dark green text)
-    textSecondary: "#6B7280", // Muted green
+    textSecondary: "#5C6B66", // Muted green
   },
   featureCards: [
     {

@@ -204,8 +204,8 @@ export default function PipelineReportPage() {
             {[
               { key: "hot", label: "🔥 Hot", desc: "Active 0-7 days", color: "#DC2626" },
               { key: "warm", label: "🌡️ Warm", desc: "Active 8-14 days", color: "#F59E0B" },
-              { key: "cold", label: "❄️ Cold", desc: "No activity 15-30 days", color: "#3B82F6" },
-              { key: "inactive", label: "⏸️ Inactive", desc: "No activity 30+ days", color: "#6B7280" },
+              { key: "cold", label: "❄️ Cold", desc: "No activity 15-30 days", color: "#8FA99C" },
+              { key: "inactive", label: "⏸️ Inactive", desc: "No activity 30+ days", color: "#5C6B66" },
             ].map((tag) => {
               const count = data.byTag[tag.key] || 0;
               const total = data.totals.total || 1;

@@ -85,7 +85,7 @@ export function Tour({ steps, onComplete, onSkip }: TourProps) {
       {/* Highlight target with outline */}
       <style>{`
         ${step.target} {
-          outline: 3px solid #2563eb !important;
+          outline: 3px solid #174A43 !important;
           outline-offset: 4px !important;
           position: relative !important;
           z-index: 101 !important;

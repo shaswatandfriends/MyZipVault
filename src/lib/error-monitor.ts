@@ -200,10 +200,10 @@ async function sendCriticalAlertEmail(
         <p style="margin: 0 0 12px;"><strong>Service:</strong> ${service}</p>
         <p style="margin: 0 0 12px;"><strong>Time:</strong> ${now.toISOString()}</p>
         <p style="margin: 0 0 12px;"><strong>Error:</strong></p>
-        <pre style="background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${message}</pre>
-        ${stack ? `<p style="margin: 12px 0 4px;"><strong>Stack Trace:</strong></p><pre style="background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">${stack}</pre>` : ''}
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0; font-size: 12px; color: #6b7280;">
+        <pre style="background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #E5DFCF; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${message}</pre>
+        ${stack ? `<p style="margin: 12px 0 4px;"><strong>Stack Trace:</strong></p><pre style="background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #E5DFCF; font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">${stack}</pre>` : ''}
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #E5DFCF;">
+        <p style="margin: 0; font-size: 12px; color: #5C6B66;">
           View all errors at: https://my-zip-vault.vercel.app/superadmin/errors<br>
           This alert has a 5-minute cooldown to prevent spam.
         </p>

@@ -322,7 +322,7 @@ export default function AdminDashboardPage() {
                       fontSize: "12px",
                       backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                       WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                      boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(0,0,0,0.06)",
+                      boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(38,54,51,0.06)",
                     }}
                   />
                   <Legend />
