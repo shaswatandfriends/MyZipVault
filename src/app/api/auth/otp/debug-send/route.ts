@@ -4,23 +4,30 @@ import { db } from "@/lib/db";
 import { sendOtpEmail } from "@/lib/otp-email";
 
 /**
- * POST /api/auth/otp/debug-send?secret=XXX
+ * GET or POST /api/auth/otp/debug-send?secret=XXX
  *
  * TEMPORARY DEBUG ENDPOINT — generates a fresh OTP, stores it in DB,
- * sends the email, AND returns the OTP in the HTTP response so we can
- * verify the email content matches the DB content.
+ * sends the email, AND returns the OTP directly in the HTTP response.
  *
  * Protected by a hardcoded debug secret to prevent public abuse.
  *
  * ⚠️ REMOVE THIS ENDPOINT BEFORE PRODUCTION GO-LIVE.
  *
- * Usage:
- *   curl -X POST "https://my-zip-vault.vercel.app/api/auth/otp/debug-send?secret=mzv-debug-2026"
- *   → returns { success: true, otp: "123456", email: "...", db_otp: "123456" }
+ * Usage (either works):
+ *   - Browser: paste https://my-zip-vault.vercel.app/api/auth/otp/debug-send?secret=mzv-debug-2026
+ *   - curl:    curl "https://my-zip-vault.vercel.app/api/auth/otp/debug-send?secret=mzv-debug-2026"
  */
 const DEBUG_SECRET = "mzv-debug-2026";
 
+export async function GET(request: NextRequest) {
+  return handleDebugSend(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleDebugSend(request);
+}
+
+async function handleDebugSend(request: NextRequest) {
   try {
     // Verify debug secret
     const { searchParams } = new URL(request.url);
