@@ -24,25 +24,19 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 72, top: scrolled ? 12 : 0, left: scrolled ? 16 : 0, right: scrolled ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(247, 243, 232, 0.82)" : "transparent", backdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", WebkitBackdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", border: scrolled ? `1px solid rgba(247,243,232,0.5)` : "none", borderBottom: scrolled ? `1px solid rgba(247,243,232,0.5)` : "none", borderRadius: scrolled ? 24 : 0, boxShadow: scrolled ? "0 8px 32px rgba(23, 74, 67, 0.10)" : "none" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", zIndex: 51 }}>
-          {branding.logoUrl
-            ? <img src={branding.logoUrl} alt={branding.logoText} style={{ height: 40, width: "auto" }} />
-            : <span style={{ fontFamily: "'Clash Display', 'Lora', serif", fontSize: 26, fontWeight: 700, color: "#174A43", letterSpacing: "-0.02em", lineHeight: 1 }}>zip<span style={{ color: "#8FA99C" }}>Vault</span></span>
-          }
-          {(branding.tagline || branding.logoText) && !branding.logoUrl && (
-            <span style={{ fontSize: 10, color: "#8B9994", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", marginLeft: 4, borderLeft: "1px solid rgba(38,54,51,0.15)", paddingLeft: 10 }}>{branding.tagline || "The Healthcare Network"}</span>
-          )}
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(15, 54, 49, 0.85)" : "transparent", backdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", borderBottom: scrolled ? "1px solid rgba(247,243,232,0.12)" : "none", boxShadow: scrolled ? "0 4px 24px rgba(15, 54, 49, 0.18)" : "none" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
+          <img src="/logo.png" alt="MyZipVault" style={{ height: 40, width: "auto" }} />
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 28, zIndex: 51 }}>
           {[{ label: "Browse Jobs", href: "/browse-jobs" }, { label: "Blog", href: "/blog" }, { label: "How It Works", href: "/marketplace-flow" }, { label: "FAQ", href: "/faq" }].map((item, i) => (
-            <Link key={i} href={item.href} style={{ fontSize: 14, color: scrolled ? "#5C6B66" : C.textMuted, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = scrolled ? "#174A43" : C.text} onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? "#5C6B66" : C.textMuted}>{item.label}</Link>
+            <Link key={i} href={item.href} style={{ fontSize: 14, color: scrolled ? "rgba(247,243,232,0.75)" : C.textMuted, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = scrolled ? "#F7F3E8" : C.text} onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? "rgba(247,243,232,0.75)" : C.textMuted}>{item.label}</Link>
           ))}
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12, zIndex: 51 }}>
-          <Link href="/login" style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: scrolled ? "#174A43" : C.text, background: "transparent", border: `1px solid ${scrolled ? "rgba(38,54,51,0.2)" : C.border}`, cursor: "pointer", borderRadius: 24, transition: "all 0.2s" }}>Sign In</button></Link>
+          <Link href="/login" style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: scrolled ? "#F7F3E8" : C.text, background: "transparent", border: `1px solid ${scrolled ? "rgba(247,243,232,0.25)" : C.border}`, cursor: "pointer", borderRadius: 24, transition: "all 0.2s" }}>Sign In</button></Link>
           <Link href={signupLink} style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 22px", fontSize: 14, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, border: "none", cursor: "pointer", borderRadius: 24, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 16px rgba(23,74,67,0.25)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>Get Started <ArrowRight size={14} /></button></Link>
-          <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: menuOpen ? "rgba(247,243,232,0.6)" : "transparent", border: `1px solid ${scrolled ? "rgba(38,54,51,0.2)" : C.border}`, borderRadius: 12, cursor: "pointer" }}>{menuOpen ? <X size={20} style={{ color: scrolled ? "#174A43" : C.text }} /> : <Menu size={20} style={{ color: scrolled ? "#174A43" : C.text }} />}</button>
+          <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: menuOpen ? "rgba(247,243,232,0.1)" : "transparent", border: `1px solid ${scrolled ? "rgba(247,243,232,0.25)" : C.border}`, borderRadius: 12, cursor: "pointer" }}>{menuOpen ? <X size={20} style={{ color: scrolled ? "#F7F3E8" : C.text }} /> : <Menu size={20} style={{ color: scrolled ? "#F7F3E8" : C.text }} />}</button>
         </div>
       </header>
       {menuOpen && (

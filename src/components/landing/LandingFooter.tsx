@@ -22,10 +22,8 @@ export function LandingFooter() {
     { key: "wa", label: "WhatsApp", url: contactSocial.whatsappNumber ? `https://wa.me/${contactSocial.whatsappNumber.replace(/[^0-9]/g, "")}` : "" },
   ].filter((s) => s.url && s.url.length > 0);
 
-  // Logo — use uploaded logo URL if set, otherwise use stylized text (no badge)
-  const logoEl = branding.logoUrl
-    ? <img src={branding.logoUrl} alt={branding.logoText} style={{ height: 36, width: "auto" }} />
-    : <span style={{ fontFamily: "'Clash Display', 'Lora', serif", fontSize: 24, fontWeight: 700, color: "#174A43", letterSpacing: "-0.02em", lineHeight: 1 }}>zip<span style={{ color: "#8FA99C" }}>Vault</span></span>;
+  // Logo — hardcoded to /logo.png
+  const logoEl = <img src="/logo.png" alt="MyZipVault" style={{ height: 40, width: "auto" }} />;
 
   return (
     <footer style={{ background: "rgba(38,54,51,0.3)", borderTop: `1px solid ${C.border}`, padding: "64px 0 24px", position: "relative", zIndex: 1 }}>
