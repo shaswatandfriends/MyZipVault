@@ -99,7 +99,7 @@ export default function AuthSlideshowPanel({
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgba(30,58,38,0.92) 0%, rgba(45,90,61,0.78) 50%, rgba(20,40,28,0.88) 100%)",
+            "linear-gradient(135deg, rgba(30,58,38,0.92) 0%, rgba(23,74,67,0.78) 50%, rgba(20,40,28,0.88) 100%)",
         }}
       />
 

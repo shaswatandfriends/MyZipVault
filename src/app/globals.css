@@ -2548,3 +2548,61 @@ select:focus {
   color: #FFFFFF !important;
   font-weight: 700;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   TAILWORD OVERRIDE CASCADE — force brand colors on Tailwind utility
+   classes that would otherwise show as cool gray/white
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Override bg-gray-* → brand surface colors */
+.bg-gray-50 { background-color: var(--surface-2) !important; }
+.bg-gray-100 { background-color: var(--surface-2) !important; }
+.bg-gray-200 { background-color: var(--surface-3) !important; }
+.bg-gray-300 { background-color: var(--border) !important; }
+
+/* Override bg-slate-* → brand surface colors */
+.bg-slate-50 { background-color: var(--surface-2) !important; }
+.bg-slate-100 { background-color: var(--surface-2) !important; }
+.bg-slate-200 { background-color: var(--surface-3) !important; }
+
+/* Override bg-white on page-level containers (NOT on cards/buttons/inputs) */
+/* Cards, inputs, modals, and buttons SHOULD stay white — only page backgrounds change */
+/* This is intentionally NOT a global !important on bg-white because cards need it */
+
+/* Override text-gray-* → brand text colors */
+.text-gray-400 { color: var(--text-muted) !important; }
+.text-gray-500 { color: var(--text-muted) !important; }
+.text-gray-600 { color: var(--text-secondary) !important; }
+.text-gray-700 { color: var(--text-primary) !important; }
+.text-gray-800 { color: var(--text-primary) !important; }
+.text-gray-900 { color: var(--text-primary) !important; }
+
+/* Override text-slate-* → brand text colors */
+.text-slate-400 { color: var(--text-muted) !important; }
+.text-slate-500 { color: var(--text-muted) !important; }
+.text-slate-600 { color: var(--text-secondary) !important; }
+.text-slate-700 { color: var(--text-primary) !important; }
+
+/* Override border-gray-* → brand border */
+.border-gray-100 { border-color: var(--border) !important; }
+.border-gray-200 { border-color: var(--border) !important; }
+.border-gray-300 { border-color: var(--border-strong) !important; }
+.border-slate-100 { border-color: var(--border) !important; }
+.border-slate-200 { border-color: var(--border) !important; }
+.border-slate-300 { border-color: var(--border-strong) !important; }
+
+/* Override bg-blue-* (any leftover) → brand teal */
+.bg-blue-50 { background-color: var(--primary-light) !important; }
+.bg-blue-100 { background-color: var(--primary-light) !important; }
+.bg-blue-500 { background-color: var(--primary) !important; }
+.bg-blue-600 { background-color: var(--primary) !important; }
+
+/* Override text-blue-* → brand teal */
+.text-blue-500 { color: var(--primary) !important; }
+.text-blue-600 { color: var(--primary) !important; }
+.text-blue-700 { color: var(--primary-hover) !important; }
+
+/* Override border-blue-* → brand teal */
+.border-blue-200 { border-color: var(--primary-light) !important; }
+.border-blue-300 { border-color: var(--primary) !important; }
+.border-blue-500 { border-color: var(--primary) !important; }

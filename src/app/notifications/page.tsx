@@ -61,7 +61,7 @@ const CATEGORY_META: Record<string, { icon: string; label: string; color: string
 const PRIORITY_META: Record<string, { color: string; bg: string; label: string }> = {
   urgent:    { color: "#B84040", bg: "rgba(184,64,64,0.1)", label: "Urgent" },
   important: { color: "#D97706", bg: "rgba(217,119,6,0.12)", label: "Important" },
-  info:      { color: "#174A43", bg: "rgba(45,90,61,0.08)", label: "Info" },
+  info:      { color: "#174A43", bg: "rgba(23,74,67,0.08)", label: "Info" },
 };
 
 function timeAgo(dateStr: string): string {
@@ -255,7 +255,7 @@ export default function NotificationCenterPage() {
                         ? {
                             background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
                             color: "#fff",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
                           }
                         : { color: "var(--text-secondary)" }
                     }
@@ -310,7 +310,7 @@ export default function NotificationCenterPage() {
                       className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto"
                       style={{
                         background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(23,74,67,0.32)",
                         color: "#fff",
                       }}
                     >
@@ -477,16 +477,16 @@ export default function NotificationCenterPage() {
               <motion.div
                 animate={{
                   boxShadow: [
-                    "0 0 0 0 rgba(45,90,61,0)",
-                    "0 0 0 8px rgba(45,90,61,0.1)",
-                    "0 0 0 0 rgba(45,90,61,0)",
+                    "0 0 0 0 rgba(23,74,67,0)",
+                    "0 0 0 8px rgba(23,74,67,0.1)",
+                    "0 0 0 0 rgba(23,74,67,0)",
                   ],
                 }}
                 transition={{ duration: 8, repeat: Infinity }}
                 className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
                 style={{
                   background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
                   color: "#fff",
                 }}
               >
@@ -550,7 +550,7 @@ function LeftPanel({
             className="w-12 h-12 rounded-[14px] flex items-center justify-center mb-3"
             style={{
               background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(23,74,67,0.32)",
               color: "#fff",
             }}
           >
@@ -658,7 +658,7 @@ function RightPanel({ notifications, unreadCount, onMarkAllRead }: { notificatio
             className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
             style={{
               background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
               color: "#fff",
             }}
           >

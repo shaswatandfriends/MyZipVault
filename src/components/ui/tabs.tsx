@@ -49,7 +49,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-transparent px-4 py-1 text-sm font-semibold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-ring focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_rgba(45,90,61,0.24)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[state=active]:text-white data-[state=inactive]:text-[var(--text-secondary)] data-[state=inactive]:hover:text-[var(--text-primary)]",
+        "inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-transparent px-4 py-1 text-sm font-semibold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-ring focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_rgba(23,74,67,0.24)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[state=active]:text-white data-[state=inactive]:text-[var(--text-secondary)] data-[state=inactive]:hover:text-[var(--text-primary)]",
         className
       )}
       style={

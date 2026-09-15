@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
                 className="empty-state-icon"
                 style={{
                   background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(45,90,61,0.32)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(23,74,67,0.32)",
                   color: "#fff",
                 }}
               >
@@ -316,13 +316,13 @@ export default function AdminDashboardPage() {
                   <YAxis tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "rgba(255,252,248,0.95)",
+                      backgroundColor: "rgba(255,255,255,0.95)",
                       border: "0.5px solid var(--material-thick-border)",
                       borderRadius: "14px",
                       fontSize: "12px",
                       backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                       WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                      boxShadow: "0 24px 64px rgba(45,90,61,0.18), 0 8px 24px rgba(38,54,51,0.06)",
+                      boxShadow: "0 24px 64px rgba(23,74,67,0.18), 0 8px 24px rgba(38,54,51,0.06)",
                     }}
                   />
                   <Legend />

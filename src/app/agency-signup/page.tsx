@@ -374,7 +374,7 @@ function AgencySignupPageInner() {
                     ? {
                         background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
                         color: "#fff",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
                       }
                     : { color: "var(--text-muted)" }
                 }
@@ -391,7 +391,7 @@ function AgencySignupPageInner() {
                     ? {
                         background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
                         color: "#fff",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(45,90,61,0.24)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
                       }
                     : { color: "var(--text-muted)" }
                 }

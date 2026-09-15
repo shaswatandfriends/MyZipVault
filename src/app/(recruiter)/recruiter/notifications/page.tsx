@@ -96,7 +96,7 @@ function getNotificationIconBg(type: string): React.CSSProperties {
       // Primary green
       return {
         background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(45,90,61,0.28)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
         color: "#fff",
       };
     case "shift_accepted":

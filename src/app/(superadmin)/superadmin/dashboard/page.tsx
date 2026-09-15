@@ -587,7 +587,7 @@ export default function SuperadminDashboardPage() {
                     <YAxis tick={{ fontSize: 12 }} style={{ fill: "var(--text-muted)" }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "rgba(255,252,248,0.95)",
+                        backgroundColor: "rgba(255,255,255,0.95)",
                         border: "0.5px solid var(--material-thick-border)",
                         borderRadius: "14px",
                         fontSize: "12px",
