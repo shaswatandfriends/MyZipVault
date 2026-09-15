@@ -12,29 +12,29 @@ export function HeroSection() {
     <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden" }}>
       {/* ─── Animated staffing/recruitment doodles (all white) ─── */}
       {/* $ symbol */}
-      <div style={{ position: "absolute", top: "12%", left: "4%", fontSize: 44, color: "rgba(255,255,255,0.15)", fontWeight: 800, animation: "mzv-doodle-float 6s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>$</div>
+      <div style={{ position: "absolute", top: "12%", left: "4%", fontSize: 44, color: "rgba(23,74,67,0.08)", fontWeight: 800, animation: "mzv-doodle-float 6s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>$</div>
       {/* PROFIT text badge */}
-      <div style={{ position: "absolute", top: "65%", left: "6%", padding: "4px 12px", borderRadius: 16, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-pulse 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>PROFIT</div>
+      <div style={{ position: "absolute", top: "65%", left: "6%", padding: "4px 12px", borderRadius: 16, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(23,74,67,0.06)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-pulse 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>PROFIT</div>
       {/* 💰 Money bag emoji */}
-      <div style={{ position: "absolute", top: "18%", right: "7%", fontSize: 36, color: "rgba(255,255,255,0.18)", animation: "mzv-doodle-bounce 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>💰</div>
+      <div style={{ position: "absolute", top: "18%", right: "7%", fontSize: 36, color: "rgba(23,74,67,0.10)", animation: "mzv-doodle-bounce 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>💰</div>
       {/* OFFERED text badge */}
-      <div style={{ position: "absolute", top: "70%", right: "4%", padding: "4px 12px", borderRadius: 16, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-float 7s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>OFFERED</div>
+      <div style={{ position: "absolute", top: "70%", right: "4%", padding: "4px 12px", borderRadius: 16, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(23,74,67,0.06)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-float 7s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>OFFERED</div>
       {/* 70% text */}
-      <div style={{ position: "absolute", top: "8%", left: "48%", fontSize: 28, fontWeight: 800, color: "rgba(255,255,255,0.12)", animation: "mzv-doodle-sway 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>70%</div>
+      <div style={{ position: "absolute", top: "8%", left: "48%", fontSize: 28, fontWeight: 800, color: "rgba(23,74,67,0.06)", animation: "mzv-doodle-sway 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>70%</div>
       {/* 🤝 Handshake */}
-      <div style={{ position: "absolute", top: "40%", right: "2%", fontSize: 36, color: "rgba(255,255,255,0.15)", animation: "mzv-doodle-float 5s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>🤝</div>
+      <div style={{ position: "absolute", top: "40%", right: "2%", fontSize: 36, color: "rgba(23,74,67,0.08)", animation: "mzv-doodle-float 5s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>🤝</div>
       {/* HIRED text badge */}
-      <div style={{ position: "absolute", top: "50%", left: "3%", padding: "3px 10px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.18)", letterSpacing: "0.05em", animation: "mzv-doodle-bounce 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>HIRED</div>
+      <div style={{ position: "absolute", top: "50%", left: "3%", padding: "3px 10px", borderRadius: 12, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 700, color: "rgba(23,74,67,0.10)", letterSpacing: "0.05em", animation: "mzv-doodle-bounce 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>HIRED</div>
       {/* ⭐ Star */}
-      <div style={{ position: "absolute", top: "30%", left: "42%", fontSize: 24, color: "rgba(255,255,255,0.15)", animation: "mzv-doodle-pulse 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>⭐</div>
+      <div style={{ position: "absolute", top: "30%", left: "42%", fontSize: 24, color: "rgba(23,74,67,0.08)", animation: "mzv-doodle-pulse 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>⭐</div>
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 48, alignItems: "center" }}>
         {/* Left: Headline + CTAs */}
         <div className="hero-text">
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: "rgba(59,130,246,0.1)", border: `1px solid ${C.primary}30`, marginBottom: 24 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: "rgba(23,74,67,0.08)", border: `1px solid ${C.primary}30`, marginBottom: 24 }}>
             <Sparkles className="size-3.5" style={{ color: C.accent }} /><span style={{ fontSize: 12, fontWeight: 600, color: C.accent }}>Healthcare Recruiting Marketplace</span>
           </div>
-          <h1 style={{ fontSize: isDesktop ? 52 : 36, fontWeight: 800, lineHeight: 1.1, marginBottom: 20, background: `linear-gradient(135deg, ${C.text} 0%, ${C.primary} 50%, ${C.accent} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Clash Display', sans-serif" }}>Recruiters work for themselves, not for agencies.</h1>
+          <h1 style={{ fontSize: isDesktop ? 52 : 36, fontWeight: 800, lineHeight: 1.1, marginBottom: 20, background: `linear-gradient(135deg, #263633 0%, #174A43 50%, #8FA99C 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Clash Display', sans-serif" }}>Recruiters work for themselves, not for agencies.</h1>
           <p style={{ fontSize: 17, color: C.textMuted, lineHeight: 1.6, marginBottom: 32, maxWidth: 500 }}>The first marketplace where healthcare professionals own their data, recruiters keep 70% of placement fees, and employers hire directly — no middleman markup.</p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
             <Link href="/signup"><button style={{ padding: "14px 28px", fontSize: 15, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, border: "none", cursor: "pointer", borderRadius: 28, display: "flex", alignItems: "center", gap: 8, boxShadow: `0 8px 24px ${C.primaryGlow}`, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>I'm a Candidate <ArrowRight size={16} /></button></Link>

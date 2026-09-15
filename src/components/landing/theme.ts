@@ -1,23 +1,23 @@
 // Shared design tokens for landing page components
 // Aligned with brand palette: Deep Teal + Sage + Ivory + Terracotta + Charcoal
-// Hero sections use a deep teal gradient (instead of dark navy) for brand consistency.
+// Page background is pure white; teal/sage used for text + accents.
 
 export const C = {
-  bg: "#0F3631",                       // Deep teal-dark (was #0A0F1A navy) — hero background
-  bgCard: "rgba(255,255,255,0.04)",
-  bgCardHover: "rgba(255,255,255,0.07)",
-  border: "rgba(247,243,232,0.10)",    // Ivory-tinted border
-  borderHover: "rgba(143,169,156,0.45)", // Sage hover border
-  text: "#F7F3E8",                     // Warm Ivory text (was #F1F5F9 cool white)
-  textMuted: "rgba(247,243,232,0.55)",
-  textDim: "rgba(247,243,232,0.38)",
-  primary: "#8FA99C",                  // Sage primary (pops on dark teal bg)
-  primaryGlow: "rgba(143,169,156,0.4)",
-  accent: "#D98F78",                   // Terracotta accent — small highlights
-  accentGlow: "rgba(217,143,120,0.3)",
-  emerald: "#8FA99C",                  // Repurposed to sage
-  amber: "#D98F78",                    // Repurposed to terracotta
-  violet: "#8FA99C",                   // Repurposed to sage (no more purple)
+  bg: "#FFFFFF",                       // Pure white page background
+  bgCard: "rgba(247,243,232,0.5)",     // Ivory-tinted glass card on white
+  bgCardHover: "rgba(247,243,232,0.75)",
+  border: "rgba(38,54,51,0.10)",       // Charcoal-tinted border
+  borderHover: "rgba(23,74,67,0.30)",  // Teal hover border
+  text: "#263633",                     // Deep Charcoal text
+  textMuted: "rgba(38,54,51,0.60)",
+  textDim: "rgba(38,54,51,0.40)",
+  primary: "#174A43",                  // Deep Teal primary (pops on white)
+  primaryGlow: "rgba(23,74,67,0.25)",
+  accent: "#D98F78",                   // Terracotta accent
+  accentGlow: "rgba(217,143,120,0.25)",
+  emerald: "#174A43",                  // Brand teal for success indicators
+  amber: "#D97706",                    // Amber for warnings
+  violet: "#8FA99C",                   // Sage (no purple)
   white: "#FFFFFF",
 };
 
