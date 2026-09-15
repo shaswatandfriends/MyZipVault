@@ -107,6 +107,7 @@ export function ProductShowcase() {
               </div>
             </div>
           </div>
+          </div>
           {/* End desktop browser frame */}
 
           {/* Mobile phone mockup */}
