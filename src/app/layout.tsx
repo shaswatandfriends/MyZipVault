@@ -69,6 +69,14 @@ const caveat = Caveat({
 
 const BASE_URL = "https://my-zip-vault.vercel.app";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#174A43",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
