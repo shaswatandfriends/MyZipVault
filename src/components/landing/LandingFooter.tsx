@@ -2,23 +2,48 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { C } from "./theme";
+import { useLandingConfig } from "@/hooks/useLandingConfig";
 
 export function LandingFooter() {
   const [isDesktop, setIsDesktop] = useState(true);
+  const { config } = useLandingConfig();
   useEffect(() => { const onResize = () => setIsDesktop(window.innerWidth > 768); window.addEventListener("resize", onResize); onResize(); return () => window.removeEventListener("resize", onResize); }, []);
+
+  // Read from DB config (with fallback to defaults already merged in the hook)
+  const { footer, contactSocial, branding } = config;
+
+  // Social links — only render those that have a URL set
+  const socialLinks = [
+    { key: "in", label: "LinkedIn", url: contactSocial.linkedinUrl },
+    { key: "f", label: "Facebook", url: contactSocial.facebookUrl },
+    { key: "𝕏", label: "Twitter/X", url: contactSocial.twitterUrl },
+    { key: "IG", label: "Instagram", url: contactSocial.instagramUrl },
+    { key: "YT", label: "YouTube", url: contactSocial.youtubeUrl },
+    { key: "wa", label: "WhatsApp", url: contactSocial.whatsappNumber ? `https://wa.me/${contactSocial.whatsappNumber.replace(/[^0-9]/g, "")}` : "" },
+  ].filter((s) => s.url && s.url.length > 0);
+
+  // Logo — use uploaded logo URL if set, otherwise fall back to the "M" badge
+  const logoEl = branding.logoUrl
+    ? <img src={branding.logoUrl} alt={branding.logoText} style={{ height: 32, width: "auto" }} />
+    : <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 16 }}>M</div>;
+
   return (
     <footer style={{ background: "rgba(38,54,51,0.3)", borderTop: `1px solid ${C.border}`, padding: "64px 0 24px", position: "relative", zIndex: 1 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "2fr 1fr 1fr 1fr 1.5fr" : "1fr 1fr", gap: 40, marginBottom: 40 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 16 }}>M</div>
-              <span style={{ fontWeight: 700, fontSize: 17, color: C.text }}>MyZipVault</span>
+              {logoEl}
+              <span style={{ fontWeight: 700, fontSize: 17, color: C.text }}>{branding.logoText || "MyZipVault"}</span>
             </div>
             <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 20 }}>The healthcare recruiter identity and intelligence layer.</p>
-            <div style={{ display: "flex", gap: 10 }}>
-              {["in", "f", "wa"].map(s => (<a key={s} href="#" style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.textMuted, textDecoration: "none", border: `1px solid ${C.border}`, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.1)"; e.currentTarget.style.borderColor = C.borderHover; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = C.border; }}>{s}</a>))}
-            </div>
+            {socialLinks.length > 0 && (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {socialLinks.map((s) => (
+                  <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.textMuted, textDecoration: "none", border: `1px solid ${C.border}`, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(143,169,156,0.15)"; e.currentTarget.style.borderColor = C.borderHover; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = C.border; }}>{s.key}</a>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Platform</p>
@@ -42,8 +67,8 @@ export function LandingFooter() {
           </div>
         </div>
         <div style={{ paddingTop: 24, borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <p style={{ fontSize: 12, color: C.textDim }}>© 2026 MyZipVault. All rights reserved.</p>
-          <p style={{ fontSize: 12, color: C.textDim }}>Patent pending · USPTO #64/048,063</p>
+          <p style={{ fontSize: 12, color: C.textDim }}>{footer.copyrightText}</p>
+          <p style={{ fontSize: 12, color: C.textDim }}>{footer.hipaaBadgeText}</p>
         </div>
       </div>
     </footer>

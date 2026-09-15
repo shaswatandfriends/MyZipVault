@@ -50,6 +50,16 @@ export interface ContactSocial {
   linkedinUrl: string;
   facebookUrl: string;
   whatsappNumber: string;
+  twitterUrl: string;
+  instagramUrl: string;
+  youtubeUrl: string;
+}
+
+export interface BrandingAssets {
+  logoUrl: string;          // full URL to logo image (Supabase storage or external)
+  logoText: string;         // text shown next to logo (e.g., "MyZipVault")
+  faviconUrl: string;       // full URL to favicon .ico or .png
+  ogImageUrl: string;       // Open Graph image for social sharing
 }
 
 export interface RecruiterFeatureCard {
@@ -71,6 +81,7 @@ export interface LandingPageConfig {
   howItWorks: HowItWorksStep[];
   footer: FooterContent;
   contactSocial: ContactSocial;
+  branding: BrandingAssets;
   // Recruiter-specific sections (separate from candidate)
   recruiterFeatureCards: RecruiterFeatureCard[];
   recruiterHowItWorks: RecruiterHowItWorksStep[];
@@ -242,6 +253,15 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
     linkedinUrl: "",
     facebookUrl: "",
     whatsappNumber: "",
+    twitterUrl: "",
+    instagramUrl: "",
+    youtubeUrl: "",
+  },
+  branding: {
+    logoUrl: "",
+    logoText: "MyZipVault",
+    faviconUrl: "/favicon.ico",
+    ogImageUrl: "",
   },
   recruiterFeatureCards: [
     {
@@ -355,6 +375,10 @@ export function mergeWithDefaults(dbConfig: Partial<LandingPageConfig>): Landing
     contactSocial: {
       ...DEFAULT_LANDING_PAGE_CONFIG.contactSocial,
       ...(dbConfig.contactSocial || {}),
+    },
+    branding: {
+      ...DEFAULT_LANDING_PAGE_CONFIG.branding,
+      ...(dbConfig.branding || {}),
     },
     recruiterFeatureCards:
       dbConfig.recruiterFeatureCards && dbConfig.recruiterFeatureCards.length > 0

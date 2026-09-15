@@ -25,6 +25,9 @@ import {
   FileSignature,
   Send,
   ShieldCheck,
+  ImageIcon,
+  Share2,
+  Upload,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
@@ -91,12 +94,32 @@ interface LandingPageData {
   privacySection: PrivacyItem[];
   howItWorks: HowItWorksStep[];
   footer: FooterContent;
+  contactSocial?: ContactSocial;
+  branding?: BrandingAssets;
   // ─── Marketplace sections (Phase 7) ──────────────────────────────
   marketplaceStats?: MarketplaceStat[];
   marketplaceFlow?: MarketplaceFlowStep[];
   marketplaceFeatures?: MarketplaceFeatureCard[];
   verificationSection?: VerificationItem[];
   reputationPreview?: ReputationPreview;
+}
+
+// Branding assets (logo, favicon, OG image)
+interface BrandingAssets {
+  logoUrl: string;
+  logoText: string;
+  faviconUrl: string;
+  ogImageUrl: string;
+}
+
+// Social media links
+interface ContactSocial {
+  linkedinUrl: string;
+  facebookUrl: string;
+  whatsappNumber: string;
+  twitterUrl: string;
+  instagramUrl: string;
+  youtubeUrl: string;
 }
 
 // Marketplace stat for the animated stats band
@@ -756,6 +779,46 @@ export default function LandingPageEditorPage() {
     setHasUnsavedChanges(true);
   };
 
+  // ── Branding helpers (logo, favicon, OG image) ──
+  const updateBranding = (key: keyof BrandingAssets, value: string) => {
+    setData((prev) => ({ ...prev, branding: { ...(prev.branding || { logoUrl: "", logoText: "MyZipVault", faviconUrl: "/favicon.ico", ogImageUrl: "" }), [key]: value } }));
+    setHasUnsavedChanges(true);
+  };
+
+  // ── Social media helpers ──
+  const updateSocial = (key: keyof ContactSocial, value: string) => {
+    setData((prev) => ({ ...prev, contactSocial: { ...(prev.contactSocial || { linkedinUrl: "", facebookUrl: "", whatsappNumber: "", twitterUrl: "", instagramUrl: "", youtubeUrl: "" }), [key]: value } }));
+    setHasUnsavedChanges(true);
+  };
+
+  // ── Image upload helper (logo, favicon, OG image) ──
+  const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const uploadImage = async (type: "logo" | "favicon" | "ogImage", file: File) => {
+    if (!file) return;
+    setUploadingType(type);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+      const res = await fetch("/api/superadmin/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        const fieldMap = { logo: "logoUrl", favicon: "faviconUrl", ogImage: "ogImageUrl" } as const;
+        updateBranding(fieldMap[type], data.url);
+        toast.success(`${type === "logo" ? "Logo" : type === "favicon" ? "Favicon" : "OG image"} uploaded`);
+      } else {
+        toast.error(data.error || "Upload failed");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploadingType(null);
+    }
+  };
+
   // ── Marketplace section updates (Phase 7) ──
   const updateMarketplaceStat = (index: number, key: keyof MarketplaceStat, value: string | number) => {
     setData((prev) => {
@@ -1278,6 +1341,187 @@ export default function LandingPageEditorPage() {
                   className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
+            </div>
+          </EditorSection>
+
+          {/* Section 6.5: Branding (Logo + Favicon + OG Image) */}
+          <EditorSection icon={ImageIcon} title="Branding (Logo, Favicon, Social Image)">
+            <div className="space-y-5">
+              <FormField label="Logo Text (shown next to logo)">
+                <Input
+                  value={data.branding?.logoText || ""}
+                  onChange={(e) => updateBranding("logoText", e.target.value)}
+                  placeholder="MyZipVault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+
+              {/* Logo upload */}
+              <div className="space-y-2">
+                <FormField label="Logo Image (PNG/SVG, max 2MB)">
+                  <div className="flex items-center gap-3">
+                    <div className="size-16 rounded-lg border border-border overflow-hidden flex items-center justify-center bg-surface-2">
+                      {data.branding?.logoUrl ? (
+                        <img src={data.branding.logoUrl} alt="Logo preview" className="h-full w-full object-contain" />
+                      ) : (
+                        <ImageIcon className="size-6 text-text-muted" />
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface-2 hover:bg-surface-3 cursor-pointer text-sm font-medium transition">
+                      {uploadingType === "logo" ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                      {uploadingType === "logo" ? "Uploading…" : "Upload Logo"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && uploadImage("logo", e.target.files[0])}
+                      />
+                    </label>
+                    {data.branding?.logoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => updateBranding("logoUrl", "")}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </FormField>
+                {data.branding?.logoUrl && (
+                  <Input
+                    value={data.branding.logoUrl}
+                    onChange={(e) => updateBranding("logoUrl", e.target.value)}
+                    placeholder="Or paste logo URL directly"
+                    className="border-border rounded-xl text-xs"
+                  />
+                )}
+              </div>
+
+              {/* Favicon upload */}
+              <div className="space-y-2">
+                <FormField label="Favicon (ICO/PNG, max 2MB)">
+                  <div className="flex items-center gap-3">
+                    <div className="size-16 rounded-lg border border-border overflow-hidden flex items-center justify-center bg-surface-2">
+                      {data.branding?.faviconUrl ? (
+                        <img src={data.branding.faviconUrl} alt="Favicon preview" className="h-full w-full object-contain" />
+                      ) : (
+                        <ImageIcon className="size-6 text-text-muted" />
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface-2 hover:bg-surface-3 cursor-pointer text-sm font-medium transition">
+                      {uploadingType === "favicon" ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                      {uploadingType === "favicon" ? "Uploading…" : "Upload Favicon"}
+                      <input
+                        type="file"
+                        accept="image/x-icon,image/png,image/svg+xml,image/vnd.microsoft.icon"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && uploadImage("favicon", e.target.files[0])}
+                      />
+                    </label>
+                    {data.branding?.faviconUrl && (
+                      <button
+                        type="button"
+                        onClick={() => updateBranding("faviconUrl", "/favicon.ico")}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Reset to default
+                      </button>
+                    )}
+                  </div>
+                </FormField>
+              </div>
+
+              {/* OG image upload */}
+              <div className="space-y-2">
+                <FormField label="Open Graph Image (1200×630, for social sharing)">
+                  <div className="flex items-center gap-3">
+                    <div className="size-16 rounded-lg border border-border overflow-hidden flex items-center justify-center bg-surface-2">
+                      {data.branding?.ogImageUrl ? (
+                        <img src={data.branding.ogImageUrl} alt="OG preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="size-6 text-text-muted" />
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface-2 hover:bg-surface-3 cursor-pointer text-sm font-medium transition">
+                      {uploadingType === "ogImage" ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                      {uploadingType === "ogImage" ? "Uploading…" : "Upload OG Image"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && uploadImage("ogImage", e.target.files[0])}
+                      />
+                    </label>
+                    {data.branding?.ogImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => updateBranding("ogImageUrl", "")}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </FormField>
+              </div>
+            </div>
+          </EditorSection>
+
+          {/* Section 6.6: Social Media Links */}
+          <EditorSection icon={Share2} title="Social Media Links">
+            <div className="space-y-4">
+              <FormField label="LinkedIn URL">
+                <Input
+                  value={data.contactSocial?.linkedinUrl || ""}
+                  onChange={(e) => updateSocial("linkedinUrl", e.target.value)}
+                  placeholder="https://linkedin.com/company/myzipvault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="Facebook URL">
+                <Input
+                  value={data.contactSocial?.facebookUrl || ""}
+                  onChange={(e) => updateSocial("facebookUrl", e.target.value)}
+                  placeholder="https://facebook.com/myzipvault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="Twitter / X URL">
+                <Input
+                  value={data.contactSocial?.twitterUrl || ""}
+                  onChange={(e) => updateSocial("twitterUrl", e.target.value)}
+                  placeholder="https://twitter.com/myzipvault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="Instagram URL">
+                <Input
+                  value={data.contactSocial?.instagramUrl || ""}
+                  onChange={(e) => updateSocial("instagramUrl", e.target.value)}
+                  placeholder="https://instagram.com/myzipvault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="YouTube URL">
+                <Input
+                  value={data.contactSocial?.youtubeUrl || ""}
+                  onChange={(e) => updateSocial("youtubeUrl", e.target.value)}
+                  placeholder="https://youtube.com/@myzipvault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="WhatsApp Number (digits only, with country code)">
+                <Input
+                  value={data.contactSocial?.whatsappNumber || ""}
+                  onChange={(e) => updateSocial("whatsappNumber", e.target.value)}
+                  placeholder="1234567890"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <p className="text-xs text-text-muted">
+                Only social media icons with a URL set will appear in the footer.
+              </p>
             </div>
           </EditorSection>
 

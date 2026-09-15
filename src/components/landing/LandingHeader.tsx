@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { Menu, X, ArrowRight } from "@/lib/icons";
 import { menuSections } from "@/lib/landing-content";
 import { C } from "./theme";
+import { useLandingConfig } from "@/hooks/useLandingConfig";
 
 export function LandingHeader({ signupLink }: { signupLink: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { config } = useLandingConfig();
+  const { branding } = config;
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
@@ -23,8 +26,11 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 68, top: scrolled ? 12 : 0, left: scrolled ? 16 : 0, right: scrolled ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(15, 54, 49, 0.72)" : "transparent", backdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", WebkitBackdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", border: scrolled ? `1px solid rgba(247,243,232,0.14)` : "none", borderBottom: scrolled ? `1px solid rgba(247,243,232,0.14)` : "none", borderRadius: scrolled ? 24 : 0, boxShadow: scrolled ? "0 8px 32px rgba(15, 54, 49, 0.18)" : "none" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 19, boxShadow: `0 4px 12px ${C.primaryGlow}` }}>M</div>
-          <span style={{ fontWeight: 700, fontSize: 19, color: C.text }}>MyZipVault</span>
+          {branding.logoUrl
+            ? <img src={branding.logoUrl} alt={branding.logoText} style={{ height: 36, width: "auto", borderRadius: 8 }} />
+            : <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 19, boxShadow: `0 4px 12px ${C.primaryGlow}` }}>M</div>
+          }
+          <span style={{ fontWeight: 700, fontSize: 19, color: C.text }}>{branding.logoText || "MyZipVault"}</span>
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 28, zIndex: 51 }}>
           {[{ label: "Browse Jobs", href: "/browse-jobs" }, { label: "Blog", href: "/blog" }, { label: "How It Works", href: "/marketplace-flow" }, { label: "FAQ", href: "/faq" }].map((item, i) => (
