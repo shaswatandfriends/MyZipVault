@@ -68,32 +68,35 @@ export function WhyMyZipVault() {
           {pillars.map((p, i) => (
             <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", transition: "all 0.3s", display: "flex", flexDirection: "column" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.boxShadow = `0 12px 36px ${C.primaryGlow}`; e.currentTarget.style.transform = "translateY(-4px)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}>
 
-              {/* Photo with watercolor mask effect */}
+              {/* Photo with icon overlay */}
               <div style={{
                 height: 180,
                 position: "relative",
                 overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
               }}>
-                <img src={p.img} alt={p.imgLabel} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                {/* Icon overlay — circle badge like reference */}
+                <img src={p.img} alt={p.imgLabel} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }} />
+                {/* Dark gradient overlay for readability */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(180deg, rgba(15,54,49,0.10) 0%, rgba(15,54,49,0.35) 100%)" }} />
+                {/* Number badge — top right */}
+                <span style={{ position: "absolute", top: 12, right: 16, fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.35)", fontFamily: "'Lora', Georgia, serif", zIndex: 2 }}>{p.num}</span>
+                {/* Icon circle — bottom left, overlapping the photo/content boundary */}
                 <div style={{
-                  width: 56, height: 56, borderRadius: "50%",
+                  position: "absolute",
+                  bottom: -24,
+                  left: 20,
+                  width: 52, height: 52, borderRadius: "50%",
                   background: C.primary,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 4px 16px rgba(15,54,49,0.3)",
-                  position: "relative", zIndex: 1,
+                  boxShadow: "0 4px 16px rgba(15,54,49,0.35)",
+                  zIndex: 3,
+                  border: `3px solid ${C.bgCard}`,
                 }}>
-                  <p.icon className="size-7" style={{ color: "#FFFFFF" }} />
+                  <p.icon className="size-6" style={{ color: "#FFFFFF" }} />
                 </div>
-                {/* Number badge */}
-                <span style={{ position: "absolute", top: 12, right: 12, fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.25)", fontFamily: "'Lora', Georgia, serif", zIndex: 1 }}>{p.num}</span>
               </div>
 
               {/* Content */}
-              <div style={{ padding: 24, flex: 1, display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "36px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: "0.04em", fontFamily: "'Lora', Georgia, serif" }}>{p.title}</h3>
                 <p style={{ fontSize: 12, color: C.accent, fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.08em" }}>{p.tagline}</p>
                 <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>{p.desc}</p>

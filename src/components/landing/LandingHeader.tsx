@@ -24,9 +24,9 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(247, 243, 232, 0.90)" : "transparent", backdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", borderBottom: scrolled ? "1px solid rgba(38,54,51,0.10)" : "none", boxShadow: scrolled ? "0 4px 24px rgba(23, 74, 67, 0.08)" : "none" }}>
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(247, 243, 232, 0.92)" : "transparent", backdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", borderBottom: scrolled ? "1px solid rgba(38,54,51,0.10)" : "none", boxShadow: scrolled ? "0 4px 24px rgba(23, 74, 67, 0.08)" : "none" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
-          <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto" }} />
+          <img src="/logo.png" alt="MyZipVault" style={{ height: 112, width: "auto" }} />
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 26, zIndex: 51 }}>
           {[{ label: "Network", href: "/" }, { label: "Jobs", href: "/browse-jobs" }, { label: "Professionals", href: "/for-candidates" }, { label: "Organizations", href: "/for-employers" }, { label: "Communities", href: "/marketplace-flow" }, { label: "Resources", href: "/blog" }].map((item, i) => (
@@ -42,7 +42,7 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
       {menuOpen && (
         <>
           <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(38,54,51,0.5)", backdropFilter: "blur(4px)", zIndex: 48 }} />
-          <div style={{ position: "fixed", top: 92, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(247, 243, 232, 0.92)", backdropFilter: "blur(32px) saturate(1.8)", WebkitBackdropFilter: "blur(32px) saturate(1.8)", borderRadius: 20, border: `1px solid rgba(247,243,232,0.5)`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(23,74,67,0.18)" }}>
+          <div style={{ position: "fixed", top: 132, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(247, 243, 232, 0.92)", backdropFilter: "blur(32px) saturate(1.8)", WebkitBackdropFilter: "blur(32px) saturate(1.8)", borderRadius: 20, border: `1px solid rgba(247,243,232,0.5)`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(23,74,67,0.18)" }}>
             {menuSections.map((section, si) => (
               <div key={si} style={{ marginBottom: si < menuSections.length - 1 ? 4 : 0 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "#8B9994", textTransform: "uppercase", letterSpacing: "0.15em", padding: "12px 16px 6px" }}>{section.title}</p>

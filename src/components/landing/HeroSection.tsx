@@ -14,7 +14,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section style={{ paddingTop: 130, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden", background: C.bg }}>
+    <section style={{ paddingTop: 160, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden", background: C.bg }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 56, alignItems: "center" }}>
         {/* Left: Headline + CTAs */}
         <div className="hero-text">
