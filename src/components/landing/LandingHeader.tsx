@@ -21,7 +21,7 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(10,15,26,0.8)" : "transparent", backdropFilter: scrolled ? "blur(20px)" : "none", borderBottom: scrolled ? `1px solid ${C.border}` : "none" }}>
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(15, 54, 49, 0.72)" : "transparent", backdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", WebkitBackdropFilter: scrolled ? "blur(32px) saturate(1.8)" : "none", borderBottom: scrolled ? `1px solid rgba(247,243,232,0.12)` : "none" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontWeight: 800, fontSize: 19, boxShadow: `0 4px 12px ${C.primaryGlow}` }}>M</div>
           <span style={{ fontWeight: 700, fontSize: 19, color: C.text }}>MyZipVault</span>
@@ -40,7 +40,7 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
       {menuOpen && (
         <>
           <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(38,54,51,0.5)", backdropFilter: "blur(4px)", zIndex: 48 }} />
-          <div style={{ position: "fixed", top: 76, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(10,15,26,0.95)", backdropFilter: "blur(24px)", borderRadius: 20, border: `1px solid ${C.border}`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(38,54,51,0.5)" }}>
+          <div style={{ position: "fixed", top: 76, right: 24, width: 340, maxHeight: "85vh", overflowY: "auto", background: "rgba(15, 54, 49, 0.88)", backdropFilter: "blur(32px) saturate(1.8)", WebkitBackdropFilter: "blur(32px) saturate(1.8)", borderRadius: 20, border: `1px solid rgba(247,243,232,0.14)`, zIndex: 49, padding: 8, boxShadow: "0 20px 60px rgba(15,54,49,0.5)" }}>
             {menuSections.map((section, si) => (
               <div key={si} style={{ marginBottom: si < menuSections.length - 1 ? 4 : 0 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.15em", padding: "12px 16px 6px" }}>{section.title}</p>
