@@ -28,8 +28,8 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
           <img src="/logo.png" alt="MyZipVault" style={{ height: 40, width: "auto" }} />
         </Link>
-        <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 28, zIndex: 51 }}>
-          {[{ label: "Browse Jobs", href: "/browse-jobs" }, { label: "Blog", href: "/blog" }, { label: "How It Works", href: "/marketplace-flow" }, { label: "FAQ", href: "/faq" }].map((item, i) => (
+        <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 26, zIndex: 51 }}>
+          {[{ label: "Network", href: "/" }, { label: "Jobs", href: "/browse-jobs" }, { label: "Professionals", href: "/for-candidates" }, { label: "Organizations", href: "/for-employers" }, { label: "Communities", href: "/marketplace-flow" }, { label: "Resources", href: "/blog" }].map((item, i) => (
             <Link key={i} href={item.href} style={{ fontSize: 14, color: scrolled ? "#5C6B66" : C.textMuted, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = scrolled ? "#174A43" : C.text} onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? "#5C6B66" : C.textMuted}>{item.label}</Link>
           ))}
         </nav>

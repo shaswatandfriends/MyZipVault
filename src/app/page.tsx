@@ -8,10 +8,12 @@ import { WhyMyZipVault } from "@/components/landing/WhyMyZipVault";
 import { ProfessionalIdentity } from "@/components/landing/ProfessionalIdentity";
 import { SocialFeed } from "@/components/landing/SocialFeed";
 import { Verification } from "@/components/landing/Verification";
+import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import { OneNetwork } from "@/components/landing/OneNetwork";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { PricingAndTestimonials } from "@/components/landing/PricingAndTestimonials";
 import { FinalCTA } from "@/components/landing/FinalCTA";
+import { ZDivider } from "@/components/landing/ZDivider";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function HomePage() {
@@ -37,25 +39,30 @@ export default function HomePage() {
       </div>
 
       {/*
-        Page structure per rebrand spec:
+        Page structure per rebrand spec — locked hierarchy:
         01 Hero
-        02 Why MyZipVault
-        03 Professional identity
+        02 Why MyZipVault (4 product pillars: CONNECT / VERIFY / DISCOVER / GROW)
+        03 Professional identity ("More than a résumé")
         04 Healthcare network (Social feed)
-        05 Verification
-        06 Opportunities (skipped — covered by OneNetwork CTAs)
+        05 Verification (major trust pillar)
+        06 Product showcase ("This is what MyZipVault looks like")
         07 One network. Three ways to participate.
-        08 How it works
-        09 Pricing + Testimonials
-        10 Final CTA
-        11 Footer
+        08 How it works (Create → Verify → Connect → Discover)
+        09 Pricing
+        10 Real people. Real stories. (Testimonials)
+        11 Salary Report (Resources)
+        12 Final CTA
+        13 Footer
       */}
       <LandingHeader signupLink="/signup" />
       <HeroSection />
+      <ZDivider />
       <WhyMyZipVault />
       <ProfessionalIdentity />
+      <ZDivider color={C.primary} />
       <SocialFeed />
       <Verification />
+      <ProductShowcase />
       <OneNetwork />
       <HowItWorks />
       <PricingAndTestimonials />
