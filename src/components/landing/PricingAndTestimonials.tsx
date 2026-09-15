@@ -45,7 +45,7 @@ export function PricingAndTestimonials() {
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 32px" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Pricing</p>
-            <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+            <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
               Free for healthcare professionals.
             </h2>
             <p style={{ fontSize: 16, color: C.textMuted, maxWidth: 540, margin: "0 auto", lineHeight: 1.6 }}>
@@ -59,7 +59,7 @@ export function PricingAndTestimonials() {
               <span style={{ position: "absolute", top: -12, left: 36, padding: "4px 12px", background: C.primary, color: "#FFFFFF", borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>For Professionals</span>
               <p style={{ fontSize: 14, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, marginTop: 8 }}>Healthcare Professionals</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 56, fontWeight: 800, color: C.text, fontFamily: "'Clash Display', 'Inter', sans-serif", lineHeight: 1 }}>Free</span>
+                <span style={{ fontSize: 56, fontWeight: 800, color: C.text, fontFamily: "'Lora', Georgia, serif", lineHeight: 1 }}>Free</span>
               </div>
               <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 28 }}>Forever. No credit card. No catch.</p>
 
@@ -84,7 +84,7 @@ export function PricingAndTestimonials() {
             <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, padding: 36, boxShadow: "0 4px 16px rgba(38,54,51,0.04)" }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, marginTop: 8 }}>For Recruiters & Employers</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 32, fontWeight: 800, color: C.text, fontFamily: "'Clash Display', 'Inter', sans-serif", lineHeight: 1 }}>Professional</span>
+                <span style={{ fontSize: 32, fontWeight: 800, color: C.text, fontFamily: "'Lora', Georgia, serif", lineHeight: 1 }}>Professional</span>
                 <span style={{ fontSize: 16, color: C.textMuted, fontWeight: 500 }}>hiring tools</span>
               </div>
               <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 28 }}>Credit-based. Pay only for what you use.</p>
@@ -126,7 +126,7 @@ export function PricingAndTestimonials() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
           <div style={{ textAlign: "center", marginBottom: 64 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Real people. Real stories.</p>
-            <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+            <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
               Behind every credential is a person.
             </h2>
             <p style={{ fontSize: 16, color: C.textMuted, maxWidth: 540, margin: "0 auto", lineHeight: 1.6 }}>
@@ -173,7 +173,7 @@ export function PricingAndTestimonials() {
                 <FileText size={14} style={{ color: C.accent }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>Free Report</span>
               </div>
-              <h3 style={{ fontSize: isDesktop ? 28 : 22, fontWeight: 800, color: C.textOnDeep, marginBottom: 12, letterSpacing: "-0.02em", lineHeight: 1.2, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+              <h3 style={{ fontSize: isDesktop ? 28 : 22, fontWeight: 800, color: C.textOnDeep, marginBottom: 12, letterSpacing: "-0.02em", lineHeight: 1.2, fontFamily: "'Lora', Georgia, serif" }}>
                 Healthcare Salary Report 2026
               </h3>
               <p style={{ fontSize: 16, color: C.textOnDeepMuted, lineHeight: 1.6, marginBottom: 24, fontStyle: "italic" }}>

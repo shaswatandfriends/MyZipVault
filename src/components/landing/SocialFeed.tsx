@@ -44,7 +44,7 @@ export function SocialFeed() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Healthcare network</p>
-          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             Meet the people<br />behind healthcare.
           </h2>
           <p style={{ fontSize: 16, color: C.textMuted, maxWidth: 580, margin: "0 auto", lineHeight: 1.6 }}>

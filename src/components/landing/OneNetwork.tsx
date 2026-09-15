@@ -49,7 +49,7 @@ export function OneNetwork() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Three ways to participate</p>
-          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             One healthcare network.<br />Three ways to participate.
           </h2>
         </div>

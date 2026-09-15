@@ -25,7 +25,7 @@ export function ProductShowcase() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>The product</p>
-          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             This is what MyZipVault looks like.
           </h2>
           <p style={{ fontSize: 16, color: C.textMuted, maxWidth: 580, margin: "0 auto", lineHeight: 1.6 }}>
@@ -33,8 +33,10 @@ export function ProductShowcase() {
           </p>
         </div>
 
-        {/* Realistic UI mockup — browser frame + dashboard */}
-        <div style={{ background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: `0 24px 80px ${C.primaryGlow}`, overflow: "hidden", maxWidth: 1000, margin: "0 auto" }}>
+        {/* Realistic UI mockup — desktop browser + mobile phone side by side */}
+        <div style={{ display: "flex", gap: 24, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+          {/* Desktop browser frame */}
+          <div style={{ background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: `0 24px 80px ${C.primaryGlow}`, overflow: "hidden", maxWidth: 680, flex: "1 1 680px" }}>
           {/* Browser chrome */}
           <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8, background: C.bgSecondary }}>
             <div style={{ display: "flex", gap: 6 }}>
@@ -105,6 +107,65 @@ export function ProductShowcase() {
               </div>
             </div>
           </div>
+          {/* End desktop browser frame */}
+
+          {/* Mobile phone mockup */}
+          <div style={{ width: 240, flexShrink: 0, animation: "float-card 5s ease-in-out infinite" }}>
+            {/* Phone frame */}
+            <div style={{ background: C.bgDeep, borderRadius: 28, padding: 8, boxShadow: `0 16px 48px ${C.primaryGlow}`, border: `1px solid ${C.border}` }}>
+              {/* Notch */}
+              <div style={{ width: 60, height: 6, background: "rgba(247,243,232,0.15)", borderRadius: 3, margin: "0 auto 8px" }} />
+              {/* Screen */}
+              <div style={{ background: C.bg, borderRadius: 20, overflow: "hidden", height: 380 }}>
+                {/* Mobile header */}
+                <div style={{ padding: "16px 14px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <img src="/logo.png" alt="MyZipVault" style={{ height: 20, width: "auto" }} />
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.sageLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Bell size={11} style={{ color: C.primary }} />
+                  </div>
+                </div>
+
+                {/* Mobile feed */}
+                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {/* Feed post 1 */}
+                  <div style={{ background: C.bgCard, borderRadius: 10, padding: 12, border: `1px solid ${C.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>PM</div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Priya Mehta</p>
+                        <p style={{ fontSize: 9, color: C.textDim }}>Cardiologist · 2h</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.5 }}>Discussing TAVR procedures in elderly patients...</p>
+                    <div style={{ display: "flex", gap: 12, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+                      <span style={{ fontSize: 9, color: C.textDim }}>❤️ 48</span>
+                      <span style={{ fontSize: 9, color: C.textDim }}>💬 12</span>
+                      <span style={{ fontSize: 9, color: C.textDim }}>↗ 8</span>
+                    </div>
+                  </div>
+
+                  {/* Community card */}
+                  <div style={{ background: C.sageLight, borderRadius: 10, padding: 12 }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: C.primary, marginBottom: 2 }}>Emergency Medicine</p>
+                    <p style={{ fontSize: 9, color: C.textMuted }}>2,104 members · 12 online</p>
+                  </div>
+
+                  {/* Feed post 2 */}
+                  <div style={{ background: C.bgCard, borderRadius: 10, padding: 12, border: `1px solid ${C.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.accent}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>AS</div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Aisha Sharma</p>
+                        <p style={{ fontSize: 9, color: C.textDim }}>Emergency Medicine · 5h</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.5 }}>ED staffing shortages — and the solutions that worked...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* End mobile phone mockup */}
         </div>
       </div>
     </section>

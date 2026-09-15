@@ -11,7 +11,7 @@ export function MarketplaceFlow() {
     <>
       <section className="scroll-reveal" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}><span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Marketplace Flow</span><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginTop: 10, fontFamily: "'Clash Display', sans-serif" }}>How it works — 4 steps.</h2></div>
+          <div style={{ textAlign: "center", marginBottom: 56 }}><span style={{ fontSize: 12, fontWeight: 700, color: C.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>Marketplace Flow</span><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginTop: 10, fontFamily: "'Lora', Georgia, serif" }}>How it works — 4 steps.</h2></div>
           <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "1fr", gap: 24 }}>
             {flowSteps.map((step, i) => (
               <div key={i} style={{ position: "relative" }}>
@@ -19,7 +19,7 @@ export function MarketplaceFlow() {
                 <div className="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1" style={{ background: C.bgCard, border: `1px solid ${C.border}`, backdropFilter: "blur(20px)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${C.primary}20, ${C.accent}20)`, border: `1px solid ${C.primary}30`, display: "flex", alignItems: "center", justifyContent: "center" }}><step.icon size={22} style={{ color: C.primary }} /></div>
-                    <span style={{ fontSize: 24, fontWeight: 800, color: C.textDim, fontFamily: "'Clash Display', sans-serif" }}>{i + 1}</span>
+                    <span style={{ fontSize: 24, fontWeight: 800, color: C.textDim, fontFamily: "'Lora', Georgia, serif" }}>{i + 1}</span>
                   </div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>{step.title}</h3>
                   <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>{step.desc}</p>
@@ -31,7 +31,7 @@ export function MarketplaceFlow() {
       </section>
       <section className="scroll-reveal" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}><span style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>Trust & Verification</span><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginTop: 10, fontFamily: "'Clash Display', sans-serif" }}>Every credential, verified.</h2></div>
+          <div style={{ textAlign: "center", marginBottom: 48 }}><span style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>Trust & Verification</span><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginTop: 10, fontFamily: "'Lora', Georgia, serif" }}>Every credential, verified.</h2></div>
           <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "1fr", gap: 24 }}>
             {verificationItems.map((v) => (
               <div key={v.title} className="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1" style={{ background: C.bgCard, border: `1px solid ${C.border}`, backdropFilter: "blur(20px)" }}>

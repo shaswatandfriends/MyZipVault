@@ -19,7 +19,7 @@ export function RoleTabs() {
   return (
     <section className="scroll-reveal" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginBottom: 12, fontFamily: "'Clash Display', sans-serif" }}>Built for all three sides.</h2><p style={{ fontSize: 16, color: C.textMuted, maxWidth: 600, margin: "0 auto" }}>Whether you're a healthcare professional, an independent recruiter, or a hiring employer — MyZipVault has you covered.</p></div>
+        <div style={{ textAlign: "center", marginBottom: 48 }}><h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginBottom: 12, fontFamily: "'Lora', Georgia, serif" }}>Built for all three sides.</h2><p style={{ fontSize: 16, color: C.textMuted, maxWidth: 600, margin: "0 auto" }}>Whether you're a healthcare professional, an independent recruiter, or a hiring employer — MyZipVault has you covered.</p></div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
           <div style={{ display: "flex", gap: 4, padding: 4, background: "rgba(255,255,255,0.03)", borderRadius: 28, border: `1px solid ${C.border}`, backdropFilter: "blur(20px)" }}>
             {[{ key: "candidate" as const, label: "For Candidates", icon: Users }, { key: "recruiter" as const, label: "For Recruiters", icon: Search }, { key: "employer" as const, label: "For Employers", icon: Building2 }].map((tab) => (

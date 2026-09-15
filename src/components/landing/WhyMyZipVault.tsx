@@ -51,7 +51,7 @@ export function WhyMyZipVault() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Why MyZipVault</p>
-          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.text, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             Healthcare is different.<br />Your professional network should be too.
           </h2>
           <p style={{ fontSize: 16, color: C.textMuted, maxWidth: 580, margin: "0 auto", lineHeight: 1.6 }}>
@@ -67,10 +67,10 @@ export function WhyMyZipVault() {
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <p.icon className="size-6" style={{ color: p.color }} />
                 </div>
-                <span style={{ fontSize: 28, fontWeight: 800, color: C.sage, opacity: 0.5, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>{p.num}</span>
+                <span style={{ fontSize: 28, fontWeight: 800, color: C.sage, opacity: 0.5, fontFamily: "'Lora', Georgia, serif" }}>{p.num}</span>
               </div>
 
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: "0.02em", fontFamily: "'Clash Display', 'Inter', sans-serif" }}>{p.title}</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: "0.02em", fontFamily: "'Lora', Georgia, serif" }}>{p.title}</h3>
               <p style={{ fontSize: 12, color: C.accent, fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.08em" }}>{p.tagline}</p>
               <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>{p.desc}</p>
 

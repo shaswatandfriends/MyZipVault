@@ -21,7 +21,7 @@ export function Verification() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Verification</p>
-          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.textOnDeep, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 40 : 28, fontWeight: 800, color: C.textOnDeep, marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             Trust starts with verification.
           </h2>
           <p style={{ fontSize: 16, color: C.textOnDeepMuted, maxWidth: 620, margin: "0 auto", lineHeight: 1.6 }}>

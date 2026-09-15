@@ -13,7 +13,7 @@ export function ProfessionalIdentity() {
         {/* Left: copy */}
         <div>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Professional identity</p>
-          <h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginBottom: 20, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+          <h2 style={{ fontSize: isDesktop ? 38 : 28, fontWeight: 800, color: C.text, marginBottom: 20, letterSpacing: "-0.02em", lineHeight: 1.15, fontFamily: "'Lora', Georgia, serif" }}>
             More than a résumé.<br />A professional identity built for healthcare.
           </h2>
           <p style={{ fontSize: 16, color: C.textMuted, lineHeight: 1.65, marginBottom: 28, maxWidth: 480 }}>

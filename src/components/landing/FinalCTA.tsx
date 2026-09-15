@@ -17,9 +17,13 @@ export function FinalCTA() {
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px", textAlign: "center", position: "relative", zIndex: 1 }}>
         <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto", margin: "0 auto 32px", display: "block" }} />
 
-        <h2 style={{ fontSize: isDesktop ? 44 : 32, fontWeight: 800, color: C.textOnDeep, marginBottom: 18, letterSpacing: "-0.025em", lineHeight: 1.1, fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+        <h2 style={{ fontSize: isDesktop ? 44 : 32, fontWeight: 700, color: C.textOnDeep, marginBottom: 14, letterSpacing: "-0.025em", lineHeight: 1.1, fontFamily: "'Lora', Georgia, serif" }}>
           Ready to join the<br />healthcare network?
         </h2>
+
+        <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 24 }}>
+          The first healthcare-only professional social network
+        </p>
 
         <p style={{ fontSize: 18, color: C.textOnDeepMuted, lineHeight: 1.6, marginBottom: 40, maxWidth: 540, margin: "0 auto 40px" }}>
           The professional network built exclusively for healthcare. Build your identity, connect with colleagues, and discover what's next.

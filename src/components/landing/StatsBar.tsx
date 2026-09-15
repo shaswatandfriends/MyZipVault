@@ -24,7 +24,7 @@ export function StatsBar() {
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: 32 }}>
           {statsBar.map((stat, i) => {
             const numMatch = stat.value.match(/\d+/); const num = numMatch ? parseInt(numMatch[0]) : 0; const suffix = stat.value.replace(/\d+/, ""); const { count, ref } = useCounter(num);
-            return <div key={i} ref={ref} className="text-center"><p className="text-3xl md:text-4xl font-bold" style={{ color: C.text, fontFamily: "'Clash Display', sans-serif" }}>{count}{suffix}</p><p className="text-xs mt-1" style={{ color: C.textMuted }}>{stat.label}</p></div>;
+            return <div key={i} ref={ref} className="text-center"><p className="text-3xl md:text-4xl font-bold" style={{ color: C.text, fontFamily: "'Lora', Georgia, serif" }}>{count}{suffix}</p><p className="text-xs mt-1" style={{ color: C.textMuted }}>{stat.label}</p></div>;
           })}
         </div>
       </div>
