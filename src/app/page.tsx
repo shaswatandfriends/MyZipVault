@@ -34,10 +34,20 @@ export default function HomePage() {
 
       <LandingHeader signupLink="/signup" />
       <HeroSection />
-      <StatsBar />
-      <RoleTabs />
-      <MarketplaceFlow />
-      <PricingAndTestimonials />
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
+        <div className="glass-section-dark scroll-reveal" style={{ marginBottom: 32, borderRadius: 32, overflow: "hidden" }}>
+          <StatsBar />
+        </div>
+        <div className="glass-section-dark scroll-reveal" style={{ marginBottom: 32, borderRadius: 32, overflow: "hidden" }}>
+          <RoleTabs />
+        </div>
+        <div className="glass-section-dark scroll-reveal" style={{ marginBottom: 32, borderRadius: 32, overflow: "hidden" }}>
+          <MarketplaceFlow />
+        </div>
+        <div className="glass-section-dark scroll-reveal" style={{ marginBottom: 32, borderRadius: 32, overflow: "hidden" }}>
+          <PricingAndTestimonials />
+        </div>
+      </div>
       <LandingFooter />
     </div>
   );
