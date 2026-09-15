@@ -69,7 +69,7 @@ export function ProductShowcase() {
               {/* Welcome header */}
               <div style={{ marginBottom: 24 }}>
                 <p style={{ fontSize: 12, color: C.textDim, marginBottom: 4 }}>Welcome back,</p>
-                <h3 style={{ fontSize: 22, fontWeight: 700, color: C.text, letterSpacing: "-0.01em" }}>Dr. Sarah Khan</h3>
+                <h3 style={{ fontSize: 22, fontWeight: 700, color: C.text, letterSpacing: "-0.01em" }}>Dr. Emily Carter</h3>
               </div>
 
               {/* Stats row */}
@@ -92,7 +92,7 @@ export function ProductShowcase() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {[
                     { icon: CheckCircle2, text: "BLS certification verified", time: "2h ago", color: C.primary },
-                    { icon: Users, text: "Connected with Dr. Priya Mehta", time: "5h ago", color: C.sage },
+                    { icon: Users, text: "Connected with Dr. Jennifer Walsh", time: "5h ago", color: C.sage },
                     { icon: ShieldCheck, text: "Identity verification completed", time: "1d ago", color: C.primary },
                   ].map((a, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -131,9 +131,9 @@ export function ProductShowcase() {
                   {/* Feed post 1 */}
                   <div style={{ background: C.bgCard, borderRadius: 10, padding: 12, border: `1px solid ${C.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>PM</div>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>JW</div>
                       <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Priya Mehta</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Jennifer Walsh</p>
                         <p style={{ fontSize: 9, color: C.textDim }}>Cardiologist · 2h</p>
                       </div>
                     </div>
@@ -154,9 +154,9 @@ export function ProductShowcase() {
                   {/* Feed post 2 */}
                   <div style={{ background: C.bgCard, borderRadius: 10, padding: 12, border: `1px solid ${C.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.accent}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>AS</div>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.accent}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>MC</div>
                       <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Aisha Sharma</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Michael Chen</p>
                         <p style={{ fontSize: 9, color: C.textDim }}>Emergency Medicine · 5h</p>
                       </div>
                     </div>

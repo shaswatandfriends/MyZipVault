@@ -86,8 +86,8 @@ export function HeroSection() {
 
               {/* Avatar + name */}
               <div style={{ padding: "0 24px 20px", marginTop: -32 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 22, marginBottom: 14 }}>SK</div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 2, fontFamily: "'Lora', Georgia, serif" }}>Dr. Sarah Khan</h3>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 22, marginBottom: 14 }}>EC</div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 2, fontFamily: "'Lora', Georgia, serif" }}>Dr. Emily Carter</h3>
                 <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 12 }}>Vascular Surgeon · 12 years experience</p>
 
                 {/* Verified badges */}
@@ -139,7 +139,7 @@ export function HeroSection() {
             {/* Floating location chip */}
             <div style={{ position: "absolute", bottom: -12, right: -12, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", boxShadow: `0 6px 18px ${C.primaryGlow}`, display: "flex", alignItems: "center", gap: 6, animation: "mzv-doodle-bounce 4s ease-in-out infinite" }}>
               <MapPin size={12} style={{ color: C.accent }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>Mumbai, IN</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>Boston, MA</span>
             </div>
           </div>
         </div>

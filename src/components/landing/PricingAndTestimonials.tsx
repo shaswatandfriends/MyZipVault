@@ -12,10 +12,10 @@ export function PricingAndTestimonials() {
   const testimonials = [
     {
       quote: "Finally, a professional network where my healthcare credentials actually matter. On LinkedIn I'm just another profile. Here, my board certifications, licenses, and references are front and center — verified.",
-      name: "Dr. Aanya Reddy",
+      name: "Dr. Sarah Mitchell",
       specialty: "Vascular Surgeon",
-      location: "Bengaluru, IN",
-      initials: "AR",
+      location: "Houston, TX",
+      initials: "SM",
     },
     {
       quote: "As a nurse who's traveled for 8 years, I've filled out the same compliance paperwork dozens of times. MyZipVault changed that. My checklists, credentials, and references live in one place — I just share when asked.",

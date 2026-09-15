@@ -9,8 +9,8 @@ export function SocialFeed() {
 
   const feedPosts = [
     {
-      name: "Dr. Priya Mehta",
-      specialty: "Cardiologist · Mumbai",
+      name: "Dr. Jennifer Walsh",
+      specialty: "Cardiologist · Chicago",
       verified: true,
       time: "2h",
       content: "Discussing the latest approaches to TAVR procedures in elderly patients. Our team just completed our 50th case this year with zero complications. Sharing what worked for us — would love to hear from others doing high-volume programs.",
@@ -20,8 +20,8 @@ export function SocialFeed() {
       topic: "Interventional Cardiology",
     },
     {
-      name: "Dr. Aisha Sharma",
-      specialty: "Emergency Medicine · Delhi",
+      name: "Dr. Michael Chen",
+      specialty: "Emergency Medicine · Denver",
       verified: true,
       time: "5h",
       content: "Emergency medicine staffing shortages are real — but so are the solutions. Sharing a thread on how our ED restructured shift patterns to reduce burnout by 40% over 6 months. Thread 🧵",
