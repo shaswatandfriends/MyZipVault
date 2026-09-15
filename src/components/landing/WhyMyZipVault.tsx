@@ -15,8 +15,8 @@ export function WhyMyZipVault() {
       tagline: "Professional network",
       desc: "Build your network with healthcare professionals who understand your work. Join specialty communities, follow colleagues, and join discussions that matter.",
       features: ["Professional network", "Communities", "Messaging", "Following", "Discussions"],
-      // Placeholder gradient — replace with real photo URL when available
-      img: "linear-gradient(135deg, #8FA99C 0%, #174A43 100%)",
+      // Real photos extracted from reference design
+      img: "/pillars/connect.jpg",
       imgLabel: "Healthcare professionals connecting",
     },
     {
@@ -26,7 +26,7 @@ export function WhyMyZipVault() {
       tagline: "Credentials that matter",
       desc: "Your professional identity is more than a résumé. Verify your identity, licenses, credentials, references, and skills — and earn trust badges that mean something.",
       features: ["Credentials", "Licenses", "References", "Identity", "Skills"],
-      img: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
+      img: "/pillars/verify.jpg",
       imgLabel: "Verified medical credentials",
     },
     {
@@ -36,7 +36,7 @@ export function WhyMyZipVault() {
       tagline: "Opportunities + talent",
       desc: "Find opportunities, talent, organizations, and communities — all within the healthcare ecosystem. Recruitment lives here, alongside everything else.",
       features: ["Jobs", "Professionals", "Organizations", "Opportunities"],
-      img: "linear-gradient(135deg, #D98F78 0%, #174A43 100%)",
+      img: "/pillars/discover.jpg",
       imgLabel: "Discovering healthcare opportunities",
     },
     {
@@ -46,7 +46,7 @@ export function WhyMyZipVault() {
       tagline: "Career development",
       desc: "Build professional visibility. Learn from peers. Grow your career with a network that understands healthcare — not a generic professional site.",
       features: ["Career development", "Learning", "Networking", "Professional visibility"],
-      img: "linear-gradient(135deg, #8FA99C 0%, #D98F78 100%)",
+      img: "/pillars/grow.jpg",
       imgLabel: "Career growth in healthcare",
     },
   ];
@@ -68,18 +68,16 @@ export function WhyMyZipVault() {
           {pillars.map((p, i) => (
             <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", transition: "all 0.3s", display: "flex", flexDirection: "column" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.boxShadow = `0 12px 36px ${C.primaryGlow}`; e.currentTarget.style.transform = "translateY(-4px)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}>
 
-              {/* Photo placeholder with watercolor mask effect */}
+              {/* Photo with watercolor mask effect */}
               <div style={{
                 height: 180,
-                background: p.img,
                 position: "relative",
-                // Watercolor edge effect — organic mask using border-radius + filter
-                maskImage: "radial-gradient(ellipse 100% 100% at 50% 40%, black 70%, transparent 95%)",
-                WebkitMaskImage: "radial-gradient(ellipse 100% 100% at 50% 40%, black 70%, transparent 95%)",
+                overflow: "hidden",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}>
+                <img src={p.img} alt={p.imgLabel} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 {/* Icon overlay — circle badge like reference */}
                 <div style={{
                   width: 56, height: 56, borderRadius: "50%",
