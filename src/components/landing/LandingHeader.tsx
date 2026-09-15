@@ -24,19 +24,19 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: scrolled ? "rgba(247, 243, 232, 0.92)" : "transparent", backdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.6)" : "none", borderBottom: scrolled ? "1px solid rgba(38,54,51,0.10)" : "none", boxShadow: scrolled ? "0 4px 24px rgba(23, 74, 67, 0.08)" : "none" }}>
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: "rgba(247, 243, 232, 0.92)", backdropFilter: "blur(24px) saturate(1.6)", WebkitBackdropFilter: "blur(24px) saturate(1.6)", borderBottom: "1px solid rgba(38,54,51,0.10)", boxShadow: "0 4px 24px rgba(23, 74, 67, 0.08)" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
           <img src="/logo.png" alt="MyZipVault" style={{ height: 112, width: "auto" }} />
         </Link>
         <nav style={{ display: isDesktop ? "flex" : "none", alignItems: "center", gap: 26, zIndex: 51 }}>
           {[{ label: "Network", href: "/" }, { label: "Jobs", href: "/browse-jobs" }, { label: "Professionals", href: "/for-candidates" }, { label: "Organizations", href: "/for-employers" }, { label: "Communities", href: "/marketplace-flow" }, { label: "Resources", href: "/blog" }].map((item, i) => (
-            <Link key={i} href={item.href} style={{ fontSize: 14, color: scrolled ? "#5C6B66" : C.textMuted, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = scrolled ? "#174A43" : C.text} onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? "#5C6B66" : C.textMuted}>{item.label}</Link>
+            <Link key={i} href={item.href} style={{ fontSize: 14, color: "#5C6B66", textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#174A43"} onMouseLeave={(e) => e.currentTarget.style.color = "#5C6B66"}>{item.label}</Link>
           ))}
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12, zIndex: 51 }}>
-          <Link href="/login" style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: scrolled ? "#174A43" : C.text, background: "transparent", border: `1px solid ${scrolled ? "rgba(38,54,51,0.20)" : C.border}`, cursor: "pointer", borderRadius: 24, transition: "all 0.2s" }}>Sign In</button></Link>
+          <Link href="/login" style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: "#174A43", background: "transparent", border: "1px solid rgba(38,54,51,0.20)", cursor: "pointer", borderRadius: 24, transition: "all 0.2s" }}>Sign In</button></Link>
           <Link href={signupLink} style={{ display: isDesktop ? "inline" : "none" }}><button style={{ padding: "9px 22px", fontSize: 14, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, border: "none", cursor: "pointer", borderRadius: 24, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 16px rgba(23,74,67,0.25)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>Get Started <ArrowRight size={14} /></button></Link>
-          <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: menuOpen ? "rgba(247,243,232,0.6)" : "transparent", border: `1px solid ${scrolled ? "rgba(38,54,51,0.20)" : C.border}`, borderRadius: 12, cursor: "pointer" }}>{menuOpen ? <X size={20} style={{ color: scrolled ? "#174A43" : C.text }} /> : <Menu size={20} style={{ color: scrolled ? "#174A43" : C.text }} />}</button>
+          <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: menuOpen ? "rgba(247,243,232,0.6)" : "transparent", border: "1px solid rgba(38,54,51,0.20)", borderRadius: 12, cursor: "pointer" }}>{menuOpen ? <X size={20} style={{ color: "#174A43" }} /> : <Menu size={20} style={{ color: "#174A43" }} />}</button>
         </div>
       </header>
       {menuOpen && (
