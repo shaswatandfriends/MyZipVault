@@ -133,26 +133,12 @@ export default function AuthSlideshowPanel({
       <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
         {/* Top: Logo + brand */}
         <div className="flex items-center gap-3">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoUrl}
-              alt={platformName}
-              className="w-10 h-10 object-contain"
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
-          ) : (
-            <div
-              className="flex items-center justify-center size-10 rounded-[10px] text-white text-xl font-bold"
-              style={{
-                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
-                fontFamily: "'Lora', serif",
-              }}
-            >
-              {logoText}
-            </div>
-          )}
+          <img
+            src="/logo.png"
+            alt={platformName}
+            className="h-12 w-auto object-contain"
+            style={{ filter: "brightness(0) invert(1)" }}
+          />
           <span
             className="text-2xl font-bold text-white"
             style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}

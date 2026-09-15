@@ -145,7 +145,7 @@ export default function PublicJobDetailPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">M</div>
+              <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
               <span className="font-semibold text-lg text-foreground">MyZipVault</span>
             </Link>
             <Link href="/signup" className="text-sm font-semibold text-primary">Sign up free →</Link>
@@ -167,7 +167,7 @@ export default function PublicJobDetailPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">M</div>
+              <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
               <span className="font-semibold text-lg text-foreground">MyZipVault</span>
             </Link>
             <Link href="/signup" className="text-sm font-semibold text-primary">Sign up free →</Link>
@@ -203,7 +203,7 @@ export default function PublicJobDetailPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">M</div>
+            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
             <span className="font-semibold text-lg text-foreground">MyZipVault</span>
           </Link>
           <div className="flex items-center gap-3">

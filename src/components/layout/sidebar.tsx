@@ -491,15 +491,7 @@ export function AppSidebar() {
         >
           {/* Logo + Brand */}
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
-            <div
-              className="flex size-7 items-center justify-center rounded-[6px] shrink-0"
-              style={{
-                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
-              }}
-            >
-              <span className="text-[12px] font-bold text-white">M</span>
-            </div>
+            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto shrink-0 rounded-[6px]" />
             <div className="flex flex-col gap-0.5 min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="text-sm font-medium leading-tight text-white" style={{ fontFamily: "'Lora', serif" }}>
                 MyZipVault

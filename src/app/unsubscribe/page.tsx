@@ -87,7 +87,7 @@ function UnsubscribePageInner() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #174A43, #0F3631)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 20 }}>M</div>
+          <img src="/logo.png" alt="MyZipVault" style={{ height: 40, width: "auto", borderRadius: 10 }} />
           <span style={{ fontWeight: 700, fontSize: 20, color: "white" }}>MyZipVault</span>
         </Link>
 

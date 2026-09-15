@@ -277,7 +277,7 @@ async function sendNotificationEmail(params: CreateNotificationParams): Promise<
   const htmlContent = `
     <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
       <div style="background: #174A43; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-        <span style="color: #D98F78; font-weight: 600;">MyZipVault</span>
+        <img src="https://my-zip-vault.vercel.app/logo.png" alt="MyZipVault" style="height: 28px; width: auto;" />
         <span style="color: #fff; margin-left: 8px;">${params.category.toUpperCase()}</span>
       </div>
       <div style="background: ${accentBg}; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid ${accentColor}40;">
