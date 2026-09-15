@@ -14,7 +14,11 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled(isScrolled);
+      if (isScrolled) setMenuOpen(false);
+    };
     const onResize = () => setIsDesktop(window.innerWidth > 768);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
@@ -24,7 +28,7 @@ export function LandingHeader({ signupLink }: { signupLink: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: "rgba(247, 243, 232, 0.92)", backdropFilter: "blur(24px) saturate(1.6)", WebkitBackdropFilter: "blur(24px) saturate(1.6)", borderBottom: "1px solid rgba(38,54,51,0.10)", boxShadow: "0 4px 24px rgba(23, 74, 67, 0.08)" }}>
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-500" style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: "rgba(247, 243, 232, 0.92)", backdropFilter: "blur(24px) saturate(1.6)", WebkitBackdropFilter: "blur(24px) saturate(1.6)", borderBottom: "1px solid rgba(38,54,51,0.10)", boxShadow: "0 4px 24px rgba(23, 74, 67, 0.08)", transform: scrolled ? "translateY(-100%)" : "translateY(0)", opacity: scrolled ? 0 : 1 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", zIndex: 51 }}>
           <img src="/logo.png" alt="MyZipVault" style={{ height: 112, width: "auto" }} />
         </Link>
