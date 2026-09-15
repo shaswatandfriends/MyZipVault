@@ -58,6 +58,7 @@ export interface ContactSocial {
 export interface BrandingAssets {
   logoUrl: string;          // full URL to logo image (Supabase storage or external)
   logoText: string;         // text shown next to logo (e.g., "MyZipVault")
+  tagline: string;          // small subtext beneath logo (e.g., "The Healthcare Network")
   faviconUrl: string;       // full URL to favicon .ico or .png
   ogImageUrl: string;       // Open Graph image for social sharing
 }
@@ -260,6 +261,7 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
   branding: {
     logoUrl: "",
     logoText: "MyZipVault",
+    tagline: "The Healthcare Network",
     faviconUrl: "/favicon.ico",
     ogImageUrl: "",
   },

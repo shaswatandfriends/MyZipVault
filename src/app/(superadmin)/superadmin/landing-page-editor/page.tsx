@@ -108,6 +108,7 @@ interface LandingPageData {
 interface BrandingAssets {
   logoUrl: string;
   logoText: string;
+  tagline: string;
   faviconUrl: string;
   ogImageUrl: string;
 }
@@ -781,7 +782,7 @@ export default function LandingPageEditorPage() {
 
   // ── Branding helpers (logo, favicon, OG image) ──
   const updateBranding = (key: keyof BrandingAssets, value: string) => {
-    setData((prev) => ({ ...prev, branding: { ...(prev.branding || { logoUrl: "", logoText: "MyZipVault", faviconUrl: "/favicon.ico", ogImageUrl: "" }), [key]: value } }));
+    setData((prev) => ({ ...prev, branding: { ...(prev.branding || { logoUrl: "", logoText: "MyZipVault", tagline: "The Healthcare Network", faviconUrl: "/favicon.ico", ogImageUrl: "" }), [key]: value } }));
     setHasUnsavedChanges(true);
   };
 
@@ -1352,6 +1353,14 @@ export default function LandingPageEditorPage() {
                   value={data.branding?.logoText || ""}
                   onChange={(e) => updateBranding("logoText", e.target.value)}
                   placeholder="MyZipVault"
+                  className="border-border rounded-xl focus:border-accent-teal"
+                />
+              </FormField>
+              <FormField label="Tagline (small subtext beneath logo, e.g., 'The Healthcare Network')">
+                <Input
+                  value={data.branding?.tagline || ""}
+                  onChange={(e) => updateBranding("tagline", e.target.value)}
+                  placeholder="The Healthcare Network"
                   className="border-border rounded-xl focus:border-accent-teal"
                 />
               </FormField>
