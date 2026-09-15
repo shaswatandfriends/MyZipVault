@@ -1255,7 +1255,7 @@
 .mesh-background::after {
   width: 480px;
   height: 480px;
-  background: radial-gradient(circle, rgba(23, 74, 67, 0.5) 0%, rgba(23, 74, 67, 0) 70%);
+  background: radial-gradient(circle, rgba(217, 143, 120, 0.35) 0%, rgba(217, 143, 120, 0) 70%);
   bottom: -160px;
   left: -100px;
   animation-delay: -11s;
@@ -2407,4 +2407,144 @@ input[data-slot="input"]:-webkit-autofill:focus {
   background: rgba(247, 243, 232, 0.06) !important;
   border: 1px solid rgba(247, 243, 232, 0.14) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(247, 243, 232, 0.10) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   GLOBAL BRAND CASCADE — applies landing page aesthetic to ALL pages
+   ════════════════════════════════════════════════════════════════════ */
+
+/* All page headings use Lora serif (already set above, reinforcing) */
+h1, h2, h3, h4 {
+  font-family: var(--font-lora), 'Lora', Georgia, serif !important;
+  letter-spacing: -0.02em;
+}
+
+/* Section eyebrow labels — terracotta uppercase, like landing page */
+.section-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--terra);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+}
+
+/* Brand watermark for dashboard pages — subtle Z mark in backgrounds */
+.brand-watermark {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 200px;
+  height: 200px;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Dashboard page wrapper — ivory background (not gray) */
+[data-slot="dashboard-page"],
+.main-content-area {
+  background: var(--background) !important;
+}
+
+/* All form labels — slightly more branded */
+label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* All links — brand teal */
+a {
+  color: var(--primary);
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* Table headers — brand styling */
+th {
+  font-family: var(--font-lora), 'Lora', Georgia, serif;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+/* Badge defaults — more brand-aligned */
+[data-slot="badge"] {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Input focus — brand teal ring */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(23, 74, 67, 0.12) !important;
+}
+
+/* Dialog/Modal headings — serif */
+[data-slot="dialog-title"],
+[data-slot="alert-dialog-title"] {
+  font-family: var(--font-lora), 'Lora', Georgia, serif !important;
+  font-weight: 600 !important;
+}
+
+/* Toast titles — serif */
+[data-sonner-toast] [data-title] {
+  font-family: var(--font-lora), 'Lora', Georgia, serif;
+}
+
+/* Scrollbar — brand-tinted */
+::-webkit-scrollbar-thumb {
+  background: rgba(23, 74, 67, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(23, 74, 67, 0.25);
+}
+
+/* Tab triggers — brand teal when active */
+[data-state="active"][role="tab"] {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Checkbox checked — brand teal */
+[data-state="checked"][role="checkbox"] {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Switch checked — brand teal */
+[data-state="checked"][role="switch"] {
+  background: var(--primary) !important;
+}
+
+/* Progress bar — brand teal fill */
+[data-slot="progress-indicator"] {
+  background: var(--primary) !important;
+}
+
+/* Select trigger focus — brand teal ring */
+[data-state="open"][role="combobox"] {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(23, 74, 67, 0.12) !important;
+}
+
+/* Dropdown menu items — brand teal hover */
+[data-slot="dropdown-menu-item"]:hover,
+[data-slot="select-item"]:hover {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+}
+
+/* Avatar fallback — brand teal background */
+[data-slot="avatar-fallback"] {
+  background: linear-gradient(135deg, var(--primary-vivid), var(--primary)) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
 }
