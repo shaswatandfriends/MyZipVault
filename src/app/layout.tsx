@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Lora, Caveat } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -47,6 +47,23 @@ const playfair = Playfair_Display({
 const clashDisplay = localFont({
   src: "../../public/fonts/clash-display-700.woff2",
   variable: "--font-clash",
+  display: "swap",
+});
+
+// Lora — editorial serif for landing page headings (per rebrand spec)
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+// Caveat — handwritten script for editorial statements ("Behind every credential is a person")
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -135,7 +152,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${satoshi.variable} ${playfair.variable} ${clashDisplay.variable} antialiased bg-background text-foreground font-sans`}
+        className={`${inter.variable} ${satoshi.variable} ${playfair.variable} ${clashDisplay.variable} ${lora.variable} ${caveat.variable} antialiased bg-background text-foreground font-sans`}
       >
         {/* JSON-LD Organization schema — for Google rich results */}
         <script

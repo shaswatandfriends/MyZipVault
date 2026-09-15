@@ -48,7 +48,7 @@ export function Verification() {
 
         {/* Brand statement */}
         <div style={{ textAlign: "center", marginTop: 56, padding: "32px 24px", background: "rgba(247,243,232,0.04)", borderRadius: 16, border: "1px solid rgba(247,243,232,0.10)" }}>
-          <p style={{ fontSize: isDesktop ? 22 : 18, fontWeight: 500, color: C.textOnDeep, fontStyle: "italic", lineHeight: 1.5, maxWidth: 720, margin: "0 auto" }}>
+          <p style={{ fontSize: 28, fontWeight: 500, color: C.sage, fontFamily: "var(--font-caveat), 'Caveat', cursive", lineHeight: 1.4, maxWidth: 720, margin: "0 auto" }}>
             "Behind every credential is a person. Behind every healthcare professional is a story."
           </p>
         </div>

@@ -51,8 +51,8 @@ export function HeroSection() {
           </div>
 
           {/* Handwritten editorial statement — per reference */}
-          <p style={{ fontSize: 18, color: C.sage, fontStyle: "italic", fontFamily: "'Lora', Georgia, serif", lineHeight: 1.5, maxWidth: 400 }}>
-            "Behind every credential is a person."
+          <p style={{ fontSize: 24, color: C.sage, fontFamily: "var(--font-caveat), 'Caveat', cursive", lineHeight: 1.4, maxWidth: 400, marginTop: 8 }}>
+            Behind every credential is a person.
           </p>
 
           {/* Trust line */}

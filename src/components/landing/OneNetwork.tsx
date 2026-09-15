@@ -98,6 +98,20 @@ export function OneNetwork() {
             </div>
           ))}
         </div>
+
+        {/* Handwritten "Better. Together." with botanical SVG decoration */}
+        <div style={{ textAlign: "center", marginTop: 56, position: "relative" }}>
+          {/* Botanical SVG — simple leaf branch */}
+          <svg width="80" height="40" viewBox="0 0 80 40" style={{ margin: "0 auto 12px", display: "block", opacity: 0.4 }} fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 40 35 Q 40 20 40 5" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M 40 28 Q 30 25 22 20 Q 28 18 40 22" stroke={C.sage} strokeWidth="1" fill={C.sageLight} />
+            <path d="M 40 22 Q 50 19 58 14 Q 52 12 40 16" stroke={C.sage} strokeWidth="1" fill={C.sageLight} />
+            <path d="M 40 16 Q 32 13 26 8 Q 32 6 40 10" stroke={C.sage} strokeWidth="1" fill={C.sageLight} />
+          </svg>
+          <p style={{ fontSize: 28, color: C.sage, fontFamily: "var(--font-caveat), 'Caveat', cursive", lineHeight: 1.3 }}>
+            Better. Together.
+          </p>
+        </div>
       </div>
     </section>
   );
