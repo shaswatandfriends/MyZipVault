@@ -1,23 +1,39 @@
 // Shared design tokens for landing page components
-// Aligned with brand palette: Deep Teal + Sage + Ivory + Terracotta + Charcoal
-// Page background is pure white; teal/sage used for text + accents.
+// Per rebrand spec: ivory + white canvas, deep teal brand anchor,
+// sage secondary, terracotta accent only. Editorial, premium, human.
 
 export const C = {
-  bg: "#FFFFFF",                       // Pure white page background
-  bgCard: "rgba(247,243,232,0.5)",     // Ivory-tinted glass card on white
-  bgCardHover: "rgba(247,243,232,0.75)",
-  border: "rgba(38,54,51,0.10)",       // Charcoal-tinted border
+  // ─── Backgrounds ───
+  bg: "#F7F3E8",                       // Warm Ivory — main page background (per spec, not pure white)
+  bgCard: "#FFFFFF",                   // Pure White — cards/surfaces
+  bgCardHover: "#FBF8EE",              // Slightly tinted ivory for hover
+  bgDeep: "#174A43",                   // Deep Teal — for deep sections (CTA bands, verification)
+  bgSecondary: "#E7EEE9",              // Sage-tinted surface — for nested/secondary surfaces
+
+  // ─── Borders ───
+  border: "rgba(38,54,51,0.10)",       // Charcoal-tinted border (subtle)
   borderHover: "rgba(23,74,67,0.30)",  // Teal hover border
-  text: "#263633",                     // Deep Charcoal text
-  textMuted: "rgba(38,54,51,0.60)",
-  textDim: "rgba(38,54,51,0.40)",
-  primary: "#174A43",                  // Deep Teal primary (pops on white)
-  primaryGlow: "rgba(23,74,67,0.25)",
-  accent: "#D98F78",                   // Terracotta accent
-  accentGlow: "rgba(217,143,120,0.25)",
-  emerald: "#174A43",                  // Brand teal for success indicators
-  amber: "#D97706",                    // Amber for warnings
-  violet: "#8FA99C",                   // Sage (no purple)
+
+  // ─── Text ───
+  text: "#263633",                     // Deep Charcoal — body + headings
+  textMuted: "rgba(38,54,51,0.65)",    // Secondary text
+  textDim: "rgba(38,54,51,0.45)",      // Tertiary/meta text
+  textOnDeep: "#F7F3E8",               // Ivory text on deep teal sections
+  textOnDeepMuted: "rgba(247,243,232,0.70)",
+
+  // ─── Brand Colors ───
+  primary: "#174A43",                  // Deep Healthcare Teal — primary brand anchor
+  primaryHover: "#0F3631",             // Darker teal — hover/active
+  primaryGlow: "rgba(23,74,67,0.18)",  // Soft teal shadow
+  sage: "#8FA99C",                     // Sage Green — secondary
+  sageLight: "#E7EEE9",                // Light sage surface
+  accent: "#D98F78",                   // Terracotta — accent only (small highlights)
+  accentGlow: "rgba(217,143,120,0.20)",
+
+  // ─── Status colors (preserved) ───
+  emerald: "#174A43",                  // Success → brand teal
+  amber: "#D97706",                    // Warning
+  violet: "#8FA99C",                   // Repurposed to sage
   white: "#FFFFFF",
 };
 
@@ -37,5 +53,5 @@ export const landingAnimations = `
   .hero-text { animation: fade-up 0.8s ease forwards; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: ${C.bg}; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: rgba(38,54,51,0.15); border-radius: 3px; }
 `;

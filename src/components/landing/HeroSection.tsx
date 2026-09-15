@@ -1,78 +1,140 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Users, FileSignature, Bell, CreditCard } from "@/lib/icons";
+import { ArrowRight, CheckCircle2, ShieldCheck, Users, MapPin, Briefcase } from "@/lib/icons";
 import { C } from "./theme";
 
 export function HeroSection() {
   const [isDesktop, setIsDesktop] = useState(true);
-  useEffect(() => { const onResize = () => setIsDesktop(window.innerWidth > 768); window.addEventListener("resize", onResize); onResize(); return () => window.removeEventListener("resize", onResize); }, []);
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth > 768);
+    window.addEventListener("resize", onResize);
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
-    <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden" }}>
-      {/* ─── Animated staffing/recruitment doodles (all white) ─── */}
-      {/* $ symbol */}
-      <div style={{ position: "absolute", top: "12%", left: "4%", fontSize: 44, color: "rgba(23,74,67,0.08)", fontWeight: 800, animation: "mzv-doodle-float 6s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>$</div>
-      {/* PROFIT text badge */}
-      <div style={{ position: "absolute", top: "65%", left: "6%", padding: "4px 12px", borderRadius: 16, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(23,74,67,0.06)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-pulse 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>PROFIT</div>
-      {/* 💰 Money bag emoji */}
-      <div style={{ position: "absolute", top: "18%", right: "7%", fontSize: 36, color: "rgba(23,74,67,0.10)", animation: "mzv-doodle-bounce 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>💰</div>
-      {/* OFFERED text badge */}
-      <div style={{ position: "absolute", top: "70%", right: "4%", padding: "4px 12px", borderRadius: 16, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(23,74,67,0.06)", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", animation: "mzv-doodle-float 7s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>OFFERED</div>
-      {/* 70% text */}
-      <div style={{ position: "absolute", top: "8%", left: "48%", fontSize: 28, fontWeight: 800, color: "rgba(23,74,67,0.06)", animation: "mzv-doodle-sway 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none", fontFamily: "'Clash Display', sans-serif" }}>70%</div>
-      {/* 🤝 Handshake */}
-      <div style={{ position: "absolute", top: "40%", right: "2%", fontSize: 36, color: "rgba(23,74,67,0.08)", animation: "mzv-doodle-float 5s ease-in-out infinite reverse", willChange: "transform", pointerEvents: "none" }}>🤝</div>
-      {/* HIRED text badge */}
-      <div style={{ position: "absolute", top: "50%", left: "3%", padding: "3px 10px", borderRadius: 12, background: "rgba(23,74,67,0.04)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 700, color: "rgba(23,74,67,0.10)", letterSpacing: "0.05em", animation: "mzv-doodle-bounce 4s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>HIRED</div>
-      {/* ⭐ Star */}
-      <div style={{ position: "absolute", top: "30%", left: "42%", fontSize: 24, color: "rgba(23,74,67,0.08)", animation: "mzv-doodle-pulse 3s ease-in-out infinite", willChange: "transform", pointerEvents: "none" }}>⭐</div>
-
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 48, alignItems: "center" }}>
+    <section style={{ paddingTop: 120, paddingBottom: 80, position: "relative", zIndex: 1, overflow: "hidden", background: C.bg }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: isDesktop ? "1.1fr 0.9fr" : "1fr", gap: 56, alignItems: "center" }}>
         {/* Left: Headline + CTAs */}
         <div className="hero-text">
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: "rgba(23,74,67,0.08)", border: `1px solid ${C.primary}30`, marginBottom: 24 }}>
-            <Sparkles className="size-3.5" style={{ color: C.accent }} /><span style={{ fontSize: 12, fontWeight: 600, color: C.accent }}>Healthcare Recruiting Marketplace</span>
+          {/* Brand mark + tagline */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
+            <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto" }} />
           </div>
-          <h1 style={{ fontSize: isDesktop ? 52 : 36, fontWeight: 800, lineHeight: 1.1, marginBottom: 20, background: `linear-gradient(135deg, #263633 0%, #174A43 50%, #8FA99C 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Clash Display', sans-serif" }}>Recruiters work for themselves, not for agencies.</h1>
-          <p style={{ fontSize: 17, color: C.textMuted, lineHeight: 1.6, marginBottom: 32, maxWidth: 500 }}>The first marketplace where healthcare professionals own their data, recruiters keep 70% of placement fees, and employers hire directly — no middleman markup.</p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
-            <Link href="/signup"><button style={{ padding: "14px 28px", fontSize: 15, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, border: "none", cursor: "pointer", borderRadius: 28, display: "flex", alignItems: "center", gap: 8, boxShadow: `0 8px 24px ${C.primaryGlow}`, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>I'm a Candidate <ArrowRight size={16} /></button></Link>
-            <Link href="/agency-signup"><button style={{ padding: "14px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 28, backdropFilter: "blur(20px)", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.bgCardHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bgCard; }}>I'm a Recruiter</button></Link>
-            <Link href="/employer-signup"><button style={{ padding: "14px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 28, backdropFilter: "blur(20px)", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.bgCardHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bgCard; }}>I'm an Employer</button></Link>
+
+          <h1 style={{ fontSize: isDesktop ? 56 : 38, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: C.text, letterSpacing: "-0.025em", fontFamily: "'Clash Display', 'Inter', sans-serif" }}>
+            Where healthcare<br />professionals connect.
+          </h1>
+
+          <p style={{ fontSize: 19, color: C.textMuted, lineHeight: 1.6, marginBottom: 12, maxWidth: 540, fontWeight: 500 }}>
+            The professional network built exclusively for healthcare.
+          </p>
+
+          <p style={{ fontSize: 16, color: C.textDim, lineHeight: 1.65, marginBottom: 36, maxWidth: 540 }}>
+            Build your professional identity, connect with colleagues, discover opportunities, and find trusted healthcare talent — all in one network.
+          </p>
+
+          {/* Three CTAs — professional is primary */}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 32 }}>
+            <Link href="/signup">
+              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: "#FFFFFF", background: C.primary, border: "none", cursor: "pointer", borderRadius: 14, display: "flex", alignItems: "center", gap: 8, boxShadow: `0 6px 20px ${C.primaryGlow}`, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryHover; e.currentTarget.style.transform = "translateY(-1px)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.primary; e.currentTarget.style.transform = "translateY(0)"; }}>
+                I'm a Healthcare Professional <ArrowRight size={16} />
+              </button>
+            </Link>
+            <Link href="/agency-signup">
+              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.bgCardHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bgCard; }}>
+                I'm a Recruiter
+              </button>
+            </Link>
+            <Link href="/employer-signup">
+              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: "transparent", border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}>
+                I'm an Employer
+              </button>
+            </Link>
           </div>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {["HIPAA Aligned", "256-bit Encryption", "BAA Available"].map((t, i) => (<span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.textDim }}><CheckCircle2 className="size-3.5" style={{ color: C.emerald }} /> {t}</span>))}
+
+          {/* Trust line */}
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            {["HIPAA Aligned", "256-bit Encryption", "BAA Available"].map((t, i) => (
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.textDim, fontWeight: 500 }}>
+                <CheckCircle2 className="size-4" style={{ color: C.primary }} /> {t}
+              </span>
+            ))}
           </div>
         </div>
-        {/* Right: Floating Dashboard Mockup */}
+
+        {/* Right: Professional Profile Card mockup — replaces the recruiter dashboard */}
         <div style={{ position: "relative" }} className={isDesktop ? "" : "hidden"}>
-          <div style={{ position: "relative", animation: "float-card 6s ease-in-out infinite" }}>
-            <div className="absolute inset-0 rounded-3xl blur-3xl" style={{ background: `linear-gradient(135deg, ${C.primaryGlow}, ${C.accentGlow})`, transform: "scale(1.1)" }} />
-            <div className="rounded-2xl backdrop-blur-xl overflow-hidden" style={{ background: C.bgCard, border: `1px solid ${C.border}`, boxShadow: `0 0 40px ${C.primaryGlow}` }}>
-              <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: C.border }}>
-                <div className="flex gap-1.5"><div className="size-2.5 rounded-full bg-red-400/60" /><div className="size-2.5 rounded-full bg-amber-400/60" /><div className="size-2.5 rounded-full bg-green-400/60" /></div>
-                <div className="flex-1 mx-4"><div className="rounded-md px-3 py-1 text-[10px] text-center" style={{ background: "rgba(255,255,255,0.05)", color: C.textDim }}>🔒 myzipvault.com/dashboard</div></div>
+          <div style={{ animation: "float-card 6s ease-in-out infinite" }}>
+            {/* Profile Card */}
+            <div style={{ background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: `0 12px 48px ${C.primaryGlow}`, overflow: "hidden" }}>
+              {/* Cover band */}
+              <div style={{ height: 80, background: `linear-gradient(135deg, ${C.primary} 0%, ${C.sage} 100%)`, position: "relative" }}>
+                <div style={{ position: "absolute", top: 12, right: 16, display: "flex", gap: 6 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", padding: "4px 10px", borderRadius: 20, fontSize: 10, fontWeight: 600, color: "#FFFFFF" }}>
+                    <CheckCircle2 size={11} /> Verified
+                  </span>
+                </div>
               </div>
-              <div className="p-5 space-y-4" style={{ minHeight: 380 }}>
-                <div className="grid grid-cols-3 gap-3">
-                  {[{ label: "Credentials", value: "12", icon: ShieldCheck, color: C.primary }, { label: "Checklists", value: "3", icon: CheckCircle2, color: C.emerald }, { label: "References", value: "5", icon: Users, color: C.accent }].map((stat, i) => (
-                    <div key={i} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}` }}><stat.icon className="size-4 mb-2" style={{ color: stat.color }} /><p className="text-lg font-bold" style={{ color: C.text }}>{stat.value}</p><p className="text-[9px]" style={{ color: C.textMuted }}>{stat.label}</p></div>
-                  ))}
+
+              {/* Avatar + name */}
+              <div style={{ padding: "0 24px 20px", marginTop: -32 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 22, marginBottom: 14 }}>SK</div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 2, letterSpacing: "-0.01em" }}>Dr. Sarah Khan</h3>
+                <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 12 }}>Vascular Surgeon · 12 years experience</p>
+
+                {/* Verified badges */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: C.sageLight, color: C.primary, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                    <ShieldCheck size={11} /> Identity Verified
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: C.sageLight, color: C.primary, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                    <CheckCircle2 size={11} /> Credentials Verified
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2"><p className="text-[10px] font-medium" style={{ color: C.textMuted }}>Profile Completion</p><p className="text-[10px] font-bold" style={{ color: C.primary }}>85%</p></div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}><div className="h-full rounded-full" style={{ width: "85%", background: `linear-gradient(90deg, ${C.primary}, ${C.accent})`, animation: "shimmer 2s ease-in-out infinite" }} /></div>
+
+                {/* Stats */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, paddingTop: 16, borderTop: `1px solid ${C.border}`, marginBottom: 18 }}>
+                  <div>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: C.text, lineHeight: 1 }}>342</p>
+                    <p style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>Connections</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: C.text, lineHeight: 1 }}>12</p>
+                    <p style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>Years exp.</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: C.accent, lineHeight: 1 }}>Open</p>
+                    <p style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>to opportunities</p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {[{ icon: CheckCircle2, text: "BLS certificate verified", time: "2m ago", color: C.emerald }, { icon: FileSignature, text: "RTR signed via VaultSign", time: "1h ago", color: C.primary }, { icon: Bell, text: "New job match: ICU RN", time: "3h ago", color: C.accent }].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.02)" }}><div className="flex size-7 items-center justify-center rounded-lg" style={{ background: `${item.color}15` }}><item.icon className="size-3.5" style={{ color: item.color }} /></div><p className="text-[10px] flex-1" style={{ color: C.text }}>{item.text}</p><p className="text-[9px]" style={{ color: C.textDim }}>{item.time}</p></div>
-                  ))}
+
+                {/* Action buttons */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button style={{ flex: 1, padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "#FFFFFF", background: C.primary, border: "none", borderRadius: 10, cursor: "pointer" }}>Connect</button>
+                  <button style={{ flex: 1, padding: "10px 14px", fontSize: 13, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, cursor: "pointer" }}>Message</button>
+                  <button style={{ padding: "10px 12px", fontSize: 13, fontWeight: 600, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, cursor: "pointer" }}>View</button>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-4 -right-4 rounded-xl px-4 py-2" style={{ background: `linear-gradient(135deg, ${C.emerald}, #8FA99C)`, boxShadow: `0 8px 24px ${C.emerald}40`, animation: "float-card 4s ease-in-out infinite 0.5s" }}><p className="text-xs font-bold text-white">✓ HIPAA Aligned</p></div>
-            <div className="absolute -bottom-6 -left-6 rounded-xl px-4 py-3" style={{ background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, boxShadow: `0 8px 24px ${C.primaryGlow}`, animation: "float-card 5s ease-in-out infinite 1s" }}><div className="flex items-center gap-2"><CreditCard className="size-4 text-white" /><div><p className="text-[9px] text-white/70">Credits</p><p className="text-sm font-bold text-white">84</p></div></div></div>
+
+            {/* Floating connection bubble */}
+            <div style={{ position: "absolute", top: -16, left: -20, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 14px", boxShadow: `0 8px 24px ${C.primaryGlow}`, display: "flex", alignItems: "center", gap: 8, animation: "mzv-doodle-float 5s ease-in-out infinite" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.sageLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Users size={14} style={{ color: C.primary }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>+12 new</p>
+                <p style={{ fontSize: 9, color: C.textDim }}>connections today</p>
+              </div>
+            </div>
+
+            {/* Floating location chip */}
+            <div style={{ position: "absolute", bottom: -12, right: -12, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", boxShadow: `0 6px 18px ${C.primaryGlow}`, display: "flex", alignItems: "center", gap: 6, animation: "mzv-doodle-bounce 4s ease-in-out infinite" }}>
+              <MapPin size={12} style={{ color: C.accent }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>Mumbai, IN</span>
+            </div>
           </div>
         </div>
       </div>
