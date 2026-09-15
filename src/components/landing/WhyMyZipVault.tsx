@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { C } from "./theme";
-import { Stethoscope, ShieldCheck, UserCircle, Users } from "@/lib/icons";
+import { Stethoscope, ShieldCheck, User, Users } from "@/lib/icons";
 
 export function WhyMyZipVault() {
   const [isDesktop, setIsDesktop] = useState(true);
@@ -10,7 +10,7 @@ export function WhyMyZipVault() {
   const pillars = [
     { icon: Stethoscope, title: "Healthcare-only", body: "Everyone belongs to the healthcare ecosystem. No generic professional noise — just your people.", color: C.primary },
     { icon: ShieldCheck, title: "Verified", body: "Credentials and professional identity matter. Every license, certification, and reference is verified.", color: C.primary },
-    { icon: UserCircle, title: "Professional identity", body: "More than a résumé. A living profile that captures who you are as a healthcare professional.", color: C.primary },
+    { icon: User, title: "Professional identity", body: "More than a résumé. A living profile that captures who you are as a healthcare professional.", color: C.primary },
     { icon: Users, title: "Real connections", body: "Connect with people who understand healthcare — your colleagues, mentors, and next opportunity.", color: C.primary },
   ];
 

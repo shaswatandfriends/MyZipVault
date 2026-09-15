@@ -1,17 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { C } from "./theme";
-import { UserCircle, ShieldCheck, Users, Compass } from "@/lib/icons";
+import { User, ShieldCheck, Users, Search } from "@/lib/icons";
 
 export function HowItWorks() {
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => { const onResize = () => setIsDesktop(window.innerWidth > 768); window.addEventListener("resize", onResize); onResize(); return () => window.removeEventListener("resize", onResize); }, []);
 
   const steps = [
-    { num: "01", icon: UserCircle, title: "Create", desc: "Build your professional identity — name, specialty, credentials, experience, and interests.", color: C.primary },
+    { num: "01", icon: User, title: "Create", desc: "Build your professional identity — name, specialty, credentials, experience, and interests.", color: C.primary },
     { num: "02", icon: ShieldCheck, title: "Verify", desc: "Add credentials, licenses, and references. Get verified and earn trust badges on your profile.", color: C.primary },
     { num: "03", icon: Users, title: "Connect", desc: "Meet healthcare professionals and organizations. Join specialty communities. Build your network.", color: C.primary },
-    { num: "04", icon: Compass, title: "Discover", desc: "Find opportunities, talent, communities, and resources — all within the healthcare ecosystem.", color: C.primary },
+    { num: "04", icon: Search, title: "Discover", desc: "Find opportunities, talent, communities, and resources — all within the healthcare ecosystem.", color: C.primary },
   ];
 
   return (
