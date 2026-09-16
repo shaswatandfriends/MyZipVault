@@ -1298,6 +1298,7 @@ model CandidateRecord {
   id                       Int       @id @default(autoincrement())
   public_id                String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   first_name               String?
+  middle_name              String?
   last_name                String?
   city                     String?
   state                    String?

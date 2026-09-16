@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         // Relations
         candidate: {
           id: s.candidate_record.id,
-          fullName: [s.candidate_record.first_name, s.candidate_record.last_name].filter(Boolean).join(" ") || "—",
+          fullName: [s.candidate_record.first_name, s.candidate_record.middle_name, s.candidate_record.last_name].filter(Boolean).join(" ") || "—",
           specialty: s.candidate_record.specialty,
           profession: s.candidate_record.profession,
           source: s.candidate_record.source,

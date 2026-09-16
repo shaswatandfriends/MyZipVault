@@ -466,7 +466,10 @@ export default function CandidateImportPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>
-            Required columns: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Name</code>,{" "}
+            Required columns:{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">First Name</code> and/or{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Last Name</code>{" "}
+            (or a single <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Name</code> column — auto-split into first + last),{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Number</code> (or Email — at least one is required),{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">City</code>,{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">State</code>,{" "}
@@ -474,9 +477,16 @@ export default function CandidateImportPage() {
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Specialty</code>.
           </p>
           <p>
+            Optional:{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Middle Name</code>{" "}
+            (can be left blank for any row).
+          </p>
+          <p>
             Column matching is flexible — common variations are accepted (e.g.,{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Phone</code> instead of{" "}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Number</code>, typos like{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Number</code>,{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Surname</code> instead of{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Last Name</code>, typos like{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">jobtittle</code> and{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-xs">specility</code> are handled).
           </p>

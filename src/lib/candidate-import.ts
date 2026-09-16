@@ -25,7 +25,12 @@ import { splitName } from "@/lib/csv-parser";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 export interface CandidateImportRow {
-  name: string;
+  // Three-column name format (preferred)
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  // Legacy single-column name (fallback)
+  name?: string;
   email?: string;
   phone?: string;
   city?: string;
@@ -53,6 +58,7 @@ interface ValidationResult {
   error?: string;
   normalized: {
     firstName: string;
+    middleName: string;
     lastName: string;
     email: string | null;
     emailDisplay: string | null;
@@ -71,9 +77,33 @@ interface ValidationResult {
 }
 
 function validateAndNormalizeRow(row: CandidateImportRow): ValidationResult {
-  // Required: name + (email OR phone)
+  // Required: at least one name source + (email OR phone)
+  // Prefer 3-column format; fall back to single "name" column
+  const firstNameCol = (row.first_name ?? "").trim();
+  const middleNameCol = (row.middle_name ?? "").trim();
+  const lastNameCol = (row.last_name ?? "").trim();
   const fullName = (row.name ?? "").trim();
-  if (!fullName) {
+
+  let firstName: string;
+  let middleName: string = "";
+  let lastName: string;
+
+  if (firstNameCol || lastNameCol) {
+    // 3-column format
+    firstName = firstNameCol;
+    middleName = middleNameCol;
+    lastName = lastNameCol;
+  } else if (fullName) {
+    // Legacy single-column "Name" — split it
+    const split = splitName(fullName);
+    firstName = split.firstName;
+    lastName = split.lastName;
+  } else {
+    return { ok: false, error: "Name is required (provide First Name / Last Name, or Name)", normalized: null };
+  }
+
+  // Must have at least a first or last name after parsing
+  if (!firstName && !lastName) {
     return { ok: false, error: "Name is required", normalized: null };
   }
 
@@ -95,12 +125,11 @@ function validateAndNormalizeRow(row: CandidateImportRow): ValidationResult {
     return { ok: false, error: `Invalid phone format: "${phone}" (expected US format)`, normalized: null };
   }
 
-  const { firstName, lastName } = splitName(fullName);
-
   return {
     ok: true,
     normalized: {
       firstName,
+      middleName,
       lastName,
       email: normalizedEmail,
       emailDisplay: email.toLowerCase(),
@@ -219,6 +248,7 @@ export async function importCandidateBatch(
         const newRecord = await tx.candidateRecord.create({
           data: {
             first_name: normalized.firstName,
+            middle_name: normalized.middleName || null,
             last_name: normalized.lastName,
             city: normalized.city,
             state: normalized.state,

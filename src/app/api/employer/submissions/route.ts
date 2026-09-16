@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
           ? `${s.recruiter.first_name?.[0] ?? ""}${s.recruiter.last_name?.[0] ?? ""}`.toUpperCase()
           : null;
 
-        const candidateName = [s.candidate_record.first_name, s.candidate_record.last_name]
+        const candidateName = [s.candidate_record.first_name, s.candidate_record.middle_name, s.candidate_record.last_name]
           .filter(Boolean).join(" ") || "—";
 
         return {

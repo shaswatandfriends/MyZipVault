@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         matched_field: existingContact.type, // 'email' or 'phone'
         candidate: {
           id: rec.id,
-          fullName: [rec.first_name, rec.last_name].filter(Boolean).join(" "),
+          fullName: [rec.first_name, rec.middle_name, rec.last_name].filter(Boolean).join(" "),
           city: rec.city,
           state: rec.state,
           jobTitle: rec.job_title,

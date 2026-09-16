@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         return {
           id: c.id,
           public_id: c.public_id,
-          fullName: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+          fullName: [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ") || "—",
           city: c.city, state: c.state,
           jobTitle: c.job_title, specialty: c.specialty, profession: c.profession,
           source: c.source,

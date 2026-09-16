@@ -10,7 +10,10 @@
  * the API receives it in chunks of ~1000 rows.
  *
  * Column matching is flexible — handles case variations and common typos:
- *   "Name" / "name" / "Full Name" / "full_name" → name
+ *   "First Name" / "FirstName" / "first_name" / "Given Name" → first_name
+ *   "Middle Name" / "MiddleName" / "MI" → middle_name
+ *   "Last Name" / "LastName" / "Surname" → last_name
+ *   "Name" / "Full Name" / "full_name" → name (legacy single-column fallback)
  *   "Number" / "Phone" / "phone_number" / "mobile" → phone
  *   "Email" / "email_address" → email
  *   "City" → city
@@ -21,13 +24,18 @@
 
 // ─── Flexible column name matcher ──────────────────────────────────────
 const COLUMN_ALIASES: Record<string, string[]> = {
+  // Three-column name format (preferred for new imports)
+  first_name: ["first name", "firstname", "first_name", "given name", "givenname", "fname"],
+  middle_name: ["middle name", "middlename", "middle_name", "mname", "m.i.", "mi"],
+  last_name: ["last name", "lastname", "last_name", "surname", "family name", "lname"],
+  // Single-column name (legacy / fallback) — still supported
   name: ["name", "full name", "fullname", "full_name", "candidate name", "candidate"],
   phone: ["number", "phone", "phone number", "phone_number", "mobile", "mobile number", "cell", "contact", "contact number", "tel", "telephone"],
   email: ["email", "email address", "email_address", "e-mail", "e-mail address", "mail"],
   city: ["city", "town", "locality"],
   state: ["state", "region", "province", "st"],
   job_title: ["job title", "jobtitle", "jobtittle", "title", "role", "position", "designation", "job"],
-  specialty: ["specialty", "speciality", "specility", "specialization", "specialization", "department", "field"],
+  specialty: ["specialty", "speciality", "specility", "specialization", "department", "field"],
   profession: ["profession", "professional area", "category", "domain"],
   years_of_experience: ["years of experience", "experience", "experience years", "yoe", "years"],
   license_number: ["license number", "license", "license_no", "lic no", "lic", "registration number"],

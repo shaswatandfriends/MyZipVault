@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { first_name: { ilike: `%${search}%` } },
+        { middle_name: { ilike: `%${search}%` } },
         { last_name: { ilike: `%${search}%` } },
         { contact_info: { some: { value_normalized: { ilike: `%${search.toLowerCase().trim()}%` } } } },
       ];
@@ -251,8 +252,9 @@ export async function GET(request: NextRequest) {
         return {
           id: c.id,
           public_id: c.public_id,
-          fullName: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+          fullName: [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ") || "—",
           firstName: c.first_name,
+          middleName: c.middle_name,
           lastName: c.last_name,
           city: c.city,
           state: c.state,

@@ -136,7 +136,7 @@ export async function GET() {
 
     // ── 5. Recent submissions (last 10) ──
     const recentSubmissions = submissions.slice(0, 10).map((s) => {
-      const candidateName = [s.candidate_record.first_name, s.candidate_record.last_name]
+      const candidateName = [s.candidate_record.first_name, s.candidate_record.middle_name, s.candidate_record.last_name]
         .filter(Boolean).join(" ") || "—";
       const recruiterInitials = s.recruiter
         ? `${s.recruiter.first_name?.[0] ?? ""}${s.recruiter.last_name?.[0] ?? ""}`.toUpperCase()
