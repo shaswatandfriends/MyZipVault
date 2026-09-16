@@ -2783,3 +2783,78 @@ select:focus {
   button { display: none !important; }
   body { background: white !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   DASHBOARD POLISH — fixes from VLM audit of candidate dashboard
+   ════════════════════════════════════════════════════════════════════ */
+
+/* 1. Progress bar — brand teal (was salmon/red) */
+[data-slot="progress-indicator"] {
+  background: var(--primary) !important;
+}
+
+/* 2. All "View All" / "View all" links — brand teal (was web blue) */
+a[href*="view"], a[href*="credentials"], a[href*="references"],
+a[href*="resume"], a[href*="checklists"], a[href*="sharing"],
+a[href*="calendar"], a[href*="vaultsign"], a[href*="browse"],
+a[href*="settings"], a[href*="dashboard"] {
+  color: var(--primary) !important;
+}
+a[href*="view"]:hover, a[href*="credentials"]:hover,
+a[href*="references"]:hover, a[href*="resume"]:hover {
+  color: var(--primary-hover) !important;
+}
+
+/* 3. Card depth — stronger shadow for better lift */
+[data-slot="card"] {
+  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.06), 0 1px 3px rgba(23, 74, 67, 0.04) !important;
+  transition: box-shadow 0.3s ease !important;
+}
+[data-slot="card"]:hover {
+  box-shadow: 0 8px 24px rgba(23, 74, 67, 0.10), 0 2px 8px rgba(23, 74, 67, 0.06) !important;
+}
+
+/* 4. Sidebar text — increase contrast for accessibility */
+[data-sidebar="sidebar"] a, [data-sidebar="sidebar"] span {
+  opacity: 1 !important;
+}
+.group-data-[collapsible=icon] .text-white\/30,
+.group-data-[collapsible=icon] .text-white\/35 {
+  color: rgba(247, 243, 232, 0.55) !important;
+}
+
+/* 5. Sidebar active state — more distinct */
+.spatial-nav-item-active {
+  background: rgba(143, 169, 156, 0.25) !important;
+  box-shadow: inset 2px 0 0 var(--sage) !important;
+}
+.spatial-nav-item-active span,
+.spatial-nav-item-active svg {
+  color: #F7F3E8 !important;
+}
+
+/* 6. Button gradient — less glossy, more matte */
+button[class*="bg-gradient"] {
+  background: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.15) !important;
+}
+button[class*="bg-gradient"]:hover {
+  background: var(--primary-hover) !important;
+  box-shadow: 0 4px 16px rgba(23, 74, 67, 0.20) !important;
+}
+
+/* 7. Hide duplicate help floaters — keep only one */
+.help-floater + .help-floater,
+[class*="HelpFloater"] + [class*="HelpFloater"] {
+  display: none !important;
+}
+
+/* 8. Stat number colors — brand-aligned (not warning colors) */
+[data-stat] .text-red-500, [data-stat] .text-amber-500 {
+  color: var(--primary) !important;
+}
+
+/* 9. Hero banner gradient — vibrant brand teal (not muddy) */
+[style*="linear-gradient"][style*="174A43"] {
+  filter: saturate(1.15) brightness(1.02);
+}
