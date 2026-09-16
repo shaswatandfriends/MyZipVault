@@ -163,7 +163,7 @@ export default function CandidateDashboardPage() {
 
   // Polling interval — every 60s, never hides dashboard on failure
   useEffect(() => {
-    pollingRef.current = setInterval(() => poll(), 60_000);
+    pollingRef.current = setInterval(() => poll(), 120_000);
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
       abortRef.current?.abort();
