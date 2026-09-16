@@ -2858,3 +2858,82 @@ button[class*="bg-gradient"]:hover {
 [style*="linear-gradient"][style*="174A43"] {
   filter: saturate(1.15) brightness(1.02);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   CONTRAST FIXES — make all text readable per WCAG AA standards
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── Hero banner text — increase opacity ─── */
+/* Subtitle text under greeting */
+[style*="rgba(23,74,67"] p[style*="white/70"],
+[style*="rgba(23,74,67"] .text-white\/70 {
+  color: rgba(247, 243, 232, 0.85) !important;
+}
+
+/* Helper text under progress bar ("Keep going!") */
+[style*="rgba(23,74,67"] .text-white\/50,
+[style*="rgba(23,74,67"] p[style*="white/50"] {
+  color: rgba(247, 243, 232, 0.75) !important;
+}
+
+/* Inactive step labels in hero ("Upload Resume", "Complete References") */
+[style*="rgba(23,74,67"] .text-white\/50:not(.text-white\/90) {
+  color: rgba(247, 243, 232, 0.65) !important;
+}
+
+/* ─── Sidebar — increase text contrast ─── */
+/* User email at bottom of sidebar */
+[data-sidebar="sidebar"] .text-white\/30,
+[data-sidebar="sidebar"] .text-white\/35,
+[data-sidebar="sidebar"] .text-white\/40 {
+  color: rgba(247, 243, 232, 0.60) !important;
+}
+
+/* "Sign Out" button text */
+[data-sidebar="sidebar"] button .text-white\/40,
+[data-sidebar="sidebar"] button[class*="text-white"] {
+  color: rgba(247, 243, 232, 0.65) !important;
+}
+[data-sidebar="sidebar"] button:hover .text-white\/40,
+[data-sidebar="sidebar"] button:hover[class*="text-white"] {
+  color: rgba(247, 243, 232, 0.90) !important;
+}
+
+/* ─── Card secondary/helper text — increase contrast on ivory bg ─── */
+/* "Keep going!", "0 verified", "Pending", "VaultSign" labels */
+.text-text-muted,
+[class*="text-muted"],
+.text-text-secondary {
+  color: rgba(38, 54, 51, 0.70) !important;
+}
+
+/* Light gray descriptive text in cards */
+p[style*="text-muted"],
+p[class*="text-muted"],
+p[style*="color: var(--text-muted)"] {
+  color: rgba(38, 54, 51, 0.70) !important;
+}
+
+/* "Follow up on your reference requests" etc. */
+p[style*="color: var(--text-secondary)"] {
+  color: rgba(38, 54, 51, 0.75) !important;
+}
+
+/* ─── Recent activity timestamps ─── */
+.text-text-dim,
+[class*="text-dim"],
+[class*="text-text-dim"] {
+  color: rgba(38, 54, 51, 0.55) !important;
+}
+
+/* ─── Global — force minimum contrast ─── */
+/* Any element with opacity < 50% gets bumped */
+.text-white\/25 { color: rgba(255, 255, 255, 0.55) !important; }
+.text-white\/30 { color: rgba(255, 255, 255, 0.60) !important; }
+.text-white\/35 { color: rgba(255, 255, 255, 0.60) !important; }
+.text-white\/40 { color: rgba(255, 255, 255, 0.65) !important; }
+.text-white\/50 { color: rgba(255, 255, 255, 0.70) !important; }
+
+/* Dark text on light bg — minimum 55% opacity */
+.text-text-dim { color: rgba(38, 54, 51, 0.55) !important; }
+.text-text-muted { color: rgba(38, 54, 51, 0.70) !important; }
