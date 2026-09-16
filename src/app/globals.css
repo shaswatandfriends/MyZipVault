@@ -2937,3 +2937,93 @@ p[style*="color: var(--text-secondary)"] {
 /* Dark text on light bg — minimum 55% opacity */
 .text-text-dim { color: rgba(38, 54, 51, 0.55) !important; }
 .text-text-muted { color: rgba(38, 54, 51, 0.70) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   SIDEBAR CONTRAST — fix invisible menu items
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Inactive nav items — increase icon + text opacity */
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) svg,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) .size-3\.5,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) [class*="size-"] {
+  color: rgba(247, 243, 232, 0.65) !important;
+  opacity: 1 !important;
+}
+
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) span,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) a {
+  color: rgba(247, 243, 232, 0.70) !important;
+  opacity: 1 !important;
+}
+
+/* Hover state — brighten inactive items */
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover svg,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover [class*="size-"] {
+  color: rgba(247, 243, 232, 0.90) !important;
+}
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover span,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover a {
+  color: rgba(247, 243, 232, 0.95) !important;
+}
+
+/* Section headers (OVERVIEW, MANAGE, etc.) — more visible */
+[data-sidebar="sidebar"] .text-white\/25,
+[data-sidebar="sidebar"] p[class*="text-white\/25"],
+[data-sidebar="sidebar"] p[class*="tracking"][class*="text-white"] {
+  color: rgba(247, 243, 232, 0.45) !important;
+  opacity: 1 !important;
+}
+
+/* All sidebar icons — minimum 65% opacity */
+[data-sidebar="sidebar"] [class*="size-3"],
+[data-sidebar="sidebar"] [class*="size-4"],
+[data-sidebar="sidebar"] [class*="size-5"] {
+  opacity: 1 !important;
+}
+
+/* Nav group section titles */
+[data-sidebar="sidebar"] .px-3\.5.pt-2,
+[data-sidebar="sidebar"] .px-3.pt-2 {
+  color: rgba(247, 243, 232, 0.45) !important;
+}
+
+/* Collapsible group headers (Marketplace, Book of Business, etc.) */
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="font-medium"],
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="font-bold"] {
+  color: rgba(247, 243, 232, 0.80) !important;
+}
+
+/* Group header icons */
+[data-sidebar="sidebar"] .spatial-nav-group-header svg,
+[data-sidebar="sidebar"] [class*="size-4"][class*="text-white"] {
+  color: rgba(247, 243, 232, 0.70) !important;
+}
+
+/* "Take a tour" button — more visible */
+[data-sidebar="sidebar"] button[onclick*="tour"] {
+  color: rgba(247, 243, 232, 0.70) !important;
+}
+[data-sidebar="sidebar"] button[onclick*="tour"] svg {
+  color: rgba(217, 143, 120, 0.80) !important;
+}
+[data-sidebar="sidebar"] button[onclick*="tour"]:hover {
+  color: rgba(247, 243, 232, 0.95) !important;
+  background: rgba(247, 243, 232, 0.08) !important;
+}
+
+/* Theme toggle + notification bell — more visible */
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="size-4"],
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="size-5"] {
+  color: rgba(247, 243, 232, 0.70) !important;
+}
+
+/* Active nav item — sage accent bar + brighter text */
+.spatial-nav-item-active {
+  background: rgba(143, 169, 156, 0.22) !important;
+  border-left: 3px solid rgba(143, 169, 156, 0.80) !important;
+}
+.spatial-nav-item-active span,
+.spatial-nav-item-active a,
+.spatial-nav-item-active [class*="size-"] {
+  color: #F7F3E8 !important;
+}
