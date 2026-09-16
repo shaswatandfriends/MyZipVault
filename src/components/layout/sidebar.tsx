@@ -380,7 +380,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
-              <p className="px-3 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase">
+              <p className="px-3 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/45 uppercase">
                 {section.title}
               </p>
               {/* Section items */}
@@ -401,7 +401,7 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "spatial-nav-item text-[11px] py-1",
+                      "spatial-nav-item text-xs py-1",
                       isActive && "spatial-nav-item-active"
                     )}
                   >
@@ -493,7 +493,7 @@ export function AppSidebar() {
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
             <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto shrink-0" />
             {label && (
-              <span className="text-[9px] text-white/35 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
+              <span className="text-xs text-white/45 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
                 {label}
               </span>
             )}
@@ -621,7 +621,7 @@ export function AppSidebar() {
                       {sectionLabel && (
                         <>
                           {index > 0 && <div className="my-1.5 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
-                          <p className="px-3.5 pt-2 pb-1 text-[9px] font-bold tracking-[0.18em] text-white/25 uppercase group-data-[collapsible=icon]:hidden">
+                          <p className="px-3.5 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/45 uppercase group-data-[collapsible=icon]:hidden">
                             {sectionLabel}
                           </p>
                         </>
@@ -700,13 +700,13 @@ export function AppSidebar() {
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
               }}
             >
-              <span className="text-[10px] font-semibold text-white">{initials}</span>
+              <span className="text-xs font-semibold text-white">{initials}</span>
             </div>
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <p className="truncate text-xs font-medium text-white/80 leading-tight">
                 {displayName}
               </p>
-              <p className="truncate text-[9px] text-white/30 leading-tight" title={user?.email ?? ""}>
+              <p className="truncate text-xs text-white/60 leading-tight" title={user?.email ?? ""}>
                 {user?.email}
               </p>
             </div>
