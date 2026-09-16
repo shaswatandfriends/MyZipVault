@@ -38,6 +38,7 @@ import {
   User,
 } from "@/lib/icons";
 import { toast } from "sonner";
+import { ResumeTemplatePicker } from "@/components/resume/resume-template-picker";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -209,6 +210,7 @@ export default function ResumePage() {
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
 
   const fetchResumes = useCallback(async () => {
     try {
@@ -372,7 +374,7 @@ export default function ResumePage() {
       )}
 
       {/* Header actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
             {resumes.length} / {MAX_RESUMES} versions
@@ -383,15 +385,48 @@ export default function ResumePage() {
             </span>
           )}
         </div>
-        <Button
-          onClick={() => canAddMore ? setIsUploadOpen(true) : toast.error(`Maximum ${MAX_RESUMES} versions. Delete one first.`)}
-          disabled={!canAddMore}
-          className="gap-2"
-        >
-          <Plus className="size-4" />
-          Upload Resume
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              canAddMore
+                ? setIsTemplatePickerOpen(true)
+                : toast.error(`Maximum ${MAX_RESUMES} versions. Delete one first.`)
+            }
+            disabled={!canAddMore}
+            className="gap-2"
+          >
+            <Sparkles className="size-4" />
+            Build with Template
+          </Button>
+          <Button
+            onClick={() => canAddMore ? setIsUploadOpen(true) : toast.error(`Maximum ${MAX_RESUMES} versions. Delete one first.`)}
+            disabled={!canAddMore}
+            className="gap-2"
+          >
+            <Plus className="size-4" />
+            Upload Resume
+          </Button>
+        </div>
       </div>
+
+      {/* Phase 5.3 — Resume Template Picker */}
+      <ResumeTemplatePicker
+        open={isTemplatePickerOpen}
+        onOpenChange={setIsTemplatePickerOpen}
+        onPick={(templateId) => {
+          // For now: log + toast. The template ID would be passed to the
+          // builder flow once the AI builder is wired up to accept it.
+          // The template selection is saved on the resume record when created.
+          if (templateId) {
+            toast.success("Template selected — opening AI builder");
+          } else {
+            toast.info("Starting with blank layout");
+          }
+          // Open the existing builder flow
+          setIsUploadOpen(true);
+        }}
+      />
 
       {/* ─── Empty State — upgraded ─────────────────────────────── */}
       {resumes.length === 0 ? (

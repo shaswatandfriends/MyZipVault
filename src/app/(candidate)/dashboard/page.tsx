@@ -268,27 +268,37 @@ export default function CandidateDashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* Next Best Action */}
-        <div className="lg:w-[280px] shrink-0 rounded-[20px] p-5" style={{ background: "var(--material-regular-bg)", backdropFilter: "var(--material-regular-blur)", WebkitBackdropFilter: "var(--material-regular-blur)", border: "0.5px solid var(--material-regular-border)", boxShadow: "var(--specular-top), var(--depth-floating)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--terra)" }}>Next Best Action</p>
-          <h3 className="text-base font-bold mt-1 font-heading" style={{ color: "var(--text-primary)" }}>{nextAction.label}</h3>
-          <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{nextAction.desc}</p>
-          <Button asChild className="w-full mt-4"><Link href={nextAction.href}>{nextAction.btn}<ArrowRight className="size-4" /></Link></Button>
-        </div>
       </div>
 
-      {/* ════ SECTION 2: ACTION CENTER ════ */}
-      {actionItems.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="size-7 rounded-[8px] flex items-center justify-center" style={statIconStyle("terra")}><Bell className="size-3.5" /></div>
-                <h3 className="text-sm font-bold font-heading">Action Center</h3>
-              </div>
-              <Badge variant="destructive" className="text-xs">{pendingItemCount}</Badge>
+      {/* ════ SECTION 2: ACTION CENTER (merged with former Next Best Action) ════ */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="size-7 rounded-[8px] flex items-center justify-center" style={statIconStyle("terra")}><Bell className="size-3.5" /></div>
+              <h3 className="text-sm font-bold font-heading">Action Center</h3>
             </div>
+            {pendingItemCount > 0 && <Badge variant="destructive" className="text-xs">{pendingItemCount}</Badge>}
+          </div>
+
+          {/* Recommended next step — promoted from former "Next Best Action" */}
+          <div className="mb-3 rounded-[12px] p-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(23,74,67,0.06) 0%, rgba(217,143,120,0.06) 100%)", border: "1px solid rgba(23,74,67,0.18)" }}>
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,143,120,0.12) 0%, rgba(217,143,120,0) 70%)", filter: "blur(20px)" }} />
+            <div className="relative z-10 flex items-start gap-3">
+              <div className="size-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: "var(--primary)", color: "#fff" }}>
+                <Sparkles className="size-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--terra)" }}>Recommended next step</p>
+                <h4 className="text-sm font-bold mt-0.5 font-heading" style={{ color: "var(--text-primary)" }}>{nextAction.label}</h4>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{nextAction.desc}</p>
+                <Button asChild size="sm" className="mt-2.5 h-8 gap-1.5"><Link href={nextAction.href}>{nextAction.btn}<ArrowRight className="size-3.5" /></Link></Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending items list */}
+          {actionItems.length > 0 ? (
             <div className="space-y-2">
               {actionItems.map((item, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-[10px]" style={{ background: "var(--material-thin-bg)" }}>
@@ -307,9 +317,14 @@ export default function CandidateDashboardPage() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="flex items-center gap-2.5 p-3 rounded-[10px]" style={{ background: "var(--material-thin-bg)" }}>
+              <CheckCircle2 className="size-4 shrink-0" style={{ color: "var(--primary)" }} />
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>You're all caught up. No pending actions.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ════ SECTION 3: AT A GLANCE ════ */}      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
