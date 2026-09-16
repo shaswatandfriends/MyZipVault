@@ -222,7 +222,7 @@ export default function SuperadminDashboardPage() {
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    const interval = setInterval(fetchDashboard, 60000);
+    const interval = setInterval(fetchDashboard, 120000) // 2 min (was 1 min);
     return () => clearInterval(interval);
   }, [fetchDashboard]);
 

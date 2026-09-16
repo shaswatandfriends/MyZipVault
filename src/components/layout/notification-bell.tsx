@@ -206,7 +206,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     }
   }, []);
 
-  useNotificationStream(handleSSEEvent, !!role);
+  useNotificationStream(handleSSEEvent, false // SSE disabled on Vercel serverless — polling only;
 
   const poll = useCallback(async () => {
     if (!apiEndpoint) return;
@@ -237,7 +237,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     // Initial fetch
     poll();
     // Poll every 30 seconds
-    const interval = setInterval(poll, 30000);
+    const interval = setInterval(poll, 60000) // Poll every 60s (was 30s — reduces Vercel invocations);
     return () => {
       clearInterval(interval);
       abortRef.current?.abort();
