@@ -45,7 +45,11 @@ export function verifyCronAuth(request: Request): NextResponse | null {
     ? authHeader.slice("Bearer ".length)
     : null;
 
-  if (providedSecret !== cronSecret && bearerToken !== cronSecret) {
+  // Check ?secret= query parameter (for cron-job.org — no header config needed)
+  const url = new URL(request.url);
+  const querySecret = url.searchParams.get("secret");
+
+  if (providedSecret !== cronSecret && bearerToken !== cronSecret && querySecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
