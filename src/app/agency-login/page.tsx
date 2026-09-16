@@ -99,22 +99,8 @@ export default function AgencyLoginPage() {
         <div className="max-w-[460px] w-full relative">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-10">
-            <div
-              className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
-              style={{
-                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
-                fontFamily: "'Lora', serif",
-              }}
-            >
-              M
-            </div>
-            <h2
-              className="text-2xl font-bold text-foreground"
-              style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
-            >
-              MyZipVault
-            </h2>
+            <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto mx-auto mb-3" />
+            
           </div>
 
           {/* Eyebrow */}
