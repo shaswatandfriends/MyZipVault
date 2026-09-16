@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -67,7 +67,7 @@ function getEmploymentBadge(type: string | null) {
   return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
 }
 
-export default function RecruiterJobsPage() {
+function RecruiterJobsContent() {
   const searchParams = useSearchParams();
   const filter = searchParams.get("filter") || "";
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -287,5 +287,13 @@ export default function RecruiterJobsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function RecruiterJobsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading jobs...</div>}>
+      <RecruiterJobsContent />
+    </Suspense>
   );
 }
