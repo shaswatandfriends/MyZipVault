@@ -311,7 +311,7 @@ export default function RecruiterDashboardPage() {
 
       {/* ── Dashboard Hero ── */}
       <DashboardHero
-        name={user?.firstName || "Recruiter"}
+        name="Recruiter"
         subtitle="Track your pipeline, manage requests, and connect with verified healthcare talent."
       />
 
