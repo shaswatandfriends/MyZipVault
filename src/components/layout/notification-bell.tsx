@@ -206,7 +206,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
     }
   }, []);
 
-  useNotificationStream(handleSSEEvent, false // SSE disabled on Vercel serverless — polling only;
+  useNotificationStream(handleSSEEvent, false); // SSE disabled on Vercel serverless
 
   const poll = useCallback(async () => {
     if (!apiEndpoint) return;
