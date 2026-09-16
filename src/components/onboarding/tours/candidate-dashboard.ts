@@ -1,29 +1,14 @@
 import type { TourStep } from "@/components/onboarding/tour";
 
 /**
- * Candidate Dashboard Onboarding Tour — 12 steps.
- *
- * Auto-starts on first dashboard load if User.onboarding_tour_completed_at
- * is null. Can be re-triggered via "Take a tour" button in sidebar.
- *
- * Targets use CSS selectors that match the live sidebar items rendered by
- * src/components/layout/sidebar.tsx. Each step highlights the sidebar link
- * so the candidate learns where each feature lives.
- *
- * Phase 6.2 of EXECUTION-PLAN.
+ * Candidate Dashboard Onboarding Tour — 10 steps.
+ * Targets use CSS selectors that match real sidebar items.
  */
 export const CANDIDATE_DASHBOARD_TOUR: TourStep[] = [
   {
-    target: "[data-tour='profile-completion']",
-    title: "Complete your profile",
-    description:
-      "Your profile completion percentage drives recruiter trust. Upload a resume, add credentials, and complete your skills checklist to reach 100%.",
-  },
-  {
     target: "a[href='/dashboard']",
     title: "Dashboard",
-    description:
-      "Your home base — see pending requests, recent activity, and profile completion at a glance.",
+    description: "Your home base — see pending requests, recent activity, and profile completion at a glance.",
   },
   {
     target: "a[href='/browse-jobs']",
@@ -33,8 +18,7 @@ export const CANDIDATE_DASHBOARD_TOUR: TourStep[] = [
   {
     target: "a[href='/checklists']",
     title: "Skills Checklists",
-    description:
-      "Complete your profession-specific skills checklist once, share it with any recruiter, forever. Auto-shared with the requesting recruiter on submit.",
+    description: "Complete your profession-specific skills checklist once, share it with any recruiter, forever.",
   },
   {
     target: "a[href='/calendar']",
@@ -49,7 +33,7 @@ export const CANDIDATE_DASHBOARD_TOUR: TourStep[] = [
   {
     target: "a[href='/vault/credentials']",
     title: "Credentials",
-    description: "Upload BLS, ACLS, licenses, COVID cards, immunizations. We track expiration dates and notify you and your recruiter before they lapse.",
+    description: "Upload BLS, ACLS, licenses, COVID cards, immunizations. We track expiration dates and notify you before they lapse.",
   },
   {
     target: "a[href='/vault/resume']",
@@ -65,11 +49,6 @@ export const CANDIDATE_DASHBOARD_TOUR: TourStep[] = [
     target: "a[href='/sharing']",
     title: "Sharing",
     description: "Control who sees your data and for how long. Revoke access anytime. Auto-shares are listed here for easy revocation.",
-  },
-  {
-    target: "a[href='/connections']",
-    title: "Connections",
-    description: "Recruiter invitations and messages appear here. Accept to open a chat — deny to keep your data private.",
   },
   {
     target: "a[href='/settings']",
