@@ -261,7 +261,7 @@ export default function CandidateDashboardPage() {
             <div className="flex flex-wrap gap-3 mt-4">
               {steps.map((step, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  {step.done ? <CheckCircle2 className="size-4" style={{ color: "var(--badge-green)" }} /> : <div className="size-4 rounded-full border-2 border-white/30" />}
+                  {step.done ? <CheckCircle2 className="size-5" style={{ color: "#8FA99C" }} /> : <div className="size-5 rounded-full border-2 border-white/60 flex items-center justify-center"><div className="size-1.5 rounded-full bg-white/40" /></div>}
                   <span className={`text-xs ${step.done ? "text-white/90" : "text-white/50"}`}>{step.label}</span>
                 </div>
               ))}
