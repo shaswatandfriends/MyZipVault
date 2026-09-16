@@ -489,17 +489,14 @@ export function AppSidebar() {
           className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-4"
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
-          {/* Logo + Brand */}
+          {/* Logo — image already contains "MyZipVault" wordmark */}
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
-            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto shrink-0 rounded-[6px]" />
-            <div className="flex flex-col gap-0.5 min-w-0 group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium leading-tight text-white" style={{ fontFamily: "'Lora', serif" }}>
-                MyZipVault
-              </span>
-              <span className="text-[9px] text-white/35 uppercase tracking-[0.12em] font-semibold">
+            <img src="/logo.png" alt="MyZipVault" className="h-9 w-auto shrink-0" />
+            {label && (
+              <span className="text-[9px] text-white/35 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
                 {label}
               </span>
-            </div>
+            )}
           </div>
 
           {/* Collapse/Expand button */}

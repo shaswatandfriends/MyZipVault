@@ -131,20 +131,14 @@ export default function AuthSlideshowPanel({
 
       {/* Content — z-10 with relative positioning */}
       <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
-        {/* Top: Logo + brand */}
+        {/* Top: Logo (image already contains the wordmark) */}
         <div className="flex items-center gap-3">
           <img
             src="/logo.png"
             alt={platformName}
-            className="h-12 w-auto object-contain"
+            className="h-14 w-auto object-contain"
             style={{ filter: "brightness(0) invert(1)" }}
           />
-          <span
-            className="text-2xl font-bold text-white"
-            style={{ fontFamily: "'Lora', serif", letterSpacing: "-0.02em" }}
-          >
-            {platformName}
-          </span>
         </div>
 
         {/* Middle: Tagline + trust points */}
