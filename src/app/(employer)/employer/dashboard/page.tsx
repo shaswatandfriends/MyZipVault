@@ -1,4 +1,5 @@
 "use client";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -210,6 +211,10 @@ export default function EmployerDashboard() {
 
   return (
     <div className="space-y-6">
+      <DashboardHero
+        name={user?.firstName || "Employer"}
+        subtitle="Track your jobs, submissions, and placements in one place."
+      />
       <PageHeader
         title="Dashboard"
         description="Track your jobs, submissions, and placements in one place."

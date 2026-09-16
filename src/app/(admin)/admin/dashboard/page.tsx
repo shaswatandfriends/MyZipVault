@@ -1,4 +1,5 @@
 "use client";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -200,6 +201,10 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-3">
+      <DashboardHero
+        name="Admin"
+        subtitle="Platform administration overview. Monitor users, documents, and system health."
+      />
       <PageHeader
         title="Dashboard"
         description="Platform administration overview. Monitor users, documents, and system health."

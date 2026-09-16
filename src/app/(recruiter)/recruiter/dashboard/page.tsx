@@ -23,6 +23,7 @@ import {
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { ReferralCard } from "@/components/shared/ReferralCard";
 import { TourHost } from "@/components/onboarding/tour-host";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import {
@@ -307,6 +308,13 @@ export default function RecruiterDashboardPage() {
   return (
     <div className="space-y-3">
       <TourHost />
+
+      {/* ── Dashboard Hero ── */}
+      <DashboardHero
+        name={user?.firstName || "Recruiter"}
+        subtitle="Track your pipeline, manage requests, and connect with verified healthcare talent."
+      />
+
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 

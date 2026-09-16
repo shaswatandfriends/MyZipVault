@@ -1,4 +1,5 @@
 "use client";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -301,6 +302,10 @@ export default function SuperadminDashboardPage() {
 
   return (
     <div className="space-y-6">
+      <DashboardHero
+        name="Super Admin"
+        subtitle="System-wide overview. Monitor all organizations, users, and platform health."
+      />
       {/* ── Header ── */}
       <PageHeader
         title="Dashboard"
