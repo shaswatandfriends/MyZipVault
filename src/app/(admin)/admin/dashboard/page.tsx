@@ -1,5 +1,4 @@
 "use client";
-import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -34,6 +33,7 @@ import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-s
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface DashboardData {

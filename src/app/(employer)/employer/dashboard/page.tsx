@@ -1,5 +1,4 @@
 "use client";
-import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -14,6 +13,7 @@ import {
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { ReferralCard } from "@/components/shared/ReferralCard";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface DashboardStats {
