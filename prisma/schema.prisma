@@ -119,6 +119,8 @@ model User {
   shift_requests_as_recruiter ShiftRequest[]   @relation("RecruiterShiftRequests")
   call_schedules         CallSchedule[]
   call_logs              CallLog[]
+  candidate_calendar_setting   CandidateCalendarSetting?
+  follow_up_reminders   FollowUpReminder[]
   reference_deletion_requests ReferenceDeletionRequest[] @relation("CandidateDeletionRequests")
   reference_deletion_reviewed ReferenceDeletionRequest[] @relation("AdminDeletionReviews")
 
@@ -802,6 +804,7 @@ model RecruiterLead {
   blacklisted_by         User?     @relation("RecruiterLeadBlacklistedBy", fields: [blacklisted_by_user_id], references: [id], onDelete: SetNull)
   call_schedules         CallSchedule[]
   call_logs              CallLog[]
+  follow_up_reminders    FollowUpReminder[]
   activities             RecruiterLeadActivity[]
   vault_sign_documents   VaultSignDocument[] @relation("VaultSignDocumentCandidateLead")
 
@@ -839,7 +842,7 @@ model CallSchedule {
   recruiter_user_id Int
   schedule_type     String?   // 'specific_date' | 'month_range' — null for legacy rows
   scheduled_date    DateTime? // Specific date/time (null for month-range)
-  scheduled_month   String?   // "2026-12" for month-range scheduling
+  scheduled_month   String?   // "12" for December (month-range scheduling)
   scheduled_year    Int?      // 2026 for month-range scheduling
   status            String    @default("scheduled") // scheduled, completed, rescheduled, cancelled, no_answer
   remark            String?
@@ -849,6 +852,7 @@ model CallSchedule {
   lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
   recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
   call_logs         CallLog[]
+  follow_up_reminders FollowUpReminder[]
 }
 
 // ─── 36. Call Logs ──────────────────────────────────────────────────
@@ -920,6 +924,53 @@ model ShiftRequest {
 
   recruiter_user    User      @relation("RecruiterShiftRequests", fields: [recruiter_user_id], references: [id])
   candidate_user    User      @relation("CandidateShiftRequests", fields: [candidate_user_id], references: [id])
+}
+
+// ─── 39b. Candidate Calendar Settings ─────────────────────────────────
+//    One row per candidate user. Stores calendar preferences and the
+//    "quick override" toggle that lets candidates temporarily bypass
+//    calendar rules (reset nightly by calendar-midnight cron).
+model CandidateCalendarSetting {
+  id                        Int       @id @default(autoincrement())
+  user_id                   Int       @unique
+  minimum_notice_hours      Int?
+  shift_duration_preference String?
+  response_deadline_hours   Int?
+  preferred_facilities      String?   // JSON array stored as text
+  availability_status       String    @default("open")
+  quick_override_active     Boolean   @default(false)
+  quick_override_date       DateTime?
+  created_at                DateTime  @default(now())
+  updated_at                DateTime  @default(now())
+
+  user                      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([quick_override_active, quick_override_date])
+}
+
+// ─── 39c. Follow-Up Reminders ──────────────────────────────────────────
+//    Scheduled reminders for recruiters to follow up with leads.
+//    Created when a CallSchedule is made. calendar-reminders cron
+//    processes them when due and creates notifications.
+model FollowUpReminder {
+  id                Int       @id @default(autoincrement())
+  lead_id           Int
+  call_schedule_id  Int?
+  recruiter_user_id Int
+  reminder_type     String    // 'day_before' | 'day_of' | 'thirty_min_after' | 'day_after_no_update' | 'month_range_daily'
+  scheduled_for     DateTime
+  status            String    @default("pending") // 'pending' | 'sent' | 'dismissed' | 'snoozed'
+  snoozed_until     DateTime?
+  created_at        DateTime  @default(now())
+
+  lead              RecruiterLead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  call_schedule     CallSchedule? @relation(fields: [call_schedule_id], references: [id], onDelete: SetNull)
+  recruiter_user    User      @relation(fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+
+  @@index([lead_id])
+  @@index([recruiter_user_id])
+  @@index([call_schedule_id])
+  @@index([status, scheduled_for])
 }
 
 // ─── 40. VaultSign Templates ────────────────────────────────────────

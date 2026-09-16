@@ -1,4 +1,3 @@
-// @ts-nocheck — TODO(audit-2): pre-existing schema drift in legacy calendar/vaultsign/pdf code. Model names and fields don't match current Prisma schema. Suppressing to enable strict TS on clean files. Fix individually in a follow-up session.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron-auth";
@@ -85,25 +84,36 @@ export async function GET(request: Request) {
       // For month_range_daily: auto-create next day's reminder if still active
       if (reminder.reminder_type === "month_range_daily" && reminder.call_schedule) {
         const schedule = reminder.call_schedule;
-        if (schedule.status === "pending" && schedule.scheduled_month && schedule.scheduled_year) {
-          const nextDay = new Date(reminder.scheduled_for);
-          nextDay.setDate(nextDay.getDate() + 1);
+        // Status 'scheduled' is the active state per CallSchedule schema.
+        // scheduled_month is stored as a numeric string ("12" for December)
+        // by the calendar routes (they do Number(scheduled_month)).
+        if (schedule.status === "scheduled" && schedule.scheduled_month && schedule.scheduled_year) {
+          const scheduleMonth = parseInt(String(schedule.scheduled_month), 10);
+          const scheduleYear = Number(schedule.scheduled_year);
 
-          // Check if next day is still within the target month
           if (
-            nextDay.getMonth() + 1 === schedule.scheduled_month &&
-            nextDay.getFullYear() === schedule.scheduled_year
+            !isNaN(scheduleMonth) &&
+            scheduleYear === schedule.scheduled_year
           ) {
-            await db.followUpReminder.create({
-              data: {
-                lead_id: reminder.lead_id,
-                call_schedule_id: reminder.call_schedule_id,
-                recruiter_user_id: reminder.recruiter_user_id,
-                reminder_type: "month_range_daily",
-                scheduled_for: nextDay,
-              },
-            });
-            monthRangeCreated++;
+            const nextDay = new Date(reminder.scheduled_for);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            // Check if next day is still within the target month
+            if (
+              nextDay.getMonth() + 1 === scheduleMonth &&
+              nextDay.getFullYear() === scheduleYear
+            ) {
+              await db.followUpReminder.create({
+                data: {
+                  lead_id: reminder.lead_id,
+                  call_schedule_id: reminder.call_schedule_id,
+                  recruiter_user_id: reminder.recruiter_user_id,
+                  reminder_type: "month_range_daily",
+                  scheduled_for: nextDay,
+                },
+              });
+              monthRangeCreated++;
+            }
           }
         }
       }

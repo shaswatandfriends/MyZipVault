@@ -1,4 +1,3 @@
-// @ts-nocheck — TODO(audit-2): pre-existing schema drift in legacy calendar/vaultsign/pdf code. Model names and fields don't match current Prisma schema. Suppressing to enable strict TS on clean files. Fix individually in a follow-up session.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron-auth";
@@ -26,11 +25,11 @@ export async function GET(request: Request) {
       },
     });
 
-    // 2. Check shift requests past expires_at, set status=expired, notify recruiter
+    // 2. Check shift requests past response_deadline, set status=expired, notify recruiter
     const expiredShifts = await db.shiftRequest.findMany({
       where: {
         status: "pending",
-        expires_at: { lt: now },
+        response_deadline: { lt: now },
       },
       include: {
         recruiter_user: { select: { id: true } },
