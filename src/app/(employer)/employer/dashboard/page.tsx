@@ -13,6 +13,7 @@ import {
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { ReferralCard } from "@/components/shared/ReferralCard";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface DashboardStats {
@@ -210,6 +211,7 @@ export default function EmployerDashboard() {
 
   return (
     <div className="space-y-6">
+      <DashboardHero name="Employer" subtitle="Track your jobs, submissions, and placements in one place." />
       <PageHeader
         title="Dashboard"
         description="Track your jobs, submissions, and placements in one place."

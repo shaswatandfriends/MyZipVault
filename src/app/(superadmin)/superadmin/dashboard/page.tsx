@@ -56,6 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface DashboardData {
@@ -301,6 +302,7 @@ export default function SuperadminDashboardPage() {
 
   return (
     <div className="space-y-6">
+      <DashboardHero name="Super Admin" subtitle="System-wide overview. Monitor all organizations, users, and platform health." />
       {/* ── Header ── */}
       <PageHeader
         title="Dashboard"

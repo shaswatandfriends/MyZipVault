@@ -33,6 +33,7 @@ import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-s
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface DashboardData {
@@ -200,6 +201,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-3">
+      <DashboardHero name="Admin" subtitle="Platform administration overview. Monitor users, documents, and system health." />
       <PageHeader
         title="Dashboard"
         description="Platform administration overview. Monitor users, documents, and system health."
