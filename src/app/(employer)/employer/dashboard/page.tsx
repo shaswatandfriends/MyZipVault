@@ -212,7 +212,7 @@ export default function EmployerDashboard() {
   return (
     <div className="space-y-6">
       <DashboardHero
-        name={user?.firstName || "Employer"}
+        name="Employer"
         subtitle="Track your jobs, submissions, and placements in one place."
       />
       <PageHeader

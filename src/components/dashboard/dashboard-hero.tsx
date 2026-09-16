@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { CheckCircle2 } from "@/lib/icons";
 
 interface DashboardHeroProps {
@@ -8,7 +9,7 @@ interface DashboardHeroProps {
   subtitle: string;
   pct?: number;
   steps?: { label: string; done: boolean }[];
-  rightContent?: React.ReactNode;
+  rightContent?: ReactNode;
 }
 
 function getTimeGreeting(): string {
