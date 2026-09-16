@@ -17,11 +17,10 @@ export default function RecruiterMessagesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/candidate/connections?status=accepted")
+    fetch("/api/recruiter/invites?status=accepted")
       .then((r) => r.json())
       .then((data) => {
         if (data.invites) {
-          // Filter to only invites sent by this recruiter
           setInvites(data.invites);
         }
       })
@@ -66,10 +65,10 @@ export default function RecruiterMessagesPage() {
               <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">
-                    {inv.candidate?.first_name || inv.candidate_email}
+                    {[inv.candidate?.first_name, inv.candidate?.last_name].filter(Boolean).join(" ") || inv.candidate_email}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {inv.job?.title || "No job specified"} · Accepted {new Date(inv.accepted_at).toLocaleDateString()}
+                    {inv.job?.title || "No job specified"} · Accepted {inv.accepted_at ? new Date(inv.accepted_at).toLocaleDateString() : ""}
                   </p>
                 </div>
                 <Link href={`/recruiter/messages/${inv.id}`}>

@@ -66,7 +66,7 @@ export default function CandidateMessagesPage() {
                     {inv.recruiter?.first_name} {inv.recruiter?.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {inv.job?.title || "No job specified"} · Accepted {new Date(inv.accepted_at).toLocaleDateString()}
+                    {inv.job?.title || "No job specified"} · Accepted {inv.accepted_at ? new Date(inv.accepted_at).toLocaleDateString() : ""}
                   </p>
                 </div>
                 <Link href={`/messages/${inv.id}`}>

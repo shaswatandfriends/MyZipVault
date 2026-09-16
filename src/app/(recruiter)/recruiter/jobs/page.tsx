@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
@@ -67,6 +68,8 @@ function getEmploymentBadge(type: string | null) {
 }
 
 export default function RecruiterJobsPage() {
+  const searchParams = useSearchParams();
+  const filter = searchParams.get("filter") || "";
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -82,6 +85,7 @@ export default function RecruiterJobsPage() {
         search, page: String(page), pageSize: "25",
       });
       if (professionFilter !== "all") params.set("profession", professionFilter);
+      if (filter) params.set("filter", filter);
       const res = await fetch(`/api/recruiter/jobs?${params}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
@@ -93,19 +97,29 @@ export default function RecruiterJobsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [search, professionFilter, page]);
+  }, [search, professionFilter, page, filter]);
 
   useEffect(() => {
     const timeout = setTimeout(() => { setPage(1); fetchJobs(); }, 400);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, professionFilter, page]);
+  }, [search, professionFilter, page, filter]);
+
+  // Page title + description based on filter
+  const pageTitle = filter === "submittals" ? "My Submittals"
+    : filter === "placements" ? "My Placements"
+    : "Open Jobs";
+  const pageDesc = filter === "submittals"
+    ? "Jobs you've submitted candidates to. Track status and follow up."
+    : filter === "placements"
+    ? "Jobs where your candidate was successfully placed. Celebrate the wins."
+    : "Browse open positions and submit candidates. Commission info is shown — pick the jobs worth your time.";
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Open Jobs"
-        description="Browse open positions and submit candidates. Commission info is shown — pick the jobs worth your time."
+        title={pageTitle}
+        description={pageDesc}
         actions={
           <Button variant="outline" size="sm" onClick={fetchJobs} disabled={isLoading}>
             <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -176,8 +190,21 @@ export default function RecruiterJobsPage() {
       ) : jobs.length === 0 ? (
         <Card><CardContent className="p-12 text-center">
           <Briefcase className="size-12 text-muted-foreground mx-auto mb-3" />
-          <p className="font-medium text-muted-foreground">No open jobs found</p>
-          <p className="text-sm text-muted-foreground mt-1">Try adjusting filters or check back later.</p>
+          <p className="font-medium text-muted-foreground">
+            {filter === "submittals" ? "No submissions yet"
+              : filter === "placements" ? "No placements yet"
+              : "No open jobs found"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {filter === "submittals" ? "Submit a candidate to an open job — it'll show up here."
+              : filter === "placements" ? "When one of your candidates is placed, the job will appear here."
+              : "Try adjusting filters or check back later."}
+          </p>
+          {(filter === "submittals" || filter === "placements") && (
+            <Button asChild variant="outline" size="sm" className="mt-4">
+              <Link href="/recruiter/jobs">Browse Open Jobs</Link>
+            </Button>
+          )}
         </CardContent></Card>
       ) : (
         <div className="space-y-3">

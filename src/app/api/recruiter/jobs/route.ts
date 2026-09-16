@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     const specialty = searchParams.get("specialty")?.trim() || "";
     const state = searchParams.get("state")?.trim().toUpperCase() || "";
     const employmentType = searchParams.get("employment_type")?.trim() || "";
+    const filter = searchParams.get("filter")?.trim() || "";
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const pageSize = Math.min(Math.max(parseInt(searchParams.get("pageSize") || "25", 10), 10), 100);
 
@@ -60,6 +61,26 @@ export async function GET(request: NextRequest) {
         ],
       },
     ];
+
+    // Filter by recruiter's submission activity:
+    //   filter=submittals → jobs this recruiter has submitted candidates to
+    //   filter=placements → jobs where this recruiter's submission status='placed'
+    //   (no filter) → all open jobs (default marketplace view)
+    if (filter === "submittals") {
+      where.submissions = {
+        some: {
+          recruiter_user_id: userId,
+          status: { notIn: ["withdrawn"] },
+        },
+      };
+    } else if (filter === "placements") {
+      where.submissions = {
+        some: {
+          recruiter_user_id: userId,
+          status: "placed",
+        },
+      };
+    }
 
     const [jobs, total] = await Promise.all([
       db.jobPosting.findMany({
