@@ -240,7 +240,7 @@ export default function CandidateDashboardPage() {
           <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(23,74,67,0.3) 0%, rgba(23,74,67,0) 70%)", filter: "blur(30px)" }} />
           {/* Brand watermark — Z logo on right side of banner */}
           <div className="absolute right-0 bottom-0 top-0 w-[40%] hidden lg:flex items-center justify-end pointer-events-none">
-            <img src="/logo.png" alt="" className="h-[180px] w-auto opacity-[0.08]" style={{ marginRight: 32 }} />
+            <img src="/logo.png" alt="" className="h-[200px] w-auto opacity-[0.15]" style={{ marginRight: 32 }} />
           </div>
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--terra-light)" }}>Dashboard</p>

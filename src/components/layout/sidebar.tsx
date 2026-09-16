@@ -491,7 +491,7 @@ export function AppSidebar() {
         >
           {/* Logo — image already contains "MyZipVault" wordmark */}
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
-            <img src="/logo.png" alt="MyZipVault" className="h-9 w-auto shrink-0" />
+            <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto shrink-0" />
             {label && (
               <span className="text-[9px] text-white/35 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
                 {label}
