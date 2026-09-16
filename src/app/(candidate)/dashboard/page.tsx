@@ -262,7 +262,7 @@ export default function CandidateDashboardPage() {
               {steps.map((step, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   {step.done ? <CheckCircle2 className="size-5" style={{ color: "#8FA99C" }} /> : <div className="size-5 rounded-full border-2 border-white/60 flex items-center justify-center"><div className="size-1.5 rounded-full bg-white/40" /></div>}
-                  <span className={`text-xs ${step.done ? "text-white/90" : "text-white/50"}`}>{step.label}</span>
+                  <span className="text-xs text-white/80">{step.label}</span>
                 </div>
               ))}
             </div>
