@@ -44,11 +44,11 @@ export const DEFAULT_AUTH_PAGE_CONFIG: AuthPageConfig = {
     logoUrl: "",
   },
   slideshowImages: [
-    "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80",
-    "https://images.unsplash.com/photo-1643297654416-05795d62e39c?w=800&q=80",
-    "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80",
-    "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&q=80",
-    "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=80",
+    ,
+    ,
+    ,
+    ,
+    ,
   ],
   pages: {
     login: {

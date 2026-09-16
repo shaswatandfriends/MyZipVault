@@ -238,13 +238,13 @@ export default function CandidateDashboardPage() {
         <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(23,74,67,0.95) 0%, rgba(15,54,49,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(23,74,67,0.22)", minHeight: "220px" }}>
           <div className="absolute rounded-full pointer-events-none" style={{ width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle, rgba(74,124,89,0.4) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }} />
           <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(23,74,67,0.3) 0%, rgba(23,74,67,0) 70%)", filter: "blur(30px)" }} />
-          {/* Hero image — right side of banner */}
+          {/* Brand watermark — Z logo on right side of banner */}
           <div className="absolute right-0 bottom-0 top-0 w-[40%] hidden lg:flex items-center justify-end pointer-events-none">
-            <div className="h-full w-full opacity-30" style={{ background: "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop') center/cover", maskImage: "linear-gradient(to left, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to left, black 40%, transparent 100%)" }} />
+            <img src="/logo.png" alt="" className="h-[180px] w-auto opacity-[0.08]" style={{ marginRight: 32 }} />
           </div>
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--terra-light)" }}>Dashboard</p>
-            <h1 className="text-2xl font-bold text-white mt-1 font-heading">{getTimeGreeting()}, {firstName} 👋</h1>
+            <h1 className="text-2xl font-bold text-white mt-1 font-heading">{getTimeGreeting()}, {firstName}</h1>
             <p className="text-sm text-white/70 mt-1">Complete your profile to unlock recruiter visibility</p>
 
             <div className="mt-4">
@@ -253,7 +253,7 @@ export default function CandidateDashboardPage() {
                 <span className="text-sm font-bold text-white">{pct}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-white/15 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--terra-light), var(--terra))" }} />
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #8FA99C, #F7F3E8)" }} />
               </div>
               {pct < 100 && <p className="text-xs text-white/50 mt-1.5">{pct < 50 ? "Keep going! You're just getting started." : "Almost there! Complete the remaining steps."}</p>}
             </div>

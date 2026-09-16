@@ -41,13 +41,7 @@ export default function AuthSlideshowPanel({
   const images =
     slideshowImages.length > 0
       ? slideshowImages
-      : [
-          "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80",
-          "https://images.unsplash.com/photo-1643297654416-05795d62e39c?w=800&q=80",
-          "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80",
-          "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&q=80",
-          "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=80",
-        ];
+      : [];  // No stock photos — use brand gradient background instead
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());

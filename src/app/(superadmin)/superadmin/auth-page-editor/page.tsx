@@ -287,7 +287,7 @@ function SlideshowImagesEditor({
           <Input
             value={url}
             onChange={(e) => update(i, e.target.value)}
-            placeholder="https://images.unsplash.com/photo-..."
+            placeholder="/your-image.png (place file in /public)"
             className="flex-1 border-border rounded-xl focus:border-accent-teal text-sm"
           />
           <button
