@@ -3027,3 +3027,91 @@ p[style*="color: var(--text-secondary)"] {
 .spatial-nav-item-active [class*="size-"] {
   color: #F7F3E8 !important;
 }
+
+/* ═══ SIDEBAR CONTRAST + DASHBOARD POLISH (re-applied) ═══ */
+
+/* Sidebar inactive items — more visible */
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) svg,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) [class*="size-"] {
+  color: rgba(247, 243, 232, 0.65) !important;
+}
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) span,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active) a {
+  color: rgba(247, 243, 232, 0.70) !important;
+}
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover svg,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover [class*="size-"] {
+  color: rgba(247, 243, 232, 0.90) !important;
+}
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover span,
+[data-sidebar="sidebar"] .spatial-nav-item:not(.spatial-nav-item-active):hover a {
+  color: rgba(247, 243, 232, 0.95) !important;
+}
+
+/* Sidebar section headers — visible */
+[data-sidebar="sidebar"] p[class*="tracking"][class*="text-white"] {
+  color: rgba(247, 243, 232, 0.45) !important;
+}
+
+/* Sidebar group headers */
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="font-medium"],
+[data-sidebar="sidebar"] [class*="text-white\/"][class*="font-bold"] {
+  color: rgba(247, 243, 232, 0.80) !important;
+}
+
+/* Sidebar all icons — minimum opacity */
+[data-sidebar="sidebar"] [class*="size-3"],
+[data-sidebar="sidebar"] [class*="size-4"],
+[data-sidebar="sidebar"] [class*="size-5"] {
+  opacity: 1 !important;
+}
+
+/* Active nav item — sage accent */
+.spatial-nav-item-active {
+  background: rgba(143, 169, 156, 0.22) !important;
+  border-left: 3px solid rgba(143, 169, 156, 0.80) !important;
+}
+.spatial-nav-item-active span,
+.spatial-nav-item-active a,
+.spatial-nav-item-active [class*="size-"] {
+  color: #F7F3E8 !important;
+}
+
+/* Sidebar text — minimum contrast */
+.text-white\/25 { color: rgba(255, 255, 255, 0.55) !important; }
+.text-white\/30 { color: rgba(255, 255, 255, 0.60) !important; }
+.text-white\/35 { color: rgba(255, 255, 255, 0.60) !important; }
+.text-white\/40 { color: rgba(255, 255, 255, 0.65) !important; }
+.text-white\/50 { color: rgba(255, 255, 255, 0.70) !important; }
+
+/* Dashboard polish — progress bar brand teal */
+[data-slot="progress-indicator"] {
+  background: var(--primary) !important;
+}
+
+/* Dashboard links — brand teal */
+a[href*="view"], a[href*="credentials"], a[href*="references"],
+a[href*="resume"], a[href*="checklists"], a[href*="sharing"] {
+  color: var(--primary) !important;
+}
+
+/* Card depth — stronger shadow */
+[data-slot="card"] {
+  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.06), 0 1px 3px rgba(23, 74, 67, 0.04) !important;
+}
+[data-slot="card"]:hover {
+  box-shadow: 0 8px 24px rgba(23, 74, 67, 0.10), 0 2px 8px rgba(23, 74, 67, 0.06) !important;
+}
+
+/* Button — flat matte instead of glossy */
+button[class*="bg-gradient"] {
+  background: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.15) !important;
+}
+button[class*="bg-gradient"]:hover {
+  background: var(--primary-hover) !important;
+}
+
+/* Text contrast on ivory bg */
+.text-text-dim { color: rgba(38, 54, 51, 0.55) !important; }
+.text-text-muted { color: rgba(38, 54, 51, 0.70) !important; }
