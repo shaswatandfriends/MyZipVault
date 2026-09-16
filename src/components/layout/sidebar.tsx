@@ -353,11 +353,17 @@ function getNavItems(role: UserRole): NavItem[] {
 
 
 // ─── Collapsible Nav Group Component ─────────────────────────────────
-function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: string }) {
+function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathname: string; fullPath?: string }) {
   const allHrefs = useMemo(() => getGroupHrefs(group), [group]);
-  const isAnyActive = allHrefs.some(
-    (href) => pathname === href || pathname.startsWith(href + "/")
-  );
+  // Group is "active" if any of its items matches.
+  // For items with query strings, compare against fullPath (path + query).
+  // For items without query strings, compare against pathname (path only).
+  const isAnyActive = allHrefs.some((href) => {
+    if (href.includes("?")) {
+      return fullPath === href;
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  });
   const [isExpanded, setIsExpanded] = useState(isAnyActive);
 
   // Auto-expand when a child becomes active
@@ -399,16 +405,31 @@ function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: strin
               {/* Section items */}
               {section.items.map((item) => {
                 // Active check: exact match OR subpath match.
-                // Special case: /recruiter/candidates should NOT match
-                // /recruiter/candidates/search (they're siblings, not
-                // parent/child). Add /search to the exclusion.
-                const isExactMatch = pathname === item.href;
-                const isSubPath = pathname.startsWith(item.href + "/");
-                // Exclude /search subpath for /candidates (sibling route)
-                const isSiblingSearch =
-                  item.href === "/recruiter/candidates" &&
-                  pathname === "/recruiter/candidates/search";
-                const isActive = (isExactMatch || isSubPath) && !isSiblingSearch;
+                // For items with query strings (e.g. /recruiter/jobs?filter=submittals),
+                // compare against fullPath (path + query) so different filters on the
+                // same path don't all light up at once.
+                // For items WITHOUT query strings (e.g. /recruiter/jobs), if the current
+                // URL has a query string (e.g. ?filter=submittals), don't match — because
+                // a different sibling item with that query is the real active item.
+                const itemHrefHasQuery = item.href.includes("?");
+                const fullPathHasQuery = fullPath ? fullPath.includes("?") : false;
+                let isActive: boolean;
+                if (itemHrefHasQuery) {
+                  // Exact match against fullPath (path + query)
+                  isActive = fullPath === item.href;
+                } else {
+                  // Item has no query — don't match if URL has a query (a sibling owns it)
+                  if (fullPathHasQuery) {
+                    isActive = false;
+                  } else {
+                    const isExactMatch = pathname === item.href;
+                    const isSubPath = pathname.startsWith(item.href + "/");
+                    const isSiblingSearch =
+                      item.href === "/recruiter/candidates" &&
+                      pathname === "/recruiter/candidates/search";
+                    isActive = (isExactMatch || isSubPath) && !isSiblingSearch;
+                  }
+                }
                 return (
                   <Link
                     key={item.href}
@@ -437,6 +458,23 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { state, toggleSidebar, isMobile } = useSidebar();
   const [orgSettings, setOrgSettings] = useState<{ show_billing_to_recruiters?: boolean } | null>(null);
+
+  // Track the query string so sidebar active-state can distinguish URLs that
+  // share the same path but differ by ?filter= (e.g. /recruiter/jobs vs
+  // /recruiter/jobs?filter=submittals). usePathname() strips the query string,
+  // so we read window.location.search in a layout-effect.
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setSearch(window.location.search);
+    // Update on route change (Next.js client-side navigations don't always
+    // re-trigger this component, so we listen to popstate as well)
+    const handler = () => setSearch(window.location.search);
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [pathname]);
+
+  // Build a full href (path + query) for active-state comparisons
+  const fullPath = search ? `${pathname}${search}` : pathname;
 
   // Fetch org settings to conditionally show/hide Billing for recruiters
   useEffect(() => {
@@ -583,6 +621,7 @@ export function AppSidebar() {
                       key={group.title}
                       group={filteredGroup}
                       pathname={pathname}
+                      fullPath={fullPath}
                     />
                   );
                 })}
@@ -619,6 +658,7 @@ export function AppSidebar() {
                     key={group.title}
                     group={group}
                     pathname={pathname}
+                    fullPath={fullPath}
                   />
                 ))}
                 <div className="my-2 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)" }} />
