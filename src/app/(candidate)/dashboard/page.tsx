@@ -518,36 +518,6 @@ export default function CandidateDashboardPage() {
 
       {/* ════ SECTION 8: REFERRAL CARD ════ */}
       <ReferralCard />
-
-      {/* ════ SECTION 9: VALUE PROPOSITION FOOTER ════ */}
-      <div className="rounded-[20px] p-5" style={{ background: "var(--material-thin-bg)", backdropFilter: "var(--material-thin-blur)", WebkitBackdropFilter: "var(--material-thin-blur)", border: "0.5px solid var(--material-thin-border)" }}>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-          {[
-            { icon: FolderOpen, label: "All in One Vault", desc: "Store all documents in one secure place", color: "var(--primary)" },
-            { icon: Zap, label: "AI Powered", desc: "AI helps build better resumes", color: "var(--terra)" },
-            { icon: Lock, label: "Secure & Private", desc: "Encrypted and 100% under your control", color: "var(--primary)" },
-            { icon: TrendingUp, label: "Recruiter Ready", desc: "Get discovered by top employers", color: "var(--terra)" },
-            { icon: CalendarDays, label: "Always Up to Date", desc: "Never miss an expiration deadline", color: "var(--primary)" },
-          ].map((item, i) => (
-            <div key={i} className="flex flex-col items-center text-center gap-1.5">
-              <div className="size-9 rounded-[10px] flex items-center justify-center" style={{ background: "var(--material-regular-bg)", border: "0.5px solid var(--material-regular-border)" }}>
-                <item.icon className="size-4" style={{ color: item.color }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{item.label}</span>
-              <span className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>{item.desc}</span>
-            </div>
-          ))}
-        </div>
-        {pct < 100 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4" style={{ borderTop: "0.5px solid var(--border)" }}>
-            <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Your profile is {pct}% complete</p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Complete the remaining steps to unlock all features</p>
-            </div>
-            <Button asChild><Link href="/profile-completion">Continue Setup <ArrowRight className="size-4" /></Link></Button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -704,7 +704,7 @@ export function AppSidebar() {
             </div>
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <p className="truncate text-xs font-medium text-white/80 leading-tight">
-                {displayName}
+                {displayName !== user?.email ? displayName : "My Account"}
               </p>
               <p className="truncate text-xs text-white/60 leading-tight" title={user?.email ?? ""}>
                 {user?.email}
