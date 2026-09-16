@@ -462,15 +462,37 @@ export function AppSidebar() {
   // Track the query string so sidebar active-state can distinguish URLs that
   // share the same path but differ by ?filter= (e.g. /recruiter/jobs vs
   // /recruiter/jobs?filter=submittals). usePathname() strips the query string,
-  // so we read window.location.search in a layout-effect.
+  // so we read window.location.search.
+  //
+  // IMPORTANT: When navigating between ?filter=submittals and ?filter=placements,
+  // the pathname stays the same (/recruiter/jobs) — only the query changes.
+  // Next.js client-side navigations use pushState/replaceState which do NOT
+  // fire popstate. So we poll window.location.search on a short interval to
+  // detect query-string-only changes. This is lightweight (string comparison
+  // every 200ms) and avoids the Suspense boundary requirement of
+  // useSearchParams().
   const [search, setSearch] = useState("");
   useEffect(() => {
+    // Set immediately on mount / pathname change
     setSearch(window.location.search);
-    // Update on route change (Next.js client-side navigations don't always
-    // re-trigger this component, so we listen to popstate as well)
+
+    // Poll for query-string changes (handles pushState/replaceState that
+    // don't fire popstate)
+    const interval = setInterval(() => {
+      setSearch((prev) => {
+        const current = window.location.search;
+        return prev !== current ? current : prev;
+      });
+    }, 200);
+
+    // Also listen for popstate (browser back/forward)
     const handler = () => setSearch(window.location.search);
     window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("popstate", handler);
+    };
   }, [pathname]);
 
   // Build a full href (path + query) for active-state comparisons
