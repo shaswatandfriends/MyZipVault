@@ -267,6 +267,22 @@ const referenceGroup: NavGroup = {
   ],
 };
 
+// ─── Super Admin: Marketplace Group ───────────────────────────────────
+const superAdminMarketplaceGroup: NavGroup = {
+  title: "Marketplace",
+  icon: Briefcase,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Jobs", href: "/superadmin/jobs", icon: Briefcase },
+        { title: "Candidates Pool", href: "/superadmin/candidates", icon: Database },
+        { title: "Submissions", href: "/superadmin/submissions", icon: Send },
+      ],
+    },
+  ],
+};
+
 // ─── Super Admin: Flat Nav Items (non-grouped) ───────────────────────
 const superAdminFlatNav: NavItem[] = [
   { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
@@ -276,9 +292,6 @@ const superAdminBottomNav: NavItem[] = [
   // Management
   { title: "Users", href: "/superadmin/users", icon: Users },
   { title: "Companies", href: "/superadmin/companies", icon: Building2 },
-  { title: "Candidates Pool", href: "/superadmin/candidates", icon: Database },
-  { title: "Jobs", href: "/superadmin/jobs", icon: Briefcase },
-  { title: "Submissions", href: "/superadmin/submissions", icon: Send },
   { title: "Admins", href: "/superadmin/admins", icon: Shield },
   { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
   // Communication
@@ -310,7 +323,7 @@ const superAdminSectionDividers: Record<string, string> = {
 };
 
 // ─── Super Admin Groups ──────────────────────────────────────────────
-const superAdminGroups: NavGroup[] = [skillsChecklistGroup, referenceGroup];
+const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, skillsChecklistGroup, referenceGroup];
 
 // ─── Get all hrefs for a group (for active state detection) ──────────
 function getGroupHrefs(group: NavGroup): string[] {
