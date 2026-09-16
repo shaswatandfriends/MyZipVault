@@ -49,7 +49,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-import { DashboardHero } from "@/components/dashboard/dashboard-hero";
   Table,
   TableBody,
   TableCell,
@@ -222,7 +221,7 @@ export default function SuperadminDashboardPage() {
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    const interval = setInterval(fetchDashboard, 120000) // 2 min (was 1 min);
+    const interval = setInterval(fetchDashboard, 60000);
     return () => clearInterval(interval);
   }, [fetchDashboard]);
 
@@ -302,10 +301,6 @@ export default function SuperadminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <DashboardHero
-        name="Super Admin"
-        subtitle="System-wide overview. Monitor all organizations, users, and platform health."
-      />
       {/* ── Header ── */}
       <PageHeader
         title="Dashboard"

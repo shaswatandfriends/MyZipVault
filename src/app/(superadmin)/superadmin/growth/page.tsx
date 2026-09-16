@@ -117,7 +117,7 @@ export default function GrowthDashboardPage() {
   useEffect(() => {
     fetchGrowth();
     // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchGrowth, 120000) // 2 min (was 30s);
+    const interval = setInterval(fetchGrowth, 30000);
     return () => clearInterval(interval);
   }, [range]);
 

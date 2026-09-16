@@ -23,7 +23,6 @@ import {
 import { BannerCarousel } from "@/components/banners/banner-carousel";
 import { ReferralCard } from "@/components/shared/ReferralCard";
 import { TourHost } from "@/components/onboarding/tour-host";
-import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpatialStatCard, SpatialAvatar } from "@/components/dashboard/spatial-stat-card";
 import {
@@ -214,7 +213,7 @@ export default function RecruiterDashboardPage() {
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    const interval = setInterval(fetchDashboard, 120000) // 2 min (was 1 min);
+    const interval = setInterval(fetchDashboard, 60000);
     return () => clearInterval(interval);
   }, [fetchDashboard]);
 
@@ -308,13 +307,6 @@ export default function RecruiterDashboardPage() {
   return (
     <div className="space-y-3">
       <TourHost />
-
-      {/* ── Dashboard Hero ── */}
-      <DashboardHero
-        name="Recruiter"
-        subtitle="Track your pipeline, manage requests, and connect with verified healthcare talent."
-      />
-
       {/* ── Announcement Carousel ── */}
       <BannerCarousel />
 
