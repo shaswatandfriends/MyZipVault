@@ -188,10 +188,12 @@ const sendRequestGroup: NavGroup = {
 };
 
 // ─── Recruiter: Bottom Nav Items (after groups) ────────────────────────
+// Note: Notifications is NOT here — it's rendered as a live <NotificationBell>
+// component at the bottom of the sidebar (with badge count). Having it in both
+// places would be redundant.
 const recruiterBottomNav: NavItem[] = [
   { title: "Calendar", href: "/recruiter/calendar", icon: CalendarDays },
   { title: "VaultSign", href: "/recruiter/vaultsign", icon: FileSignature },
-  { title: "Notifications", href: "/recruiter/notifications", icon: Bell },
   { title: "Org Settings", href: "/recruiter/settings", icon: Settings },
   { title: "Billing", href: "/recruiter/billing", icon: CreditCard },
   { title: "BAA", href: "/recruiter/baa", icon: FileCheck, adminOnly: true },
