@@ -85,21 +85,23 @@ export default function CandidateOnboardingPage() {
             referral_source: data.profile.referral_source || "",
           });
         }
-        // If already onboarded, redirect to dashboard
+        // If already onboarded, redirect to dashboard via FULL PAGE RELOAD.
+        // Do NOT use router.replace — client-side navigation causes redirect
+        // loops because the layout guard and this page's effect both fire.
         if (data.onboarding_completed) {
-          router.replace("/dashboard");
+          window.location.href = "/dashboard";
+          return;
         }
       })
       .catch(() => {
         if (cancelled) return;
-        // Show error state instead of infinite loading
         setFetchError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +118,10 @@ export default function CandidateOnboardingPage() {
         return;
       }
       toast.success("Onboarding complete! Welcome to MyZipVault.");
-      router.push("/dashboard");
+      // FULL PAGE RELOAD to dashboard — not router.push.
+      // This ensures the OnboardingGuard gets a completely fresh state
+      // and doesn't redirect back to onboarding.
+      window.location.href = "/dashboard";
     } catch {
       toast.error("Network error — please try again");
     } finally {

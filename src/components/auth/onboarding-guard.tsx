@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Loader2 } from "@/lib/icons";
 
 /**
@@ -9,21 +9,19 @@ import { Loader2 } from "@/lib/icons";
  *
  * Wraps all candidate pages. On mount, checks if the candidate has completed
  * the mandatory first-login onboarding form. If not, redirects to
- * /onboarding/details.
+ * /onboarding/details via FULL PAGE RELOAD (window.location.href).
+ *
+ * CRITICAL: We use window.location.href — NOT router.replace — because
+ * client-side navigation keeps the layout mounted with stale state, causing
+ * redirect loops between dashboard and onboarding page. Full page reloads
+ * completely reset React state on every redirect.
  *
  * Onboarding is MANDATORY for all candidates (new and existing). The API
- * checks that ALL required fields are filled (first_name, last_name, phone,
- * job_title, specialty, city, state, zip_code, years_experience_total,
- * years_experience_specialty). If any field is missing, the candidate is
- * redirected to the onboarding form.
- *
- * This guard is placed in the candidate layout so it runs on EVERY candidate
- * page (dashboard, checklists, vault, calendar, etc.). The /onboarding/details
- * page itself is excluded from the guard to avoid a loop.
+ * checks that ALL required fields are filled. If any field is missing,
+ * the candidate is redirected to the onboarding form.
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -43,7 +41,9 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (cancelled) return;
         if (data && data.onboarding_completed === false) {
-          router.replace("/onboarding/details");
+          // FULL PAGE RELOAD — not router.replace.
+          // This is the key to preventing the redirect loop.
+          window.location.href = "/onboarding/details";
         } else {
           setChecked(true);
         }
@@ -54,7 +54,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
       });
 
     return () => { cancelled = true; };
-  }, [pathname, router]);
+  }, [pathname]);
 
   // While checking onboarding status on a non-onboarding page, show a loader.
   // This prevents the page content from flashing before the redirect fires.
