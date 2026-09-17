@@ -85,13 +85,16 @@ export default function CandidateOnboardingPage() {
             referral_source: data.profile.referral_source || "",
           });
         }
-        // If already onboarded, redirect to dashboard via FULL PAGE RELOAD.
-        // Do NOT use router.replace — client-side navigation causes redirect
-        // loops because the layout guard and this page's effect both fire.
-        if (data.onboarding_completed) {
-          window.location.href = "/dashboard";
-          return;
-        }
+        // DELIBERATELY NOT AUTO-REDIRECTING TO DASHBOARD.
+        // Previous versions had: if (data.onboarding_completed) window.location.href = "/dashboard"
+        // This caused a redirect loop because the dashboard guard would
+        // redirect back to onboarding if the API returned inconsistent
+        // results (e.g., due to caching or cold starts).
+        //
+        // Now: the onboarding page ALWAYS shows the form. If the user is
+        // already onboarded, the form is pre-filled and they can either
+        // update it or click any sidebar link to go elsewhere.
+        // The "Complete Setup" button always works (re-saves + redirects).
       })
       .catch(() => {
         if (cancelled) return;
@@ -173,11 +176,10 @@ export default function CandidateOnboardingPage() {
             <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto mx-auto" />
           </Link>
           <h1 className="text-2xl font-bold text-[#174A43] font-heading">
-            Welcome to MyZipVault
+            Complete Your Profile
           </h1>
           <p className="text-sm text-[#5C6B66] mt-1.5">
-            Let&apos;s set up your profile. This takes about 2 minutes and unlocks
-            recruiter visibility.
+            Please fill in these details to activate your account. This takes about 2 minutes.
           </p>
         </div>
 
