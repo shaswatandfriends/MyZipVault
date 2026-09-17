@@ -161,28 +161,8 @@ export default function CandidateDashboardPage() {
   // Initial load on mount
   useEffect(() => { initialLoad(); }, [initialLoad]);
 
-  // Onboarding guard — if candidate hasn't completed first-login onboarding,
-  // redirect them to /onboarding/details. Runs once on mount.
-  // Uses sessionStorage to prevent redirect loops: if the user has already
-  // been redirected to onboarding this session, don't redirect again (they
-  // either completed it and came back, or they're stuck in a loop).
-  useEffect(() => {
-    // If we've already checked this session, don't re-check (prevents loop)
-    if (sessionStorage.getItem("onboarding_checked") === "true") return;
-
-    fetch("/api/candidate/onboarding-details")
-      .then((r) => {
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then((data) => {
-        sessionStorage.setItem("onboarding_checked", "true");
-        if (data && data.onboarding_completed === false) {
-          window.location.href = "/onboarding/details";
-        }
-      })
-      .catch(() => {/* non-blocking — don't break dashboard if check fails */});
-  }, []);
+  // Note: Onboarding redirect is handled by the candidate layout-level
+  // OnboardingGuard component — no need for a per-page check here.
 
   // Polling interval — every 60s, never hides dashboard on failure
   useEffect(() => {

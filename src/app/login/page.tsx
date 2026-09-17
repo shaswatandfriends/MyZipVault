@@ -112,18 +112,14 @@ export default function LoginPage() {
         } catch {
           // If session fetch fails, fall back to /dashboard
         }
-        // Candidate — check if first-login onboarding is complete.
-        // Only redirect to onboarding if the API returns a CLEAR 200 with
-        // onboarding_completed === false. Uses sessionStorage to prevent
-        // redirect loops.
+        // Candidate — onboarding is MANDATORY for all candidates (new and
+        // existing). Redirect to /onboarding/details if any required field
+        // is missing OR onboarding_completed_at is null.
         try {
           const obRes = await fetch("/api/candidate/onboarding-details");
           if (obRes.ok) {
             const obData = await obRes.json();
             if (obData.onboarding_completed === false) {
-              // Mark that we're sending the user to onboarding — the
-              // dashboard won't re-redirect them if this flag is set.
-              sessionStorage.setItem("onboarding_checked", "true");
               window.location.href = "/onboarding/details";
               return;
             }
@@ -131,8 +127,6 @@ export default function LoginPage() {
         } catch {
           // Network error — fall through to dashboard
         }
-        // Clear the flag — user is onboarded, fresh start on dashboard
-        sessionStorage.removeItem("onboarding_checked");
         window.location.href = "/dashboard";
       }
     } catch {

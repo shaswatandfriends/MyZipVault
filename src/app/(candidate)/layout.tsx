@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { PageTransition } from "@/components/motion";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
+import { OnboardingGuard } from "@/components/auth/onboarding-guard";
 
 export default function CandidateLayout({
   children,
@@ -20,7 +21,9 @@ export default function CandidateLayout({
         <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
           <div className="p-4 md:p-6 relative z-10">
             <PageTransition>
-              {children}
+              <OnboardingGuard>
+                {children}
+              </OnboardingGuard>
             </PageTransition>
           </div>
         </div>

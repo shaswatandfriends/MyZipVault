@@ -129,8 +129,30 @@ export async function GET() {
       });
     }
 
+    // Onboarding is complete ONLY if ALL required fields are filled.
+    // This ensures existing candidates (created before onboarding was added)
+    // who have partial profiles are still redirected to fill the form.
+    // Required: first_name, last_name, phone, job_title, specialty, city,
+    // state, zip_code, years_experience_total, years_experience_specialty.
+    // (middle_name and referral_source are optional)
+    const requiredFieldsFilled =
+      !!profile.first_name &&
+      !!profile.last_name &&
+      !!profile.phone &&
+      !!profile.job_title &&
+      !!profile.specialty &&
+      !!profile.city &&
+      !!profile.state &&
+      !!profile.zip_code &&
+      profile.years_experience_total !== null &&
+      profile.years_experience_total !== undefined &&
+      profile.years_experience_specialty !== null &&
+      profile.years_experience_specialty !== undefined;
+
+    const onboardingCompleted = !!profile.onboarding_completed_at && requiredFieldsFilled;
+
     return NextResponse.json({
-      onboarding_completed: !!profile.onboarding_completed_at,
+      onboarding_completed: onboardingCompleted,
       profile: {
         first_name: profile.first_name ?? "",
         middle_name: profile.middle_name ?? "",
