@@ -7,13 +7,17 @@ import { db } from "@/lib/db";
  * GET /api/candidate/onboarding-details
  *
  * Returns the candidate's onboarding form data + whether onboarding is complete.
- * Used by the first-login onboarding page to pre-fill fields and by the login
- * flow to decide whether to redirect to /onboarding/details.
+ *
+ * IMPORTANT: If the CandidateProfile doesn't exist (e.g., signup failed midway
+ * and left an orphaned User record), this endpoint returns onboarding_completed=false
+ * with empty field values — NOT a 404. This way, the login flow always redirects
+ * incomplete candidates to /onboarding/details, and the PUT endpoint will upsert
+ * the profile.
  *
  * Response: {
  *   onboarding_completed: boolean,
  *   profile: {
- *     first_name, last_name, email, phone,
+ *     first_name, middle_name, last_name, email, phone,
  *     job_title, specialty,
  *     city, state, zip_code,
  *     years_experience_total, years_experience_specialty,
@@ -37,6 +41,7 @@ export async function GET() {
       where: { user_id: userId },
       select: {
         first_name: true,
+        middle_name: true,
         last_name: true,
         phone: true,
         job_title: true,
@@ -51,19 +56,40 @@ export async function GET() {
       },
     });
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { email: true },
     });
 
+    // If profile doesn't exist (orphaned user from failed signup), return
+    // onboarding_completed=false with empty values. The PUT endpoint will
+    // create the profile via upsert.
+    if (!profile) {
+      return NextResponse.json({
+        onboarding_completed: false,
+        profile: {
+          first_name: "",
+          middle_name: "",
+          last_name: "",
+          email: user?.email ?? "",
+          phone: "",
+          job_title: "",
+          specialty: "",
+          city: "",
+          state: "",
+          zip_code: "",
+          years_experience_total: null,
+          years_experience_specialty: null,
+          referral_source: "",
+        },
+      });
+    }
+
     return NextResponse.json({
       onboarding_completed: !!profile.onboarding_completed_at,
       profile: {
         first_name: profile.first_name,
+        middle_name: profile.middle_name ?? "",
         last_name: profile.last_name,
         email: user?.email ?? "",
         phone: profile.phone,
@@ -86,11 +112,13 @@ export async function GET() {
 /**
  * PUT /api/candidate/onboarding-details
  *
- * Saves the first-login onboarding form. Sets onboarding_completed_at = NOW()
- * so the candidate is never redirected to the onboarding page again.
+ * Saves the first-login onboarding form. Uses upsert so it works even if
+ * the CandidateProfile doesn't exist (orphaned user from a partially-failed
+ * signup). Also syncs first_name/last_name to the User record.
  *
  * Body: {
  *   first_name: string,         // required
+ *   middle_name: string,        // optional
  *   last_name: string,          // required
  *   phone: string,              // required
  *   job_title: string,          // required
@@ -139,6 +167,7 @@ export async function PUT(request: NextRequest) {
 
     // ── Validate + normalize ──
     const firstName = String(body.first_name).trim().slice(0, 100);
+    const middleName = body.middle_name ? String(body.middle_name).trim().slice(0, 100) : null;
     const lastName = String(body.last_name).trim().slice(0, 100);
     const phone = String(body.phone).trim().slice(0, 20);
     const jobTitle = String(body.job_title).trim().slice(0, 100);
@@ -177,19 +206,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // ── Update profile ──
-    const existing = await db.candidateProfile.findUnique({ where: { user_id: userId } });
-    if (!existing) {
-      return NextResponse.json(
-        { error: "Profile not found" },
-        { status: 404 },
-      );
-    }
-
-    await db.candidateProfile.update({
+    // ── Upsert profile (handles both existing + missing profiles) ──
+    await db.candidateProfile.upsert({
       where: { user_id: userId },
-      data: {
+      update: {
         first_name: firstName,
+        middle_name: middleName,
         last_name: lastName,
         phone,
         job_title: jobTitle,
@@ -201,6 +223,31 @@ export async function PUT(request: NextRequest) {
         years_experience_specialty: yearsSpecialty,
         referral_source: referralSource,
         onboarding_completed_at: new Date(),
+      },
+      create: {
+        user_id: userId,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        phone,
+        job_title: jobTitle,
+        specialty,
+        city,
+        state,
+        zip_code: zipCode,
+        years_experience_total: yearsTotal,
+        years_experience_specialty: yearsSpecialty,
+        referral_source: referralSource,
+        onboarding_completed_at: new Date(),
+      },
+    });
+
+    // ── Sync first_name/last_name to User record ──
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        first_name: firstName,
+        last_name: lastName,
       },
     });
 

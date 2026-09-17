@@ -163,11 +163,13 @@ export default function CandidateDashboardPage() {
 
   // Onboarding guard — if candidate hasn't completed first-login onboarding,
   // redirect them to /onboarding/details. Runs once on mount, non-blocking.
+  // Handles ALL non-OK responses (404 = no profile, 500 = error) by
+  // redirecting to onboarding.
   useEffect(() => {
     fetch("/api/candidate/onboarding-details")
       .then((r) => r.json())
       .then((data) => {
-        if (data.onboarding_completed === false) {
+        if (!data.onboarding_completed) {
           window.location.href = "/onboarding/details";
         }
       })

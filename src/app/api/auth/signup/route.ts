@@ -49,27 +49,35 @@ export async function POST(request: Request) {
 
     const passwordHash = await hash(password, 12);
 
-    const user = await db.user.create({
-      data: {
-        email,
-        password_hash: passwordHash,
-        role: "candidate",
-        first_name: firstName || null,
-        last_name: lastName || null,
-        is_approved: true,
-        account_status: "active",
-        // email_verified_at is null by default — user must verify
-      },
-    });
+    // ── Create user + candidate profile in a transaction ──
+    // This prevents orphaned User records if CandidateProfile creation fails
+    // (e.g., DB schema mismatch). If either fails, both roll back and the
+    // user can retry signup cleanly.
+    const user = await db.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password_hash: passwordHash,
+          role: "candidate",
+          first_name: firstName || null,
+          last_name: lastName || null,
+          is_approved: true,
+          account_status: "active",
+          // email_verified_at is null by default — user must verify
+        },
+      });
 
-    await db.candidateProfile.create({
-      data: {
-        user_id: user.id,
-        first_name: firstName || "",
-        last_name: lastName || "",
-        phone: "",
-        profile_completion_pct: firstName && lastName ? 10 : 0,
-      },
+      await tx.candidateProfile.create({
+        data: {
+          user_id: newUser.id,
+          first_name: firstName || "",
+          last_name: lastName || "",
+          phone: "",
+          profile_completion_pct: firstName && lastName ? 10 : 0,
+        },
+      });
+
+      return newUser;
     });
 
     // ─── Marketplace: Candidate self-claim ────────────────────────────

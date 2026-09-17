@@ -44,6 +44,7 @@ export default function CandidateOnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     first_name: "",
+    middle_name: "",
     last_name: "",
     email: "",
     phone: "",
@@ -64,6 +65,7 @@ export default function CandidateOnboardingPage() {
         if (data.profile) {
           setForm({
             first_name: data.profile.first_name || "",
+            middle_name: data.profile.middle_name || "",
             last_name: data.profile.last_name || "",
             email: data.profile.email || "",
             phone: data.profile.phone || "",
@@ -147,7 +149,7 @@ export default function CandidateOnboardingPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="first_name" className="text-xs font-semibold">
                     First Name <span className="text-red-500">*</span>
@@ -157,6 +159,17 @@ export default function CandidateOnboardingPage() {
                     required
                     value={form.first_name}
                     onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="middle_name" className="text-xs font-semibold">
+                    Middle Name
+                  </Label>
+                  <Input
+                    id="middle_name"
+                    value={form.middle_name}
+                    onChange={(e) => setForm({ ...form, middle_name: e.target.value })}
                     className="mt-1"
                   />
                 </div>

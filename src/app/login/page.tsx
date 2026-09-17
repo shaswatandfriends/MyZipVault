@@ -112,7 +112,10 @@ export default function LoginPage() {
         } catch {
           // If session fetch fails, fall back to /dashboard
         }
-        // Candidate — check if first-login onboarding is complete
+        // Candidate — check if first-login onboarding is complete.
+        // Handle ALL non-OK responses (404 = no profile, 500 = error) by
+        // redirecting to onboarding. Only skip if we get a clear 200 with
+        // onboarding_completed === true.
         try {
           const obRes = await fetch("/api/candidate/onboarding-details");
           if (obRes.ok) {
@@ -121,9 +124,15 @@ export default function LoginPage() {
               window.location.href = "/onboarding/details";
               return;
             }
+          } else {
+            // 404 (no profile) or 500 (server error) → send to onboarding
+            // so they can fill the form. The onboarding API will upsert
+            // the profile.
+            window.location.href = "/onboarding/details";
+            return;
           }
         } catch {
-          // If onboarding check fails, proceed to dashboard
+          // Network error — fall through to /dashboard
         }
         window.location.href = "/dashboard";
       }
