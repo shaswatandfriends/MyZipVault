@@ -356,12 +356,19 @@ function getNavItems(role: UserRole): NavItem[] {
 function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathname: string; fullPath?: string }) {
   const allHrefs = useMemo(() => getGroupHrefs(group), [group]);
   // Group is "active" if any of its items matches.
-  // For items with query strings, compare against fullPath (path + query).
-  // For items without query strings, compare against pathname (path only).
+  // Use the SAME logic as the item-level active check:
+  //   - Items WITH query strings: compare against fullPath (exact match incl. query)
+  //   - Items WITHOUT query strings: compare against pathname, BUT only if the
+  //     current URL has NO query string — otherwise a different sibling item
+  //     (with the query) is the real active item, and this group should NOT
+  //     be marked active (or auto-expand).
+  const fullPathHasQuery = fullPath ? fullPath.includes("?") : false;
   const isAnyActive = allHrefs.some((href) => {
     if (href.includes("?")) {
       return fullPath === href;
     }
+    // Item has no query — if the URL has a query, a sibling owns it, not this item
+    if (fullPathHasQuery) return false;
     return pathname === href || pathname.startsWith(href + "/");
   });
   const [isExpanded, setIsExpanded] = useState(isAnyActive);
