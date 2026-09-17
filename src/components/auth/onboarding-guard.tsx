@@ -33,7 +33,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
     let cancelled = false;
 
-    fetch("/api/candidate/onboarding-details")
+    fetch("/api/candidate/onboarding-details", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) return null;
         return r.json();

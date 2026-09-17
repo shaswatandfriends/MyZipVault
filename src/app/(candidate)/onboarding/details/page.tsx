@@ -61,7 +61,7 @@ export default function CandidateOnboardingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/candidate/onboarding-details")
+    fetch("/api/candidate/onboarding-details", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error(`API returned ${r.status}`);
         return r.json();

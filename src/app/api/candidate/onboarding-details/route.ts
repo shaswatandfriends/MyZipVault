@@ -3,29 +3,33 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+// Force dynamic rendering — never cache this route.
+// This prevents Next.js from caching the response, which could cause
+// stale onboarding_completed values and redirect loops.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 /**
  * GET /api/candidate/onboarding-details
  *
  * Returns the candidate's onboarding form data + whether onboarding is complete.
  *
- * IMPORTANT: If the CandidateProfile doesn't exist (e.g., signup failed midway
- * and left an orphaned User record), this endpoint returns onboarding_completed=false
- * with empty field values — NOT a 404. This way, the login flow always redirects
- * incomplete candidates to /onboarding/details, and the PUT endpoint will upsert
- * the profile.
+ * Onboarding is complete ONLY if ALL required fields are filled:
+ *   first_name, last_name, phone, job_title, specialty,
+ *   city, state, zip_code, years_experience_total, years_experience_specialty
+ * AND onboarding_completed_at is set.
  *
  * Response: {
  *   onboarding_completed: boolean,
- *   profile: {
- *     first_name, middle_name, last_name, email, phone,
- *     job_title, specialty,
- *     city, state, zip_code,
- *     years_experience_total, years_experience_specialty,
- *     referral_source
- *   }
+ *   profile: { ... }
  * }
+ *
+ * CRITICAL: This route must NEVER be cached. If it returns stale data,
+ * the candidate gets stuck in a redirect loop between dashboard and
+ * onboarding page. The `dynamic = "force-dynamic"` + `revalidate = 0`
+ * + Cache-Control: no-store headers ensure every request hits the DB.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -42,72 +46,26 @@ export async function GET() {
       select: { email: true },
     });
 
-    // Try to fetch the profile with ALL onboarding fields.
-    // If this fails (DB migration not yet applied — column doesn't exist),
-    // fall back to a basic query without the new fields.
-    let profile: any = null;
-    try {
-      profile = await db.candidateProfile.findUnique({
-        where: { user_id: userId },
-        select: {
-          first_name: true,
-          middle_name: true,
-          last_name: true,
-          phone: true,
-          job_title: true,
-          specialty: true,
-          city: true,
-          state: true,
-          zip_code: true,
-          years_experience_total: true,
-          years_experience_specialty: true,
-          referral_source: true,
-          onboarding_completed_at: true,
-        },
-      });
-    } catch (queryErr) {
-      // Fallback: query without the new columns (migration not applied yet)
-      console.warn("[ONBOARDING_DETAILS_GET] Full query failed, falling back to basic profile:", queryErr);
-      try {
-        profile = await db.candidateProfile.findUnique({
-          where: { user_id: userId },
-          select: {
-            first_name: true,
-            last_name: true,
-            phone: true,
-            city: true,
-            state: true,
-            zip_code: true,
-            years_experience_total: true,
-            years_experience_specialty: true,
-          },
-        });
-      } catch (fallbackErr) {
-        console.error("[ONBOARDING_DETAILS_GET] Fallback query also failed:", fallbackErr);
-        // Return a minimal response — treat as no profile / not onboarded
-        return NextResponse.json({
-          onboarding_completed: false,
-          profile: {
-            first_name: "",
-            middle_name: "",
-            last_name: "",
-            email: user?.email ?? "",
-            phone: "",
-            job_title: "",
-            specialty: "",
-            city: "",
-            state: "",
-            zip_code: "",
-            years_experience_total: null,
-            years_experience_specialty: null,
-            referral_source: "",
-          },
-        });
-      }
-    }
+    const profile = await db.candidateProfile.findUnique({
+      where: { user_id: userId },
+      select: {
+        first_name: true,
+        middle_name: true,
+        last_name: true,
+        phone: true,
+        job_title: true,
+        specialty: true,
+        city: true,
+        state: true,
+        zip_code: true,
+        years_experience_total: true,
+        years_experience_specialty: true,
+        referral_source: true,
+        onboarding_completed_at: true,
+      },
+    });
 
-    // If profile doesn't exist (orphaned user from failed signup), return
-    // onboarding_completed=false with empty values.
+    // If profile doesn't exist (orphaned user), return not-onboarded.
     if (!profile) {
       return NextResponse.json({
         onboarding_completed: false,
@@ -126,15 +84,15 @@ export async function GET() {
           years_experience_specialty: null,
           referral_source: "",
         },
+      }, {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
       });
     }
 
     // Onboarding is complete ONLY if ALL required fields are filled.
-    // This ensures existing candidates (created before onboarding was added)
-    // who have partial profiles are still redirected to fill the form.
-    // Required: first_name, last_name, phone, job_title, specialty, city,
-    // state, zip_code, years_experience_total, years_experience_specialty.
-    // (middle_name and referral_source are optional)
     const requiredFieldsFilled =
       !!profile.first_name &&
       !!profile.last_name &&
@@ -168,10 +126,24 @@ export async function GET() {
         years_experience_specialty: profile.years_experience_specialty ?? null,
         referral_source: profile.referral_source ?? "",
       },
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Pragma": "no-cache",
+      },
     });
   } catch (error: any) {
     console.error("[ONBOARDING_DETAILS_GET]", error);
-    return NextResponse.json({ error: "Failed to fetch onboarding details" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch onboarding details" },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      },
+    );
   }
 }
 
@@ -179,25 +151,8 @@ export async function GET() {
  * PUT /api/candidate/onboarding-details
  *
  * Saves the first-login onboarding form. Uses upsert so it works even if
- * the CandidateProfile doesn't exist (orphaned user from a partially-failed
- * signup). Also syncs first_name/last_name to the User record.
- *
- * Body: {
- *   first_name: string,         // required
- *   middle_name: string,        // optional
- *   last_name: string,          // required
- *   phone: string,              // required
- *   job_title: string,          // required
- *   specialty: string,          // required
- *   city: string,               // required
- *   state: string,              // required (2-char US state code)
- *   zip_code: string,           // required
- *   years_experience_total: number,     // required
- *   years_experience_specialty: number, // required
- *   referral_source: string     // optional ("Where did you hear about us?")
- * }
- *
- * Response: { success: true, onboarding_completed: true }
+ * the CandidateProfile doesn't exist. Also syncs first_name/last_name to
+ * the User record.
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -272,84 +227,41 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // ── Upsert profile (handles both existing + missing profiles) ──
-    // Try with all onboarding fields first. If this fails (DB migration
-    // not yet applied), fall back to a basic update without the new columns.
-    // In the fallback case, onboarding_completed_at can't be set — but we
-    // still save the basic fields. The user will be re-prompted to fill
-    // the form on next login until the migration is applied.
-    try {
-      await db.candidateProfile.upsert({
-        where: { user_id: userId },
-        update: {
-          first_name: firstName,
-          middle_name: middleName,
-          last_name: lastName,
-          phone,
-          job_title: jobTitle,
-          specialty,
-          city,
-          state,
-          zip_code: zipCode,
-          years_experience_total: yearsTotal,
-          years_experience_specialty: yearsSpecialty,
-          referral_source: referralSource,
-          onboarding_completed_at: new Date(),
-        },
-        create: {
-          user_id: userId,
-          first_name: firstName,
-          middle_name: middleName,
-          last_name: lastName,
-          phone,
-          job_title: jobTitle,
-          specialty,
-          city,
-          state,
-          zip_code: zipCode,
-          years_experience_total: yearsTotal,
-          years_experience_specialty: yearsSpecialty,
-          referral_source: referralSource,
-          onboarding_completed_at: new Date(),
-        },
-      });
-    } catch (upsertErr) {
-      console.warn("[ONBOARDING_DETAILS_PUT] Full upsert failed, trying basic update:", upsertErr);
-      // Fallback: only update columns that have always existed
-      const existing = await db.candidateProfile.findUnique({ where: { user_id: userId } });
-      if (existing) {
-        await db.candidateProfile.update({
-          where: { user_id: userId },
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            phone,
-            city,
-            state,
-            zip_code: zipCode,
-            years_experience_total: yearsTotal,
-            years_experience_specialty: yearsSpecialty,
-          },
-        });
-      } else {
-        await db.candidateProfile.create({
-          data: {
-            user_id: userId,
-            first_name: firstName,
-            last_name: lastName,
-            phone,
-            city,
-            state,
-            zip_code: zipCode,
-            years_experience_total: yearsTotal,
-            years_experience_specialty: yearsSpecialty,
-          },
-        });
-      }
-      // Note: onboarding_completed_at could NOT be set in fallback mode.
-      // Return success anyway so the user lands on the dashboard.
-      // Once the migration is applied, the next login will set it properly.
-    }
+    // ── Upsert profile ──
+    await db.candidateProfile.upsert({
+      where: { user_id: userId },
+      update: {
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        phone,
+        job_title: jobTitle,
+        specialty,
+        city,
+        state,
+        zip_code: zipCode,
+        years_experience_total: yearsTotal,
+        years_experience_specialty: yearsSpecialty,
+        referral_source: referralSource,
+        onboarding_completed_at: new Date(),
+      },
+      create: {
+        user_id: userId,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        phone,
+        job_title: jobTitle,
+        specialty,
+        city,
+        state,
+        zip_code: zipCode,
+        years_experience_total: yearsTotal,
+        years_experience_specialty: yearsSpecialty,
+        referral_source: referralSource,
+        onboarding_completed_at: new Date(),
+      },
+    });
 
     // ── Sync first_name/last_name to User record ──
     await db.user.update({
@@ -360,12 +272,26 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      onboarding_completed: true,
-    });
+    return NextResponse.json(
+      { success: true, onboarding_completed: true },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      },
+    );
   } catch (error: any) {
     console.error("[ONBOARDING_DETAILS_PUT]", error);
-    return NextResponse.json({ error: "Failed to save onboarding details" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save onboarding details" },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      },
+    );
   }
 }
