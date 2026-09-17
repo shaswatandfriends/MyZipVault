@@ -373,9 +373,12 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
   });
   const [isExpanded, setIsExpanded] = useState(isAnyActive);
 
-  // Auto-expand when a child becomes active
+  // Auto-expand when a child becomes active, auto-collapse when no child is active.
+  // This ensures only the group containing the current page is expanded —
+  // other groups collapse when you navigate away from them.
+  // The user can still manually toggle any group by clicking its header.
   useEffect(() => {
-    if (isAnyActive) setIsExpanded(true);
+    setIsExpanded(isAnyActive);
   }, [isAnyActive]);
 
   return (
