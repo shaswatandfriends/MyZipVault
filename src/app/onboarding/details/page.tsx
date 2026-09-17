@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,10 +38,8 @@ const REFERRAL_SOURCES = [
 ];
 
 export default function CandidateOnboardingPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [fetchError, setFetchError] = useState(false);
   const [form, setForm] = useState({
     first_name: "",
     middle_name: "",
@@ -61,6 +58,13 @@ export default function CandidateOnboardingPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // Safety timeout — if the fetch takes longer than 3 seconds, show the
+    // form anyway with whatever data we have. This prevents the page from
+    // being stuck in "Loading your profile..." forever.
+    const timeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 3000);
+
     fetch("/api/candidate/onboarding-details", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error(`API returned ${r.status}`);
@@ -86,24 +90,24 @@ export default function CandidateOnboardingPage() {
           });
         }
         // DELIBERATELY NOT AUTO-REDIRECTING TO DASHBOARD.
-        // Previous versions had: if (data.onboarding_completed) window.location.href = "/dashboard"
-        // This caused a redirect loop because the dashboard guard would
-        // redirect back to onboarding if the API returned inconsistent
-        // results (e.g., due to caching or cold starts).
-        //
-        // Now: the onboarding page ALWAYS shows the form. If the user is
-        // already onboarded, the form is pre-filled and they can either
-        // update it or click any sidebar link to go elsewhere.
-        // The "Complete Setup" button always works (re-saves + redirects).
+        // The onboarding page ALWAYS shows the form. The only way to leave
+        // is to submit the form (which saves to DB) or close the tab.
       })
       .catch(() => {
         if (cancelled) return;
-        setFetchError(true);
+        // Don't show error — just show the form with empty fields.
+        // The user can still fill and submit it.
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          clearTimeout(timeout);
+          setLoading(false);
+        }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,30 +142,6 @@ export default function CandidateOnboardingPage() {
         <div className="flex items-center gap-3 text-[#174A43]">
           <Loader2 className="size-6 animate-spin" />
           <span className="text-sm">Loading your profile...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (fetchError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F3E8] px-4">
-        <div className="max-w-md text-center">
-          <div className="size-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          </div>
-          <h2 className="text-lg font-bold text-[#174A43] mb-2">Something went wrong</h2>
-          <p className="text-sm text-[#5C6B66] mb-4">
-            We couldn&apos;t load your profile. This might be a temporary issue.
-            Please try again.
-          </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="gap-2"
-          >
-            <Loader2 className="size-4" />
-            Retry
-          </Button>
         </div>
       </div>
     );
