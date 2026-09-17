@@ -163,17 +163,20 @@ export default function CandidateDashboardPage() {
 
   // Onboarding guard — if candidate hasn't completed first-login onboarding,
   // redirect them to /onboarding/details. Runs once on mount.
-  // IMPORTANT: Only redirect if the API returns a CLEAR 200 with
-  // onboarding_completed === false. If the API fails (500, network error,
-  // etc.), do NOT redirect — this prevents redirect loops between dashboard
-  // and onboarding page when the API is having issues.
+  // Uses sessionStorage to prevent redirect loops: if the user has already
+  // been redirected to onboarding this session, don't redirect again (they
+  // either completed it and came back, or they're stuck in a loop).
   useEffect(() => {
+    // If we've already checked this session, don't re-check (prevents loop)
+    if (sessionStorage.getItem("onboarding_checked") === "true") return;
+
     fetch("/api/candidate/onboarding-details")
       .then((r) => {
         if (!r.ok) return null;
         return r.json();
       })
       .then((data) => {
+        sessionStorage.setItem("onboarding_checked", "true");
         if (data && data.onboarding_completed === false) {
           window.location.href = "/onboarding/details";
         }

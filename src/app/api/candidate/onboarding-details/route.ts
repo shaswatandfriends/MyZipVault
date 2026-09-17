@@ -37,33 +37,77 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const profile = await db.candidateProfile.findUnique({
-      where: { user_id: userId },
-      select: {
-        first_name: true,
-        middle_name: true,
-        last_name: true,
-        phone: true,
-        job_title: true,
-        specialty: true,
-        city: true,
-        state: true,
-        zip_code: true,
-        years_experience_total: true,
-        years_experience_specialty: true,
-        referral_source: true,
-        onboarding_completed_at: true,
-      },
-    });
-
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { email: true },
     });
 
+    // Try to fetch the profile with ALL onboarding fields.
+    // If this fails (DB migration not yet applied — column doesn't exist),
+    // fall back to a basic query without the new fields.
+    let profile: any = null;
+    try {
+      profile = await db.candidateProfile.findUnique({
+        where: { user_id: userId },
+        select: {
+          first_name: true,
+          middle_name: true,
+          last_name: true,
+          phone: true,
+          job_title: true,
+          specialty: true,
+          city: true,
+          state: true,
+          zip_code: true,
+          years_experience_total: true,
+          years_experience_specialty: true,
+          referral_source: true,
+          onboarding_completed_at: true,
+        },
+      });
+    } catch (queryErr) {
+      // Fallback: query without the new columns (migration not applied yet)
+      console.warn("[ONBOARDING_DETAILS_GET] Full query failed, falling back to basic profile:", queryErr);
+      try {
+        profile = await db.candidateProfile.findUnique({
+          where: { user_id: userId },
+          select: {
+            first_name: true,
+            last_name: true,
+            phone: true,
+            city: true,
+            state: true,
+            zip_code: true,
+            years_experience_total: true,
+            years_experience_specialty: true,
+          },
+        });
+      } catch (fallbackErr) {
+        console.error("[ONBOARDING_DETAILS_GET] Fallback query also failed:", fallbackErr);
+        // Return a minimal response — treat as no profile / not onboarded
+        return NextResponse.json({
+          onboarding_completed: false,
+          profile: {
+            first_name: "",
+            middle_name: "",
+            last_name: "",
+            email: user?.email ?? "",
+            phone: "",
+            job_title: "",
+            specialty: "",
+            city: "",
+            state: "",
+            zip_code: "",
+            years_experience_total: null,
+            years_experience_specialty: null,
+            referral_source: "",
+          },
+        });
+      }
+    }
+
     // If profile doesn't exist (orphaned user from failed signup), return
-    // onboarding_completed=false with empty values. The PUT endpoint will
-    // create the profile via upsert.
+    // onboarding_completed=false with empty values.
     if (!profile) {
       return NextResponse.json({
         onboarding_completed: false,
@@ -88,11 +132,11 @@ export async function GET() {
     return NextResponse.json({
       onboarding_completed: !!profile.onboarding_completed_at,
       profile: {
-        first_name: profile.first_name,
+        first_name: profile.first_name ?? "",
         middle_name: profile.middle_name ?? "",
-        last_name: profile.last_name,
+        last_name: profile.last_name ?? "",
         email: user?.email ?? "",
-        phone: profile.phone,
+        phone: profile.phone ?? "",
         job_title: profile.job_title ?? "",
         specialty: profile.specialty ?? "",
         city: profile.city ?? "",
@@ -207,40 +251,83 @@ export async function PUT(request: NextRequest) {
     }
 
     // ── Upsert profile (handles both existing + missing profiles) ──
-    await db.candidateProfile.upsert({
-      where: { user_id: userId },
-      update: {
-        first_name: firstName,
-        middle_name: middleName,
-        last_name: lastName,
-        phone,
-        job_title: jobTitle,
-        specialty,
-        city,
-        state,
-        zip_code: zipCode,
-        years_experience_total: yearsTotal,
-        years_experience_specialty: yearsSpecialty,
-        referral_source: referralSource,
-        onboarding_completed_at: new Date(),
-      },
-      create: {
-        user_id: userId,
-        first_name: firstName,
-        middle_name: middleName,
-        last_name: lastName,
-        phone,
-        job_title: jobTitle,
-        specialty,
-        city,
-        state,
-        zip_code: zipCode,
-        years_experience_total: yearsTotal,
-        years_experience_specialty: yearsSpecialty,
-        referral_source: referralSource,
-        onboarding_completed_at: new Date(),
-      },
-    });
+    // Try with all onboarding fields first. If this fails (DB migration
+    // not yet applied), fall back to a basic update without the new columns.
+    // In the fallback case, onboarding_completed_at can't be set — but we
+    // still save the basic fields. The user will be re-prompted to fill
+    // the form on next login until the migration is applied.
+    try {
+      await db.candidateProfile.upsert({
+        where: { user_id: userId },
+        update: {
+          first_name: firstName,
+          middle_name: middleName,
+          last_name: lastName,
+          phone,
+          job_title: jobTitle,
+          specialty,
+          city,
+          state,
+          zip_code: zipCode,
+          years_experience_total: yearsTotal,
+          years_experience_specialty: yearsSpecialty,
+          referral_source: referralSource,
+          onboarding_completed_at: new Date(),
+        },
+        create: {
+          user_id: userId,
+          first_name: firstName,
+          middle_name: middleName,
+          last_name: lastName,
+          phone,
+          job_title: jobTitle,
+          specialty,
+          city,
+          state,
+          zip_code: zipCode,
+          years_experience_total: yearsTotal,
+          years_experience_specialty: yearsSpecialty,
+          referral_source: referralSource,
+          onboarding_completed_at: new Date(),
+        },
+      });
+    } catch (upsertErr) {
+      console.warn("[ONBOARDING_DETAILS_PUT] Full upsert failed, trying basic update:", upsertErr);
+      // Fallback: only update columns that have always existed
+      const existing = await db.candidateProfile.findUnique({ where: { user_id: userId } });
+      if (existing) {
+        await db.candidateProfile.update({
+          where: { user_id: userId },
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            city,
+            state,
+            zip_code: zipCode,
+            years_experience_total: yearsTotal,
+            years_experience_specialty: yearsSpecialty,
+          },
+        });
+      } else {
+        await db.candidateProfile.create({
+          data: {
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            city,
+            state,
+            zip_code: zipCode,
+            years_experience_total: yearsTotal,
+            years_experience_specialty: yearsSpecialty,
+          },
+        });
+      }
+      // Note: onboarding_completed_at could NOT be set in fallback mode.
+      // Return success anyway so the user lands on the dashboard.
+      // Once the migration is applied, the next login will set it properly.
+    }
 
     // ── Sync first_name/last_name to User record ──
     await db.user.update({
