@@ -112,6 +112,19 @@ export default function LoginPage() {
         } catch {
           // If session fetch fails, fall back to /dashboard
         }
+        // Candidate — check if first-login onboarding is complete
+        try {
+          const obRes = await fetch("/api/candidate/onboarding-details");
+          if (obRes.ok) {
+            const obData = await obRes.json();
+            if (!obData.onboarding_completed) {
+              window.location.href = "/onboarding/details";
+              return;
+            }
+          }
+        } catch {
+          // If onboarding check fails, proceed to dashboard
+        }
         window.location.href = "/dashboard";
       }
     } catch {

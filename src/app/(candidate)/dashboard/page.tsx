@@ -161,6 +161,19 @@ export default function CandidateDashboardPage() {
   // Initial load on mount
   useEffect(() => { initialLoad(); }, [initialLoad]);
 
+  // Onboarding guard — if candidate hasn't completed first-login onboarding,
+  // redirect them to /onboarding/details. Runs once on mount, non-blocking.
+  useEffect(() => {
+    fetch("/api/candidate/onboarding-details")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.onboarding_completed === false) {
+          window.location.href = "/onboarding/details";
+        }
+      })
+      .catch(() => {/* non-blocking — don't break dashboard if check fails */});
+  }, []);
+
   // Polling interval — every 60s, never hides dashboard on failure
   useEffect(() => {
     pollingRef.current = setInterval(() => poll(), 120_000);

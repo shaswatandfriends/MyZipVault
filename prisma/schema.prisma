@@ -223,6 +223,12 @@ model CandidateProfile {
   years_experience_specialty Int?
   zip_code               String?
 
+  // First-login onboarding fields (2026-09-17)
+  job_title              String?   // e.g. "Registered Nurse", "Travel Nurse"
+  specialty              String?   // e.g. "ICU", "ER", "Labor & Delivery"
+  referral_source        String?   // "Where did you hear about us?" — internal audit
+  onboarding_completed_at DateTime? // null until first-login onboarding form is submitted
+
   user                   User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   resume                 Resume?   @relation("CandidateProfileResume", fields: [resume_id], references: [id])
 
