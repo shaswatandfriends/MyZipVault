@@ -161,8 +161,26 @@ export default function CandidateDashboardPage() {
   // Initial load on mount
   useEffect(() => { initialLoad(); }, [initialLoad]);
 
-  // Note: Onboarding redirect is handled by the candidate layout-level
-  // OnboardingGuard component — no need for a per-page check here.
+  // Onboarding check — runs ONCE on mount. If onboarding is not complete,
+  // redirect to /onboarding/details via full page reload.
+  // Uses a ref to ensure it only fires once (prevents re-fetch on re-renders).
+  const onboardingChecked = useRef(false);
+  useEffect(() => {
+    if (onboardingChecked.current) return;
+    onboardingChecked.current = true;
+
+    fetch("/api/candidate/onboarding-details", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then((data) => {
+        if (data && data.onboarding_completed === false) {
+          window.location.replace("/onboarding/details");
+        }
+      })
+      .catch(() => {/* non-blocking */});
+  }, []);
 
   // Polling interval — every 60s, never hides dashboard on failure
   useEffect(() => {
