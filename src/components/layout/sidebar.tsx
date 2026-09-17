@@ -354,25 +354,48 @@ function getNavItems(role: UserRole): NavItem[] {
 
 
 
+// ─── Helper: check if a nav item is active ───────────────────────────
+// Shared between group-level (isAnyActive) and item-level (isActive) checks
+// so they always agree.
+//
+// Rules:
+// 1. Items WITH query strings (e.g. /recruiter/jobs?filter=submittals)
+//    → exact match against fullPath (path + query)
+// 2. Items WITHOUT query strings
+//    → if current URL has a query string, a sibling owns it → NOT active
+//    → otherwise, exact match OR subpath match
+// 3. Sibling exclusion: /recruiter/candidates (My BOB) should NOT match
+//    /recruiter/candidates/search (Find Candidates) or /recruiter/candidates/123
+//    (candidate detail page). These are sibling routes, not child routes.
+function isItemActive(href: string, pathname: string, fullPath: string | undefined): boolean {
+  // Rule 1: query-string items
+  if (href.includes("?")) {
+    return fullPath === href;
+  }
+
+  const fullPathHasQuery = fullPath ? fullPath.includes("?") : false;
+
+  // Rule 2: if URL has a query, a sibling with that query owns it
+  if (fullPathHasQuery) return false;
+
+  // Rule 3: sibling exclusion for /recruiter/candidates
+  // My BOB (/recruiter/candidates) should only match EXACTLY /recruiter/candidates,
+  // NOT subpaths like /recruiter/candidates/search or /recruiter/candidates/123
+  if (href === "/recruiter/candidates") {
+    return pathname === href;
+  }
+
+  // Default: exact match OR subpath match
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
 // ─── Collapsible Nav Group Component ─────────────────────────────────
 function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathname: string; fullPath?: string }) {
   const allHrefs = useMemo(() => getGroupHrefs(group), [group]);
   // Group is "active" if any of its items matches.
-  // Use the SAME logic as the item-level active check:
-  //   - Items WITH query strings: compare against fullPath (exact match incl. query)
-  //   - Items WITHOUT query strings: compare against pathname, BUT only if the
-  //     current URL has NO query string — otherwise a different sibling item
-  //     (with the query) is the real active item, and this group should NOT
-  //     be marked active (or auto-expand).
-  const fullPathHasQuery = fullPath ? fullPath.includes("?") : false;
-  const isAnyActive = allHrefs.some((href) => {
-    if (href.includes("?")) {
-      return fullPath === href;
-    }
-    // Item has no query — if the URL has a query, a sibling owns it, not this item
-    if (fullPathHasQuery) return false;
-    return pathname === href || pathname.startsWith(href + "/");
-  });
+  // Uses the SAME isItemActive helper as the item-level check so group
+  // and item states always agree.
+  const isAnyActive = allHrefs.some((href) => isItemActive(href, pathname, fullPath));
   const [isExpanded, setIsExpanded] = useState(isAnyActive);
 
   // Auto-expand when a child becomes active, auto-collapse when no child is active.
@@ -416,32 +439,9 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
               </p>
               {/* Section items */}
               {section.items.map((item) => {
-                // Active check: exact match OR subpath match.
-                // For items with query strings (e.g. /recruiter/jobs?filter=submittals),
-                // compare against fullPath (path + query) so different filters on the
-                // same path don't all light up at once.
-                // For items WITHOUT query strings (e.g. /recruiter/jobs), if the current
-                // URL has a query string (e.g. ?filter=submittals), don't match — because
-                // a different sibling item with that query is the real active item.
-                const itemHrefHasQuery = item.href.includes("?");
-                const fullPathHasQuery = fullPath ? fullPath.includes("?") : false;
-                let isActive: boolean;
-                if (itemHrefHasQuery) {
-                  // Exact match against fullPath (path + query)
-                  isActive = fullPath === item.href;
-                } else {
-                  // Item has no query — don't match if URL has a query (a sibling owns it)
-                  if (fullPathHasQuery) {
-                    isActive = false;
-                  } else {
-                    const isExactMatch = pathname === item.href;
-                    const isSubPath = pathname.startsWith(item.href + "/");
-                    const isSiblingSearch =
-                      item.href === "/recruiter/candidates" &&
-                      pathname === "/recruiter/candidates/search";
-                    isActive = (isExactMatch || isSubPath) && !isSiblingSearch;
-                  }
-                }
+                // Use the shared isItemActive helper so item-level and
+                // group-level active states always agree.
+                const isActive = isItemActive(item.href, pathname, fullPath);
                 return (
                   <Link
                     key={item.href}
