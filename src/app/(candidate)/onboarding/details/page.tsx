@@ -42,6 +42,7 @@ export default function CandidateOnboardingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [form, setForm] = useState({
     first_name: "",
     middle_name: "",
@@ -59,9 +60,14 @@ export default function CandidateOnboardingPage() {
   });
 
   useEffect(() => {
+    let cancelled = false;
     fetch("/api/candidate/onboarding-details")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`API returned ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
+        if (cancelled) return;
         if (data.profile) {
           setForm({
             first_name: data.profile.first_name || "",
@@ -84,8 +90,15 @@ export default function CandidateOnboardingPage() {
           router.replace("/dashboard");
         }
       })
-      .catch(() => toast.error("Failed to load your profile"))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (cancelled) return;
+        // Show error state instead of infinite loading
+        setFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,6 +130,30 @@ export default function CandidateOnboardingPage() {
         <div className="flex items-center gap-3 text-[#174A43]">
           <Loader2 className="size-6 animate-spin" />
           <span className="text-sm">Loading your profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F3E8] px-4">
+        <div className="max-w-md text-center">
+          <div className="size-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          </div>
+          <h2 className="text-lg font-bold text-[#174A43] mb-2">Something went wrong</h2>
+          <p className="text-sm text-[#5C6B66] mb-4">
+            We couldn&apos;t load your profile. This might be a temporary issue.
+            Please try again.
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="gap-2"
+          >
+            <Loader2 className="size-4" />
+            Retry
+          </Button>
         </div>
       </div>
     );

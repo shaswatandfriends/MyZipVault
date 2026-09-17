@@ -113,26 +113,20 @@ export default function LoginPage() {
           // If session fetch fails, fall back to /dashboard
         }
         // Candidate — check if first-login onboarding is complete.
-        // Handle ALL non-OK responses (404 = no profile, 500 = error) by
-        // redirecting to onboarding. Only skip if we get a clear 200 with
-        // onboarding_completed === true.
+        // Only redirect to onboarding if the API returns a CLEAR 200 with
+        // onboarding_completed === false. If the API fails, go to dashboard
+        // (which has its own guard). This prevents redirect loops.
         try {
           const obRes = await fetch("/api/candidate/onboarding-details");
           if (obRes.ok) {
             const obData = await obRes.json();
-            if (!obData.onboarding_completed) {
+            if (obData.onboarding_completed === false) {
               window.location.href = "/onboarding/details";
               return;
             }
-          } else {
-            // 404 (no profile) or 500 (server error) → send to onboarding
-            // so they can fill the form. The onboarding API will upsert
-            // the profile.
-            window.location.href = "/onboarding/details";
-            return;
           }
         } catch {
-          // Network error — fall through to /dashboard
+          // Network error — fall through to dashboard
         }
         window.location.href = "/dashboard";
       }
