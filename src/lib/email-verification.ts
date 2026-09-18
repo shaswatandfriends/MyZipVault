@@ -15,9 +15,9 @@ interface VerificationCheckResult {
  * Verify the user has confirmed their email address.
  *
  * Per Gap 5 fix: unverified users can log in but have LIMITED functionality.
- * They CAN: view dashboard, edit profile, upload resume (but not share it)
- * They CANNOT: upload credentials, share documents, submit checklists,
- *              request references
+ * They CAN: view dashboard, edit profile, upload resume (but not share it),
+ *           complete skills checklists (submit + share existing responses)
+ * They CANNOT: upload credentials, share documents, request references
  *
  * Usage in API routes:
  *   const check = await requireEmailVerified(userId);
