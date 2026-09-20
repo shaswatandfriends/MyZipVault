@@ -51,8 +51,16 @@ export default function CandidateSettingsPage() {
 
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [yearsTotal, setYearsTotal] = useState("");
+  const [yearsSpecialty, setYearsSpecialty] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
@@ -64,18 +72,36 @@ export default function CandidateSettingsPage() {
   });
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
-  // Fetch profile data (for phone which is not in auth context)
+  // Fetch profile data — loads from onboarding-details API which has all fields
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const res = await fetch("/api/candidate/profile");
-        if (res.ok) {
-          const data = await res.json();
-          setFirstName(data.firstName || data.first_name || "");
-          setLastName(data.lastName || data.last_name || "");
+        // Fetch notification preferences + phone from the profile API
+        const profileRes = await fetch("/api/candidate/profile");
+        if (profileRes.ok) {
+          const data = await profileRes.json();
           setPhone(data.phone || "");
           if (data.notification_preferences) {
             setNotificationPrefs(data.notification_preferences);
+          }
+        }
+
+        // Fetch all onboarding fields from the onboarding-details API
+        const obRes = await fetch("/api/candidate/onboarding-details", { cache: "no-store" });
+        if (obRes.ok) {
+          const obData = await obRes.json();
+          if (obData.profile) {
+            setFirstName(obData.profile.first_name || "");
+            setMiddleName(obData.profile.middle_name || "");
+            setLastName(obData.profile.last_name || "");
+            setPhone(obData.profile.phone || phone);
+            setJobTitle(obData.profile.job_title || "");
+            setSpecialty(obData.profile.specialty || "");
+            setCity(obData.profile.city || "");
+            setState(obData.profile.state || "");
+            setZipCode(obData.profile.zip_code || "");
+            setYearsTotal(obData.profile.years_experience_total ?? "");
+            setYearsSpecialty(obData.profile.years_experience_specialty ?? "");
           }
         }
       } catch {
@@ -97,13 +123,23 @@ export default function CandidateSettingsPage() {
 
     setIsSavingProfile(true);
     try {
-      const res = await fetch("/api/candidate/profile", {
+      // Save all fields via the onboarding-details API (handles upsert
+      // + syncs first_name/last_name to User record)
+      const res = await fetch("/api/candidate/onboarding-details", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           first_name: firstName.trim(),
+          middle_name: middleName.trim() || undefined,
           last_name: lastName.trim(),
           phone: phone.trim(),
+          job_title: jobTitle.trim(),
+          specialty: specialty.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          zip_code: zipCode.trim(),
+          years_experience_total: yearsTotal || 0,
+          years_experience_specialty: yearsSpecialty || 0,
         }),
       });
 
@@ -259,7 +295,8 @@ export default function CandidateSettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Name row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
@@ -268,6 +305,17 @@ export default function CandidateSettingsPage() {
                   placeholder="Enter your first name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="middleName">Middle Name</Label>
+                <Input
+                  id="middleName"
+                  type="text"
+                  placeholder="(optional)"
+                  value={middleName}
+                  onChange={(e) => setMiddleName(e.target.value)}
                   disabled={isSavingProfile || isProfileLoading}
                 />
               </div>
@@ -283,6 +331,8 @@ export default function CandidateSettingsPage() {
                 />
               </div>
             </div>
+
+            {/* Phone */}
             <div className="space-y-2">
               <Label htmlFor="phone" className="flex items-center gap-1.5">
                 <Phone className="size-3.5 text-muted-foreground" />
@@ -297,6 +347,102 @@ export default function CandidateSettingsPage() {
                 disabled={isSavingProfile || isProfileLoading}
               />
             </div>
+
+            {/* Job title + specialty */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Job Title</Label>
+                <Input
+                  id="jobTitle"
+                  type="text"
+                  placeholder="e.g. Registered Nurse"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Specialty</Label>
+                <Input
+                  id="specialty"
+                  type="text"
+                  placeholder="e.g. ICU, ER, Labor &amp; Delivery"
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  type="text"
+                  placeholder="e.g. Austin"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  type="text"
+                  placeholder="e.g. TX"
+                  maxLength={2}
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase())}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  type="text"
+                  placeholder="e.g. 78701"
+                  maxLength={10}
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+            </div>
+
+            {/* Years of experience */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="yearsTotal">Total Years of Work Experience</Label>
+                <Input
+                  id="yearsTotal"
+                  type="number"
+                  min="0"
+                  max="80"
+                  placeholder="e.g. 5"
+                  value={yearsTotal}
+                  onChange={(e) => setYearsTotal(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="yearsSpecialty">Years in Current Specialty</Label>
+                <Input
+                  id="yearsSpecialty"
+                  type="number"
+                  min="0"
+                  max="80"
+                  placeholder="e.g. 3"
+                  value={yearsSpecialty}
+                  onChange={(e) => setYearsSpecialty(e.target.value)}
+                  disabled={isSavingProfile || isProfileLoading}
+                />
+              </div>
+            </div>
+
             <div className="flex justify-end">
               <Button
                 type="submit"

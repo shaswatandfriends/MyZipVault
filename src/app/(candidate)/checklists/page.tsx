@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
-import { CandidateProfileInfoCard } from "@/components/checklist/candidate-profile-info-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -328,9 +327,6 @@ export default function CandidateChecklistsPage() {
         title="My Checklists"
         description="View and complete your skills checklists requested by recruiters."
       />
-
-      {/* Phase 4.2 — Healthcare Professional Information card (auto-save profile fields) */}
-      <CandidateProfileInfoCard />
 
       {/* Request Checklist from Admin */}
       <RequestChecklistButton />
