@@ -112,21 +112,9 @@ export default function LoginPage() {
         } catch {
           // If session fetch fails, fall back to /dashboard
         }
-        // Candidate — onboarding is MANDATORY for all candidates (new and
-        // existing). Redirect to /onboarding/details if any required field
-        // is missing OR onboarding_completed_at is null.
-        try {
-          const obRes = await fetch("/api/candidate/onboarding-details");
-          if (obRes.ok) {
-            const obData = await obRes.json();
-            if (obData.onboarding_completed === false) {
-              window.location.href = "/onboarding/details";
-              return;
-            }
-          }
-        } catch {
-          // Network error — fall through to dashboard
-        }
+        // Candidate — go straight to dashboard. Profile info is collected
+        // on the /checklists page via the "Healthcare Professional Information"
+        // card (auto-saved on blur). No separate onboarding step needed.
         window.location.href = "/dashboard";
       }
     } catch {

@@ -161,18 +161,9 @@ export default function CandidateDashboardPage() {
   // Initial load on mount
   useEffect(() => { initialLoad(); }, [initialLoad]);
 
-  // ONBOARDING REDIRECT DISABLED to stop the redirect loop.
-  // The login page already redirects to /onboarding/details if onboarding
-  // is incomplete. The dashboard does NOT need to re-check on mount.
-  // This was causing a loop:
-  //   Dashboard mount → API says false → redirect to onboarding
-  //   Onboarding page → form submit → redirect to dashboard
-  //   Dashboard mount → API says false (race condition) → redirect to onboarding
-  //   LOOP
-  //
-  // Now: only the LOGIN page redirects to onboarding. Once the user is on
-  // the dashboard, they stay there. If they need to update onboarding,
-  // they can navigate to /onboarding/details manually via URL.
+  // Note: Onboarding page has been REMOVED. Profile info is collected
+  // on the /checklists page via the "Healthcare Professional Information"
+  // card. No onboarding redirect needed here.
 
   // Polling interval — every 60s, never hides dashboard on failure
   useEffect(() => {
