@@ -89,7 +89,9 @@ export function TourHost() {
     try {
       const cached = localStorage.getItem("mzv:tour:completed");
       if (!cached) {
-        setShow(true);
+        // First-time user — auto-trigger the tour after a short delay
+        // so the dashboard content has time to render first
+        setTimeout(() => setShow(true), 800);
       }
     } catch {
       // localStorage may be unavailable (private mode / SSR) — skip auto-start

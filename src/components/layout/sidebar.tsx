@@ -66,7 +66,6 @@ import {
 import { useSidebar } from "@/components/ui/sidebar";
 import { ChevronLeft, ChevronRight } from "@/lib/icons";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserRole } from "@/lib/types";
 
 // ─── Nav Item Types ────────────────────────────────────────────────────
@@ -736,9 +735,8 @@ export function AppSidebar() {
           className="relative z-[1] shrink-0 space-y-3 p-3 group-data-[collapsible=icon]:space-y-2 group-data-[collapsible=icon]:p-1.5"
           style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}
         >
-          {/* Theme Toggle + Notification Bell */}
+          {/* Notification Bell only — theme toggle removed (light mode is forced) */}
           <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2">
-            <ThemeToggle />
             <NotificationBell variant="sidebar" />
           </div>
 
