@@ -44,6 +44,13 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
+    // Strip field values from sign_fields so the revised doc starts clean
+    let cleanSignFields = originalDoc.sign_fields;
+    try {
+      const fields = JSON.parse(originalDoc.sign_fields || "[]");
+      cleanSignFields = JSON.stringify(fields.map((f: any) => ({ ...f, value: null })));
+    } catch {}
+
     // Create a new document based on the original
     const newDoc = await db.vaultSignDocument.create({
       data: {
@@ -61,7 +68,11 @@ export async function POST(
         personal_message: originalDoc.personal_message,
         status: "draft",
         placeholder_values: originalDoc.placeholder_values,
-        sign_fields: originalDoc.sign_fields,
+        sign_fields: cleanSignFields, // Clean — no stale values
+        candidate_lead_id: originalDoc.candidate_lead_id, // Preserve BOB link
+        header_config: originalDoc.header_config, // Preserve branding
+        footer_config: originalDoc.footer_config,
+        show_header_footer: originalDoc.show_header_footer,
         audit_trail: JSON.stringify([
           {
             event: "document_created",

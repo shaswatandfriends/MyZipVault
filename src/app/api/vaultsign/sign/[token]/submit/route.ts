@@ -35,7 +35,17 @@ export async function POST(
       return NextResponse.json({ error: "You have already signed this document" }, { status: 400 });
     }
 
-    if (signer.document.status === "voided" || signer.document.status === "expired") {
+    // Block declined signers from re-signing
+    if (signer.status === "declined") {
+      return NextResponse.json({ error: "You have declined this document and cannot sign it" }, { status: 410 });
+    }
+
+    // Block if token has already been used
+    if (signer.token_used) {
+      return NextResponse.json({ error: "This signing link has already been used" }, { status: 410 });
+    }
+
+    if (signer.document.status === "voided" || signer.document.status === "expired" || signer.document.status === "declined") {
       return NextResponse.json({ error: "Document is no longer actionable" }, { status: 410 });
     }
 
@@ -197,6 +207,11 @@ export async function POST(
           // Add audit trail page
           const finalPdf = await addAuditTrailPage(headerFooterBuffer, auditTrail, refreshedDocument.document_name);
 
+          // Recompute hash AFTER all modifications (header/footer + audit trail)
+          // The hash from generateSignedPdf was pre-modification — not valid for the final PDF
+          const { computeDocumentHash } = await import("@/lib/vaultsign/pdf-sign");
+          const finalHash = computeDocumentHash(finalPdf);
+
           // Upload final PDF
           const uploadResult = await uploadGeneratedPdf(
             finalPdf,
@@ -204,7 +219,7 @@ export async function POST(
             `final-${Date.now()}.pdf`
           );
 
-          // Update document with final URL and hash
+          // Update document with final URL and correct hash
           auditTrail.push({
             event: "document_completed",
             user_name: "System",
@@ -216,7 +231,7 @@ export async function POST(
             data: {
               status: "completed",
               final_document_url: uploadResult.url,
-              document_hash: hash,
+              document_hash: finalHash, // Use the hash of the FINAL pdf (after header/footer + audit)
               audit_trail: JSON.stringify(auditTrail),
               updated_at: new Date(),
             },
@@ -394,7 +409,14 @@ export async function POST(
         });
 
         // Send email to next signer
-        const senderName = signer.name;
+        // Use the document creator's name (the recruiter), not the previous signer's name
+        const creator = await db.user.findUnique({
+          where: { id: refreshedDocument.created_by_user_id },
+          select: { first_name: true, last_name: true },
+        });
+        const senderName = creator
+          ? `${creator.first_name || ""} ${creator.last_name || ""}`.trim()
+          : refreshedDocument.organization?.name || "VaultSign";
         const orgName = refreshedDocument.organization?.name || "MyZipVault";
         await sendDocumentSentEmail({
           signerName: nextSigner.name,
@@ -403,7 +425,7 @@ export async function POST(
           senderName,
           organizationName: orgName,
           signingLink: generateSigningLink(nextSigner.sign_token),
-          personal_message: refreshedDocument.personal_message || undefined,
+          personalMessage: refreshedDocument.personal_message || undefined,
           expiryDate: refreshedDocument.expiry_date.toISOString().split("T")[0],
         });
       }

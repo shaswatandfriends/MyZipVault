@@ -125,6 +125,16 @@ export async function GET(
       return NextResponse.json({ error: "This document has been voided" }, { status: 410 });
     }
 
+    // Block draft documents — signers can't sign before the recruiter sends
+    if (document.status === "draft") {
+      return NextResponse.json({ error: "This document has not been sent for signature yet" }, { status: 410 });
+    }
+
+    // Block declined documents
+    if (document.status === "declined") {
+      return NextResponse.json({ error: "This document has been declined and is no longer actionable" }, { status: 410 });
+    }
+
     // Real-time expiry check — even if status hasn't been updated by a cron,
     // check the actual expiry_date timestamp
     if (document.expiry_date && new Date(document.expiry_date) < new Date()) {

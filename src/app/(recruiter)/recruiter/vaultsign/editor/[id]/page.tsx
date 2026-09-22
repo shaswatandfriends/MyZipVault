@@ -650,33 +650,15 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   };
 
   // ─── Real-time variable preview ──────────────────────────────────
-  // When placeholderValues changes, find all {{variable}} in the document
-  // and replace them with the actual values. This runs on every keystroke
-  // so the user sees the document update in real-time.
+  // NOTE: We do NOT replace {{variable}} in the editor content anymore.
+  // The previous approach permanently destroyed placeholders — once
+  // replaced, the variable couldn't be edited again.
+  // Instead, variables are replaced only during PDF generation
+  // (tiptapToPdfmake handles this correctly at line 308).
+  // The editor shows {{variable}} as-is, and the left sidebar shows
+  // the values that will be substituted.
   useEffect(() => {
-    if (!editor) return;
-
-    // Get current HTML
-    let html = editor.getHTML();
-
-    // Replace all {{variable}} with their values
-    let hasChanges = false;
-    for (const [key, value] of Object.entries(placeholderValues)) {
-      if (value) {
-        const regex = new RegExp(`\\{\\{${key}\\}\\}`, "gi");
-        if (regex.test(html)) {
-          html = html.replace(regex, value);
-          hasChanges = true;
-        }
-      }
-    }
-
-    // Only update the editor if we made changes (avoids cursor jump)
-    if (hasChanges) {
-      const { from, to } = editor.state.selection;
-      editor.commands.setContent(html, false);
-      editor.commands.setTextSelection({ from, to });
-    }
+    // No-op — variables are handled at PDF generation time, not in the editor
   }, [placeholderValues, editor]);
 
   if (loading) {
