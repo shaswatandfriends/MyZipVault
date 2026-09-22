@@ -36,7 +36,7 @@ export function FinalCTA() {
             </button>
           </Link>
           <Link href="/login">
-            <button style={{ padding: "16px 32px", fontSize: 15, fontWeight: 600, color: C.textOnDeep, background: "transparent", border: `1px solid rgba(247,243,232,0.30)`, cursor: "pointer", borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(247,243,232,0.6)"; e.currentTarget.style.background = "rgba(247,243,232,0.05)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(247,243,232,0.30)"; e.currentTarget.style.background = "transparent"; }}>
+            <button style={{ padding: "16px 32px", fontSize: 15, fontWeight: 600, color: C.textOnDeep, background: "transparent", border: `2px solid ${C.accent}`, cursor: "pointer", borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = C.bgDeep; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.textOnDeep; }}>
               Sign In
             </button>
           </Link>

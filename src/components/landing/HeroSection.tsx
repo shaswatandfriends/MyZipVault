@@ -39,12 +39,12 @@ export function HeroSection() {
               </button>
             </Link>
             <Link href="/agency-signup">
-              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: C.bgCard, border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.bgCardHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bgCard; }}>
+              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.primary, background: "#FFFFFF", border: `2px solid ${C.accent}`, cursor: "pointer", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#FFFFFF"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.color = C.primary; }}>
                 I'm a Recruiter
               </button>
             </Link>
             <Link href="/employer-signup">
-              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.text, background: "transparent", border: `1px solid ${C.border}`, cursor: "pointer", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderHover; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}>
+              <button style={{ padding: "15px 28px", fontSize: 15, fontWeight: 600, color: C.primary, background: "transparent", border: `2px solid ${C.primary}`, cursor: "pointer", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = C.primary; e.currentTarget.style.color = "#FFFFFF"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.primary; }}>
                 I'm an Employer
               </button>
             </Link>

@@ -108,7 +108,7 @@ export function SocialFeed() {
                     <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{c.name}</p>
                     <p style={{ fontSize: 11, color: C.textDim }}>{c.members}</p>
                   </div>
-                  <button style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, color: C.primary, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 6, cursor: "pointer" }}>Join</button>
+                  <button style={{ padding: "6px 16px", fontSize: 12, fontWeight: 600, color: "#FFFFFF", background: C.primary, border: "none", borderRadius: 8, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = C.primaryHover; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.primary; }}>Join</button>
                 </div>
               ))}
             </div>
