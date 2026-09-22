@@ -753,48 +753,6 @@ export default function SuperadminSettingsPage() {
               )}
             </CardContent>
           </Card>
-
-          {/* ── Feature Flags ─────────────────────────────────────────── */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <ToggleLeft className="size-4 text-emerald-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Feature Flags</CardTitle>
-                  <CardDescription>Toggle platform features on or off.</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(featureFlags).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <ToggleLeft className="size-10 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No feature flags configured yet</p>
-                </div>
-              ) : (
-                <div className="space-y-0">
-                  {Object.entries(featureFlags).map(([flagName, isEnabled], index) => (
-                    <div key={flagName}>
-                      <div className="flex items-center justify-between py-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{flagName.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
-                          <p className="text-xs text-muted-foreground">Flag: {flagName}</p>
-                        </div>
-                        <Switch
-                          checked={isEnabled}
-                          onCheckedChange={(checked) => toggleFeatureFlag(flagName, checked)}
-                          disabled={saving[`flag-${flagName}`]}
-                        />
-                      </div>
-                      {index < Object.keys(featureFlags).length - 1 && <Separator />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       )}
 
