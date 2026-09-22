@@ -132,6 +132,8 @@ model User {
   call_logs              CallLog[]
   candidate_calendar_setting   CandidateCalendarSetting?
   follow_up_reminders   FollowUpReminder[]
+  recruiter_bookings_received RecruiterBooking[] @relation("RecruiterBookingsReceived")
+  recruiter_bookings_made     RecruiterBooking[] @relation("RecruiterBookingsMade")
   reference_deletion_requests ReferenceDeletionRequest[] @relation("CandidateDeletionRequests")
   reference_deletion_reviewed ReferenceDeletionRequest[] @relation("AdminDeletionReviews")
 
@@ -758,6 +760,29 @@ model CalendarAvailability {
 }
 
 // ─── 33. Calendar Shares ────────────────────────────────────────────
+
+// ─── 32b. Recruiter Bookings (candidates book calls) ─────────────────
+model RecruiterBooking {
+  id                Int       @id @default(autoincrement())
+  recruiter_user_id Int
+  candidate_user_id Int?
+  candidate_name    String?
+  candidate_email   String?
+  scheduled_at      DateTime
+  duration_minutes  Int       @default(30)
+  status            String    @default("pending") // pending | confirmed | cancelled | completed
+  notes             String?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  recruiter_user    User      @relation("RecruiterBookingsReceived", fields: [recruiter_user_id], references: [id], onDelete: Cascade)
+  candidate_user    User?     @relation("RecruiterBookingsMade", fields: [candidate_user_id], references: [id], onDelete: SetNull)
+
+  @@index([recruiter_user_id, scheduled_at])
+  @@index([candidate_user_id])
+  @@index([status, scheduled_at])
+}
+
 model CalendarShare {
   id                Int       @id @default(autoincrement())
   candidate_user_id Int
