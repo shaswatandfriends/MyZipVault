@@ -39,6 +39,17 @@ export async function POST(
       return NextResponse.json({ error: "Document is no longer actionable" }, { status: 410 });
     }
 
+    // Real-time expiry check — even if status hasn't been updated by a cron
+    if (signer.document.expiry_date && new Date(signer.document.expiry_date) < new Date()) {
+      try {
+        await db.vaultSignDocument.update({
+          where: { id: signer.document.id },
+          data: { status: "expired" },
+        });
+      } catch {}
+      return NextResponse.json({ error: "This document has expired and can no longer be signed" }, { status: 410 });
+    }
+
     const body = await request.json();
     const { field_values, signature_data, agree_to_electronic } = body;
 
@@ -87,6 +98,7 @@ export async function POST(
         ip_address: ipAddress,
         device_info: userAgent.substring(0, 500),
         signature_data: JSON.stringify(signerSignatureStore),
+        token_used: true, // Revoke the sign token — can't be reused
       },
     });
 
@@ -341,7 +353,15 @@ export async function POST(
         }
       } catch (err) {
         console.error("[VAULTSIGN] Final PDF generation error:", err);
-        // Still mark as completed even if PDF generation fails
+        // PDF generation failed — mark as completed but log the error
+        // in the audit trail so it's visible that the PDF wasn't generated
+        auditTrail.push({
+          event: "pdf_generation_failed",
+          user_name: "System",
+          timestamp: new Date().toISOString(),
+          ip_address: undefined,
+          device_info: `Error: ${err instanceof Error ? err.message.substring(0, 200) : "Unknown error"}`,
+        });
         await db.vaultSignDocument.update({
           where: { id: refreshedDocument.id },
           data: {

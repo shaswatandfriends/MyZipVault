@@ -108,12 +108,36 @@ export async function GET(
       return NextResponse.json({ error: "Invalid signing link" }, { status: 404 });
     }
 
+    // Check if token has already been used (signed or declined)
+    if (signer.token_used) {
+      if (signer.status === "signed") {
+        return NextResponse.json({ error: "This document has already been signed using this link" }, { status: 410 });
+      }
+      if (signer.status === "declined") {
+        return NextResponse.json({ error: "This signing link has been used (document was declined)" }, { status: 410 });
+      }
+    }
+
     const document = signer.document;
 
     // Check if document is still actionable
     if (document.status === "voided") {
       return NextResponse.json({ error: "This document has been voided" }, { status: 410 });
     }
+
+    // Real-time expiry check — even if status hasn't been updated by a cron,
+    // check the actual expiry_date timestamp
+    if (document.expiry_date && new Date(document.expiry_date) < new Date()) {
+      // Auto-update status to expired in the DB
+      try {
+        await db.vaultSignDocument.update({
+          where: { id: document.id },
+          data: { status: "expired" },
+        });
+      } catch {}
+      return NextResponse.json({ error: "This document has expired" }, { status: 410 });
+    }
+
     if (document.status === "expired") {
       return NextResponse.json({ error: "This document has expired" }, { status: 410 });
     }

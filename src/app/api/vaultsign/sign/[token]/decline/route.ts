@@ -51,6 +51,7 @@ export async function POST(
         decline_reason: reason || null,
         ip_address: ipAddress,
         device_info: userAgent.substring(0, 500),
+        token_used: true, // Revoke the sign token — can't be reused
       },
     });
 

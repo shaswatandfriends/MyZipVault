@@ -41,6 +41,11 @@ export async function POST(
       return NextResponse.json({ error: "Only draft documents can be sent" }, { status: 400 });
     }
 
+    // Check that expiry date is in the future
+    if (document.expiry_date && new Date(document.expiry_date) < new Date()) {
+      return NextResponse.json({ error: "Cannot send a document that has already expired. Please update the expiry date." }, { status: 400 });
+    }
+
     // Check access
     const role = (session.user as Record<string, unknown>).role as string;
     const orgId = (session.user as Record<string, unknown>).organizationId as number;

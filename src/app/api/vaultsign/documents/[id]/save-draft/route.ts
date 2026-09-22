@@ -77,6 +77,18 @@ export async function PUT(
         : JSON.stringify(body.footer_config);
     }
 
+    // Save custom variable definitions so they persist on refresh
+    if (body.placeholder_variables !== undefined) {
+      // placeholder_variables is stored on the template, but we also
+      // need it on the document for custom variables created in the editor.
+      // We store it in placeholder_values as a special key _custom_variables
+      const existingValues = typeof body.placeholder_values === "string"
+        ? JSON.parse(body.placeholder_values || "{}")
+        : (body.placeholder_values || {});
+      existingValues._custom_variables = body.placeholder_variables;
+      updateData.placeholder_values = JSON.stringify(existingValues);
+    }
+
     if (body.show_header_footer !== undefined) {
       updateData.show_header_footer = body.show_header_footer;
     }

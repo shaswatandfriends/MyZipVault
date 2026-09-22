@@ -59,6 +59,23 @@ export async function PUT(
 
     // Update signers if provided
     if (signers && Array.isArray(signers)) {
+      // Get existing signers from DB
+      const existingSigners = await db.vaultSignSigner.findMany({
+        where: { document_id: docId },
+        select: { id: true },
+      });
+      const existingSignerIds = existingSigners.map(s => s.id);
+      const sentSignerIds = signers.filter((s: any) => s.id).map((s: any) => s.id);
+
+      // Delete signers that are no longer in the list
+      const signersToDelete = existingSignerIds.filter(id => !sentSignerIds.includes(id));
+      if (signersToDelete.length > 0) {
+        await db.vaultSignSigner.deleteMany({
+          where: { id: { in: signersToDelete } },
+        });
+      }
+
+      // Update existing signers
       for (const signer of signers) {
         if (signer.id) {
           await db.vaultSignSigner.update({
