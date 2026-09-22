@@ -38,7 +38,7 @@ const FIELD_DISPLAY: Record<string, { icon: string; label: string; hint: string 
 };
 
 // React component for the sign field node view
-function SignFieldComponent({ node }: { node: any }) {
+function SignFieldComponent({ node, deleteNode, getPos, editor }: any) {
   const fieldType = node.attrs.fieldType || "signature";
   const signerIndex = node.attrs.assignedToSignerIndex ?? 0;
   const signerLabel = node.attrs.signerLabel || `Signer ${signerIndex + 1}`;
@@ -48,9 +48,51 @@ function SignFieldComponent({ node }: { node: any }) {
   // For signature fields, automatically show date below
   const showAutoDate = fieldType === "signature";
 
+  // Drag state
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragRef = React.useRef<HTMLDivElement>(null);
+
+  // Make the node draggable within the TipTap editor
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    // Set the drag data to the node's position so TipTap knows what to move
+    const pos = getPos();
+    e.dataTransfer.setData("application/x-tiptap-drag", JSON.stringify({ pos }));
+    e.dataTransfer.effectAllowed = "move";
+
+    // Create a drag image
+    if (dragRef.current) {
+      const dragImage = dragRef.current.cloneNode(true) as HTMLElement;
+      dragImage.style.opacity = "0.8";
+      dragImage.style.position = "absolute";
+      dragImage.style.top = "-1000px";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 20, 20);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <NodeViewWrapper as="div" style={{ display: "inline-block", margin: "12px 12px 12px 0", verticalAlign: "top" }}>
+    <NodeViewWrapper
+      as="div"
+      style={{
+        display: "inline-block",
+        margin: "12px 12px 12px 0",
+        verticalAlign: "top",
+        opacity: isDragging ? 0.5 : 1,
+        cursor: "grab",
+      }}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      data-drag-handle
+    >
       <div
+        ref={dragRef}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -66,16 +108,38 @@ function SignFieldComponent({ node }: { node: any }) {
           fontFamily: "inherit",
           cursor: "default",
           userSelect: "none",
+          transition: "box-shadow 0.2s, transform 0.2s",
+          boxShadow: isDragging ? "0 8px 24px rgba(0,0,0,0.15)" : "none",
+          transform: isDragging ? "scale(0.95)" : "scale(1)",
         }}
         contentEditable={false}
       >
-        {/* Top row: icon + field type label + signer name */}
+        {/* Top row: drag handle + icon + field type label + signer name + delete */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "12px", cursor: "grab", opacity: 0.5 }}>⠿</span>
             <span style={{ fontSize: "16px" }}>{display.icon}</span>
             <span>{display.label}</span>
           </div>
-          <span style={{ fontSize: "11px", fontWeight: 400, opacity: 0.7 }}>{signerLabel}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 400, opacity: 0.7 }}>{signerLabel}</span>
+            <button
+              onClick={deleteNode}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: color,
+                opacity: 0.4,
+                fontSize: "14px",
+                padding: "0 2px",
+              }}
+              title="Remove field"
+              contentEditable={false}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Signature line */}
