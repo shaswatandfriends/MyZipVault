@@ -382,7 +382,7 @@ export default function SuperadminDashboardPage() {
           <>
             {/* ── Card 1: Users & Organizations — forest green ─────────── */}
             <Card
-              className="cursor-pointer transition-all group/card overflow-hidden"
+              className="card-dark cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/users")}
               style={{
                 background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
@@ -432,7 +432,7 @@ export default function SuperadminDashboardPage() {
 
             {/* ── Card 2: Credits & Revenue — terracotta ─────────────── */}
             <Card
-              className="cursor-pointer transition-all group/card overflow-hidden"
+              className="card-dark cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => router.push("/superadmin/analytics")}
               style={{
                 background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)",
@@ -492,7 +492,7 @@ export default function SuperadminDashboardPage() {
 
             {/* ── Card 3: Platform Health — adaptive color ─────────── */}
             <Card
-              className="cursor-pointer transition-all group/card overflow-hidden"
+              className="card-dark cursor-pointer transition-all group/card overflow-hidden"
               onClick={() => {
                 if (hasErrors) router.push("/superadmin/errors");
                 else if (hasPending) router.push("/superadmin/admins");

@@ -2401,12 +2401,17 @@ input[data-slot="input"]:-webkit-autofill:focus {
   box-shadow: 0 4px 24px rgba(23, 74, 67, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
 }
 
-/* Dark mode card variant — for dark backgrounds */
+/* Dark/gradient card variant — for cards with dark inline backgrounds.
+   The [data-slot="card"] rule above uses !important which overrides inline
+   styles. This rule restores the inline background by using !important
+   with 'revert' to let the inline style take effect. */
 [data-slot="card"].card-dark,
 .glass-section-dark[data-slot="card"] {
-  background: rgba(247, 243, 232, 0.06) !important;
-  border: 1px solid rgba(247, 243, 232, 0.14) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(247, 243, 232, 0.10) !important;
+  background: revert !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
 }
 
 /* ════════════════════════════════════════════════════════════════════
