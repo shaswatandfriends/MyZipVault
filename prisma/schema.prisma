@@ -80,6 +80,17 @@ model User {
   last_activity_at     DateTime?
   created_at           DateTime              @default(now())
 
+  // Recruiter verification + certification (2026-09-22)
+  verification_status         String  @default("unverified") // unverified|pending|verified|failed|cooldown
+  verification_completed_at   DateTime?
+  verification_expires_at     DateTime? // 1 year after completion
+  verification_failed_at      DateTime? // for 45-day cooldown
+  certification_tags          String  @default("[]") // JSON array: ['allied','nursing','locums','non_clinical']
+  credit_daily_used           Int     @default(0)
+  credit_daily_reset_at       DateTime @default(now())
+  credit_monthly_used         Int     @default(0)
+  credit_monthly_reset_at     DateTime @default(now())
+
   organization         Organization?         @relation(fields: [organization_id], references: [id])
 
   admin_permissions    AdminPermission[]
