@@ -103,23 +103,6 @@ export default function CreditsRewardsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <div>
-        <Button asChild variant="ghost" size="sm" className="gap-1 mb-2 -ml-2">
-          <Link href="/superadmin/credits/dashboard">
-            <ArrowLeft className="size-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-bold text-[#174A43] font-heading flex items-center gap-2">
-          <Gift className="size-6" />
-          Reward Configuration
-        </h1>
-        <p className="text-sm text-[#5C6B66] mt-1">
-          Configure how many credits are granted for each action. Changes take effect immediately.
-        </p>
-      </div>
-
       {/* Reward Config Form */}
       <Card>
         <CardHeader>

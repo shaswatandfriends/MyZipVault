@@ -68,23 +68,6 @@ export default function CreditsTransactionsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <Button asChild variant="ghost" size="sm" className="gap-1 mb-2 -ml-2">
-          <Link href="/superadmin/credits/dashboard">
-            <ArrowLeft className="size-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-bold text-[#174A43] font-heading flex items-center gap-2">
-          <Activity className="size-6" />
-          All Transactions
-        </h1>
-        <p className="text-sm text-[#5C6B66] mt-1">
-          {total.toLocaleString()} total transactions
-        </p>
-      </div>
-
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">

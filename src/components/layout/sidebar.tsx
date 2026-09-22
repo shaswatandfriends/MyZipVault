@@ -286,26 +286,13 @@ const superAdminMarketplaceGroup: NavGroup = {
   ],
 };
 
-// ─── Super Admin: Credits Group ───────────────────────────────────────
-const superAdminCreditsGroup: NavGroup = {
-  title: "Credits",
-  icon: Coins,
-  sections: [
-    {
-      title: "MANAGE",
-      items: [
-        { title: "Overview", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
-        { title: "Reward Config", href: "/superadmin/credits/rewards", icon: Gift },
-        { title: "Transactions", href: "/superadmin/credits/transactions", icon: Activity },
-        { title: "Balance Adjustment", href: "/superadmin/credits/balance", icon: CreditCard },
-      ],
-    },
-  ],
-};
-
 // ─── Super Admin: Flat Nav Items (non-grouped) ───────────────────────
+// Credits is a flat item — clicking it goes to /superadmin/credits/dashboard
+// which has a top tab bar for navigating between Overview, Reward Config,
+// Transactions, and Balance Adjustment.
 const superAdminFlatNav: NavItem[] = [
   { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
+  { title: "Credits", href: "/superadmin/credits/dashboard", icon: Coins },
 ];
 
 const superAdminBottomNav: NavItem[] = [
@@ -343,7 +330,7 @@ const superAdminSectionDividers: Record<string, string> = {
 };
 
 // ─── Super Admin Groups ──────────────────────────────────────────────
-const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, superAdminCreditsGroup, skillsChecklistGroup, referenceGroup];
+const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, skillsChecklistGroup, referenceGroup];
 
 // ─── Get all hrefs for a group (for active state detection) ──────────
 function getGroupHrefs(group: NavGroup): string[] {

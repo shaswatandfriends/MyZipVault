@@ -76,17 +76,6 @@ export default function CreditsDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#174A43] font-heading flex items-center gap-2">
-          <Coins className="size-6" />
-          Credits Overview
-        </h1>
-        <p className="text-sm text-[#5C6B66] mt-1">
-          Overview of all credits in the platform. Use the sidebar to navigate to Rewards, Transactions, or Balances.
-        </p>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
