@@ -47,6 +47,8 @@ import {
   Handshake,
   HelpCircle,
   TrendingUp,
+  Coins,
+  Gift,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -284,6 +286,22 @@ const superAdminMarketplaceGroup: NavGroup = {
   ],
 };
 
+// ─── Super Admin: Credits Group ───────────────────────────────────────
+const superAdminCreditsGroup: NavGroup = {
+  title: "Credits",
+  icon: Coins,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Dashboard", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
+        { title: "Rewards", href: "/superadmin/credits/rewards", icon: Gift },
+        { title: "Transactions", href: "/superadmin/credits/transactions", icon: Activity },
+      ],
+    },
+  ],
+};
+
 // ─── Super Admin: Flat Nav Items (non-grouped) ───────────────────────
 const superAdminFlatNav: NavItem[] = [
   { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
@@ -324,7 +342,7 @@ const superAdminSectionDividers: Record<string, string> = {
 };
 
 // ─── Super Admin Groups ──────────────────────────────────────────────
-const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, skillsChecklistGroup, referenceGroup];
+const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, superAdminCreditsGroup, skillsChecklistGroup, referenceGroup];
 
 // ─── Get all hrefs for a group (for active state detection) ──────────
 function getGroupHrefs(group: NavGroup): string[] {
