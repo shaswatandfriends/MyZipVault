@@ -63,6 +63,8 @@ export function CandidateProfileInfoCard() {
   const [loading, setLoading] = useState(true);
   const [savingField, setSavingField] = useState<string | null>(null);
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
+  const [ssnLast4, setSsnLast4] = useState("");
+  const [ssnNA, setSsnNA] = useState(false);
 
   useEffect(() => {
     fetch("/api/candidate/profile-fields")
@@ -206,19 +208,60 @@ export function CandidateProfileInfoCard() {
               saving={savingField === "years_experience_specialty"}
               saved={savedFields.has("years_experience_specialty")}
             />
-            <EditableField
-              label="SSN"
-              type="password"
-              value={profile.has_ssn ? "•••-••-••••" : ""}
-              placeholder={profile.has_ssn ? "On file — re-enter to update" : "xxx-xx-xxxx"}
-              onChange={() => {}}
-              onBlur={(v) => v && saveField("ssn", v)}
-              maxLength={11}
-              saving={savingField === "ssn"}
-              saved={savedFields.has("ssn")}
-              icon={<Lock className="size-3" />}
-              badge={profile.has_ssn ? <Badge variant="secondary" className="text-[10px]">On file</Badge> : null}
-            />
+            {/* SSN — last 4 digits only, with N/A checkbox */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Lock className="size-3" />
+                  SSN (Last 4)
+                </Label>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ssnNA}
+                    onChange={(e) => {
+                      setSsnNA(e.target.checked);
+                      if (e.target.checked) {
+                        setSsnLast4("");
+                        // Save empty to clear any existing SSN
+                        saveField("ssn", "");
+                      }
+                    }}
+                    className="size-3.5 rounded border-border"
+                  />
+                  N/A
+                </label>
+              </div>
+              <Input
+                type="password"
+                value={ssnNA ? "" : ssnLast4}
+                placeholder={profile.has_ssn ? "On file — re-enter to update" : "XXXX"}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                  setSsnLast4(v);
+                }}
+                onBlur={() => {
+                  if (!ssnNA && ssnLast4.length === 4) {
+                    // Save as full SSN format with X placeholders for first 5 digits
+                    // The API will encrypt whatever we send
+                    saveField("ssn", `XXX-XX-${ssnLast4}`);
+                  }
+                }}
+                maxLength={4}
+                disabled={ssnNA || savingField === "ssn"}
+                className="text-sm"
+              />
+              {savingField === "ssn" && <p className="text-[10px] text-muted-foreground">Saving...</p>}
+              {savedFields.has("ssn") && <p className="text-[10px] text-primary">Saved ✓</p>}
+              {profile.has_ssn && !ssnNA && (
+                <Badge variant="secondary" className="text-[10px]">On file</Badge>
+              )}
+              <p className="text-[10px] text-muted-foreground">
+                {ssnNA
+                  ? "You chose not to share SSN. Some clients may require it."
+                  : "Only the last 4 digits are needed. Encrypted at rest."}
+              </p>
+            </div>
           </div>
         </div>
       </CardContent>
