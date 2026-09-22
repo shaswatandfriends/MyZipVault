@@ -297,6 +297,7 @@ const superAdminCreditsGroup: NavGroup = {
         { title: "Dashboard", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
         { title: "Rewards", href: "/superadmin/credits/rewards", icon: Gift },
         { title: "Transactions", href: "/superadmin/credits/transactions", icon: Activity },
+        { title: "Balances", href: "/superadmin/credits/balance", icon: CreditCard },
       ],
     },
   ],
