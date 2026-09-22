@@ -13,6 +13,7 @@ import {
   CalendarDays,
   FileText,
   FileUser,
+  User,
   Users,
   Share2,
   Settings,
