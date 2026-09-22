@@ -12,9 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 export function ProficiencyScaleLegend() {
   const levels = [
     { value: 1, label: "No Experience", color: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
-    { value: 2, label: "Need Training", color: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
-    { value: 3, label: "With Supervision", color: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
-    { value: 4, label: "Independent", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
+    { value: 2, label: "Limited", color: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+    { value: 3, label: "Experienced", color: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
+    { value: 4, label: "Proficient", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
   ];
 
   return (

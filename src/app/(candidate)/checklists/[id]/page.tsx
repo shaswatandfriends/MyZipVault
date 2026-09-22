@@ -115,10 +115,10 @@ const RATING_LABELS: Record<string, string> = {
 };
 
 const RATING_SHORT_LABELS: Record<string, string> = {
-  "1": "None",
-  "2": "Low",
-  "3": "Good",
-  "4": "Pro",
+  "1": "No Exp",
+  "2": "Limited",
+  "3": "Experienced",
+  "4": "Proficient",
 };
 
 /* ─── Signature Fonts ───────────────────────────────────────────────── */

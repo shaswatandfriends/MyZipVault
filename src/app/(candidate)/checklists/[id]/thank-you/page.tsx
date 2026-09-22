@@ -133,12 +133,21 @@ export default function ChecklistThankYouPage({
                   </Button>
                 </div>
               </div>
-              <iframe
-                src={pdfPreviewUrl}
-                className="w-full border-0"
-                style={{ height: '60vh' }}
-                title="Checklist PDF Preview"
-              />
+              {/* Validity + Reminder notice (replaces broken iframe) */}
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <CheckCircle2 className="size-5 text-primary shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      You have successfully completed this skills checklist.
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      This checklist is valid for <strong className="text-primary">1 year</strong>. Please turn on
+                      email reminders so you get notified <strong className="text-primary">30 days before</strong> it expires.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </FadeIn>
