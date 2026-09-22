@@ -287,6 +287,18 @@ export async function POST(
       console.error("[AUDIT_LOG] Failed to log submission:", auditErr);
     }
 
+    // Grant first-submission reward (5 credits, or configured amount)
+    // Only if this is the recruiter's first submission ever
+    try {
+      const submissionCount = await db.candidateSubmission.count({ where: { recruiter_user_id: userId } });
+      if (submissionCount === 1) {
+        const { grantFirstSubmissionReward } = await import("@/lib/reward-grants");
+        await grantFirstSubmissionReward(userId, submission.id);
+      }
+    } catch (rewardErr) {
+      console.error("[SUBMIT] Failed to grant first-submission reward:", rewardErr);
+    }
+
     // If this is a residual-phase submission to someone else's candidate,
     // notify the original owner
     if (activeOwnership && activeOwnership.recruiter_user_id !== userId && payoutSplitPhase === "residual") {

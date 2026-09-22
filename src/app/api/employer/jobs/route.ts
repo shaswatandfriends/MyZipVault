@@ -155,6 +155,18 @@ export async function POST(request: NextRequest) {
       });
     } catch (e) { console.error("[AUDIT]", e); }
 
+    // Grant first-job-posted reward (10 credits, or configured amount)
+    // Only if this is the employer's first job
+    try {
+      const jobCount = await db.jobPosting.count({ where: { organization_id: organizationId ?? -1 } });
+      if (jobCount === 1) {
+        const { grantFirstJobReward } = await import("@/lib/reward-grants");
+        await grantFirstJobReward(userId, job.id);
+      }
+    } catch (rewardErr) {
+      console.error("[EMPLOYER_JOBS_CREATE] Failed to grant first-job reward:", rewardErr);
+    }
+
     return NextResponse.json({ job }, { status: 201 });
   } catch (error) {
     console.error("[EMPLOYER_JOBS_CREATE]", error);

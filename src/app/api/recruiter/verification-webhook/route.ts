@@ -75,6 +75,15 @@ export async function POST(request: NextRequest) {
           certification_tags: certification_tags ? JSON.stringify(certification_tags) : "[]",
         },
       });
+
+      // Grant 100 credits (or configured amount) for completing verification
+      try {
+        const { grantVerificationReward } = await import("@/lib/reward-grants");
+        await grantVerificationReward(user.id);
+      } catch (rewardErr) {
+        console.error("[VERIFICATION_WEBHOOK] Failed to grant reward:", rewardErr);
+        // Non-blocking — verification still succeeds
+      }
     } else if (status === "failed") {
       await db.user.update({
         where: { id: user.id },
