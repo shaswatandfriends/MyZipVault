@@ -527,14 +527,14 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
         )}
         title={group.title}
       >
-        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#8FA99C" : "rgba(255,255,255,0.35)" }} />
+        <group.icon className="size-4 shrink-0" style={{ color: isAnyActive ? "#8FA99C" : "rgba(255,255,255,0.7)" }} />
         <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">{group.title}</span>
         <ChevronDown
           className={cn(
             "size-3.5 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden",
             isExpanded ? "rotate-180" : "rotate-0"
           )}
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          style={{ color: "rgba(255,255,255,0.7)" }}
         />
       </button>
 
@@ -544,7 +544,7 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
           {group.sections.map((section) => (
             <div key={section.title}>
               {/* Section header */}
-              <p className="px-3 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/45 uppercase">
+              <p className="px-3 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/65 uppercase">
                 {section.title}
               </p>
               {/* Section items */}
@@ -561,7 +561,7 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
                       isActive && "spatial-nav-item-active"
                     )}
                   >
-                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#8FA99C" : "rgba(255,255,255,0.35)" }} />
+                    <item.icon className="size-3.5 shrink-0" style={{ color: isActive ? "#8FA99C" : "rgba(255,255,255,0.7)" }} />
                     <span>{item.title}</span>
                   </Link>
                 );
@@ -688,7 +688,7 @@ export function AppSidebar() {
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
             <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto shrink-0" />
             {label && (
-              <span className="text-xs text-white/45 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
+              <span className="text-xs text-white/65 uppercase tracking-[0.12em] font-semibold group-data-[collapsible=icon]:hidden">
                 {label}
               </span>
             )}
@@ -741,7 +741,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/70 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -787,7 +787,7 @@ export function AppSidebar() {
                     isActive && "spatial-nav-item-active"
                   )}
                 >
-                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
+                  <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/70 group-hover:text-white/55")} />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -818,7 +818,7 @@ export function AppSidebar() {
                       {sectionLabel && (
                         <>
                           {index > 0 && <div className="my-1.5 h-px mx-2 group-data-[collapsible=icon]:hidden" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
-                          <p className="px-3.5 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/45 uppercase group-data-[collapsible=icon]:hidden">
+                          <p className="px-3.5 pt-2 pb-1 text-xs font-bold tracking-[0.15em] text-white/65 uppercase group-data-[collapsible=icon]:hidden">
                             {sectionLabel}
                           </p>
                         </>
@@ -830,7 +830,7 @@ export function AppSidebar() {
                           isActive && "spatial-nav-item-active"
                         )}
                       >
-                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/35 group-hover:text-white/55")} />
+                        <item.icon className={cn("size-4 shrink-0 transition-colors", isActive ? "text-[#8FA99C]" : "text-white/70 group-hover:text-white/55")} />
                         <span>{item.title}</span>
                       </Link>
                     </React.Fragment>
@@ -912,7 +912,7 @@ export function AppSidebar() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button
-                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/40 hover:text-white/80 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/75 hover:text-white/80 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "rgba(184,64,64,0.08)";
                 }}

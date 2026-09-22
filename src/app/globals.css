@@ -1042,15 +1042,15 @@
   border-radius: var(--radius-pill);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.85);
   transition: all var(--duration-quick) var(--ease-spatial);
   text-decoration: none;
   overflow: hidden;
 }
 
 .spatial-nav-item:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .spatial-nav-item-active {
