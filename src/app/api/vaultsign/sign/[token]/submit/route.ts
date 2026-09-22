@@ -142,10 +142,31 @@ export async function POST(
     }
 
     const allSigned = refreshedDocument.signers.every((s) => s.status === "signed");
-    const anyDeclined = refreshedDocument.signers.some((s) => s.status === "declined");
 
     if (allSigned) {
-      // Generate final PDF with all signatures baked in
+      // P0-3 FIX: Atomic status transition to prevent race condition.
+      // Only ONE signer can transition the document to "completed" —
+      // the one whose conditional UPDATE affects 1 row.
+      // Others will see 0 rows affected and skip PDF generation.
+      const completionResult = await db.vaultSignDocument.updateMany({
+        where: {
+          id: refreshedDocument.id,
+          status: { in: ["sent", "partially_signed"] }, // Only if not already completed
+        },
+        data: { status: "completed" },
+      });
+
+      if (completionResult.count === 0) {
+        // Another signer already completed this document — skip PDF generation
+        // but still return success to the signer
+        return NextResponse.json({
+          success: true,
+          message: "Document signed successfully. Another signer has already completed the final processing.",
+          alreadyCompleted: true,
+        });
+      }
+
+      // This signer won the race — generate the final PDF
       try {
         // Fetch the source PDF
         let pdfSourceUrl = "";
@@ -181,6 +202,48 @@ export async function POST(
 
           // Generate signed PDF
           const signFields: SignField[] = JSON.parse(refreshedDocument.sign_fields || "[]");
+
+          // P0-1 FIX: Word-doc sign fields have x_percent=0, y_percent=0 because
+          // the TipTap editor doesn't set coordinates. Assign grid positions
+          // before baking signatures so they don't all end up at (0,0).
+          const fieldsNeedingPosition = signFields.filter(
+            f => f.x_percent === 0 && f.y_percent === 0
+          );
+          if (fieldsNeedingPosition.length > 0) {
+            // Group by signer index, then assign positions in a grid:
+            // 2 signers per row (left at x=5%, right at x=50%)
+            // Start at y=75% (near bottom of page), move up for each row
+            const signerGroups: Record<number, SignField[]> = {};
+            fieldsNeedingPosition.forEach(f => {
+              const idx = f.assigned_to_signer_index;
+              if (!signerGroups[idx]) signerGroups[idx] = [];
+              signerGroups[idx].push(f);
+            });
+
+            const signerIndices = Object.keys(signerGroups).map(Number).sort((a, b) => a - b);
+            let row = 0;
+            signerIndices.forEach((signerIdx, i) => {
+              const isRightSide = (i % 2) === 1;
+              const xPercent = isRightSide ? 50 : 5;
+              const yPercent = 75 - (row * 15); // 75%, 60%, 45%, 30%...
+
+              signerGroups[signerIdx].forEach((field, fieldIdx) => {
+                field.x_percent = xPercent;
+                field.y_percent = yPercent - (fieldIdx * 4); // Stack fields vertically within a signer's block
+                field.width_percent = 40;
+              });
+
+              // Every 2 signers, move to next row
+              if (isRightSide) row++;
+            });
+
+            // Update the sign_fields in the DB with corrected positions
+            await db.vaultSignDocument.update({
+              where: { id: refreshedDocument.id },
+              data: { sign_fields: JSON.stringify(signFields) },
+            });
+          }
+
           const signerRecords = refreshedDocument.signers.map((s) => ({
             id: s.id,
             signer_index: s.signer_index,
@@ -288,6 +351,33 @@ export async function POST(
 
                 // Bake signatures into the generated PDF
                 const signFieldsList: SignField[] = JSON.parse(refreshedDocument.sign_fields || "[]");
+
+                // P0-1 FIX: Assign grid positions for Word-doc sign fields at (0,0)
+                const wordFieldsNeedingPosition = signFieldsList.filter(
+                  f => f.x_percent === 0 && f.y_percent === 0
+                );
+                if (wordFieldsNeedingPosition.length > 0) {
+                  const wordSignerGroups: Record<number, SignField[]> = {};
+                  wordFieldsNeedingPosition.forEach(f => {
+                    const idx = f.assigned_to_signer_index;
+                    if (!wordSignerGroups[idx]) wordSignerGroups[idx] = [];
+                    wordSignerGroups[idx].push(f);
+                  });
+                  const wordSignerIndices = Object.keys(wordSignerGroups).map(Number).sort((a, b) => a - b);
+                  let wordRow = 0;
+                  wordSignerIndices.forEach((signerIdx, i) => {
+                    const isRightSide = (i % 2) === 1;
+                    const xPercent = isRightSide ? 50 : 5;
+                    const yPercent = 75 - (wordRow * 15);
+                    wordSignerGroups[signerIdx].forEach((field, fieldIdx) => {
+                      field.x_percent = xPercent;
+                      field.y_percent = yPercent - (fieldIdx * 4);
+                      field.width_percent = 40;
+                    });
+                    if (isRightSide) wordRow++;
+                  });
+                }
+
                 const signerRecords = refreshedDocument.signers.map((s) => ({
                   id: s.id,
                   signer_index: s.signer_index,
