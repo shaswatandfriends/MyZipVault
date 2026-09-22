@@ -574,6 +574,39 @@ function NavGroupSection({ group, pathname, fullPath }: { group: NavGroup; pathn
   );
 }
 
+// ─── View Public Profile Button (recruiters only) ────────────────────
+function ViewPublicProfileButton() {
+  const [publicId, setPublicId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user/public-id", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.public_id) setPublicId(data.public_id);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!publicId) return null;
+
+  return (
+    <a
+      href={`/recruiter/${publicId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[12px] text-xs font-medium text-white/75 hover:text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+      title="View Public Profile"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <User className="size-4 shrink-0 text-[#8FA99C]" />
+      <span className="group-data-[collapsible=icon]:hidden">View Public Profile</span>
+    </a>
+  );
+}
+
 // ─── Main AppSidebar Component ───────────────────────────────────────
 export function AppSidebar() {
   const { user, role } = useAuth();
@@ -856,6 +889,11 @@ export function AppSidebar() {
             className="h-px group-data-[collapsible=icon]:hidden"
             style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }}
           />
+
+          {/* View Public Profile — recruiters only */}
+          {isRecruiter && (
+            <ViewPublicProfileButton />
+          )}
 
           {/* Take a tour button — dispatches custom event caught by <TourHost /> */}
           <button
