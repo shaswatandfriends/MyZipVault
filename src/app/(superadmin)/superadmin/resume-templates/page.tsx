@@ -205,6 +205,7 @@ function TemplateEditor({
   );
   const [isActive, setIsActive] = useState(template?.is_active ?? true);
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleSubmit = () => {
     if (!name.trim()) { toast.error("Name is required"); return; }
@@ -239,7 +240,18 @@ function TemplateEditor({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="layout_config">Layout Config (JSON)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="layout_config">Layout Config (JSON)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => setShowPreview(!showPreview)}
+              >
+                {showPreview ? "Hide Preview" : "Show Preview"}
+              </Button>
+            </div>
             <Textarea
               id="layout_config"
               value={layoutConfig}
@@ -248,6 +260,14 @@ function TemplateEditor({
               className="font-mono text-xs"
             />
             {jsonError && <p className="text-xs text-red-600">Invalid JSON: {jsonError}</p>}
+            {showPreview && !jsonError && (
+              <div className="border rounded-md overflow-hidden bg-white mt-2">
+                <div className="px-3 py-1.5 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                  Resume Preview (using layout config)
+                </div>
+                <ResumePreview layoutConfig={layoutConfig} />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={isActive} onCheckedChange={setIsActive} id="is_active" />
@@ -263,5 +283,77 @@ function TemplateEditor({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * ResumePreview — renders a visual preview of what a resume using this
+ * layout_config would look like. Shows a sample candidate with the
+ * configured font, heading color, and section order.
+ */
+function ResumePreview({ layoutConfig }: { layoutConfig: string }) {
+  let config: any = {};
+  try {
+    config = JSON.parse(layoutConfig);
+  } catch {
+    return <div className="p-4 text-sm text-red-600">Invalid JSON</div>;
+  }
+
+  const fontFamily = config.font_family || "Inter, sans-serif";
+  const fontSize = config.font_size || 11;
+  const headingColor = config.heading_color || "#0b3d91";
+  const sectionOrder: string[] = config.section_order || ["contact", "summary", "experience", "education", "skills"];
+
+  const sampleData: Record<string, React.ReactNode> = {
+    contact: (
+      <div>
+        <h3 style={{ color: headingColor, fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Jane Smith, RN</h3>
+        <p style={{ fontSize, color: "#666" }}>jane.smith@email.com · (555) 123-4567 · Austin, TX</p>
+      </div>
+    ),
+    summary: (
+      <div>
+        <h4 style={{ color: headingColor, fontSize: 13, fontWeight: 600, borderBottom: "1px solid #ddd", marginBottom: 4, paddingBottom: 2 }}>Summary</h4>
+        <p style={{ fontSize }}>ICU nurse with 5+ years of experience in critical care.</p>
+      </div>
+    ),
+    experience: (
+      <div>
+        <h4 style={{ color: headingColor, fontSize: 13, fontWeight: 600, borderBottom: "1px solid #ddd", marginBottom: 4, paddingBottom: 2 }}>Experience</h4>
+        <p style={{ fontSize, fontWeight: 600 }}>ICU Staff Nurse — Austin General Hospital</p>
+        <p style={{ fontSize, color: "#666" }}>2021 - Present</p>
+      </div>
+    ),
+    education: (
+      <div>
+        <h4 style={{ color: headingColor, fontSize: 13, fontWeight: 600, borderBottom: "1px solid #ddd", marginBottom: 4, paddingBottom: 2 }}>Education</h4>
+        <p style={{ fontSize }}>BSN — University of Texas (2019)</p>
+      </div>
+    ),
+    skills: (
+      <div>
+        <h4 style={{ color: headingColor, fontSize: 13, fontWeight: 600, borderBottom: "1px solid #ddd", marginBottom: 4, paddingBottom: 2 }}>Skills</h4>
+        <p style={{ fontSize }}>Critical Care · Ventilator Management · ACLS · BLS</p>
+      </div>
+    ),
+  };
+
+  return (
+    <div
+      style={{
+        fontFamily,
+        fontSize,
+        padding: 24,
+        background: "white",
+        lineHeight: 1.5,
+      }}
+      className="max-h-[400px] overflow-y-auto"
+    >
+      <div className="space-y-3">
+        {sectionOrder.map((section) => (
+          <div key={section}>{sampleData[section] || null}</div>
+        ))}
+      </div>
+    </div>
   );
 }

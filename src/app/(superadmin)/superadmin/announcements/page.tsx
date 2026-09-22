@@ -959,6 +959,7 @@ function CampaignsTab() {
   const [formName, setFormName] = useState("");
   const [formSubject, setFormSubject] = useState("");
   const [formBody, setFormBody] = useState("");
+  const [showCampaignPreview, setShowCampaignPreview] = useState(false);
   const [formTargetRole, setFormTargetRole] = useState("all");
   const [formFromName, setFormFromName] = useState("MyZipVault");
   const [formReplyTo, setFormReplyTo] = useState("");
@@ -1523,7 +1524,18 @@ function CampaignsTab() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Email Body (HTML) *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Email Body (HTML) *</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs gap-1 h-7"
+                  onClick={() => setShowCampaignPreview(!showCampaignPreview)}
+                >
+                  {showCampaignPreview ? "Hide Preview" : "Show Preview"}
+                </Button>
+              </div>
               <Textarea
                 value={formBody}
                 onChange={(e) => setFormBody(e.target.value)}
@@ -1533,6 +1545,19 @@ function CampaignsTab() {
                 rows={10}
                 className="font-mono text-xs"
               />
+              {showCampaignPreview && formBody && (
+                <div className="border rounded-md overflow-hidden bg-white mt-2">
+                  <div className="px-3 py-1.5 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                    Email Preview (rendered)
+                  </div>
+                  <iframe
+                    srcDoc={formBody.replace(/\{\{first_name\}\}/g, "John").replace(/\{\{last_name\}\}/g, "Doe").replace(/\{\{email\}\}/g, "john@example.com")}
+                    sandbox="allow-same-origin"
+                    className="w-full h-[300px] bg-white"
+                    title="Campaign Email Preview"
+                  />
+                </div>
+              )}
               <p className="text-[11px] text-text-muted">
                 Plain HTML supported. Same variables as subject line. Sent via Brevo from noreply@myzipvault.com.
               </p>

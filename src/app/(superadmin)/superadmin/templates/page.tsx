@@ -137,6 +137,7 @@ export default function SuperadminTemplatesPage() {
   const [editBody, setEditBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
   const [testEmailOpen, setTestEmailOpen] = useState(false);
@@ -434,7 +435,18 @@ export default function SuperadminTemplatesPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="body">Email Body</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="body">Email Body (HTML)</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={() => setShowLivePreview(!showLivePreview)}
+                        >
+                          {showLivePreview ? "Hide Preview" : "Show Live Preview"}
+                        </Button>
+                      </div>
                       <Textarea
                         ref={bodyRef}
                         id="body"
@@ -444,6 +456,19 @@ export default function SuperadminTemplatesPage() {
                         placeholder="Email body content…"
                         className="min-h-[16rem] font-mono text-sm"
                       />
+                      {showLivePreview && (
+                        <div className="border rounded-md overflow-hidden bg-white mt-2">
+                          <div className="px-3 py-1.5 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                            Live Preview (with sample data)
+                          </div>
+                          <iframe
+                            srcDoc={renderWithSampleData(editBody)}
+                            sandbox="allow-same-origin"
+                            className="w-full h-[300px] bg-white"
+                            title="Live Email Preview"
+                          />
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         Use double curly braces for variables, e.g. {`{{candidate_name}}`}
                       </p>
@@ -579,26 +604,41 @@ export default function SuperadminTemplatesPage() {
 
       {/* ── Preview Dialog ──────────────────────────────────────────── */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Template Preview</DialogTitle>
             <DialogDescription>
-              Preview with sample data filled in
+              Preview with sample data filled in — this is how the email will look
             </DialogDescription>
           </DialogHeader>
           {selectedTemplate && (
             <div className="space-y-3">
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">Subject</p>
-                <p className="text-sm font-medium">{renderWithSampleData(editSubject)}</p>
+                <p className="text-sm font-medium p-2 bg-muted/50 rounded-md">{renderWithSampleData(editSubject)}</p>
               </div>
               <Separator />
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Body</p>
-                <div className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-md max-h-96 overflow-y-auto">
-                  {renderWithSampleData(editBody)}
+                <p className="text-xs font-medium text-muted-foreground mb-1">Email Body (rendered)</p>
+                {/* Rendered HTML preview using sandboxed iframe */}
+                <div className="border rounded-md overflow-hidden bg-white">
+                  <iframe
+                    srcDoc={renderWithSampleData(editBody)}
+                    sandbox="allow-same-origin"
+                    className="w-full h-[400px] bg-white"
+                    title="Email Preview"
+                  />
                 </div>
               </div>
+              {/* Toggle to show raw HTML source */}
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Show raw HTML source
+                </summary>
+                <pre className="mt-2 p-3 bg-muted/50 rounded-md max-h-48 overflow-auto font-mono text-[10px] whitespace-pre-wrap">
+                  {renderWithSampleData(editBody)}
+                </pre>
+              </details>
               {allDetectedVars.length > 0 && (
                 <>
                   <Separator />
