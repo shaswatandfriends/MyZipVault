@@ -224,8 +224,8 @@ export default function AdminDashboardPage() {
               <div
                 className="empty-state-icon"
                 style={{
-                  background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(23,74,67,0.32)",
+                  background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(13,59,46,0.32)",
                   color: "#fff",
                 }}
               >
@@ -324,12 +324,12 @@ export default function AdminDashboardPage() {
                       fontSize: "12px",
                       backdropFilter: "blur(44px) saturate(2) brightness(1.06)",
                       WebkitBackdropFilter: "blur(44px) saturate(2) brightness(1.06)",
-                      boxShadow: "0 24px 64px rgba(23,74,67,0.18), 0 8px 24px rgba(38,54,51,0.06)",
+                      boxShadow: "0 24px 64px rgba(13,59,46,0.18), 0 8px 24px rgba(38,54,51,0.06)",
                     }}
                   />
                   <Legend />
                   <Bar dataKey="candidates" name="Candidates" fill="#8FA99C" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="recruiters" name="Recruiters" fill="#174A43" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="recruiters" name="Recruiters" fill="#0D3B2E" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

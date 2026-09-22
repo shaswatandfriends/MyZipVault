@@ -67,7 +67,7 @@ export default function AuthSlideshowPanel({
   return (
     <div
       className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0F3631 0%, #174A43 50%, #0F3631 100%)" }}
+      style={{ background: "linear-gradient(135deg, #082820 0%, #0D3B2E 50%, #082820 100%)" }}
     >
       {/* Slideshow Images — full-bleed, with subtle crossfade */}
       {images.map((src, i) =>
@@ -93,7 +93,7 @@ export default function AuthSlideshowPanel({
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgba(30,58,38,0.92) 0%, rgba(23,74,67,0.78) 50%, rgba(20,40,28,0.88) 100%)",
+            "linear-gradient(135deg, rgba(30,58,38,0.92) 0%, rgba(13,59,46,0.78) 50%, rgba(20,40,28,0.88) 100%)",
         }}
       />
 
@@ -197,7 +197,7 @@ export default function AuthSlideshowPanel({
             <div
               className="relative pl-6 py-1.5"
               style={{
-                borderLeft: "2px solid #174A43",
+                borderLeft: "2px solid #0D3B2E",
               }}
             >
               <div

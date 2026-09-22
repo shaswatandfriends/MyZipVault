@@ -209,10 +209,10 @@ const defaultData: LandingPageData = {
     trustLine3: "100% Free for Nurses",
   },
   colors: {
-    primary: "#174A43",
-    accent: "#174A43",
+    primary: "#0D3B2E",
+    accent: "#0D3B2E",
     background: "#F2EDE4",
-    textPrimary: "#174A43",
+    textPrimary: "#0D3B2E",
     textSecondary: "#5C6B66",
   },
   featureCards: [
@@ -655,10 +655,10 @@ function FormField({
 // ─── Resolve CSS var strings to hex for color picker compatibility ──
 const CSS_VAR_TO_HEX: Record<string, string> = {
   "var(--primary)": "#8FA99C",
-  "var(--accent-teal)": "#174A43",
+  "var(--accent-teal)": "#0D3B2E",
   "var(--background)": "#FBF8EE",
-  "var(--foreground)": "#0F3631",
-  "var(--text-primary)": "#0F3631",
+  "var(--foreground)": "#082820",
+  "var(--text-primary)": "#082820",
   "var(--text-secondary)": "#263633",
 };
 

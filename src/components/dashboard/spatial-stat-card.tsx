@@ -20,12 +20,12 @@ interface SpatialStatCardProps {
 
 const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"]>, React.CSSProperties> = {
   primary: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)",
+    background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(13,59,46,0.28)",
     color: "#fff",
   },
   terra: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+    background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
     color: "#fff",
   },
@@ -35,12 +35,12 @@ const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"
     color: "#fff",
   },
   blue: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #8FA99C 60%, #0F3631 100%)",
+    background: "linear-gradient(180deg, #8FA99C 0%, #8FA99C 60%, #082820 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(59,130,246,0.28)",
     color: "#fff",
   },
   green: {
-    background: "linear-gradient(180deg, #86EFAC 0%, #22C55E 60%, #174A43 100%)",
+    background: "linear-gradient(180deg, #86EFAC 0%, #22C55E 60%, #0D3B2E 100%)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(34,197,94,0.28)",
     color: "#fff",
   },
@@ -108,13 +108,13 @@ export function SpatialAvatar({
       style={
         variant === "terra"
           ? {
-              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.24)",
               color: "#fff",
             }
           : {
-              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)",
               color: "#fff",
             }
       }

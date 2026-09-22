@@ -81,7 +81,7 @@ export default function RecruiterVerificationPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="size-8 animate-spin text-[#174A43]" />
+        <Loader2 className="size-8 animate-spin text-[#0D3B2E]" />
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function RecruiterVerificationPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#174A43] font-heading flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[#0D3B2E] font-heading flex items-center gap-2">
           <ShieldCheck className="size-6" />
           Recruiter Certification
         </h1>
@@ -142,13 +142,13 @@ export default function RecruiterVerificationPage() {
           {/* Certification Tags */}
           {status === "verified" && data?.certification_tags?.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-[#174A43] flex items-center gap-1.5">
+              <p className="text-sm font-semibold text-[#0D3B2E] flex items-center gap-1.5">
                 <Award className="size-4" />
                 Certification Tags
               </p>
               <div className="flex flex-wrap gap-2">
                 {data.certification_tags.map((tag) => (
-                  <Badge key={tag} className="bg-[#174A43] text-white">
+                  <Badge key={tag} className="bg-[#0D3B2E] text-white">
                     {CERTIFICATION_TAG_LABELS[tag] || tag}
                   </Badge>
                 ))}
@@ -210,30 +210,30 @@ export default function RecruiterVerificationPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-lg border p-3 space-y-1">
               <p className="text-xs text-muted-foreground">Unverified</p>
-              <p className="text-lg font-bold text-[#174A43]">10 credits/day</p>
+              <p className="text-lg font-bold text-[#0D3B2E]">10 credits/day</p>
               <p className="text-xs text-muted-foreground">100 credits/month</p>
             </div>
-            <div className="rounded-lg border border-[#174A43] bg-[#174A43]/5 p-3 space-y-1">
-              <p className="text-xs text-[#174A43] font-medium">Verified (Certified)</p>
-              <p className="text-lg font-bold text-[#174A43]">50 credits/day</p>
-              <p className="text-xs text-[#174A43]">500 credits/month</p>
+            <div className="rounded-lg border border-[#0D3B2E] bg-[#0D3B2E]/5 p-3 space-y-1">
+              <p className="text-xs text-[#0D3B2E] font-medium">Verified (Certified)</p>
+              <p className="text-lg font-bold text-[#0D3B2E]">50 credits/day</p>
+              <p className="text-xs text-[#0D3B2E]">500 credits/month</p>
             </div>
           </div>
           <div className="space-y-2 text-sm text-[#5C6B66]">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-[#174A43]" />
+              <CheckCircle2 className="size-4 text-[#0D3B2E]" />
               <span>Verified badge on your profile</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-[#174A43]" />
+              <CheckCircle2 className="size-4 text-[#0D3B2E]" />
               <span>Certification tags (Allied, Nursing, Locums, Non-clinical)</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-[#174A43]" />
+              <CheckCircle2 className="size-4 text-[#0D3B2E]" />
               <span>Higher visibility in candidate searches</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-[#174A43]" />
+              <CheckCircle2 className="size-4 text-[#0D3B2E]" />
               <span>Trust and credibility with healthcare professionals</span>
             </div>
           </div>

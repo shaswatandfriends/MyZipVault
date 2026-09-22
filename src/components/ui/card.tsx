@@ -16,9 +16,9 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         "bg-[rgba(255,255,255,0.72)] backdrop-blur-[30px] saturate-[1.8] brightness-[1.04]",
         "border border-[rgba(255,255,255,0.7)]",
         "rounded-[20px]",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(23,74,67,0.04),0_1px_2px_rgba(23,74,67,0.05),0_2px_6px_rgba(23,74,67,0.06),0_4px_12px_rgba(23,74,67,0.04)]",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(13,59,46,0.04),0_1px_2px_rgba(13,59,46,0.05),0_2px_6px_rgba(13,59,46,0.06),0_4px_12px_rgba(13,59,46,0.04)]",
         "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        "hover:translate-y-[-3px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(23,74,67,0.04),0_2px_4px_rgba(23,74,67,0.06),0_6px_14px_rgba(23,74,67,0.08),0_12px_32px_rgba(23,74,67,0.06)]",
+        "hover:translate-y-[-3px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(13,59,46,0.04),0_2px_4px_rgba(13,59,46,0.06),0_6px_14px_rgba(13,59,46,0.08),0_12px_32px_rgba(13,59,46,0.06)]",
         "text-[var(--text-primary)]",
         "before:absolute before:top-0 before:left-[8%] before:right-[8%] before:h-px before:bg-gradient-to-r before:from-transparent before:via-white before:to-transparent before:pointer-events-none before:z-[2]",
         className

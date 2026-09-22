@@ -7,12 +7,12 @@ export const C = {
   bg: "#F7F3E8",                       // Warm Ivory — main page background (per spec, not pure white)
   bgCard: "#FFFFFF",                   // Pure White — cards/surfaces
   bgCardHover: "#FBF8EE",              // Slightly tinted ivory for hover
-  bgDeep: "#174A43",                   // Deep Teal — for deep sections (CTA bands, verification)
+  bgDeep: "#0D3B2E",                   // Deep Teal — for deep sections (CTA bands, verification)
   bgSecondary: "#E7EEE9",              // Sage-tinted surface — for nested/secondary surfaces
 
   // ─── Borders ───
   border: "rgba(38,54,51,0.10)",       // Charcoal-tinted border (subtle)
-  borderHover: "rgba(23,74,67,0.30)",  // Teal hover border
+  borderHover: "rgba(13,59,46,0.30)",  // Teal hover border
 
   // ─── Text ───
   text: "#263633",                     // Deep Charcoal — body + headings
@@ -22,16 +22,16 @@ export const C = {
   textOnDeepMuted: "rgba(247,243,232,0.70)",
 
   // ─── Brand Colors ───
-  primary: "#174A43",                  // Deep Healthcare Teal — primary brand anchor
-  primaryHover: "#0F3631",             // Darker teal — hover/active
-  primaryGlow: "rgba(23,74,67,0.18)",  // Soft teal shadow
+  primary: "#0D3B2E",                  // Deep Forest Teal — primary brand anchor
+  primaryHover: "#082820",             // Darker forest — hover/active
+  primaryGlow: "rgba(13,59,46,0.18)",  // Soft forest teal shadow
   sage: "#8FA99C",                     // Sage Green — secondary
   sageLight: "#E7EEE9",                // Light sage surface
-  accent: "#D98F78",                   // Terracotta — accent only (small highlights)
-  accentGlow: "rgba(217,143,120,0.20)",
+  accent: "#C9A961",                   // Gold — accent only (premium healthcare feel)
+  accentGlow: "rgba(201,169,97,0.20)",
 
   // ─── Status colors (preserved) ───
-  emerald: "#174A43",                  // Success → brand teal
+  emerald: "#0D3B2E",                  // Success → brand forest teal
   amber: "#D97706",                    // Warning
   violet: "#8FA99C",                   // Repurposed to sage
   white: "#FFFFFF",

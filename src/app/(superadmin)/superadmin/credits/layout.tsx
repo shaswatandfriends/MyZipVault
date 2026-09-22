@@ -35,7 +35,7 @@ export default function CreditsLayout({
     <div className="space-y-6">
       {/* Page header + tab bar */}
       <div>
-        <h1 className="text-2xl font-bold text-[#174A43] font-heading flex items-center gap-2 mb-1">
+        <h1 className="text-2xl font-bold text-[#0D3B2E] font-heading flex items-center gap-2 mb-1">
           <Coins className="size-6" />
           Credits
         </h1>
@@ -54,8 +54,8 @@ export default function CreditsLayout({
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px",
                   isActive
-                    ? "border-[#174A43] text-[#174A43]"
-                    : "border-transparent text-[#5C6B66] hover:text-[#174A43] hover:bg-[#174A43]/5"
+                    ? "border-[#0D3B2E] text-[#0D3B2E]"
+                    : "border-transparent text-[#5C6B66] hover:text-[#0D3B2E] hover:bg-[#0D3B2E]/5"
                 )}
               >
                 <span className="text-xs">{tab.icon}</span>

@@ -200,7 +200,7 @@ export default function PublicRecruiterProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F7F3E8]">
-        <Loader2 className="size-8 animate-spin text-[#174A43]" />
+        <Loader2 className="size-8 animate-spin text-[#0D3B2E]" />
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function PublicRecruiterProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F7F3E8]">
         <div className="text-center">
-          <p className="text-lg font-semibold text-[#174A43]">Recruiter not found</p>
+          <p className="text-lg font-semibold text-[#0D3B2E]">Recruiter not found</p>
           <Button asChild variant="outline" className="mt-4"><Link href="/">Go Home</Link></Button>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function PublicRecruiterProfilePage() {
   return (
     <div className="min-h-screen bg-[#F7F3E8]">
       {/* Top Banner */}
-      <div className="bg-[#174A43] text-white py-3 px-4">
+      <div className="bg-[#0D3B2E] text-white py-3 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4" /> Back to MyZipVault
@@ -248,8 +248,8 @@ export default function PublicRecruiterProfilePage() {
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 {/* Photo */}
-                <div className="size-20 rounded-full bg-[#174A43]/10 flex items-center justify-center shrink-0">
-                  <span className="text-3xl font-bold text-[#174A43]">
+                <div className="size-20 rounded-full bg-[#0D3B2E]/10 flex items-center justify-center shrink-0">
+                  <span className="text-3xl font-bold text-[#0D3B2E]">
                     {recruiter.full_name.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -257,7 +257,7 @@ export default function PublicRecruiterProfilePage() {
                 <div className="flex-1 min-w-0">
                   {/* Name + Verified */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl font-bold text-[#174A43] font-heading">{recruiter.full_name}</h1>
+                    <h1 className="text-xl font-bold text-[#0D3B2E] font-heading">{recruiter.full_name}</h1>
                     {recruiter.is_verified && (
                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1">
                         <ShieldCheck className="size-3" /> Verified
@@ -272,7 +272,7 @@ export default function PublicRecruiterProfilePage() {
                   {recruiter.certification_tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {recruiter.certification_tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-[10px] border-[#174A43]/30 text-[#174A43]">
+                        <Badge key={tag} variant="outline" className="text-[10px] border-[#0D3B2E]/30 text-[#0D3B2E]">
                           {CERT_TAG_LABELS[tag] || tag}
                         </Badge>
                       ))}
@@ -306,7 +306,7 @@ export default function PublicRecruiterProfilePage() {
           {/* RIGHT — Calendar (full focus) */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-base font-bold text-[#174A43] flex items-center gap-2 mb-4">
+              <h3 className="text-base font-bold text-[#0D3B2E] flex items-center gap-2 mb-4">
                 <Calendar className="size-5" />
                 Book a Call
               </h3>
@@ -335,9 +335,9 @@ export default function PublicRecruiterProfilePage() {
                         className={cn(
                           "py-1.5 rounded transition-colors",
                           isSelected
-                            ? "bg-[#174A43] text-white font-bold"
+                            ? "bg-[#0D3B2E] text-white font-bold"
                             : isWeekend && !isPast
-                            ? "bg-[#174A43]/10 text-[#174A43] hover:bg-[#174A43]/20 cursor-pointer"
+                            ? "bg-[#0D3B2E]/10 text-[#0D3B2E] hover:bg-[#0D3B2E]/20 cursor-pointer"
                             : "text-[#5C6B66]/40 cursor-not-allowed"
                         )}
                       >
@@ -361,8 +361,8 @@ export default function PublicRecruiterProfilePage() {
                         className={cn(
                           "py-2 rounded-lg text-sm font-medium border transition-colors",
                           selectedTime === time
-                            ? "bg-[#174A43] text-white border-[#174A43]"
-                            : "border-[#E5DFCF] text-[#174A43] hover:bg-[#174A43]/5"
+                            ? "bg-[#0D3B2E] text-white border-[#0D3B2E]"
+                            : "border-[#E5DFCF] text-[#0D3B2E] hover:bg-[#0D3B2E]/5"
                         )}
                       >
                         {time}
@@ -396,7 +396,7 @@ export default function PublicRecruiterProfilePage() {
           {/* LEFT — Performance Report */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base text-[#174A43]">Recruiter Performance</CardTitle>
+              <CardTitle className="text-base text-[#0D3B2E]">Recruiter Performance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {hasReviews ? (
@@ -405,21 +405,21 @@ export default function PublicRecruiterProfilePage() {
                     <p className="text-xs text-[#5C6B66] mb-1">Professionalism</p>
                     <div className="flex items-center gap-2">
                       <StarRating value={parseFloat(profScore || "0")} />
-                      <span className="text-sm font-semibold text-[#174A43]">{profScore} / 5</span>
+                      <span className="text-sm font-semibold text-[#0D3B2E]">{profScore} / 5</span>
                     </div>
                   </div>
                   <div>
                     <p className="text-xs text-[#5C6B66] mb-1">Response Time</p>
                     <div className="flex items-center gap-2">
                       <StarRating value={parseFloat(respScore || "0")} />
-                      <span className="text-sm font-semibold text-[#174A43]">{respScore} / 5</span>
+                      <span className="text-sm font-semibold text-[#0D3B2E]">{respScore} / 5</span>
                     </div>
                   </div>
                   <div>
                     <p className="text-xs text-[#5C6B66] mb-1">Overall Experience</p>
                     <div className="flex items-center gap-2">
                       <StarRating value={parseFloat(overallScore || "0")} />
-                      <span className="text-sm font-semibold text-[#174A43]">{overallScore} / 5</span>
+                      <span className="text-sm font-semibold text-[#0D3B2E]">{overallScore} / 5</span>
                     </div>
                   </div>
                   <div className="pt-2 border-t border-[#E5DFCF]">
@@ -440,7 +440,7 @@ export default function PublicRecruiterProfilePage() {
           {/* MIDDLE — Comments */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-base text-[#174A43]">What Healthcare Professionals Say</CardTitle>
+              <CardTitle className="text-base text-[#0D3B2E]">What Healthcare Professionals Say</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {hasReviews ? (
@@ -450,18 +450,18 @@ export default function PublicRecruiterProfilePage() {
                     return (
                       <div key={review.id} className="border-b border-[#E5DFCF] pb-3 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className="size-8 rounded-full bg-[#174A43]/10 flex items-center justify-center shrink-0">
-                            <span className="text-xs font-bold text-[#174A43]">
+                          <div className="size-8 rounded-full bg-[#0D3B2E]/10 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-bold text-[#0D3B2E]">
                               {review.is_anonymous ? "?" : review.reviewer_role.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-[#174A43]">
+                            <p className="text-sm font-medium text-[#0D3B2E]">
                               {review.is_anonymous ? "Anonymous" : review.reviewer_role}
                             </p>
                             <div className="flex items-center gap-1.5">
                               <StarRating value={avg} />
-                              <span className="text-xs font-semibold text-[#174A43]">{avg.toFixed(1)}</span>
+                              <span className="text-xs font-semibold text-[#0D3B2E]">{avg.toFixed(1)}</span>
                             </div>
                           </div>
                         </div>
@@ -492,7 +492,7 @@ export default function PublicRecruiterProfilePage() {
           {/* RIGHT — Give Your Feedback */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base text-[#174A43]">Give Your Feedback</CardTitle>
+              <CardTitle className="text-base text-[#0D3B2E]">Give Your Feedback</CardTitle>
               <p className="text-xs text-[#5C6B66]">How was your experience?</p>
             </CardHeader>
             <CardContent>

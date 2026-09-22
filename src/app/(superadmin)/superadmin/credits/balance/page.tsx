@@ -127,8 +127,8 @@ export default function CreditsBalancePage() {
                     <tr key={org.id} className="border-b last:border-0 hover:bg-muted/30">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <div className="size-8 rounded-lg bg-[#174A43]/10 flex items-center justify-center">
-                            <Building2 className="size-4 text-[#174A43]" />
+                          <div className="size-8 rounded-lg bg-[#0D3B2E]/10 flex items-center justify-center">
+                            <Building2 className="size-4 text-[#0D3B2E]" />
                           </div>
                           <span className="font-medium text-[#263633]">{org.name}</span>
                         </div>
@@ -142,7 +142,7 @@ export default function CreditsBalancePage() {
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">{org.user_count}</td>
                       <td className="p-3 text-right">
-                        <span className="font-bold text-[#174A43]">{org.credits_balance.toLocaleString()}</span>
+                        <span className="font-bold text-[#0D3B2E]">{org.credits_balance.toLocaleString()}</span>
                       </td>
                       <td className="p-3 text-right">
                         <Button
@@ -172,7 +172,7 @@ export default function CreditsBalancePage() {
       <Dialog open={!!adjustOrg} onOpenChange={(v) => !v && setAdjustOrg(null)}>
         <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
-            <DialogTitle className="text-[#174A43]">Adjust Credits — {adjustOrg?.name}</DialogTitle>
+            <DialogTitle className="text-[#0D3B2E]">Adjust Credits — {adjustOrg?.name}</DialogTitle>
             <DialogDescription>
               Current balance: <strong>{adjustOrg?.credits_balance.toLocaleString()}</strong> credits.
               Enter a positive number to add credits, or negative to remove.

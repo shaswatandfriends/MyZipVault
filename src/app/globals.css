@@ -135,35 +135,35 @@
   --surface: #FFFFFF;               /* Pure White — cards/posts/forms */
   --surface-2: #FBF8EE;             /* Slightly tinted ivory for nested surfaces */
   --surface-3: #F1ECDC;             /* Deeper ivory for inactive states */
-  --primary: #174A43;               /* Deep Healthcare Teal — signature color */
-  --primary-hover: #0F3631;         /* Darker teal — hover/active */
-  --primary-light: rgba(23, 74, 67, 0.12);
+  --primary: #0D3B2E;               /* Deep Forest Teal — signature color (darkened for premium feel) */
+  --primary-hover: #082820;         /* Darker forest — hover/active */
+  --primary-light: rgba(13, 59, 46, 0.12);
   --primary-vivid: #8FA99C;         /* Sage Green — vivid/light primary */
   --primary-foreground: #FFFFFF;
-  --accent-cyan: #174A43;           /* (kept for legacy refs) now teal */
-  --accent-teal: #174A43;
+  --accent-cyan: #0D3B2E;           /* (kept for legacy refs) now forest teal */
+  --accent-teal: #0D3B2E;
   --accent-light: rgba(23, 74, 67, 0.08);
-  --accent-teal-hover: #0F3631;
-  --terra: #D98F78;                 /* Terracotta — small accent only */
-  --terra-light: #E8B4A2;           /* Lighter terracotta for hover */
-  --terra-bg: rgba(217, 143, 120, 0.12);
-  --gold: #D98F78;                  /* Repurposed to terracotta (legacy name kept) */
-  --gold-light: rgba(217, 143, 120, 0.12);
+  --accent-teal-hover: #082820;
+  --terra: #C9A961;                 /* Gold accent — premium healthcare feel (was terracotta) */
+  --terra-light: #D4BC7A;           /* Lighter gold for hover */
+  --terra-bg: rgba(201, 169, 97, 0.12);
+  --gold: #C9A961;                  /* Gold accent — premium healthcare */
+  --gold-light: rgba(201, 169, 97, 0.12);
   --text-primary: #263633;          /* Deep Charcoal — body + headings */
-  --text-secondary: #5C6B66;        /* Sage-tinted charcoal — secondary text */
-  --text-muted: #8B9994;            /* Muted sage — placeholder/meta text */
+  --text-secondary: #4A5D53;        /* Sage-tinted charcoal — secondary text (greener for cohesion) */
+  --text-muted: #6B8079;            /* Muted sage — placeholder/meta text (darker for readability) */
   --border: rgba(38, 54, 51, 0.08);
   --border-strong: rgba(38, 54, 51, 0.15);
   --badge-red: #B84040;
   --badge-red-bg: rgba(184, 64, 64, 0.12);
   --badge-yellow: #D97706;
   --badge-yellow-bg: #FEF3C7;
-  --badge-blue: #174A43;            /* Repurposed to teal — badge "info" now uses brand color */
-  --badge-blue-bg: rgba(23, 74, 67, 0.10);
-  --badge-green: #174A43;           /* Brand teal for "success" badges (was LinkedIn blue) */
+  --badge-blue: #0D3B2E;            /* Repurposed to forest teal — badge "info" now uses brand color */
+  --badge-blue-bg: rgba(13, 59, 46, 0.10);
+  --badge-green: #0D3B2E;           /* Brand forest teal for "success" badges */
   --badge-green-bg: rgba(23, 74, 67, 0.12);
-  --badge-terra: #D98F78;           /* Terracotta badge — for healthcare/heart/community */
-  --badge-terra-bg: rgba(217, 143, 120, 0.15);
+  --badge-terra: #C9A961;           /* Gold badge — for healthcare/heart/community (was terracotta) */
+  --badge-terra-bg: rgba(201, 169, 97, 0.15);
 
   /* ─── Status / Destructive Tokens ──────────────────────────────────── */
   --status-red: #B84040;
@@ -174,7 +174,7 @@
   --status-amber: #D97706;
   --status-amber-bg: #FEF3C7;
   --status-amber-dark: #92400E;
-  --status-blue: #174A43;           /* Info status — now brand teal */
+  --status-blue: #0D3B2E;           /* Info status — now brand forest teal */
   --status-blue-bg: rgba(23, 74, 67, 0.08);
   --status-blue-dark: #0F3631;
   --status-blue-border: rgba(23, 74, 67, 0.2);
@@ -295,8 +295,8 @@
 
   /* Text */
   --editorial-ink: #263633;               /* → text-primary */
-  --editorial-ink-soft: #5C6B66;          /* → text-secondary */
-  --editorial-ink-muted: #8B9994;         /* → text-muted */
+  --editorial-ink-soft: #4A5D53;          /* → text-secondary */
+  --editorial-ink-muted: #6B8079;         /* → text-muted */
   --editorial-ink-faint: #8B9994;         /* → text-muted */
 
   /* Dividers */
@@ -1606,7 +1606,7 @@
 
 /* Blue → status-blue */
 .bg-blue-50 { background-color: var(--status-blue-bg) !important; }
-.bg-blue-100 { background-color: rgba(59, 130, 246, 0.12) !important; }
+.bg-blue-100 { background-color: rgba(13, 59, 46, 0.12) !important; }
 .bg-blue-500 { background-color: var(--status-blue) !important; }
 .bg-blue-600 { background-color: var(--status-blue) !important; }
 .text-blue-500 { color: var(--status-blue) !important; }
@@ -1614,7 +1614,7 @@
 .text-blue-700 { color: var(--status-blue-dark) !important; }
 .text-blue-800 { color: var(--status-blue-dark) !important; }
 .border-blue-200 { border-color: var(--status-blue-border) !important; }
-.border-blue-300 { border-color: rgba(59, 130, 246, 0.3) !important; }
+.border-blue-300 { border-color: rgba(13, 59, 46, 0.3) !important; }
 .hover\:bg-blue-50:hover { background-color: var(--status-blue-bg) !important; }
 .hover\:bg-blue-50\/50:hover { background-color: rgba(59, 130, 246, 0.04) !important; }
 .hover\:border-blue-300:hover { border-color: rgba(59, 130, 246, 0.3) !important; }

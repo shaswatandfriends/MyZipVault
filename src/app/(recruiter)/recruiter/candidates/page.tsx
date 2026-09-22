@@ -292,14 +292,14 @@ export default function BOBPage() {
             <button
               onClick={() => setView("kanban")}
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={view === "kanban" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)" } : { color: "var(--text-secondary)" }}
+              style={view === "kanban" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)" } : { color: "var(--text-secondary)" }}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Kanban
             </button>
             <button
               onClick={() => setView("list")}
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={view === "list" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)" } : { color: "var(--text-secondary)" }}
+              style={view === "list" ? { background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)" } : { color: "var(--text-secondary)" }}
             >
               <ListIcon className="h-3.5 w-3.5" /> List
             </button>
@@ -488,7 +488,7 @@ export default function BOBPage() {
                         background: "rgba(255, 255, 255, 0.6)",
                         backdropFilter: "blur(20px) saturate(1.5)",
                         WebkitBackdropFilter: "blur(20px) saturate(1.5)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(23,74,67,0.04)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(13,59,46,0.04)",
                       }}
                     >
                       {columnLeads.map((lead) => (
@@ -535,7 +535,7 @@ export default function BOBPage() {
                           onClick={() => router.push(`/recruiter/candidates/${lead.id}`)}
                         >
                           <div className="flex size-7 items-center justify-center rounded-full shrink-0"
-                            style={{ background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+                            style={{ background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
                           >
                             <span className="text-[10px] font-bold">{lead.first_name?.[0] ?? "?"}</span>
                           </div>

@@ -169,7 +169,7 @@ export function PricingAndTestimonials() {
             <div style={{ position: "absolute", top: "-80px", right: "-80px", width: 300, height: 300, borderRadius: "50%", background: `radial-gradient(circle, ${C.sage} 0%, transparent 70%)`, opacity: 0.15, filter: "blur(60px)" }} />
 
             <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: "rgba(217,143,120,0.15)", border: "1px solid rgba(217,143,120,0.30)", marginBottom: 20 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: "rgba(201,169,97,0.15)", border: "1px solid rgba(201,169,97,0.30)", marginBottom: 20 }}>
                 <FileText size={14} style={{ color: C.accent }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>Free Report</span>
               </div>

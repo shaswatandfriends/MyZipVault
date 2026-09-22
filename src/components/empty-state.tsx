@@ -60,7 +60,7 @@ export function EmptyState({
         style={{
           fontSize: variant === "compact" ? "1rem" : "1.125rem",
           fontWeight: 600,
-          color: "var(--foreground, #0F3631)",
+          color: "var(--foreground, #082820)",
           marginBottom: "0.5rem",
         }}
       >

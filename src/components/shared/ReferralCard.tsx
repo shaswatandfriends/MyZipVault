@@ -132,9 +132,9 @@ export function ReferralCard() {
           <div
             className="flex size-10 items-center justify-center rounded-xl flex-shrink-0"
             style={{
-              background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+              background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
               color: "#fff",
-              boxShadow: "0 4px 10px rgba(23,74,67,0.25)",
+              boxShadow: "0 4px 10px rgba(13,59,46,0.25)",
             }}
           >
             <Handshake className="size-5" />

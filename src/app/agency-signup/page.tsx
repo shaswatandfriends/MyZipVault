@@ -214,7 +214,7 @@ function AgencySignupPageInner() {
                 WebkitBackdropFilter: "blur(10px)",
               }}
             >
-              <p className="text-sm leading-relaxed" style={{ color: "#0F3631" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "#082820" }}>
                 Welcome{accountType === "agency" ? ` ${agencyName}` : ""}! Your account is active. Verify your email to unlock all features, then log in to start searching candidates and posting jobs.
               </p>
             </div>
@@ -289,7 +289,7 @@ function AgencySignupPageInner() {
             <div
               className="inline-flex items-center justify-center size-12 mb-3 rounded-[12px] text-white text-2xl font-bold"
               style={{
-                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(201,123,84,0.32)",
                 fontFamily: "'Lora', serif",
               }}
@@ -360,7 +360,7 @@ function AgencySignupPageInner() {
                     ? {
                         background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
                         color: "#fff",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)",
                       }
                     : { color: "var(--text-muted)" }
                 }
@@ -377,7 +377,7 @@ function AgencySignupPageInner() {
                     ? {
                         background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 100%)",
                         color: "#fff",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)",
                       }
                     : { color: "var(--text-muted)" }
                 }

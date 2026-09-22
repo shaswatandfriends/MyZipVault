@@ -931,7 +931,7 @@ export function AppSidebar() {
             <div
               className="flex size-8 items-center justify-center rounded-full shrink-0 group-data-[collapsible=icon]:size-7"
               style={{
-                background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)",
+                background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(201,123,84,0.3)",
               }}
             >

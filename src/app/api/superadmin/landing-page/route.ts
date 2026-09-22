@@ -33,9 +33,9 @@ export async function GET() {
         },
         colors: {
           primary: "#8FA99C",
-          accent: "#174A43",
+          accent: "#0D3B2E",
           background: "#FBF8EE",
-          textPrimary: "#0F3631",
+          textPrimary: "#082820",
           textSecondary: "#263633",
         },
         featureCards: [

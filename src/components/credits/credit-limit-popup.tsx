@@ -58,7 +58,7 @@ export function CreditLimitPopup({
               <ShieldCheck className="size-6 text-blue-600" />
             )}
           </div>
-          <DialogTitle className="text-center text-lg font-bold text-[#174A43]">
+          <DialogTitle className="text-center text-lg font-bold text-[#0D3B2E]">
             {title || defaultTitle}
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-[#5C6B66] mt-2">

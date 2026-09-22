@@ -246,7 +246,7 @@ export async function POST(
           : undefined;
 
         const brandedHtml = buildCampaignEmailHtml(personalizedBody, {
-          accentColor: campaign.accent_color || "#174A43",
+          accentColor: campaign.accent_color || "#0D3B2E",
           logoUrl: campaign.logo_url || undefined,
           unsubscribeUrl,
           campaignName: campaign.name,

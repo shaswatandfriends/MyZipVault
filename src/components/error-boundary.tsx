@@ -73,7 +73,7 @@ export function ErrorBoundary({
           style={{
             fontSize: "1.5rem",
             fontWeight: 700,
-            color: "var(--foreground, #0F3631)",
+            color: "var(--foreground, #082820)",
             marginBottom: "0.75rem",
           }}
         >

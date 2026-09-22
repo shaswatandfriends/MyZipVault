@@ -143,7 +143,7 @@ export async function PUT(
       updateData.description = body.description?.trim() || null;
     }
     if (body.color !== undefined) {
-      const validColors = ["#8FA99C", "#174A43", "#174A43", "#8FA99C", "#D97706", "#DC2626", "#DB2777", "#174A43"];
+      const validColors = ["#8FA99C", "#0D3B2E", "#0D3B2E", "#8FA99C", "#D97706", "#DC2626", "#DB2777", "#0D3B2E"];
       if (validColors.includes(body.color)) {
         updateData.color = body.color;
       }

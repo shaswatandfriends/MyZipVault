@@ -45,13 +45,13 @@ interface Pool {
 
 const POOL_COLORS = [
   { value: "#8FA99C", label: "Emerald" },
-  { value: "#174A43", label: "Teal" },
-  { value: "#174A43", label: "Blue" },
+  { value: "#0D3B2E", label: "Teal" },
+  { value: "#0D3B2E", label: "Blue" },
   { value: "#8FA99C", label: "Purple" },
   { value: "#D97706", label: "Amber" },
   { value: "#DC2626", label: "Red" },
   { value: "#DB2777", label: "Pink" },
-  { value: "#174A43", label: "Navy" },
+  { value: "#0D3B2E", label: "Navy" },
 ];
 
 export default function PoolsPage() {

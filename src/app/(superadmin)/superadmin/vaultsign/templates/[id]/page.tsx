@@ -743,7 +743,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
               </PopoverTrigger>
               <PopoverContent className="w-auto p-2" align="start">
                 <div className="grid grid-cols-6 gap-1">
-                  {["#263633", "#3D4F4A", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#8FA99C", "#D97706", "#DB2777", "#174A43"].map((color) => (
+                  {["#263633", "#3D4F4A", "var(--text-secondary)", "#DC2626", "var(--primary)", "var(--accent-teal)", "#8FA99C", "#D97706", "#DB2777", "#0D3B2E"].map((color) => (
                     <button key={color} className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform" style={{ backgroundColor: color }} onClick={() => editor?.chain().focus().setColor(color).run()} />
                   ))}
                 </div>

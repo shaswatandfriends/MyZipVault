@@ -139,7 +139,7 @@ export default function CandidateOnboardingPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F7F3E8]">
-        <div className="flex items-center gap-3 text-[#174A43]">
+        <div className="flex items-center gap-3 text-[#0D3B2E]">
           <Loader2 className="size-6 animate-spin" />
           <span className="text-sm">Loading your profile...</span>
         </div>
@@ -155,7 +155,7 @@ export default function CandidateOnboardingPage() {
           <Link href="/" className="inline-block mb-4">
             <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto mx-auto" />
           </Link>
-          <h1 className="text-2xl font-bold text-[#174A43] font-heading">
+          <h1 className="text-2xl font-bold text-[#0D3B2E] font-heading">
             Complete Your Profile
           </h1>
           <p className="text-sm text-[#5C6B66] mt-1.5">
@@ -167,7 +167,7 @@ export default function CandidateOnboardingPage() {
           {/* ── Section 1: Personal Information ── */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#174A43]">
+              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#0D3B2E]">
                 <User className="size-4" />
                 Personal Information
               </CardTitle>
@@ -248,7 +248,7 @@ export default function CandidateOnboardingPage() {
           {/* ── Section 2: Professional Information ── */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#174A43]">
+              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#0D3B2E]">
                 <Briefcase className="size-4" />
                 Professional Information
               </CardTitle>
@@ -325,7 +325,7 @@ export default function CandidateOnboardingPage() {
           {/* ── Section 3: Location ── */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#174A43]">
+              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#0D3B2E]">
                 <MapPin className="size-4" />
                 Location
               </CardTitle>
@@ -384,7 +384,7 @@ export default function CandidateOnboardingPage() {
           {/* ── Section 4: Referral Source ── */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#174A43]">
+              <CardTitle className="flex items-center gap-2 text-base font-heading text-[#0D3B2E]">
                 <HelpCircle className="size-4" />
                 How did you hear about us?
               </CardTitle>

@@ -179,7 +179,7 @@ export function Tour({ steps, onComplete, onSkip }: TourProps) {
         className="rounded-lg bg-white p-5 shadow-2xl ring-1 ring-black/10"
       >
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium" style={{ color: "#174A43" }}>
+          <span className="text-xs font-medium" style={{ color: "#0D3B2E" }}>
             Tour · Step {current + 1} of {steps.length}
           </span>
           <button
@@ -203,7 +203,7 @@ export function Tour({ steps, onComplete, onSkip }: TourProps) {
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                i === current ? "w-6 bg-[#174A43]" : "w-1.5 bg-gray-300"
+                i === current ? "w-6 bg-[#0D3B2E]" : "w-1.5 bg-gray-300"
               }`}
             />
           ))}
@@ -220,7 +220,7 @@ export function Tour({ steps, onComplete, onSkip }: TourProps) {
           </button>
           <button
             onClick={next}
-            className="rounded-md bg-[#174A43] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#0F3631]"
+            className="rounded-md bg-[#0D3B2E] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#082820]"
           >
             {isLast ? "Finish" : "Next"}
           </button>

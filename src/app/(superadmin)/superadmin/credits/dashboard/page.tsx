@@ -83,12 +83,12 @@ export default function CreditsDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total Credits in System</p>
-                <p className="text-2xl font-bold text-[#174A43] mt-1">
+                <p className="text-2xl font-bold text-[#0D3B2E] mt-1">
                   {data.totalCreditsInSystem.toLocaleString()}
                 </p>
               </div>
-              <div className="size-10 rounded-xl bg-[#174A43]/10 flex items-center justify-center">
-                <Coins className="size-5 text-[#174A43]" />
+              <div className="size-10 rounded-xl bg-[#0D3B2E]/10 flex items-center justify-center">
+                <Coins className="size-5 text-[#0D3B2E]" />
               </div>
             </div>
           </CardContent>
@@ -99,7 +99,7 @@ export default function CreditsDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Organizations</p>
-                <p className="text-2xl font-bold text-[#174A43] mt-1">{data.totalOrgs}</p>
+                <p className="text-2xl font-bold text-[#0D3B2E] mt-1">{data.totalOrgs}</p>
               </div>
               <div className="size-10 rounded-xl bg-blue-100 flex items-center justify-center">
                 <Building2 className="size-5 text-blue-600" />
@@ -191,7 +191,7 @@ export default function CreditsDashboardPage() {
               data.topOrgsByBalance.map((org, i) => (
                 <div key={org.org_id} className="flex items-center justify-between gap-3 py-2 border-b last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-[#174A43]/10 flex items-center justify-center text-xs font-bold text-[#174A43]">
+                    <div className="size-8 rounded-full bg-[#0D3B2E]/10 flex items-center justify-center text-xs font-bold text-[#0D3B2E]">
                       {i + 1}
                     </div>
                     <div>
@@ -199,7 +199,7 @@ export default function CreditsDashboardPage() {
                       <p className="text-xs text-muted-foreground">Org #{org.org_id}</p>
                     </div>
                   </div>
-                  <Badge className="bg-[#174A43] text-white">
+                  <Badge className="bg-[#0D3B2E] text-white">
                     {org.credits_balance.toLocaleString()} credits
                   </Badge>
                 </div>
@@ -222,7 +222,7 @@ export default function CreditsDashboardPage() {
             {Object.entries(data.rewardConfig).map(([key, value]) => (
               <div key={key} className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
-                <p className="text-lg font-bold text-[#174A43] mt-1">{value}</p>
+                <p className="text-lg font-bold text-[#0D3B2E] mt-1">{value}</p>
                 <p className="text-[10px] text-muted-foreground">credits</p>
               </div>
             ))}

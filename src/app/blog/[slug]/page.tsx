@@ -206,7 +206,7 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-2">
               <div
                 className="flex size-8 items-center justify-center rounded-full text-white text-xs font-bold"
-                style={{ background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)" }}
+                style={{ background: "linear-gradient(135deg, #0D3B2E 0%, #082820 100%)" }}
               >
                 {post.author.charAt(0)}
               </div>
@@ -230,7 +230,7 @@ export default function BlogPostPage() {
           {/* Cover */}
           <div
             className="my-8 rounded-2xl h-48 md:h-64 flex items-center justify-center text-8xl"
-            style={{ background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)" }}
+            style={{ background: "linear-gradient(135deg, #0D3B2E 0%, #082820 100%)" }}
           >
             <span>{post.cover_emoji}</span>
           </div>
@@ -281,7 +281,7 @@ export default function BlogPostPage() {
                     <CardContent className="p-0">
                       <div
                         className="h-24 flex items-center justify-center text-4xl"
-                        style={{ background: "linear-gradient(135deg, #174A43 0%, #0F3631 100%)" }}
+                        style={{ background: "linear-gradient(135deg, #0D3B2E 0%, #082820 100%)" }}
                       >
                         <span>{r.cover_emoji}</span>
                       </div>

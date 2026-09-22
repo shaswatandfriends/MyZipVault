@@ -296,7 +296,7 @@ export default function EmployerSubmissionDetailPage() {
               <div className="flex items-center gap-3">
                 <div
                   className="flex size-10 items-center justify-center rounded-full text-white font-bold text-sm"
-                  style={{ background: "linear-gradient(135deg, #174A43, #0F3631)" }}
+                  style={{ background: "linear-gradient(135deg, #0D3B2E, #082820)" }}
                 >
                   {submission.recruiter.initials}
                 </div>
@@ -339,8 +339,8 @@ export default function EmployerSubmissionDetailPage() {
                   <div
                     className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium"
                     style={{
-                      background: isCurrent ? "#174A43" : isPast ? "#EAF3FB" : "#F9FAFB",
-                      color: isCurrent ? "#fff" : isPast ? "#174A43" : "#8B9994",
+                      background: isCurrent ? "#0D3B2E" : isPast ? "#EAF3FB" : "#F9FAFB",
+                      color: isCurrent ? "#fff" : isPast ? "#0D3B2E" : "#8B9994",
                       border: isPast && !isCurrent ? "1px solid #E5DFCF" : "1px solid #E5DFCF",
                     }}
                   >

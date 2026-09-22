@@ -49,8 +49,8 @@ interface DashboardData {
 
 // ─── Helpers ───────────────────────────────────────────────────────
 function statIconStyle(variant: "primary" | "terra") {
-  if (variant === "terra") return { background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)", color: "#fff" };
-  return { background: "linear-gradient(180deg, #8FA99C 0%, #174A43 60%, #0F3631 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(23,74,67,0.28)", color: "#fff" };
+  if (variant === "terra") return { background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(13,59,46,0.28)", color: "#fff" };
+  return { background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(13,59,46,0.28)", color: "#fff" };
 }
 
 function getTimeGreeting() {
@@ -239,9 +239,9 @@ export default function CandidateDashboardPage() {
 
       {/* ════ SECTION 1: SMART HERO BANNER ════ */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(23,74,67,0.95) 0%, rgba(15,54,49,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(23,74,67,0.22)", minHeight: "220px" }}>
+        <div className="flex-1 rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(13,59,46,0.95) 0%, rgba(15,54,49,0.95) 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(13,59,46,0.22)", minHeight: "220px" }}>
           <div className="absolute rounded-full pointer-events-none" style={{ width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle, rgba(74,124,89,0.4) 0%, rgba(74,124,89,0) 70%)", filter: "blur(40px)" }} />
-          <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(23,74,67,0.3) 0%, rgba(23,74,67,0) 70%)", filter: "blur(30px)" }} />
+          <div className="absolute rounded-full pointer-events-none" style={{ width: 200, height: 200, bottom: -80, left: 40, background: "radial-gradient(circle, rgba(13,59,46,0.3) 0%, rgba(13,59,46,0) 70%)", filter: "blur(30px)" }} />
           {/* Brand watermark — Z logo on right side of banner */}
           <div className="absolute right-0 bottom-0 top-0 w-[40%] hidden lg:flex items-center justify-end pointer-events-none">
             <img src="/logo.png" alt="" className="h-[200px] w-auto opacity-[0.15]" style={{ marginRight: 32 }} />
@@ -286,8 +286,8 @@ export default function CandidateDashboardPage() {
           </div>
 
           {/* Recommended next step — promoted from former "Next Best Action" */}
-          <div className="mb-3 rounded-[12px] p-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(23,74,67,0.06) 0%, rgba(217,143,120,0.06) 100%)", border: "1px solid rgba(23,74,67,0.18)" }}>
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,143,120,0.12) 0%, rgba(217,143,120,0) 70%)", filter: "blur(20px)" }} />
+          <div className="mb-3 rounded-[12px] p-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(13,59,46,0.06) 0%, rgba(201,169,97,0.06) 100%)", border: "1px solid rgba(13,59,46,0.18)" }}>
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(201,169,97,0.12) 0%, rgba(201,169,97,0) 70%)", filter: "blur(20px)" }} />
             <div className="relative z-10 flex items-start gap-3">
               <div className="size-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: "var(--primary)", color: "#fff" }}>
                 <Sparkles className="size-4" />

@@ -160,8 +160,8 @@ export function EmailVerificationBanner() {
           style={{
             background: "linear-gradient(180deg, var(--primary-vivid) 0%, var(--primary) 60%, var(--primary-hover) 100%)",
             color: "#fff",
-            border: "0.5px solid rgba(23, 74, 67, 0.5)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(23,74,67,0.24)",
+            border: "0.5px solid rgba(13, 59, 46, 0.5)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(13,59,46,0.24)",
             cursor: isResending ? "not-allowed" : "pointer",
             opacity: isResending ? 0.7 : 1,
           }}

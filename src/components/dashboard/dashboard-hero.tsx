@@ -25,8 +25,8 @@ export function DashboardHero({ greeting, name, subtitle, pct, steps, rightConte
       <div
         className="flex-1 rounded-[24px] p-6 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(23,74,67,0.95) 0%, rgba(15,54,49,0.95) 100%)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(23,74,67,0.22)",
+          background: "linear-gradient(135deg, rgba(13,59,46,0.95) 0%, rgba(15,54,49,0.95) 100%)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 16px 48px rgba(13,59,46,0.22)",
           minHeight: "200px",
         }}
       >
@@ -42,7 +42,7 @@ export function DashboardHero({ greeting, name, subtitle, pct, steps, rightConte
           <img src="/logo.png" alt="" className="h-[200px] w-auto opacity-[0.15]" style={{ marginRight: 32 }} />
         </div>
         <div className="relative z-10">
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#D98F78" }}>Dashboard</p>
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#C9A961" }}>Dashboard</p>
           <h1 className="text-2xl font-bold text-white mt-1 font-heading">{greeting || getTimeGreeting()}, {name}</h1>
           <p className="text-sm mt-1" style={{ color: "rgba(247,243,232,0.85)" }}>{subtitle}</p>
           {pct !== undefined && (

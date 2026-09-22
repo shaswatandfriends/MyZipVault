@@ -112,7 +112,7 @@ export default function CreditsRewardsPage() {
           {Object.entries(REWARD_DESCRIPTIONS).map(([key, info]) => (
             <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center pb-4 border-b last:border-0 last:pb-0">
               <div className="sm:col-span-2">
-                <Label className="text-sm font-semibold text-[#174A43]">{info.label}</Label>
+                <Label className="text-sm font-semibold text-[#0D3B2E]">{info.label}</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
               </div>
               <div>

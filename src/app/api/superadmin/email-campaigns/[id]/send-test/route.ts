@@ -86,7 +86,7 @@ export async function POST(
 
     // Wrap with branded template (no tracking pixel, no unsubscribe for test)
     const brandedHtml = buildCampaignEmailHtml(testBody, {
-      accentColor: campaign.accent_color || "#174A43",
+      accentColor: campaign.accent_color || "#0D3B2E",
       logoUrl: campaign.logo_url || undefined,
       campaignName: campaign.name + " (TEST)",
     });
