@@ -49,15 +49,29 @@ export async function GET(
         public_id: true,
         first_name: true,
         last_name: true,
+        email: true,
+        phone: true,
         role: true,
         account_status: true,
         organization_id: true,
         organization: { select: { id: true, name: true } },
+        verification_status: true,
+        verification_completed_at: true,
+        verification_expires_at: true,
+        certification_tags: true,
       },
     });
 
     if (!recruiter) {
       return NextResponse.json({ error: "Recruiter not found" }, { status: 404 });
+    }
+
+    // Parse certification tags
+    let certTags: string[] = [];
+    try {
+      certTags = JSON.parse(recruiter.certification_tags || "[]");
+    } catch {
+      certTags = [];
     }
 
     // Determine if the viewer IS the recruiter being viewed (for reply/dispute UI)
@@ -138,9 +152,15 @@ export async function GET(
       recruiter: {
         public_id: recruiter.public_id,
         full_name: [recruiter.first_name, recruiter.last_name].filter(Boolean).join(" ") || "Recruiter",
+        email: recruiter.email,
+        phone: recruiter.phone,
         role: recruiter.role === "client_admin" ? "Client Admin" : "Recruiter",
+        recruiter_type: recruiter.organization ? "Agency Recruiter" : "Individual Recruiter",
         organization: recruiter.organization?.name ?? null,
         account_status: recruiter.account_status,
+        verification_status: recruiter.verification_status,
+        is_verified: recruiter.verification_status === "verified",
+        certification_tags: certTags,
       },
       reputation: reputation
         ? {

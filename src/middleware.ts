@@ -200,7 +200,11 @@ export default withAuth({
       // ── ROLE-BASED ACCESS ──
       if (pathname.startsWith("/superadmin") && role !== "super_admin") return false;
       if (pathname.startsWith("/admin") && !["super_admin", "platform_admin"].includes(role)) return false;
-      if (pathname.startsWith("/recruiter") && !["client_admin", "client_recruiter"].includes(role)) return false;
+      // Recruiter-only routes — EXCEPT public profile pages (/recruiter/[uuid])
+      // which anyone can view without auth.
+      if (pathname.startsWith("/recruiter") &&
+          !pathname.match(/^\/recruiter\/[0-9a-fA-F-]{36}$/) && // public profile by UUID
+          !["client_admin", "client_recruiter"].includes(role)) return false;
       // Employer-only routes
       if (pathname.startsWith("/employer") && role !== "employer") return false;
       if (pathname.startsWith("/api/employer") && role !== "employer") return false;
