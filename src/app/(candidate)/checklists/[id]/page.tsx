@@ -987,9 +987,9 @@ export default function ChecklistAssessmentPage({
                     ref={(el) => { categoryRefs.current[category] = el; }}
                     className="scroll-mt-4"
                   >
-                    {/* Category header */}
+                    {/* Category header + Mark All buttons */}
                     <div className={cn(
-                      "rounded-xl py-3 px-4 flex items-center justify-between mb-3 border transition-all",
+                      "rounded-xl py-3 px-4 flex items-center justify-between mb-3 border transition-all flex-wrap gap-2",
                       catComplete
                         ? "bg-badge-green-bg border-primary/20"
                         : "border-l-4 border-l-primary bg-surface border-border"
@@ -1002,13 +1002,75 @@ export default function ChecklistAssessmentPage({
                         )}>
                           {category}
                         </span>
+                        <span className={cn(
+                          "text-xs tabular-nums font-medium",
+                          catComplete ? "text-primary" : "text-text-muted"
+                        )}>
+                          {ratedInCat}/{categorySkills.length} rated
+                        </span>
                       </div>
-                      <span className={cn(
-                        "text-xs tabular-nums font-medium",
-                        catComplete ? "text-primary" : "text-text-muted"
-                      )}>
-                        {ratedInCat}/{categorySkills.length} rated
-                      </span>
+
+                      {/* Mark All buttons — only show if category has rating questions */}
+                      {categorySkills.some(s => s.questionType === "rating_1_4" || s.questionType === "rating_1_5" || s.questionType === "yes_no") && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-text-muted font-medium mr-1">Mark all:</span>
+                          {/* Rating 1-4: show 1,2,3,4 buttons */}
+                          {categorySkills.some(s => s.questionType === "rating_1_4" || s.questionType === "rating_1_5") && (
+                            <>
+                              {(["1", "2", "3", "4"] as const).map((val) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => {
+                                    categorySkills.forEach(s => {
+                                      if (s.questionType === "rating_1_4" || s.questionType === "rating_1_5") {
+                                        saveRating(s.id, val, false);
+                                      }
+                                    });
+                                  }}
+                                  className="rating-btn text-xs"
+                                  title={`Mark all rating questions as ${RATING_SHORT_LABELS[val]}`}
+                                >
+                                  {val}
+                                </button>
+                              ))}
+                            </>
+                          )}
+                          {/* Yes/No: show Yes and No buttons */}
+                          {categorySkills.some(s => s.questionType === "yes_no") && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  categorySkills.forEach(s => {
+                                    if (s.questionType === "yes_no") {
+                                      saveRating(s.id, "yes", false);
+                                    }
+                                  });
+                                }}
+                                className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                                title="Mark all yes/no questions as Yes"
+                              >
+                                Y
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  categorySkills.forEach(s => {
+                                    if (s.questionType === "yes_no") {
+                                      saveRating(s.id, "no", false);
+                                    }
+                                  });
+                                }}
+                                className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-badge-red text-badge-red hover:bg-badge-red hover:text-white transition-all"
+                                title="Mark all yes/no questions as No"
+                              >
+                                N
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Skills in this category */}
@@ -1078,7 +1140,7 @@ export default function ChecklistAssessmentPage({
                                       );
                                     })}
                                     <div className="flex items-center ml-1">
-                                      <span className="text-[11px] text-text-muted">
+                                      <span className="text-[11px] text-text-secondary font-medium">
                                         {currentValue ? RATING_LABELS[currentValue] : "Select rating"}
                                       </span>
                                     </div>
