@@ -49,6 +49,9 @@ import {
   TrendingUp,
   Coins,
   Gift,
+  Flag,
+  DollarSign,
+  Lock,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -287,50 +290,152 @@ const superAdminMarketplaceGroup: NavGroup = {
 };
 
 // ─── Super Admin: Flat Nav Items (non-grouped) ───────────────────────
-// Credits is a flat item — clicking it goes to /superadmin/credits/dashboard
-// which has a top tab bar for navigating between Overview, Reward Config,
-// Transactions, and Balance Adjustment.
 const superAdminFlatNav: NavItem[] = [
   { title: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
-  { title: "Credits", href: "/superadmin/credits/dashboard", icon: Coins },
+  { title: "Calendar", href: "/superadmin/calendar", icon: CalendarDays },
 ];
 
-const superAdminBottomNav: NavItem[] = [
-  // Management
-  { title: "Users", href: "/superadmin/users", icon: Users },
-  { title: "Companies", href: "/superadmin/companies", icon: Building2 },
-  { title: "Admins", href: "/superadmin/admins", icon: Shield },
-  { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
-  // Communication
-  { title: "Templates", href: "/superadmin/templates", icon: Mail },
-  { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
-  // Configuration
-  { title: "Settings", href: "/superadmin/settings", icon: Settings },
-  { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
-  { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
-  // Content
-  { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
-  // Monitoring
-  { title: "Growth", href: "/superadmin/growth", icon: TrendingUp },
-  { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
-  { title: "Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
-  { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
-  { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
-  { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
-];
+// ─── Super Admin: Collapsible Groups ─────────────────────────────────
 
-// Section divider positions for superadmin bottom nav
-const superAdminSectionDividers: Record<string, string> = {
-  "/superadmin/admins": "MANAGEMENT",
-  "/superadmin/templates": "COMMUNICATION",
-  "/superadmin/settings": "CONFIGURATION",
-  "/superadmin/landing-page-editor": "CONTENT",
-  "/superadmin/growth": "MONITORING",
-  "/superadmin/analytics": "MONITORING",
+// Marketplace group (already defined above as superAdminMarketplaceGroup)
+
+// Credits & Billing group
+const superAdminCreditsGroup: NavGroup = {
+  title: "Credits & Billing",
+  icon: Coins,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Credits Overview", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
+        { title: "Credit Costs", href: "/superadmin/credit-costs", icon: DollarSign },
+        { title: "Invoices & Compliance", href: "/superadmin/compliance", icon: ShieldCheck },
+      ],
+    },
+  ],
 };
 
+// Users & Organizations group
+const superAdminUsersGroup: NavGroup = {
+  title: "Users & Organizations",
+  icon: Users,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Users", href: "/superadmin/users", icon: Users },
+        { title: "Companies", href: "/superadmin/companies", icon: Building2 },
+        { title: "Admins", href: "/superadmin/admins", icon: Shield },
+        { title: "Documents", href: "/superadmin/documents", icon: FileText },
+      ],
+    },
+  ],
+};
+
+// Communication group
+const superAdminCommunicationGroup: NavGroup = {
+  title: "Communication",
+  icon: Mail,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Email Templates", href: "/superadmin/templates", icon: Mail },
+        { title: "Announcements", href: "/superadmin/announcements", icon: Megaphone },
+        { title: "Reminders", href: "/superadmin/reminders", icon: Bell },
+      ],
+    },
+  ],
+};
+
+// Content & Branding group
+const superAdminContentGroup: NavGroup = {
+  title: "Content & Branding",
+  icon: Pencil,
+  sections: [
+    {
+      title: "MANAGE",
+      items: [
+        { title: "Landing Page", href: "/superadmin/landing-page-editor", icon: Pencil },
+        { title: "Auth Pages", href: "/superadmin/auth-page-editor", icon: Lock },
+        { title: "Resume Templates", href: "/superadmin/resume-templates", icon: FileText },
+        { title: "VaultSign", href: "/superadmin/vaultsign", icon: FileSignature },
+      ],
+    },
+  ],
+};
+
+// Moderation group
+const superAdminModerationGroup: NavGroup = {
+  title: "Moderation",
+  icon: ShieldCheck,
+  sections: [
+    {
+      title: "QUEUE",
+      items: [
+        { title: "Recruiter Reports", href: "/superadmin/reports", icon: Flag },
+        { title: "Review Disputes", href: "/superadmin/review-disputes", icon: AlertTriangle },
+      ],
+    },
+  ],
+};
+
+// Insights group
+const superAdminInsightsGroup: NavGroup = {
+  title: "Insights",
+  icon: BarChart3,
+  sections: [
+    {
+      title: "ANALYTICS",
+      items: [
+        { title: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+        { title: "Growth", href: "/superadmin/growth", icon: TrendingUp },
+      ],
+    },
+    {
+      title: "LOGS",
+      items: [
+        { title: "Audit Logs", href: "/superadmin/audit-logs", icon: Activity },
+        { title: "Errors", href: "/superadmin/errors", icon: AlertTriangle },
+      ],
+    },
+  ],
+};
+
+// Configuration group
+const superAdminConfigGroup: NavGroup = {
+  title: "Configuration",
+  icon: Settings,
+  sections: [
+    {
+      title: "SETTINGS",
+      items: [
+        { title: "Settings", href: "/superadmin/settings", icon: Settings },
+        { title: "API Vault", href: "/superadmin/api-vault", icon: Key },
+        { title: "Feature Flags", href: "/superadmin/feature-flags", icon: ToggleLeft },
+      ],
+    },
+  ],
+};
+
+const superAdminBottomNav: NavItem[] = [];
+
+// Section divider positions for superadmin bottom nav (empty now — all in groups)
+const superAdminSectionDividers: Record<string, string> = {};
+
 // ─── Super Admin Groups ──────────────────────────────────────────────
-const superAdminGroups: NavGroup[] = [superAdminMarketplaceGroup, skillsChecklistGroup, referenceGroup];
+const superAdminGroups: NavGroup[] = [
+  superAdminMarketplaceGroup,
+  superAdminCreditsGroup,
+  superAdminUsersGroup,
+  skillsChecklistGroup,
+  referenceGroup,
+  superAdminCommunicationGroup,
+  superAdminContentGroup,
+  superAdminModerationGroup,
+  superAdminInsightsGroup,
+  superAdminConfigGroup,
+];
 
 // ─── Get all hrefs for a group (for active state detection) ──────────
 function getGroupHrefs(group: NavGroup): string[] {
