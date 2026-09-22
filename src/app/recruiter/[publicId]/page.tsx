@@ -114,7 +114,7 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
 
 export default function PublicRecruiterProfilePage() {
   const params = useParams();
-  const publicId = params.publicId as string;
+  const publicId = (params?.publicId as string) || "";
   const [data, setData] = useState<RecruiterProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
