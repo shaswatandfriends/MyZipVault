@@ -291,6 +291,19 @@ export async function POST(request: Request) {
       } catch {}
       const totalCreditsAuto = checklistCostAuto + docCountAuto;
 
+      // Check daily/monthly credit spending limit
+      const { checkCreditLimit } = await import("@/lib/credit-limits");
+      const limitCheckAuto = await checkCreditLimit(userId, 1);
+      if (!limitCheckAuto.allowed) {
+        return NextResponse.json({
+          error: "credit_limit_reached",
+          limit_reason: limitCheckAuto.reason,
+          limit_title: limitCheckAuto.popupTitle,
+          limit_message: limitCheckAuto.popupMessage,
+          is_verified: limitCheckAuto.isVerified,
+        }, { status: 429 });
+      }
+
       if (org && org.credits_balance < totalCreditsAuto) {
         return NextResponse.json(
           { error: `Insufficient credits. Need ${totalCreditsAuto}, have ${org.credits_balance}.` },
@@ -399,6 +412,8 @@ export async function POST(request: Request) {
             },
           });
           try { const { logCreditsDeducted } = await import("@/lib/audit"); await logCreditsDeducted(userId, organizationId, totalCredits); } catch {}
+          // Increment daily/monthly credit usage counter
+          try { const { incrementCreditUsage } = await import("@/lib/credit-limits"); await incrementCreditUsage(userId, 1); } catch {}
         }
       }
 
@@ -438,6 +453,19 @@ export async function POST(request: Request) {
     // FIX C6: Check credits BEFORE creating any DB records
     const docCount = (documents?.length ?? 0) + (requestedDocuments?.length ?? 0);
     const totalCredits = 2 + docCount; // 2 for checklist + 1 per doc
+
+    // Check daily/monthly credit spending limit
+    const { checkCreditLimit: checkLimitFresh } = await import("@/lib/credit-limits");
+    const limitCheckFresh = await checkLimitFresh(userId, 1);
+    if (!limitCheckFresh.allowed) {
+      return NextResponse.json({
+        error: "credit_limit_reached",
+        limit_reason: limitCheckFresh.reason,
+        limit_title: limitCheckFresh.popupTitle,
+        limit_message: limitCheckFresh.popupMessage,
+        is_verified: limitCheckFresh.isVerified,
+      }, { status: 429 });
+    }
 
     if (org && org.credits_balance < totalCredits) {
       return NextResponse.json(
@@ -548,6 +576,12 @@ export async function POST(request: Request) {
 
         // Audit log for credit deduction
         await logCreditsDeducted(userId, organizationId, totalCredits);
+
+        // Increment daily/monthly credit usage counter
+        try {
+          const { incrementCreditUsage } = await import("@/lib/credit-limits");
+          await incrementCreditUsage(userId, 1);
+        } catch {}
 
         // ─── Credit balance low notification (to org admin) ───
         try {

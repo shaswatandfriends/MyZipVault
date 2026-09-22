@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkCreditAccess, deductCredits, getCreditsRequiredAsync } from "@/lib/credit-gating";
+import { checkCreditLimit, incrementCreditUsage } from "@/lib/credit-limits";
 import { logAudit } from "@/lib/audit";
 
 /**
@@ -126,6 +127,24 @@ export async function POST(
     const phoneCost = await getCreditsRequiredAsync("reveal_phone");
     const totalCost = emailCost + phoneCost;
 
+    // ─── Check daily/monthly credit spending limit ───────────────────
+    // Unverified: 10/day, 100/month. Verified: 50/day, 500/month.
+    // If limit is hit, return 429 with popup message for the frontend.
+    const limitCheck = await checkCreditLimit(userId, 1);
+    if (!limitCheck.allowed) {
+      return NextResponse.json({
+        error: "credit_limit_reached",
+        limit_reason: limitCheck.reason,
+        limit_title: limitCheck.popupTitle,
+        limit_message: limitCheck.popupMessage,
+        is_verified: limitCheck.isVerified,
+        remaining_daily: limitCheck.remainingDaily,
+        remaining_monthly: limitCheck.remainingMonthly,
+        daily_limit: limitCheck.dailyLimit,
+        monthly_limit: limitCheck.monthlyLimit,
+      }, { status: 429 });
+    }
+
     // Check credits
     const accessResult = await checkCreditAccess(organizationId, "reveal_email");
     if (!accessResult.allowed) {
@@ -231,6 +250,9 @@ export async function POST(
       } catch (auditErr) {
         console.error("[AUDIT_LOG] Failed to log reveal:", auditErr);
       }
+
+      // Increment daily/monthly credit usage counter
+      await incrementCreditUsage(userId, 1);
 
       return NextResponse.json({
         success: true,
