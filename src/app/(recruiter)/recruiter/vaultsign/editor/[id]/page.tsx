@@ -535,7 +535,8 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  // Insert variable at cursor
+  // Insert variable at cursor — inserts the actual value if available,
+  // otherwise inserts the {{key}} placeholder
   const insertVariable = (varKey: string) => {
     if (!editor) return;
     const value = placeholderValues[varKey] || `{{${varKey}}}`;
@@ -647,6 +648,36 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
   const updatePlaceholder = (key: string, value: string) => {
     setPlaceholderValues({ ...placeholderValues, [key]: value });
   };
+
+  // ─── Real-time variable preview ──────────────────────────────────
+  // When placeholderValues changes, find all {{variable}} in the document
+  // and replace them with the actual values. This runs on every keystroke
+  // so the user sees the document update in real-time.
+  useEffect(() => {
+    if (!editor) return;
+
+    // Get current HTML
+    let html = editor.getHTML();
+
+    // Replace all {{variable}} with their values
+    let hasChanges = false;
+    for (const [key, value] of Object.entries(placeholderValues)) {
+      if (value) {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, "gi");
+        if (regex.test(html)) {
+          html = html.replace(regex, value);
+          hasChanges = true;
+        }
+      }
+    }
+
+    // Only update the editor if we made changes (avoids cursor jump)
+    if (hasChanges) {
+      const { from, to } = editor.state.selection;
+      editor.commands.setContent(html, false);
+      editor.commands.setTextSelection({ from, to });
+    }
+  }, [placeholderValues, editor]);
 
   if (loading) {
     return (
@@ -919,8 +950,9 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       )}
                     </div>
                     {/* Add field buttons — 2-column grid with fixed-width icon for alignment */}
+                    {/* NOTE: "date" is removed from the picker — date is always auto-fetched */}
                     <div className="grid grid-cols-2 gap-1">
-                      {(["signature", "date", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
+                      {(["signature", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
                         <TooltipProvider key={type}>
                           <Tooltip>
                             <TooltipTrigger asChild>

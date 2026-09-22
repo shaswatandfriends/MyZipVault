@@ -4,12 +4,11 @@
  * Renders as a block-level dashed-border placeholder that looks like a
  * proper signature field (similar to DocuSign / Adobe Sign).
  *
- * Previously rendered as a tiny inline pill (11px font) which was nearly
- * invisible on the document. Now renders as a visible block element with:
- *   - Dashed colored border (color-coded by signer)
- *   - Clear label (Signature, Date, etc.) + signer name
- *   - Reasonable size (~200px wide, auto height)
- *   - "Click to sign" hint text
+ * Layout: Signers are arranged in a grid (2 per row, left-right).
+ * Each signer's block contains:
+ *   1. Signature field (top)
+ *   2. Date (auto-fetched, shown automatically — not a separate field)
+ *   3. Other fields (full_name, initials, etc.) stacked below
  */
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
@@ -17,14 +16,14 @@ import React from "react";
 
 // Color map for signer indices
 const SIGNER_COLORS = [
-  "#8FA99C", // emerald-600
+  "#174A43", // brand teal
+  "#D98F78", // terracotta
+  "#8FA99C", // sage
   "#0d9488", // teal-600
-  "#8FA99C", // violet-600
-  "#DC2626", // red-600
-  "#D97706", // amber-600
-  "#174A43", // blue-600
   "#DB2777", // pink-600
   "#4F46E5", // indigo-600
+  "#D97706", // amber-600
+  "#DC2626", // red-600
 ];
 
 // Field type display info
@@ -46,15 +45,19 @@ function SignFieldComponent({ node }: { node: any }) {
   const color = SIGNER_COLORS[signerIndex % SIGNER_COLORS.length];
   const display = FIELD_DISPLAY[fieldType] || FIELD_DISPLAY.text;
 
+  // For signature fields, automatically show date below
+  const showAutoDate = fieldType === "signature";
+
   return (
-    <NodeViewWrapper as="div" style={{ display: "block", margin: "12px 0" }}>
+    <NodeViewWrapper as="div" style={{ display: "inline-block", margin: "12px 12px 12px 0", verticalAlign: "top" }}>
       <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           flexDirection: "column",
-          minWidth: "240px",
-          padding: "10px 14px",
-          borderRadius: "6px",
+          minWidth: "220px",
+          maxWidth: "300px",
+          padding: "12px 16px",
+          borderRadius: "8px",
           border: `2px dashed ${color}`,
           backgroundColor: `${color}08`,
           color: color,
@@ -66,32 +69,43 @@ function SignFieldComponent({ node }: { node: any }) {
         }}
         contentEditable={false}
       >
-        {/* Top row: icon + field type label */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "16px" }}>{display.icon}</span>
-          <span>{display.label}</span>
+        {/* Top row: icon + field type label + signer name */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "16px" }}>{display.icon}</span>
+            <span>{display.label}</span>
+          </div>
+          <span style={{ fontSize: "11px", fontWeight: 400, opacity: 0.7 }}>{signerLabel}</span>
         </div>
-        {/* Signature line — visible underscore-style line */}
+
+        {/* Signature line */}
         <div
           style={{
-            marginTop: "8px",
-            marginBottom: "4px",
+            marginTop: "10px",
+            marginBottom: "6px",
             height: "1px",
             borderBottom: `1px solid ${color}60`,
             width: "100%",
           }}
         />
-        {/* Bottom row: signer name + hint */}
-        <div style={{
-          fontSize: "11px",
-          fontWeight: 400,
-          opacity: 0.8,
-          display: "flex",
-          justifyContent: "space-between",
-        }}>
-          <span>{signerLabel}</span>
-          <span style={{ fontStyle: "italic" }}>{display.hint}</span>
+
+        {/* Hint text */}
+        <div style={{ fontSize: "11px", fontWeight: 400, opacity: 0.6, fontStyle: "italic" }}>
+          {display.hint}
         </div>
+
+        {/* Auto date — shown automatically below signature */}
+        {showAutoDate && (
+          <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: `1px solid ${color}30` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "14px" }}>📅</span>
+              <span style={{ fontSize: "12px", fontWeight: 500 }}>Date</span>
+            </div>
+            <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.5, marginTop: "2px", fontStyle: "italic" }}>
+              Auto-filled on sign
+            </div>
+          </div>
+        )}
       </div>
     </NodeViewWrapper>
   );
@@ -100,9 +114,9 @@ function SignFieldComponent({ node }: { node: any }) {
 // TipTap Node extension
 export const SignFieldExtension = Node.create({
   name: "signField",
-  group: "block", // Changed from "inline" to "block" — renders on its own line
+  group: "block",
   inline: false,
-  atom: true, // Acts as a single unit — can't edit inside it
+  atom: true,
 
   addAttributes() {
     return {
@@ -126,7 +140,6 @@ export const SignFieldExtension = Node.create({
       {
         tag: 'div[data-type="sign-field"]',
       },
-      // Also parse old inline span format for backward compatibility
       {
         tag: 'span[data-type="sign-field"]',
       },
