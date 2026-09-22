@@ -932,9 +932,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
                       )}
                     </div>
                     {/* Add field buttons — 2-column grid with fixed-width icon for alignment */}
-                    {/* NOTE: "date" is removed from the picker — date is always auto-fetched */}
+                    {/* NOTE: "date" is removed from the picker — date is auto-fetched */}
+                    {/* "signature" = Signature + Auto-Date, "signature_only" = Just Signature (movable) */}
                     <div className="grid grid-cols-2 gap-1">
-                      {(["signature", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
+                      {(["signature", "signature_only", "full_name", "initials", "email", "text", "checkbox"] as SignFieldType[]).map((type) => (
                         <TooltipProvider key={type}>
                           <Tooltip>
                             <TooltipTrigger asChild>

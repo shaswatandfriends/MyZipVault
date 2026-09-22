@@ -59,7 +59,7 @@ export async function generateSignedPdf(
     const fieldWidth = (field.width_percent / 100) * pageWidth;
     const fieldHeight = (field.height_percent / 100) * pageHeight;
 
-    if (field.type === "signature" && field.value === "signed") {
+    if ((field.type === "signature" || field.type === "signature_only") && field.value === "signed") {
       // Find the signer who signed this field
       const signer = signers.find(
         (s) => s.signer_index === field.assigned_to_signer_index

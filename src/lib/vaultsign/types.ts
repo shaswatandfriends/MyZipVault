@@ -3,7 +3,7 @@
  */
 
 // ─── Sign Field Types ────────────────────────────────────────────────
-export type SignFieldType = "signature" | "date" | "full_name" | "initials" | "email" | "text" | "checkbox";
+export type SignFieldType = "signature" | "signature_only" | "date" | "full_name" | "initials" | "email" | "text" | "checkbox";
 
 export interface SignField {
   id: string;
@@ -175,7 +175,8 @@ export function getSignerColor(index: number): string {
 
 // ─── Field Type Labels ───────────────────────────────────────────────
 export const FIELD_TYPE_LABELS: Record<SignFieldType, string> = {
-  signature: "Signature",
+  signature: "Signature + Date",
+  signature_only: "Signature Only",
   date: "Date",
   full_name: "Full Name",
   initials: "Initials",
@@ -186,6 +187,7 @@ export const FIELD_TYPE_LABELS: Record<SignFieldType, string> = {
 
 export const FIELD_TYPE_ICONS: Record<SignFieldType, string> = {
   signature: "✍️",
+  signature_only: "✍",
   date: "📅",
   full_name: "👤",
   initials: "🔤",

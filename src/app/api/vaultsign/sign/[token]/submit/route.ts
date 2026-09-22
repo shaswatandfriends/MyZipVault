@@ -206,13 +206,12 @@ export async function POST(
           // P0-1 FIX: Word-doc sign fields have x_percent=0, y_percent=0 because
           // the TipTap editor doesn't set coordinates. Assign grid positions
           // before baking signatures so they don't all end up at (0,0).
+          // Positions: 2 signers per row, left at x=8%, right at x=52%
+          // Y starts at 68% (above footer area), moves up 18% per row
           const fieldsNeedingPosition = signFields.filter(
             f => f.x_percent === 0 && f.y_percent === 0
           );
           if (fieldsNeedingPosition.length > 0) {
-            // Group by signer index, then assign positions in a grid:
-            // 2 signers per row (left at x=5%, right at x=50%)
-            // Start at y=75% (near bottom of page), move up for each row
             const signerGroups: Record<number, SignField[]> = {};
             fieldsNeedingPosition.forEach(f => {
               const idx = f.assigned_to_signer_index;
@@ -224,20 +223,18 @@ export async function POST(
             let row = 0;
             signerIndices.forEach((signerIdx, i) => {
               const isRightSide = (i % 2) === 1;
-              const xPercent = isRightSide ? 50 : 5;
-              const yPercent = 75 - (row * 15); // 75%, 60%, 45%, 30%...
+              const xPercent = isRightSide ? 52 : 8;
+              const yPercent = 68 - (row * 18); // 68%, 50%, 32%...
 
               signerGroups[signerIdx].forEach((field, fieldIdx) => {
                 field.x_percent = xPercent;
-                field.y_percent = yPercent - (fieldIdx * 4); // Stack fields vertically within a signer's block
-                field.width_percent = 40;
+                field.y_percent = yPercent - (fieldIdx * 5); // Stack fields vertically
+                field.width_percent = 38;
               });
 
-              // Every 2 signers, move to next row
               if (isRightSide) row++;
             });
 
-            // Update the sign_fields in the DB with corrected positions
             await db.vaultSignDocument.update({
               where: { id: refreshedDocument.id },
               data: { sign_fields: JSON.stringify(signFields) },
@@ -317,6 +314,18 @@ export async function POST(
               const { generatePdfBuffer, HELVETICA_FONTS } = await import("@/lib/vaultsign/pdfmake-server");
 
               const placeholderValues = JSON.parse(refreshedDocument.placeholder_values || "{}");
+
+              // Auto-populate system variables that weren't manually filled
+              const now = new Date();
+              if (!placeholderValues.current_date) {
+                placeholderValues.current_date = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+              }
+              if (!placeholderValues.current_date_short) {
+                placeholderValues.current_date_short = now.toLocaleDateString("en-US");
+              }
+              // Remove _custom_variables key (it's metadata, not a placeholder)
+              delete placeholderValues._custom_variables;
+
               const showHeaderFooter = (refreshedDocument as any).show_header_footer !== false;
               const pdfOptions = {
                 headerConfig: (() => { try { return JSON.parse((refreshedDocument as any).header_config || "{}"); } catch { return {}; } })(),
@@ -353,6 +362,8 @@ export async function POST(
                 const signFieldsList: SignField[] = JSON.parse(refreshedDocument.sign_fields || "[]");
 
                 // P0-1 FIX: Assign grid positions for Word-doc sign fields at (0,0)
+                // Positions: 2 signers per row, left at x=8%, right at x=52%
+                // Y starts at 68% (above footer area), moves up 18% per row
                 const wordFieldsNeedingPosition = signFieldsList.filter(
                   f => f.x_percent === 0 && f.y_percent === 0
                 );
@@ -367,12 +378,12 @@ export async function POST(
                   let wordRow = 0;
                   wordSignerIndices.forEach((signerIdx, i) => {
                     const isRightSide = (i % 2) === 1;
-                    const xPercent = isRightSide ? 50 : 5;
-                    const yPercent = 75 - (wordRow * 15);
+                    const xPercent = isRightSide ? 52 : 8;
+                    const yPercent = 68 - (wordRow * 18);
                     wordSignerGroups[signerIdx].forEach((field, fieldIdx) => {
                       field.x_percent = xPercent;
-                      field.y_percent = yPercent - (fieldIdx * 4);
-                      field.width_percent = 40;
+                      field.y_percent = yPercent - (fieldIdx * 5);
+                      field.width_percent = 38;
                     });
                     if (isRightSide) wordRow++;
                   });

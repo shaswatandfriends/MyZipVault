@@ -29,6 +29,7 @@ const SIGNER_COLORS = [
 // Field type display info
 const FIELD_DISPLAY: Record<string, { icon: string; label: string; hint: string }> = {
   signature: { icon: "✍", label: "Signature", hint: "Sign here" },
+  signature_only: { icon: "✍", label: "Signature", hint: "Sign here (no date)" },
   date: { icon: "📅", label: "Date", hint: "Auto-filled on sign" },
   full_name: { icon: "👤", label: "Full Name", hint: "Print name" },
   initials: { icon: "🔤", label: "Initials", hint: "Initial here" },
@@ -45,7 +46,8 @@ function SignFieldComponent({ node, deleteNode, getPos, editor }: any) {
   const color = SIGNER_COLORS[signerIndex % SIGNER_COLORS.length];
   const display = FIELD_DISPLAY[fieldType] || FIELD_DISPLAY.text;
 
-  // For signature fields, automatically show date below
+  // For signature fields (with date), automatically show date below
+  // signature_only fields do NOT show date
   const showAutoDate = fieldType === "signature";
 
   // Drag state

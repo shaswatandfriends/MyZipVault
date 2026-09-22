@@ -318,6 +318,7 @@ function transformNode(node: TipTapNode, placeholders: Record<string, string>): 
       const signerLabel = node.attrs?.signerLabel || `Signer ${signerIndex + 1}`;
       const fieldLabels: Record<string, string> = {
         signature: "✍ Signature",
+        signature_only: "✍ Signature",
         date: "📅 Date",
         full_name: "👤 Full Name",
         initials: "🔤 Initials",
