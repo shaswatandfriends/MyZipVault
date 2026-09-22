@@ -91,6 +91,15 @@ model User {
   credit_monthly_used         Int     @default(0)
   credit_monthly_reset_at     DateTime @default(now())
 
+  // Recruiter profile settings (2026-09-22)
+  bio                         String?   // Short professional bio for public profile
+  linkedin_url                String?
+  twitter_url                 String?
+  instagram_url               String?
+  facebook_url                String?
+  show_phone_publicly         Boolean   @default(true)
+  show_email_publicly         Boolean   @default(true)
+
   organization         Organization?         @relation(fields: [organization_id], references: [id])
 
   admin_permissions    AdminPermission[]

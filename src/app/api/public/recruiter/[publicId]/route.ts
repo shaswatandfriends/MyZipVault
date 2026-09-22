@@ -59,6 +59,13 @@ export async function GET(
         verification_completed_at: true,
         verification_expires_at: true,
         certification_tags: true,
+        bio: true,
+        linkedin_url: true,
+        twitter_url: true,
+        instagram_url: true,
+        facebook_url: true,
+        show_phone_publicly: true,
+        show_email_publicly: true,
       },
     });
 
@@ -152,8 +159,8 @@ export async function GET(
       recruiter: {
         public_id: recruiter.public_id,
         full_name: [recruiter.first_name, recruiter.last_name].filter(Boolean).join(" ") || "Recruiter",
-        email: recruiter.email,
-        phone: recruiter.phone,
+        email: recruiter.show_email_publicly ? recruiter.email : null,
+        phone: recruiter.show_phone_publicly ? recruiter.phone : null,
         role: recruiter.role === "client_admin" ? "Client Admin" : "Recruiter",
         recruiter_type: recruiter.organization ? "Agency Recruiter" : "Individual Recruiter",
         organization: recruiter.organization?.name ?? null,
@@ -161,6 +168,13 @@ export async function GET(
         verification_status: recruiter.verification_status,
         is_verified: recruiter.verification_status === "verified",
         certification_tags: certTags,
+        bio: recruiter.bio,
+        social: {
+          linkedin: recruiter.linkedin_url,
+          twitter: recruiter.twitter_url,
+          instagram: recruiter.instagram_url,
+          facebook: recruiter.facebook_url,
+        },
       },
       reputation: reputation
         ? {
