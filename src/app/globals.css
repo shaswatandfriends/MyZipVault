@@ -2393,7 +2393,8 @@ input[data-slot="input"]:-webkit-autofill:focus {
 }
 
 /* ─── Card glassmorphism — make shadcn Card components translucent ─── */
-[data-slot="card"] {
+/* Exclude .card-dark cards — they have their own dark inline backgrounds */
+[data-slot="card"]:not(.card-dark) {
   background: rgba(255, 255, 255, 0.72) !important;
   backdrop-filter: blur(20px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
@@ -2401,18 +2402,10 @@ input[data-slot="input"]:-webkit-autofill:focus {
   box-shadow: 0 4px 24px rgba(23, 74, 67, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
 }
 
-/* Dark/gradient card variant — for cards with dark inline backgrounds.
-   The [data-slot="card"] rule above uses !important which overrides inline
-   styles. This rule restores the inline background by using !important
-   with 'revert' to let the inline style take effect. */
-[data-slot="card"].card-dark,
-.glass-section-dark[data-slot="card"] {
-  background: revert !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
-}
+/* Dark card variant — inline styles provide the dark gradient background.
+   The :not(.card-dark) selector above ensures these cards are NOT affected
+   by the white glassmorphism override. No CSS needed here — the inline
+   style handles everything. */
 
 /* ════════════════════════════════════════════════════════════════════
    GLOBAL BRAND CASCADE — applies landing page aesthetic to ALL pages
