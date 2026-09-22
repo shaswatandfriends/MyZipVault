@@ -280,6 +280,7 @@ export {
   ImagePlus,
   Inbox,
   Info,
+  Instagram,
   Key,
   KeyRound,
   Layers,
