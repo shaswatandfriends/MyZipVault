@@ -294,10 +294,10 @@ const superAdminCreditsGroup: NavGroup = {
     {
       title: "MANAGE",
       items: [
-        { title: "Dashboard", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
-        { title: "Rewards", href: "/superadmin/credits/rewards", icon: Gift },
+        { title: "Overview", href: "/superadmin/credits/dashboard", icon: LayoutDashboard },
+        { title: "Reward Config", href: "/superadmin/credits/rewards", icon: Gift },
         { title: "Transactions", href: "/superadmin/credits/transactions", icon: Activity },
-        { title: "Balances", href: "/superadmin/credits/balance", icon: CreditCard },
+        { title: "Balance Adjustment", href: "/superadmin/credits/balance", icon: CreditCard },
       ],
     },
   ],
