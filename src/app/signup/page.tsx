@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Check, X, ArrowRight, ShieldCheck, Lock } from "@/lib/icons";
 import { toast } from "sonner";
@@ -28,17 +28,11 @@ const trustPoints = [
 ];
 
 export default function SignupPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-text-muted">Loading…</div>}>
-      <SignupPageInner />
-    </Suspense>
-  );
+  return <SignupPageInner />;
 }
 
 function SignupPageInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const refCode = searchParams.get("ref") || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -88,7 +82,7 @@ function SignupPageInner() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, ref: refCode || undefined }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();

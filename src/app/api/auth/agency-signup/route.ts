@@ -179,8 +179,10 @@ export async function POST(request: Request) {
       logAuthError("[AGENCY_SIGNUP] Failed to send verification email", emailErr);
     }
 
-    // ─── Referral: if the request body has a ref code, grant credits to the
-    // referrer (or just record it for candidate referrers). ──
+    // ─── Referral: if the request body has a ref code, grant credits to
+    // the referrer. Only recruiters/employers can refer (findReferrer
+    // filters by role). The new user's role is 'client_recruiter' (or
+    // 'client_admin' if they selected that). ──
     try {
       const refCode = (body.ref as string | undefined) || "";
       const referrer = await findReferrer(refCode);
@@ -189,6 +191,7 @@ export async function POST(request: Request) {
           referrerId: referrer.id,
           referredUserId: user.id,
           referredEmail: user.email,
+          referredRole: user.role,
         });
       }
     } catch (refErr) {
