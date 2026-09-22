@@ -442,8 +442,12 @@ function RecruitersTab({
 
   const filteredStats = useMemo(() => {
     if (!companyFilter || companyFilter === "all") return recruiterStats;
-    return recruiterStats.filter((r) => r.organization === companyFilter);
-  }, [recruiterStats, companyFilter]);
+    // companyFilter is now an org ID (string), but recruiterStats has org name.
+    // Find the org name for this ID, then filter by name.
+    const orgName = organizations.find((o) => String(o.id) === companyFilter)?.name;
+    if (!orgName) return recruiterStats;
+    return recruiterStats.filter((r) => r.organization === orgName);
+  }, [recruiterStats, companyFilter, organizations]);
 
   const totalActiveLeads = filteredStats.reduce((s, r) => s + r.activeLeads, 0);
   const totalCallsToday = filteredStats.reduce((s, r) => s + r.callsToday, 0);
@@ -490,7 +494,7 @@ function RecruitersTab({
           <SelectContent>
             <SelectItem value="all">All Companies</SelectItem>
             {organizations.map((org) => (
-              <SelectItem key={org.id} value={org.name}>
+              <SelectItem key={org.id} value={String(org.id)}>
                 {org.name}
               </SelectItem>
             ))}
