@@ -112,10 +112,10 @@ export default function ForEmployersPage() {
                   <Star key={s} size={14} style={{ color: "#FBBF24", fill: "#FBBF24" }} />
                 ))}
               </div>
-              <p className="text-sm text-foreground leading-relaxed mb-4">&quot;{t.text}&quot;</p>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: "#263633" }}>&quot;{t.text}&quot;</p>
               <div>
-                <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                <p className="text-xs text-text-muted">{t.role}</p>
+                <p className="text-sm font-semibold" style={{ color: "#263633" }}>{t.name}</p>
+                <p className="text-xs" style={{ color: "#4A5D53" }}>{t.role}</p>
               </div>
             </div>
           ))}

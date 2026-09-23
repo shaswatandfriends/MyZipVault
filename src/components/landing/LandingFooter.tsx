@@ -76,13 +76,13 @@ export function LandingFooter() {
           {/* Brand column */}
           <div>
             <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto", marginBottom: 20 }} />
-            <p style={{ fontSize: 14, color: C.textOnDeepMuted, marginBottom: 24, lineHeight: 1.6, maxWidth: 320, fontStyle: "italic" }}>
+            <p style={{ fontSize: 16, color: "rgba(247,243,232,0.92)", marginBottom: 24, lineHeight: 1.6, maxWidth: 320, fontStyle: "italic" }}>
               The professional network built exclusively for healthcare.
             </p>
             {socialLinks.length > 0 && (
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {socialLinks.map((s) => (
-                  <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(247,243,232,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.textOnDeepMuted, textDecoration: "none", border: "1px solid rgba(247,243,232,0.10)", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(143,169,156,0.18)"; e.currentTarget.style.borderColor = "rgba(143,169,156,0.40)"; e.currentTarget.style.color = C.textOnDeep; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(247,243,232,0.06)"; e.currentTarget.style.borderColor = "rgba(247,243,232,0.10)"; e.currentTarget.style.color = C.textOnDeepMuted; }}>{s.key}</a>
+                  <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(247,243,232,0.10)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "rgba(247,243,232,0.90)", textDecoration: "none", border: "1px solid rgba(247,243,232,0.20)", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(201,169,97,0.20)"; e.currentTarget.style.borderColor = "rgba(201,169,97,0.50)"; e.currentTarget.style.color = "#C9A961"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(247,243,232,0.10)"; e.currentTarget.style.borderColor = "rgba(247,243,232,0.20)"; e.currentTarget.style.color = "rgba(247,243,232,0.90)"; }}>{s.key}</a>
                 ))}
               </div>
             )}
@@ -91,17 +91,17 @@ export function LandingFooter() {
           {/* Link columns */}
           {footerCols.map((col, ci) => (
             <div key={ci}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(247,243,232,0.50)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 16 }}>{col.title}</p>
+              <p style={{ fontSize: 12, fontWeight: 800, color: "rgba(247,243,232,0.95)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 16 }}>{col.title}</p>
               {col.links.map((t) => (
-                <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 13, color: C.textOnDeepMuted, textDecoration: "none", marginBottom: 10, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = C.textOnDeep} onMouseLeave={(e) => e.currentTarget.style.color = C.textOnDeepMuted}>{t.label}</Link>
+                <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 14, color: "rgba(247,243,232,0.88)", textDecoration: "none", marginBottom: 10, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#C9A961"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(247,243,232,0.88)"}>{t.label}</Link>
               ))}
             </div>
           ))}
         </div>
 
         <div style={{ paddingTop: 28, borderTop: "1px solid rgba(247,243,232,0.10)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <p style={{ fontSize: 12, color: "rgba(247,243,232,0.40)" }}>© 2026 MyZipVault. The professional network built exclusively for healthcare.</p>
-          <p style={{ fontSize: 12, color: "rgba(247,243,232,0.40)" }}>HIPAA Aligned · 256-bit Encryption · BAA Available</p>
+          <p style={{ fontSize: 13, color: "rgba(247,243,232,0.75)" }}>© 2026 MyZipVault. The professional network built exclusively for healthcare.</p>
+          <p style={{ fontSize: 13, color: "rgba(247,243,232,0.75)" }}>HIPAA Aligned · 256-bit Encryption · BAA Available</p>
         </div>
       </div>
     </footer>

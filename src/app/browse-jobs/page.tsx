@@ -299,8 +299,8 @@ export default function PublicJobsListPage() {
           </div>
 
           {/* Result count */}
-          <div className="mt-3 flex items-center justify-between text-xs text-text-muted">
-            <span>
+          <div className="mt-3 flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground">
               {isLoading
                 ? "Loading…"
                 : `${pagination.total} job${pagination.total === 1 ? "" : "s"} found`}
@@ -323,9 +323,9 @@ export default function PublicJobsListPage() {
           /* Empty state */
           <Card>
             <CardContent className="p-12 text-center">
-              <Briefcase className="size-12 text-text-muted mx-auto mb-3" />
-              <p className="font-medium text-foreground">No jobs found</p>
-              <p className="text-sm text-text-muted mt-1 max-w-md mx-auto">
+              <Briefcase className="size-12 text-primary mx-auto mb-3" />
+              <p className="font-semibold text-foreground text-lg">No jobs found</p>
+              <p className="text-base text-text-secondary mt-2 max-w-md mx-auto">
                 {search || professionFilter !== "all" || employmentFilter !== "all" || remoteOnly
                   ? "Try adjusting your filters or search terms to see more openings."
                   : "No jobs have been posted yet. Check back soon — employers are signing up every day."}
@@ -494,7 +494,7 @@ export default function PublicJobsListPage() {
                 I already have an account
               </Link>
             </div>
-            <p className="mt-4 text-xs text-text-muted">
+            <p className="mt-4 text-sm text-foreground">
               Are you an employer?{" "}
               <Link href="/employer-signup" className="font-semibold text-primary hover:underline">
                 Post jobs here

@@ -120,8 +120,8 @@ export function InfoPageShell({
 export function InfoSectionHeading({ children }: { children: ReactNode }) {
   return (
     <h2
-      className="text-[24px] font-bold text-foreground"
-      style={{ fontFamily: "'Satoshi', sans-serif" }}
+      className="text-[24px] font-bold"
+      style={{ fontFamily: "'Satoshi', sans-serif", color: "#263633" }}
     >
       {children}
     </h2>
@@ -133,7 +133,10 @@ export function InfoSectionHeading({ children }: { children: ReactNode }) {
  */
 export function InfoParagraph({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
+    <p
+      className="mt-4 text-[16px] leading-relaxed"
+      style={{ color: "#4A5D53" }}
+    >
       {children}
     </p>
   );
