@@ -15,7 +15,7 @@ export function FinalCTA() {
       <div style={{ position: "absolute", bottom: "-150px", right: "5%", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${C.accent} 0%, transparent 70%)`, opacity: 0.08, filter: "blur(100px)" }} />
 
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 32px", textAlign: "center", position: "relative", zIndex: 1 }}>
-        <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto", margin: "0 auto 32px", display: "block" }} />
+        <img src="/logo.png" alt="MyZipVault" style={{ height: 88, width: "auto", margin: "0 auto 32px", display: "block" }} />
 
         <h2 style={{ fontSize: isDesktop ? 44 : 32, fontWeight: 700, color: C.textOnDeep, marginBottom: 14, letterSpacing: "-0.025em", lineHeight: 1.1, fontFamily: "'Lora', Georgia, serif" }}>
           Ready to join the<br />healthcare network?

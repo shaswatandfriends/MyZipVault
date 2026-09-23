@@ -99,7 +99,7 @@ export default function AgencyLoginPage() {
         <div className="max-w-[460px] w-full relative">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-10">
-            <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto mx-auto mb-3" />
+            <img src="/logo.png" alt="MyZipVault" className="h-20 w-auto mx-auto mb-4" />
             
           </div>
 

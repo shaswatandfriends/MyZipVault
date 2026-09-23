@@ -153,7 +153,7 @@ export default function CandidateOnboardingPage() {
         {/* ── Header ── */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-4">
-            <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto mx-auto" />
+            <img src="/logo.png" alt="MyZipVault" className="h-20 w-auto mx-auto" />
           </Link>
           <h1 className="text-2xl font-bold text-[#0D3B2E] font-heading">
             Complete Your Profile

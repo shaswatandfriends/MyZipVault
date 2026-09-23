@@ -726,37 +726,33 @@ export function AppSidebar() {
           className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-4"
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
-          {/* Brand logo — actual /logo.png displayed on an ivory chip so the
-              dark green brand marks are visible against the dark sidebar.
-              The chip acts like a "sticker" — common sidebar pattern (Slack, Notion). */}
+          {/* Brand logo — the /logo.png image itself contains the "MyZipVault"
+              wordmark, so we don't need a separate text label. The logo sits on
+              an ivory chip so the dark green brand marks are visible against
+              the dark sidebar. Logo is enlarged to fill the available space. */}
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
             <div
-              className="flex items-center justify-center shrink-0 rounded-[10px] overflow-hidden"
+              className="flex items-center justify-center shrink-0 rounded-[12px] overflow-hidden"
               style={{
-                width: "36px",
-                height: "36px",
+                width: "52px",
+                height: "52px",
                 background: "linear-gradient(180deg, #FFFFFF 0%, #FBF8EE 100%)",
                 border: "1px solid rgba(255, 255, 255, 0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.18)",
+                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 12px rgba(0, 0, 0, 0.22)",
               }}
             >
               <img
                 src="/logo.png"
                 alt="MyZipVault"
-                className="h-7 w-auto shrink-0 object-contain"
+                className="h-10 w-auto shrink-0 object-contain"
                 style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.06))" }}
               />
             </div>
-            <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-              <span className="text-[15px] font-bold text-white tracking-tight leading-none font-heading">
-                MyZipVault
+            {label && (
+              <span className="text-[10px] text-white/55 uppercase tracking-[0.14em] font-semibold group-data-[collapsible=icon]:hidden">
+                {label}
               </span>
-              {label && (
-                <span className="text-[10px] text-white/55 uppercase tracking-[0.14em] font-semibold mt-0.5">
-                  {label}
-                </span>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Collapse/Expand button */}
