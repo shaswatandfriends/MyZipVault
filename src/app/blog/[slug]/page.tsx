@@ -14,6 +14,7 @@ import {
   ArrowLeft, ArrowRight, Calendar, Clock, ChevronRight,
   Info, AlertTriangle, CheckCircle2, Quote, FileText,
 } from "@/lib/icons";
+import { CompactStateMap } from "@/components/blog/compact-state-map";
 
 const CATEGORY_COLORS: Record<BlogPost["category"], string> = {
   Career: "bg-blue-50 text-blue-700 border-blue-200",
@@ -102,7 +103,7 @@ export default function BlogPostPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+              <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
             </Link>
             <Link href="/blog" className="text-sm font-medium text-text-secondary hover:text-foreground">← Blog</Link>
           </div>
@@ -134,7 +135,7 @@ export default function BlogPostPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+            <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/blog" className="text-sm font-medium text-text-secondary hover:text-foreground">Blog</Link>
@@ -227,13 +228,20 @@ export default function BlogPostPage() {
             </span>
           </div>
 
-          {/* Cover */}
-          <div
-            className="my-8 rounded-2xl h-48 md:h-64 flex items-center justify-center text-8xl"
-            style={{ background: "linear-gradient(135deg, #0D3B2E 0%, #082820 100%)" }}
-          >
-            <span>{post.cover_emoji}</span>
-          </div>
+          {/* Cover — compact state map for the nursing license post,
+              emoji cover for all other posts */}
+          {slug === "nursing-license-requirements-by-state" ? (
+            <div className="my-8">
+              <CompactStateMap />
+            </div>
+          ) : (
+            <div
+              className="my-8 rounded-2xl h-48 md:h-64 flex items-center justify-center text-8xl"
+              style={{ background: "linear-gradient(135deg, #1F6F5C 0%, #155440 100%)" }}
+            >
+              <span>{post.cover_emoji}</span>
+            </div>
+          )}
 
           {/* Body */}
           <div className="prose prose-slate max-w-none">

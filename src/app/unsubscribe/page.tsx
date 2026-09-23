@@ -87,7 +87,7 @@ function UnsubscribePageInner() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <img src="/logo.png" alt="MyZipVault" style={{ height: 40, width: "auto", borderRadius: 10 }} />
+          <img src="/logo.png" alt="MyZipVault" style={{ height: 64, width: "auto", borderRadius: 10 }} />
         </Link>
 
         <div className="rounded-2xl bg-white shadow-xl p-8">

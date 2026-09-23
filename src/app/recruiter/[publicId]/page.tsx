@@ -234,7 +234,7 @@ export default function PublicRecruiterProfilePage() {
           <Link href="/" className="flex items-center gap-2 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4" /> Back to MyZipVault
           </Link>
-          <img src="/logo.png" alt="MyZipVault" className="h-6 w-auto brightness-0 invert" />
+          <img src="/logo.png" alt="MyZipVault" className="h-12 w-auto brightness-0 invert" />
         </div>
       </div>
 

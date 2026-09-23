@@ -75,7 +75,7 @@ export function LandingFooter() {
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "2fr 1fr 1fr 1fr 1fr 1fr" : "1fr 1fr", gap: 40, marginBottom: 56 }}>
           {/* Brand column */}
           <div>
-            <img src="/logo.png" alt="MyZipVault" style={{ height: 56, width: "auto", marginBottom: 20 }} />
+            <img src="/logo.png" alt="MyZipVault" style={{ height: 72, width: "auto", marginBottom: 24 }} />
             <p style={{ fontSize: 16, color: "rgba(247,243,232,0.92)", marginBottom: 24, lineHeight: 1.6, maxWidth: 320, fontStyle: "italic" }}>
               The professional network built exclusively for healthcare.
             </p>

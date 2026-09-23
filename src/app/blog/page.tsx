@@ -54,7 +54,7 @@ export default function BlogListPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+            <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
             <span className="ml-1 text-xs font-bold uppercase tracking-[0.2em] text-primary">Blog</span>
           </Link>
           <div className="flex items-center gap-3">

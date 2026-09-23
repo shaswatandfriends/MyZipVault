@@ -127,7 +127,7 @@ function SignupPageInner() {
         <div className="max-w-[460px] w-full relative">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-10">
-            <img src="/logo.png" alt="MyZipVault" className="h-20 w-auto mx-auto mb-4" />
+            <img src="/logo.png" alt="MyZipVault" className="h-28 w-auto mx-auto mb-5" />
             
           </div>
 

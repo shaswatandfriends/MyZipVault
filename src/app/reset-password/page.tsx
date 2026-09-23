@@ -149,7 +149,7 @@ function ResetPasswordForm() {
         <div className="max-w-[440px] w-full relative">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <img src="/logo.png" alt="MyZipVault" className="h-20 w-auto mx-auto mb-4" />
+            <img src="/logo.png" alt="MyZipVault" className="h-28 w-auto mx-auto mb-5" />
             
           </div>
 

@@ -145,7 +145,7 @@ export default function PublicJobDetailPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+              <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
             </Link>
             <Link href="/signup" className="text-sm font-semibold text-primary">Sign up free →</Link>
           </div>
@@ -166,7 +166,7 @@ export default function PublicJobDetailPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+              <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
             </Link>
             <Link href="/signup" className="text-sm font-semibold text-primary">Sign up free →</Link>
           </div>
@@ -201,7 +201,7 @@ export default function PublicJobDetailPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MyZipVault" className="h-8 w-auto rounded-lg" />
+            <img src="/logo.png" alt="MyZipVault" className="h-14 w-auto rounded-lg" />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-text-secondary hover:text-foreground">

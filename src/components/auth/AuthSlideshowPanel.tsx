@@ -130,7 +130,7 @@ export default function AuthSlideshowPanel({
           <img
             src="/logo.png"
             alt={platformName}
-            className="h-20 w-auto object-contain"
+            className="h-28 w-auto object-contain"
             style={{ filter: "brightness(0) invert(1)" }}
           />
         </div>

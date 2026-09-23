@@ -161,7 +161,7 @@ export default function LoginPage() {
         <div className="max-w-[460px] w-full relative">
           {/* Mobile branding — only shown on small screens */}
           <div className="lg:hidden text-center mb-10">
-            <img src="/logo.png" alt="MyZipVault" className="h-20 w-auto mx-auto mb-4" />
+            <img src="/logo.png" alt="MyZipVault" className="h-28 w-auto mx-auto mb-5" />
             
           </div>
 
