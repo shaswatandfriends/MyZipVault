@@ -1730,7 +1730,9 @@
     font-weight: 500;
     color: var(--text-primary);
   }
-  p { color: var(--text-primary); }
+  /* Paragraph color — scoped to NOT override text inside buttons/links
+     with green backgrounds (which need white text). */
+  p:not(button p):not(a p):not([role="button"] p):not([class*="bg-primary"] p):not([class*="bg-emerald"] p):not([class*="bg-teal"] p) { color: var(--text-primary); }
   small { color: var(--text-secondary); }
 
   /* Tabular figures for all numeric data */
@@ -1762,14 +1764,130 @@
     outline-offset: 2px;
   }
 
-  /* Better link defaults */
-  a {
+  /* Better link defaults — scoped to NOT override button-styled links */
+  a:not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-teal"]):not([class*="bg-\[#0D3B2E"]):not([class*="bg-\[#1F6F5C"]):not(.text-white) {
     color: var(--primary);
     transition: color 0.18s ease;
   }
-  a:hover {
+  a:not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-teal"]):not([class*="bg-\[#0D3B2E"]):not([class*="bg-\[#1F6F5C"]):not(.text-white):hover {
     color: var(--primary-hover);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BUTTON TEXT CONTRAST PROTECTION — global fix for 165+ buttons
+   ═══════════════════════════════════════════════════════════════════════
+   Root cause: base-layer `p { color: var(--text-primary) }` and
+   `a { color: var(--primary) }` rules were overriding `text-white` on
+   green buttons and Link-styled-as-button elements. This section forces
+   white text on any element that has BOTH a green background class AND
+   text-white, regardless of CSS cascade order.
+
+   Also forces `<p>` children inside buttons to inherit the button's
+   text color (so text wrapped in <p> inside a green button stays white).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Force white text on ANY element with text-white class that's a
+   button, link, or has a green background. !important needed to beat
+   the base-layer a{} and p{} rules. */
+button.text-white,
+a.text-white,
+[role="button"].text-white,
+.text-white[class*="bg-primary"],
+.text-white[class*="bg-emerald"],
+.text-white[class*="bg-teal"],
+.text-white[class*="bg-\[#0D3B2E"],
+.text-white[class*="bg-\[#1F6F5C"],
+.text-white[class*="bg-\[#174A43"] {
+  color: #FFFFFF !important;
+}
+
+/* 2. Force <p> children inside buttons/links to inherit the parent
+   color — prevents the `p { color: var(--text-primary) }` rule from
+   darkening text inside green buttons. */
+button p,
+a p,
+[role="button"] p,
+[class*="bg-primary"] p,
+[class*="bg-emerald"] p,
+[class*="bg-teal"] p,
+[class*="bg-\[#0D3B2E"] p,
+[class*="bg-\[#1F6F5C"] p {
+  color: inherit !important;
+}
+
+/* 3. Active tab triggers with green background — force white text */
+[data-state="active"][class*="bg-primary"],
+[data-state="active"][class*="bg-emerald"],
+[data-state="active"][class*="bg-teal"] {
+  color: #FFFFFF !important;
+}
+[data-state="active"][class*="bg-primary"] *,
+[data-state="active"][class*="bg-emerald"] *,
+[data-state="active"][class*="bg-teal"] * {
+  color: inherit !important;
+}
+
+/* 4. Force white text on green badges */
+.badge.text-white,
+[class*="bg-emerald-600"].text-white,
+[class*="bg-emerald-700"].text-white,
+[class*="bg-primary"].text-white {
+  color: #FFFFFF !important;
+}
+
+/* 5. Hover states — keep text white when hovering green buttons */
+button[class*="bg-primary"]:hover,
+button[class*="bg-emerald"]:hover,
+button[class*="bg-teal"]:hover,
+a[class*="bg-primary"]:hover,
+a[class*="bg-emerald"]:hover,
+a[class*="bg-teal"]:hover,
+[class*="bg-primary"][role="button"]:hover,
+[class*="bg-emerald"][role="button"]:hover {
+  color: #FFFFFF !important;
+}
+
+/* 6. Special case: Link elements with bg-primary that render as <a> —
+   the a{} rule in base layer has element-level specificity (0,0,1) which
+   can beat text-white class (0,1,0) in some cascade orders. Force it. */
+a[class*="bg-primary"],
+a[class*="bg-emerald-600"],
+a[class*="bg-emerald-700"],
+a[class*="bg-teal-600"],
+a[class*="bg-teal-700"],
+a[class*="bg-\[#0D3B2E"],
+a[class*="bg-\[#1F6F5C"] {
+  color: #FFFFFF !important;
+}
+a[class*="bg-primary"]:hover,
+a[class*="bg-emerald-600"]:hover,
+a[class*="bg-emerald-700"]:hover,
+a[class*="bg-teal-600"]:hover,
+a[class*="bg-teal-700"]:hover,
+a[class*="bg-\[#0D3B2E"]:hover,
+a[class*="bg-\[#1F6F5C"]:hover {
+  color: #FFFFFF !important;
+}
+
+/* 7. ULTIMATE SAFETY NET: Any element with text-white class that also
+   has a green background utility gets white text, period. This catches
+   any edge case the above rules might miss. */
+[class*="bg-primary"].text-white,
+[class*="bg-emerald"].text-white,
+[class*="bg-teal"].text-white,
+[class*="bg-green"].text-white {
+  color: #FFFFFF !important;
+}
+
+/* 8. Also catch elements where text-white is on a child but the green
+   background is on the parent (common in shadcn Button with asChild). */
+[class*="bg-primary"] .text-white,
+[class*="bg-emerald-600"] .text-white,
+[class*="bg-emerald-700"] .text-white,
+[class*="bg-teal-600"] .text-white,
+[class*="bg-teal-700"] .text-white {
+  color: #FFFFFF !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
