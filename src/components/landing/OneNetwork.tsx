@@ -75,24 +75,51 @@ export function OneNetwork() {
 
               <h3 style={{ fontSize: 19, fontWeight: 700, color: C.text, marginBottom: 4, letterSpacing: "-0.01em" }}>{a.title}</h3>
               <p style={{ fontSize: 13, color: C.accent, fontWeight: 600, marginBottom: 14, fontStyle: "italic" }}>{a.subtitle}</p>
-              <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.65, marginBottom: 24 }}>{a.desc}</p>
+              <p style={{ fontSize: 16, color: C.textMuted, lineHeight: 1.65, marginBottom: 24 }}>{a.desc}</p>
 
               <Link href={a.href}>
                 <button style={{
-                  padding: "11px 20px",
+                  padding: "12px 22px",
                   fontSize: 14,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: a.isPrimary ? "#FFFFFF" : C.primary,
-                  background: a.isPrimary ? C.primary : "transparent",
-                  border: a.isPrimary ? "none" : `1px solid ${C.primary}`,
+                  background: a.isPrimary ? C.primary : "#FFFFFF",
+                  border: a.isPrimary ? "none" : `1.5px solid ${C.accent}`,
                   borderRadius: 10,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 8,
                   transition: "all 0.2s",
-                }} onMouseEnter={(e) => { if (a.isPrimary) e.currentTarget.style.background = C.primaryHover; }} onMouseLeave={(e) => { if (a.isPrimary) e.currentTarget.style.background = C.primary; }}>
-                  {a.cta} <ArrowRight size={13} />
+                  boxShadow: a.isPrimary
+                    ? `0 4px 14px ${C.primaryGlow}`
+                    : `0 1px 3px rgba(38,54,51,0.06)`,
+                }}
+                onMouseEnter={(e) => {
+                  if (a.isPrimary) {
+                    e.currentTarget.style.background = C.primaryHover;
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = `0 6px 20px ${C.primaryGlow}`;
+                  } else {
+                    e.currentTarget.style.background = C.accent;
+                    e.currentTarget.style.color = "#FFFFFF";
+                    e.currentTarget.style.borderColor = C.accent;
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (a.isPrimary) {
+                    e.currentTarget.style.background = C.primary;
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = `0 4px 14px ${C.primaryGlow}`;
+                  } else {
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.color = C.primary;
+                    e.currentTarget.style.borderColor = C.accent;
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }
+                }}>
+                  {a.cta} <ArrowRight size={14} />
                 </button>
               </Link>
             </div>

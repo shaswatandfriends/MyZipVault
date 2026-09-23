@@ -73,7 +73,7 @@ export function SocialFeed() {
                 </div>
 
                 {/* Content */}
-                <p style={{ fontSize: 14, color: C.text, lineHeight: 1.65, marginBottom: 18 }}>{post.content}</p>
+                <p style={{ fontSize: 16, color: C.text, lineHeight: 1.65, marginBottom: 18 }}>{post.content}</p>
 
                 {/* Engagement */}
                 <div style={{ display: "flex", gap: 24, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>

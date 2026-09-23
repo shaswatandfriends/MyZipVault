@@ -33,7 +33,7 @@ export function ProfessionalIdentity() {
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: C.bgCard, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <item.icon size={14} style={{ color: C.primary }} />
                 </div>
-                <span style={{ fontSize: 14, color: C.text, fontWeight: 500 }}>{item.label}</span>
+                <span style={{ fontSize: 15, color: C.text, fontWeight: 500 }}>{item.label}</span>
               </div>
             ))}
           </div>

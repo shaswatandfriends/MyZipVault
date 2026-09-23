@@ -37,8 +37,8 @@ export function MarketplaceFlow() {
               <div key={v.title} className="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1" style={{ background: C.bgCard, border: `1px solid ${C.border}`, backdropFilter: "blur(20px)" }}>
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: `${C.accent}15`, border: `1px solid ${C.accent}30`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}><v.icon size={24} style={{ color: C.accent }} /></div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 10 }}>{v.title}</h3>
-                <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.65, marginBottom: 20 }}>{v.desc}</p>
-                <ul style={{ listStyle: "none", padding: 0 }}>{v.features.map((f, j) => (<li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}><CheckCircle2 size={16} style={{ color: C.emerald, flexShrink: 0, marginTop: 2 }} /><span style={{ fontSize: 14, color: C.textMuted }}>{f}</span></li>))}</ul>
+                <p style={{ fontSize: 16, color: C.textMuted, lineHeight: 1.65, marginBottom: 20 }}>{v.desc}</p>
+                <ul style={{ listStyle: "none", padding: 0 }}>{v.features.map((f, j) => (<li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}><CheckCircle2 size={16} style={{ color: C.emerald, flexShrink: 0, marginTop: 2 }} /><span style={{ fontSize: 15, color: C.textMuted }}>{f}</span></li>))}</ul>
               </div>
             ))}
           </div>

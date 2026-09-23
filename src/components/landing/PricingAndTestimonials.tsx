@@ -61,7 +61,7 @@ export function PricingAndTestimonials() {
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 56, fontWeight: 800, color: C.text, fontFamily: "'Lora', Georgia, serif", lineHeight: 1 }}>Free</span>
               </div>
-              <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 28 }}>Forever. No credit card. No catch.</p>
+              <p style={{ fontSize: 16, color: C.textMuted, marginBottom: 28 }}>Forever. No credit card. No catch.</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
@@ -74,7 +74,7 @@ export function PricingAndTestimonials() {
                 ].map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <CheckCircle2 size={16} style={{ color: C.primary, flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, color: C.text, fontWeight: 500 }}>{t}</span>
+                    <span style={{ fontSize: 15, color: C.text, fontWeight: 500 }}>{t}</span>
                   </div>
                 ))}
               </div>
@@ -87,7 +87,7 @@ export function PricingAndTestimonials() {
                 <span style={{ fontSize: 32, fontWeight: 800, color: C.text, fontFamily: "'Lora', Georgia, serif", lineHeight: 1 }}>Professional</span>
                 <span style={{ fontSize: 16, color: C.textMuted, fontWeight: 500 }}>hiring tools</span>
               </div>
-              <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 28 }}>Credit-based. Pay only for what you use.</p>
+              <p style={{ fontSize: 16, color: C.textMuted, marginBottom: 28 }}>Credit-based. Pay only for what you use.</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
@@ -100,7 +100,7 @@ export function PricingAndTestimonials() {
                 ].map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <CheckCircle2 size={16} style={{ color: C.sage, flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, color: C.text, fontWeight: 500 }}>{t}</span>
+                    <span style={{ fontSize: 15, color: C.text, fontWeight: 500 }}>{t}</span>
                   </div>
                 ))}
               </div>
@@ -179,7 +179,7 @@ export function PricingAndTestimonials() {
               <p style={{ fontSize: 16, color: C.textOnDeepMuted, lineHeight: 1.6, marginBottom: 24, fontStyle: "italic" }}>
                 Know the market. Know your value.
               </p>
-              <p style={{ fontSize: 14, color: "rgba(247,243,232,0.60)", lineHeight: 1.6, marginBottom: 28 }}>
+              <p style={{ fontSize: 16, color: "rgba(247,243,232,0.70)", lineHeight: 1.6, marginBottom: 28 }}>
                 See how much nurses, allied health professionals, and physicians are earning in 2026 — broken down by state, specialty, and experience level.
               </p>
             </div>

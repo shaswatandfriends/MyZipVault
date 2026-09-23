@@ -40,7 +40,7 @@ export function HowItWorks() {
                 <span style={{ position: "absolute", top: -8, right: -8, width: 32, height: 32, borderRadius: "50%", background: C.primary, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{step.num}</span>
               </div>
               <h3 style={{ fontSize: 19, fontWeight: 700, color: C.text, marginBottom: 10, letterSpacing: "-0.01em" }}>{step.title}</h3>
-              <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, maxWidth: 240, margin: "0 auto" }}>{step.desc}</p>
+              <p style={{ fontSize: 16, color: C.textMuted, lineHeight: 1.6, maxWidth: 240, margin: "0 auto" }}>{step.desc}</p>
             </div>
           ))}
         </div>

@@ -852,3 +852,63 @@ Stage Summary:
   5. **P1** middleware line 80 blocks non-recruiter roles from /api/recruiter/[publicId]/review and /report — the public recruiter review/report flow is broken for candidates and employers.
 
 Full audit report (severity-tagged, file:line, impact, recommended fix) is in the delivered Markdown below.
+
+---
+Task ID: platform-wide-ui-fix-1
+Agent: Main
+Task: Fix complete platform UI in one pass — sidebar (broken logo, alignment, active state, badge, avatar, action button differentiation), landing page (body text 14→16px, Join buttons as actual buttons), and consolidate legacy CSS overrides
+
+Work Log:
+- Read /home/z/my-project/repos/MyZipVault/worklog.md to understand prior work (Glass Warm design system, 20 audit fixes, audit-1 report)
+- Mapped project structure: 4 role-based dashboard layouts (candidate/recruiter/employer/superadmin) all sharing `src/components/layout/sidebar.tsx` (1007 lines) and `src/app/globals.css` (3184 lines)
+- Audited the screenshot of the recruiter sidebar (from earlier in conversation) — identified 9 distinct UI issues
+- Traced the design system: forest green (#0D3B2E) + gold (#C9A961) + sage (#8FA99C) on warm ivory (#F7F3E8), Lora serif headings + Inter body
+
+FIX #1 — Sidebar (`src/components/layout/sidebar.tsx`):
+- Replaced broken `<img src="/logo.png">` (935KB PNG with dark marks invisible on dark glass sidebar) with inline SVG brand mark: white Z on transparent rounded square with gold accent border, plus the "MyZipVault" wordmark next to it in bold 15px white text. Logo now loads instantly and is visible on dark sidebar.
+- Added brand wordmark + role label as a stacked column (was just label span) — gives the brand presence even when sidebar is collapsed icon mode
+- Fixed avatar: was using sage→forest gradient (blends with sidebar bg); now uses gold→sage gradient (high contrast) with bold dark-green initials
+- Bumped user email font from 12px → 13px, color from white/60 → white/65, weight medium → semibold; name from 12px → 13px white/80 → white/95
+- Fixed "Take a tour" button: replaced thin `text-white/60` + `HelpCircle` (inconsistent line weight) with `Sparkles` icon (matches Lucide set used elsewhere) + gold accent border + gold-tinted bg — clearly differentiated from nav items via accent color
+- Fixed "View Public Profile" button: bumped font-weight 500 → 600, rounded corners 12px → 10px, brighter borders, proper hover state
+- Fixed "Sign Out" button: added red-tinted border + bg to make it visually destructive (matches button.tsx destructive pattern)
+- Fixed chevron alignment in NavGroupSection: was `size-3.5` (14px) making it appear "float too high" next to 16px icons; bumped to `size-4` (16px) + added `self-center` for guaranteed flex baseline alignment
+- Bumped active-state icon color from `#8FA99C` (sage — same as sidebar bg, invisible) → `#FFFFFF` (white) for clear contrast
+
+FIX #2 — Sidebar CSS (`src/app/globals.css`):
+- Strengthened `.spatial-nav-item` base: font-weight 500 → 600, color white/85 → white/92, added `line-height: 1.2`
+- Strengthened `.spatial-nav-item-active`: background now uses gold rgba(201,169,97,0.18) instead of dark green rgba(23,74,67,0.22) — gives active item a clear "selected" look distinct from regular items
+- Strengthened `.spatial-nav-item-active::before` (left accent bar): gold terra background with brighter glow `rgba(201,169,97,0.8)` + white inner glow, taller span (25%→18% from edges)
+- **CRITICAL FIX**: Found and consolidated THREE duplicate `.spatial-nav-item-active` rules later in the file (lines 2896, 3090, 3139) that all used `!important` to override the new style with sage green `rgba(143,169,156,0.22)` — same color family as sidebar bg, making active state invisible. All three replaced with a single consolidated gold-accent rule at the top of section 5.
+- Removed legacy `button[class*="bg-gradient"]` flattening rules (lines 2906-2913 and 3175-3182) that were applying `background: var(--primary) !important` to ALL gradient buttons, undoing the carefully-crafted 3-stop gradients + layered shadows from button.tsx. Gradient buttons now render properly with depth + gloss.
+
+FIX #3 — Notification badge (`src/components/layout/notification-bell.tsx`):
+- Sidebar variant badge: bumped from `size-5` (20px) with `text-[10px]` to min-width 20px / height 20px / 11px font, with proper padding for multi-digit counts
+- Color: was `bg-[var(--primary)]` (dark green, blends with sidebar) — now uses gold gradient `linear-gradient(135deg, #E0B870, #C9A961)` with dark green text on it for max contrast
+- Added 1.5px dark border + outer gold glow ring — unmistakable against dark sidebar bg
+- Bumped button font-weight medium → semibold, color from text-secondary → white/90 (matches sidebar text)
+
+FIX #4 — Landing page body text (`src/components/landing/*.tsx`):
+- Bumped body description text from 14px → 16px in: OneNetwork.tsx (card descriptions), PricingAndTestimonials.tsx (3 paragraphs: "Forever. No credit card. No catch." / "Credit-based. Pay only for what you use." / salary report description), HowItWorks.tsx (step descriptions), SocialFeed.tsx (post content), WhyMyZipVault.tsx (pillar descriptions), MarketplaceFlow.tsx (verification item descriptions)
+- Bumped list-item text from 14px → 15px in: PricingAndTestimonials.tsx (both feature lists), MarketplaceFlow.tsx (feature bullets), ProfessionalIdentity.tsx (capability labels)
+- Left eyebrow labels / uppercase tags at 14px (they're meta-text, not body)
+- Left button/nav text at 14px (button text should stay smaller than body)
+
+FIX #5 — OneNetwork "Join" buttons as actual buttons (`src/components/landing/OneNetwork.tsx`):
+- Secondary "Join as a Recruiter" / "Join as an Employer" buttons were `transparent` bg + `1px solid primary` border (looked like text links with arrows)
+- Now: white bg + 1.5px gold accent border + proper shadow + hover lift + hover fill (gold bg + white text) — clear button affordance
+- Primary "Join as a Professional" button: added shadow + hover lift + brightness hover for better depth
+- Button font-weight 600 → 700, padding bumped 11×20 → 12×22, arrow icon 13 → 14
+
+Build verification:
+- `npx next build` → ✓ Compiled successfully in 73s
+- 343/343 static pages generated
+- Only 1 pre-existing CSS warning (not caused by these changes)
+- Exit code 0
+
+Stage Summary:
+- Sidebar is now visually polished: logo loads instantly via inline SVG, active state is unmistakable (gold accent + brighter glow), action buttons (Sign Out / Take a tour / View Profile) clearly differentiated from nav items via accent borders and colors, notification badge is highly visible, avatar has contrast, all chevrons aligned
+- Landing page body text is now readable (16px vs 14px), Join CTAs look like real buttons (not text links)
+- Removed 3 legacy `!important` overrides that were silently breaking the design system: sage-on-sage active state, gradient button flattening
+- Single source of truth restored for both active nav state (gold accent) and gradient buttons (let button.tsx drive)
+- All changes are in shared components — fixes propagate to ALL dashboard pages (candidate, recruiter, employer, superadmin) and to the public landing page simultaneously

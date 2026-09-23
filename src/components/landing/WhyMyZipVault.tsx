@@ -100,7 +100,7 @@ export function WhyMyZipVault() {
               <div style={{ padding: "16px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: "0.04em", fontFamily: "'Lora', Georgia, serif" }}>{p.title}</h3>
                 <p style={{ fontSize: 12, color: C.accent, fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.08em" }}>{p.tagline}</p>
-                <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>{p.desc}</p>
+                <p style={{ fontSize: 16, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>{p.desc}</p>
 
                 {/* Feature list */}
                 <div style={{ paddingTop: 16, borderTop: `1px solid ${C.border}`, marginTop: "auto" }}>

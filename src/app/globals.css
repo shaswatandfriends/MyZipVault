@@ -1041,34 +1041,36 @@
   padding: 0.5rem 0.875rem;
   border-radius: var(--radius-pill);
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
   transition: all var(--duration-quick) var(--ease-spatial);
   text-decoration: none;
   overflow: hidden;
+  line-height: 1.2;
 }
 
 .spatial-nav-item:hover {
   color: rgba(255, 255, 255, 1);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.10);
 }
 
 .spatial-nav-item-active {
   color: #fff;
-  background: rgba(23, 74, 67, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(23, 74, 67, 0.3), 0 2px 8px rgba(23, 74, 67, 0.18);
+  background: rgba(201, 169, 97, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 0 0 1px rgba(201, 169, 97, 0.45), 0 2px 12px rgba(201, 169, 97, 0.20);
+  font-weight: 700;
 }
 
 .spatial-nav-item-active::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 25%;
-  bottom: 25%;
+  top: 18%;
+  bottom: 18%;
   width: 3px;
   border-radius: var(--radius-pill);
   background: var(--terra);
-  box-shadow: 0 0 8px rgba(23, 74, 67, 0.6);
+  box-shadow: 0 0 12px rgba(201, 169, 97, 0.8), 0 0 4px rgba(255, 255, 255, 0.5);
 }
 
 /* ─── Collapsed sidebar nav items — icon only, centered ─────────── */
@@ -2890,24 +2892,23 @@ a[href*="references"]:hover, a[href*="resume"]:hover {
   color: rgba(247, 243, 232, 0.55) !important;
 }
 
-/* 5. Sidebar active state — more distinct */
+/* 5. Sidebar active state — GOLD accent (clearly differentiated from sage action buttons).
+   Note: there are multiple legacy `.spatial-nav-item-active` rules earlier in this file
+   that used sage green (same family as sidebar bg) — those have been removed/consolidated
+   here to use the brand gold accent so the active nav item is unmistakable. */
 .spatial-nav-item-active {
-  background: rgba(143, 169, 156, 0.25) !important;
-  box-shadow: inset 2px 0 0 var(--sage) !important;
+  background: rgba(201, 169, 97, 0.20) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 0 0 1px rgba(201, 169, 97, 0.45), 0 2px 12px rgba(201, 169, 97, 0.22) !important;
+  font-weight: 700 !important;
+}
+.spatial-nav-item-active::before {
+  background: var(--terra) !important;
+  box-shadow: 0 0 12px rgba(201, 169, 97, 0.85), 0 0 4px rgba(255, 255, 255, 0.5) !important;
 }
 .spatial-nav-item-active span,
-.spatial-nav-item-active svg {
-  color: #F7F3E8 !important;
-}
-
-/* 6. Button gradient — less glossy, more matte */
-button[class*="bg-gradient"] {
-  background: var(--primary) !important;
-  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.15) !important;
-}
-button[class*="bg-gradient"]:hover {
-  background: var(--primary-hover) !important;
-  box-shadow: 0 4px 16px rgba(23, 74, 67, 0.20) !important;
+.spatial-nav-item-active svg,
+.spatial-nav-item-active [class*="size-"] {
+  color: #FFFFFF !important;
 }
 
 /* 7. Hide duplicate help floaters — keep only one */
@@ -3084,16 +3085,7 @@ p[style*="color: var(--text-secondary)"] {
   color: rgba(247, 243, 232, 0.70) !important;
 }
 
-/* Active nav item — sage accent bar + brighter text */
-.spatial-nav-item-active {
-  background: rgba(143, 169, 156, 0.22) !important;
-  border-left: 3px solid rgba(143, 169, 156, 0.80) !important;
-}
-.spatial-nav-item-active span,
-.spatial-nav-item-active a,
-.spatial-nav-item-active [class*="size-"] {
-  color: #F7F3E8 !important;
-}
+/* (Consolidated into the gold-accent active state rule above — kept this section intentionally empty to preserve stylesheet structure.) */
 
 /* ═══ SIDEBAR CONTRAST + DASHBOARD POLISH (re-applied) ═══ */
 
@@ -3133,16 +3125,7 @@ p[style*="color: var(--text-secondary)"] {
   opacity: 1 !important;
 }
 
-/* Active nav item — sage accent */
-.spatial-nav-item-active {
-  background: rgba(143, 169, 156, 0.22) !important;
-  border-left: 3px solid rgba(143, 169, 156, 0.80) !important;
-}
-.spatial-nav-item-active span,
-.spatial-nav-item-active a,
-.spatial-nav-item-active [class*="size-"] {
-  color: #F7F3E8 !important;
-}
+/* (Consolidated into the gold-accent active state rule above — kept this section intentionally empty to preserve stylesheet structure.) */
 
 /* Sidebar text — minimum contrast */
 .text-white\/25 { color: rgba(255, 255, 255, 0.55) !important; }
@@ -3170,14 +3153,7 @@ a[href*="resume"], a[href*="checklists"], a[href*="sharing"] {
   box-shadow: 0 8px 24px rgba(23, 74, 67, 0.10), 0 2px 8px rgba(23, 74, 67, 0.06) !important;
 }
 
-/* Button — flat matte instead of glossy */
-button[class*="bg-gradient"] {
-  background: var(--primary) !important;
-  box-shadow: 0 2px 8px rgba(23, 74, 67, 0.15) !important;
-}
-button[class*="bg-gradient"]:hover {
-  background: var(--primary-hover) !important;
-}
+/* Button — let the gradient variants in button.tsx shine (no flattening override). */
 
 /* Text contrast on ivory bg */
 .text-text-dim { color: rgba(38, 54, 51, 0.55) !important; }
