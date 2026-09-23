@@ -140,7 +140,7 @@ export function PricingAndTestimonials() {
                 <Quote size={28} style={{ color: C.sage, marginBottom: 16, opacity: 0.6 }} />
                 <p style={{ fontSize: 16, color: C.text, lineHeight: 1.65, marginBottom: 28, flex: 1, fontStyle: "italic" }}>"{t.quote}"</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{t.initials}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryHover} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{t.initials}</div>
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 2 }}>{t.name}</p>
                     <p style={{ fontSize: 13, color: C.primary, fontWeight: 600 }}>{t.specialty}</p>

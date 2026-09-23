@@ -75,10 +75,11 @@ export function HeroSection() {
           {/* Profile Card — floating on top of Z watermark */}
           <div style={{ position: "relative", zIndex: 1, animation: "float-card 6s ease-in-out infinite" }}>
             <div style={{ background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: `0 12px 48px ${C.primaryGlow}`, overflow: "hidden" }}>
-              {/* Cover band */}
-              <div style={{ height: 80, background: `linear-gradient(135deg, ${C.primary} 0%, ${C.sage} 100%)`, position: "relative" }}>
+              {/* Cover band — uses darker forest→darker-forest gradient so the
+                  "Verified" glass pill in the top-right has guaranteed contrast. */}
+              <div style={{ height: 80, background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryHover} 100%)`, position: "relative" }}>
                 <div style={{ position: "absolute", top: 12, right: 16, display: "flex", gap: 6 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", padding: "4px 10px", borderRadius: 20, fontSize: 10, fontWeight: 600, color: "#FFFFFF" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.22)", backdropFilter: "blur(8px)", padding: "4px 10px", borderRadius: 20, fontSize: 10, fontWeight: 600, color: "#FFFFFF" }}>
                     <CheckCircle2 size={11} /> Verified
                   </span>
                 </div>
@@ -86,7 +87,7 @@ export function HeroSection() {
 
               {/* Avatar + name */}
               <div style={{ padding: "0 24px 20px", marginTop: -32 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 22, marginBottom: 14 }}>EC</div>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryHover} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 22, marginBottom: 14, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 12px rgba(31,111,92,0.25)" }}>EC</div>
                 <h3 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 2, fontFamily: "'Lora', Georgia, serif" }}>Dr. Emily Carter</h3>
                 <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 12 }}>Vascular Surgeon · 12 years experience</p>
 

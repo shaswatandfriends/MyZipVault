@@ -131,7 +131,7 @@ export function ProductShowcase() {
                   {/* Feed post 1 */}
                   <div style={{ background: C.bgCard, borderRadius: 10, padding: 12, border: `1px solid ${C.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage}, ${C.primary})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>JW</div>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryHover})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#FFFFFF" }}>JW</div>
                       <div>
                         <p style={{ fontSize: 11, fontWeight: 700, color: C.text, lineHeight: 1 }}>Dr. Jennifer Walsh</p>
                         <p style={{ fontSize: 9, color: C.textDim }}>Cardiologist · 2h</p>

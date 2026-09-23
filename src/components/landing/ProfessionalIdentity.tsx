@@ -53,7 +53,7 @@ export function ProfessionalIdentity() {
 
             {/* Body */}
             <div style={{ padding: "0 24px 24px", marginTop: -28 }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${C.sage} 0%, ${C.primary} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 20, marginBottom: 12 }}>JW</div>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryHover} 100%)`, border: `3px solid ${C.bgCard}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 20, marginBottom: 12 }}>JW</div>
 
               <h3 style={{ fontSize: 19, fontWeight: 700, color: C.text, marginBottom: 2, letterSpacing: "-0.01em" }}>Dr. Jennifer Walsh</h3>
               <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>

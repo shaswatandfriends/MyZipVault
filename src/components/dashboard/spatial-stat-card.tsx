@@ -20,14 +20,14 @@ interface SpatialStatCardProps {
 
 const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"]>, React.CSSProperties> = {
   primary: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(13,59,46,0.28)",
+    background: "linear-gradient(180deg, #226B58 0%, #1F6F5C 55%, #155440 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 10px rgba(31,111,92,0.28)",
     color: "#fff",
   },
   terra: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(201,123,84,0.28)",
-    color: "#fff",
+    background: "linear-gradient(180deg, #D4BC7A 0%, #C9A961 55%, #B89651 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 10px rgba(201,169,97,0.32)",
+    color: "#0F4D3C",
   },
   amber: {
     background: "linear-gradient(180deg, #FCD34D 0%, #D97706 60%, #92400E 100%)",
@@ -35,13 +35,13 @@ const iconContainerStyles: Record<NonNullable<SpatialStatCardProps["iconVariant"
     color: "#fff",
   },
   blue: {
-    background: "linear-gradient(180deg, #8FA99C 0%, #8FA99C 60%, #082820 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(59,130,246,0.28)",
+    background: "linear-gradient(180deg, #226B58 0%, #1F6F5C 55%, #155440 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(31,111,92,0.28)",
     color: "#fff",
   },
   green: {
-    background: "linear-gradient(180deg, #86EFAC 0%, #22C55E 60%, #0D3B2E 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(34,197,94,0.28)",
+    background: "linear-gradient(180deg, #226B58 0%, #1F6F5C 55%, #155440 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 10px rgba(31,111,92,0.28)",
     color: "#fff",
   },
   red: {

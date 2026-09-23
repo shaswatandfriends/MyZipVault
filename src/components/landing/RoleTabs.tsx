@@ -23,7 +23,7 @@ export function RoleTabs() {
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
           <div style={{ display: "flex", gap: 4, padding: 4, background: "rgba(255,255,255,0.03)", borderRadius: 28, border: `1px solid ${C.border}`, backdropFilter: "blur(20px)" }}>
             {[{ key: "candidate" as const, label: "For Candidates", icon: Users }, { key: "recruiter" as const, label: "For Recruiters", icon: Search }, { key: "employer" as const, label: "For Employers", icon: Building2 }].map((tab) => (
-              <button key={tab.key} onClick={() => setViewTab(tab.key)} style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 22, cursor: "pointer", transition: "all 0.3s", display: "flex", alignItems: "center", gap: 6, background: viewTab === tab.key ? `linear-gradient(135deg, ${C.primary}, ${C.accent})` : "transparent", color: viewTab === tab.key ? C.white : C.textMuted, border: "none", boxShadow: viewTab === tab.key ? `0 4px 12px ${C.primaryGlow}` : "none" }}><tab.icon className="size-4" />{tab.label}</button>
+              <button key={tab.key} onClick={() => setViewTab(tab.key)} style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 22, cursor: "pointer", transition: "all 0.3s", display: "flex", alignItems: "center", gap: 6, background: viewTab === tab.key ? `linear-gradient(135deg, ${C.primary}, ${C.primaryHover})` : "transparent", color: viewTab === tab.key ? C.white : C.textMuted, border: "none", boxShadow: viewTab === tab.key ? `0 4px 12px ${C.primaryGlow}` : "none" }}><tab.icon className="size-4" />{tab.label}</button>
             ))}
           </div>
         </div>
@@ -31,7 +31,7 @@ export function RoleTabs() {
           {activeFeatures.map((f, i) => { const colors = [C.primary, C.accent, C.emerald, C.amber, C.violet, C.primary]; const color = colors[i % colors.length]; return <FeatureCard key={f.title} icon={f.icon} title={f.title} desc={f.desc} color={color} />; })}
         </div>
         <div style={{ textAlign: "center", marginTop: 40 }}>
-          <Link href={signupLink}><button style={{ padding: "14px 32px", fontSize: 15, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, border: "none", cursor: "pointer", borderRadius: 28, boxShadow: `0 8px 24px ${C.primaryGlow}`, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>{ctaLabel} <ArrowRight size={16} style={{ display: "inline" }} /></button></Link>
+          <Link href={signupLink}><button style={{ padding: "14px 32px", fontSize: 15, fontWeight: 600, color: C.white, background: `linear-gradient(135deg, ${C.primary}, ${C.primaryHover})`, border: "none", cursor: "pointer", borderRadius: 28, boxShadow: `0 8px 24px ${C.primaryGlow}`, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>{ctaLabel} <ArrowRight size={16} style={{ display: "inline" }} /></button></Link>
         </div>
       </div>
     </section>

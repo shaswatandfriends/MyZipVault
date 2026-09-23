@@ -15,7 +15,7 @@ const badgeVariants = cva(
       variant: {
         // Primary — forest green gradient pill
         default:
-          "border-transparent bg-gradient-to-b from-[var(--primary-vivid)] to-[var(--primary)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(13,59,46,0.2)] [a&]:hover:from-[var(--primary)] [a&]:hover:to-[var(--primary-hover)] [a&]:hover:scale-[1.03]",
+          "border-transparent bg-gradient-to-b from-[var(--primary)] to-[var(--primary-hover)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(31,111,92,0.2)] [a&]:hover:from-[var(--primary)] [a&]:hover:to-[var(--primary-hover)] [a&]:hover:scale-[1.03]",
         // Secondary — warm off-white glass pill
         secondary:
           "border-[rgba(255,255,255,0.5)] bg-[rgba(255,255,255,0.55)] backdrop-blur-[20px] text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(13,59,46,0.04)] [a&]:hover:bg-[rgba(255,255,255,0.86)] [a&]:hover:scale-[1.03]",

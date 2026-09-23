@@ -7,12 +7,12 @@ export const C = {
   bg: "#F7F3E8",                       // Warm Ivory — main page background (per spec, not pure white)
   bgCard: "#FFFFFF",                   // Pure White — cards/surfaces
   bgCardHover: "#FBF8EE",              // Slightly tinted ivory for hover
-  bgDeep: "#0D3B2E",                   // Deep Teal — for deep sections (CTA bands, verification)
+  bgDeep: "#1F6F5C",                   // Lighter Forest Teal — for deep sections (CTA bands, verification)
   bgSecondary: "#E7EEE9",              // Sage-tinted surface — for nested/secondary surfaces
 
   // ─── Borders ───
   border: "rgba(38,54,51,0.10)",       // Charcoal-tinted border (subtle)
-  borderHover: "rgba(13,59,46,0.30)",  // Teal hover border
+  borderHover: "rgba(31,111,92,0.30)", // Teal hover border
 
   // ─── Text ───
   text: "#263633",                     // Deep Charcoal — body + headings
@@ -22,16 +22,16 @@ export const C = {
   textOnDeepMuted: "rgba(247,243,232,0.70)",
 
   // ─── Brand Colors ───
-  primary: "#0D3B2E",                  // Deep Forest Teal — primary brand anchor
-  primaryHover: "#082820",             // Darker forest — hover/active
-  primaryGlow: "rgba(13,59,46,0.18)",  // Soft forest teal shadow
+  primary: "#1F6F5C",                  // Lighter Forest Teal — primary brand anchor (was #0D3B2E)
+  primaryHover: "#155440",             // Darker forest — hover/active
+  primaryGlow: "rgba(31,111,92,0.18)", // Soft forest teal shadow
   sage: "#8FA99C",                     // Sage Green — secondary
   sageLight: "#E7EEE9",                // Light sage surface
   accent: "#C9A961",                   // Gold — accent only (premium healthcare feel)
   accentGlow: "rgba(201,169,97,0.20)",
 
   // ─── Status colors (preserved) ───
-  emerald: "#0D3B2E",                  // Success → brand forest teal
+  emerald: "#1F6F5C",                  // Success → brand forest teal
   amber: "#D97706",                    // Warning
   violet: "#8FA99C",                   // Repurposed to sage
   white: "#FFFFFF",
