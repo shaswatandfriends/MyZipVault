@@ -52,7 +52,7 @@ export function ProductShowcase() {
           {/* Dashboard body */}
           <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "200px 1fr" : "1fr", minHeight: 420 }}>
             {/* Sidebar */}
-            <div style={{ background: C.bgDeep, padding: "20px 16px", display: isDesktop ? "flex" : "none", flexDirection: "column", gap: 4 }}>
+            <div className="bg-deep-glass" style={{ padding: "20px 16px", display: isDesktop ? "flex" : "none", flexDirection: "column", gap: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid rgba(247,243,232,0.10)" }}>
                 <img src="/logo.png" alt="MyZipVault" style={{ height: 24, width: "auto" }} />
               </div>
@@ -113,7 +113,7 @@ export function ProductShowcase() {
           {/* Mobile phone mockup */}
           <div style={{ width: 240, flexShrink: 0, animation: "float-card 5s ease-in-out infinite" }}>
             {/* Phone frame */}
-            <div style={{ background: C.bgDeep, borderRadius: 28, padding: 8, boxShadow: `0 16px 48px ${C.primaryGlow}`, border: `1px solid ${C.border}` }}>
+            <div className="bg-deep-glass" style={{ borderRadius: 28, padding: 8, boxShadow: `0 16px 48px ${C.primaryGlow}`, border: `1px solid ${C.border}` }}>
               {/* Notch */}
               <div style={{ width: 60, height: 6, background: "rgba(247,243,232,0.15)", borderRadius: 3, margin: "0 auto 8px" }} />
               {/* Screen */}

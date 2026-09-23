@@ -164,7 +164,7 @@ export function PricingAndTestimonials() {
       ────────────────────────────────────────────────────────────── */}
       <section className="scroll-reveal" style={{ padding: "80px 0", background: C.bg, position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ background: C.bgDeep, borderRadius: 20, padding: "48px 40px", display: "grid", gridTemplateColumns: isDesktop ? "1fr 1fr" : "1fr", gap: 36, alignItems: "center", position: "relative", overflow: "hidden" }}>
+          <div className="bg-deep-glass" style={{ borderRadius: 20, padding: "48px 40px", display: "grid", gridTemplateColumns: isDesktop ? "1fr 1fr" : "1fr", gap: 36, alignItems: "center", position: "relative", overflow: "hidden" }}>
             {/* Decorative orb */}
             <div style={{ position: "absolute", top: "-80px", right: "-80px", width: 300, height: 300, borderRadius: "50%", background: `radial-gradient(circle, ${C.sage} 0%, transparent 70%)`, opacity: 0.15, filter: "blur(60px)" }} />
 

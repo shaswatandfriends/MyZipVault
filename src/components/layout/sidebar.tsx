@@ -595,25 +595,22 @@ function ViewPublicProfileButton() {
       href={`/recruiter/${publicId}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+      className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-medium text-white/75 hover:text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
       title="View Public Profile"
       style={{
-        color: "rgba(255,255,255,0.85)",
-        background: "rgba(255,255,255,0.05)",
-        border: "1px solid rgba(255,255,255,0.12)",
+        background: "rgba(255,255,255,0.04)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "rgba(255,255,255,0.10)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.20)";
-        e.currentTarget.style.color = "#fff";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
-        e.currentTarget.style.color = "rgba(255,255,255,0.85)";
+        e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
       }}
     >
-      <User className="size-4 shrink-0 text-[#C9A961]" />
+      <User className="size-4 shrink-0 text-white/70" />
       <span className="group-data-[collapsible=icon]:hidden">View Public Profile</span>
     </a>
   );
@@ -729,35 +726,27 @@ export function AppSidebar() {
           className="relative z-[1] flex shrink-0 items-center justify-between gap-2 px-3 py-3.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-4"
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
-          {/* Brand mark — inline SVG designed for dark sidebar backgrounds.
-              White Z on transparent square with gold accent border.
-              Uses /logo.png on light backgrounds; this SVG on dark. */}
+          {/* Brand logo — actual /logo.png displayed on an ivory chip so the
+              dark green brand marks are visible against the dark sidebar.
+              The chip acts like a "sticker" — common sidebar pattern (Slack, Notion). */}
           <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 30 30"
-              xmlns="http://www.w3.org/2000/svg"
-              className="shrink-0"
-              aria-label="MyZipVault"
-              role="img"
+            <div
+              className="flex items-center justify-center shrink-0 rounded-[10px] overflow-hidden"
+              style={{
+                width: "36px",
+                height: "36px",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #FBF8EE 100%)",
+                border: "1px solid rgba(255, 255, 255, 0.85)",
+                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.18)",
+              }}
             >
-              {/* Subtle gold-tinted rounded square backdrop for contrast on dark glass */}
-              <rect
-                x="1.49"
-                y="1.49"
-                width="27.02"
-                height="27.02"
-                rx="6"
-                fill="rgba(201,169,97,0.10)"
-                stroke="rgba(201,169,97,0.55)"
-                strokeWidth="0.75"
+              <img
+                src="/logo.png"
+                alt="MyZipVault"
+                className="h-7 w-auto shrink-0 object-contain"
+                style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.06))" }}
               />
-              {/* White Z mark — same path as /logo.svg */}
-              <path d="M15.47,7.1l-1.3,1.85c-0.2,0.29-0.54,0.47-0.9,0.47h-7.1V7.09C6.16,7.1,15.47,7.1,15.47,7.1z" fill="#FFFFFF" />
-              <polygon points="24.3,7.1 13.14,22.91 5.7,22.91 16.86,7.1" fill="#FFFFFF" />
-              <path d="M14.53,22.91l1.31-1.86c0.2-0.29,0.54-0.47,0.9-0.47h7.09v2.33H14.53z" fill="#FFFFFF" />
-            </svg>
+            </div>
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="text-[15px] font-bold text-white tracking-tight leading-none font-heading">
                 MyZipVault
@@ -938,29 +927,26 @@ export function AppSidebar() {
             <ViewPublicProfileButton />
           )}
 
-          {/* Take a tour button — dispatches custom event caught by <TourHost />.
-              Uses gold accent + Sparkles icon (consistent line weight with other Lucide icons) — clearly
-              differentiated from nav items via accent color and border treatment. */}
+          {/* Take a tour button — dispatches custom event caught by <TourHost /> */}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("mzv:tour:start"))}
-            className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+            className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-medium text-white/75 hover:text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
             title="Take a tour"
             style={{
-              color: "#C9A961",
-              background: "rgba(201,169,97,0.08)",
-              border: "1px solid rgba(201,169,97,0.25)",
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.06)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(201,169,97,0.15)";
-              e.currentTarget.style.borderColor = "rgba(201,169,97,0.45)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(201,169,97,0.08)";
-              e.currentTarget.style.borderColor = "rgba(201,169,97,0.25)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
             }}
           >
-            <Sparkles className="size-4 shrink-0" style={{ color: "#C9A961" }} />
+            <Sparkles className="size-4 shrink-0 text-white/70" />
             <span className="group-data-[collapsible=icon]:hidden">Take a tour</span>
           </button>
 
@@ -984,12 +970,13 @@ export function AppSidebar() {
             <div
               className="flex size-8 items-center justify-center rounded-full shrink-0 group-data-[collapsible=icon]:size-7"
               style={{
-                // Gold→sage gradient — high contrast against dark sidebar bg
-                background: "linear-gradient(135deg, #C9A961 0%, #8FA99C 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(201,169,97,0.35)",
+                // Subtle forest→sage gradient — matches sidebar palette without shouting
+                background: "linear-gradient(135deg, rgba(143,169,156,0.95) 0%, rgba(13,59,46,0.95) 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(0,0,0,0.25)",
+                border: "1px solid rgba(255,255,255,0.15)",
               }}
             >
-              <span className="text-xs font-bold text-[#0D3B2E]">{initials}</span>
+              <span className="text-xs font-semibold text-white">{initials}</span>
             </div>
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <p className="truncate text-[13px] font-semibold text-white/95 leading-tight">
@@ -1001,29 +988,26 @@ export function AppSidebar() {
             </div>
           </div>
 
-          {/* Logout Button — action button style (border + glass tint, distinct from nav items) */}
+          {/* Logout Button */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button
-                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
+                className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-medium text-white/75 hover:text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9"
                 style={{
-                  color: "rgba(255,159,159,0.95)",
-                  background: "rgba(184,64,64,0.06)",
-                  border: "1px solid rgba(184,64,64,0.20)",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "0.5px solid rgba(255,255,255,0.06)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(184,64,64,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(184,64,64,0.40)";
-                  e.currentTarget.style.color = "#FFB0B0";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(184,64,64,0.06)";
-                  e.currentTarget.style.borderColor = "rgba(184,64,64,0.20)";
-                  e.currentTarget.style.color = "rgba(255,159,159,0.95)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
                 }}
                 title={state === "collapsed" ? "Sign Out" : undefined}
               >
-                <LogOut className="size-4 shrink-0 group-data-[collapsible=icon]:mx-auto" />
+                <LogOut className="size-4 shrink-0 text-white/70 group-data-[collapsible=icon]:mx-auto" />
                 <span className="group-data-[collapsible=icon]:hidden">Sign Out</span>
               </button>
             </AlertDialogTrigger>

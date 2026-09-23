@@ -17,7 +17,7 @@ export function Verification() {
   ];
 
   return (
-    <section className="scroll-reveal" style={{ padding: "96px 0", background: C.bgDeep, position: "relative", zIndex: 1 }}>
+    <section className="scroll-reveal bg-deep-glass" style={{ padding: "96px 0", position: "relative", zIndex: 1 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>Verification</p>

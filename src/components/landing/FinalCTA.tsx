@@ -9,7 +9,7 @@ export function FinalCTA() {
   useEffect(() => { const onResize = () => setIsDesktop(window.innerWidth > 768); window.addEventListener("resize", onResize); onResize(); return () => window.removeEventListener("resize", onResize); }, []);
 
   return (
-    <section className="scroll-reveal" style={{ padding: "96px 0", background: C.bgDeep, position: "relative", zIndex: 1, overflow: "hidden" }}>
+    <section className="scroll-reveal bg-deep-glass" style={{ padding: "96px 0", position: "relative", zIndex: 1, overflow: "hidden" }}>
       {/* Subtle decorative orbs */}
       <div style={{ position: "absolute", top: "-100px", left: "10%", width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, ${C.sage} 0%, transparent 70%)`, opacity: 0.12, filter: "blur(80px)" }} />
       <div style={{ position: "absolute", bottom: "-150px", right: "5%", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${C.accent} 0%, transparent 70%)`, opacity: 0.08, filter: "blur(100px)" }} />

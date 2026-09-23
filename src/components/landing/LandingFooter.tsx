@@ -70,7 +70,7 @@ export function LandingFooter() {
   ];
 
   return (
-    <footer style={{ background: C.bgDeep, padding: "80px 0 32px", position: "relative", zIndex: 1, color: C.textOnDeep }}>
+    <footer className="bg-deep-glass" style={{ padding: "80px 0 32px", position: "relative", zIndex: 1, color: C.textOnDeep }}>
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "2fr 1fr 1fr 1fr 1fr 1fr" : "1fr 1fr", gap: 40, marginBottom: 56 }}>
           {/* Brand column */}

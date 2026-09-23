@@ -273,7 +273,7 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
         <PopoverTrigger asChild>
           <button
             className={cn(
-              "relative flex items-center gap-3 rounded-xl text-sm font-semibold text-white/90 transition-all duration-200 ease-in-out hover:bg-white/10 hover:text-white",
+              "relative flex items-center gap-3 rounded-xl text-sm font-medium text-white/85 transition-all duration-200 ease-in-out hover:bg-white/10 hover:text-white",
               "w-full px-3 py-2.5",
               "group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:w-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:mx-auto"
             )}
@@ -283,16 +283,16 @@ export function NotificationBell({ variant = "header" }: NotificationBellProps) 
             <span className="group-data-[collapsible=icon]:hidden">Notifications</span>
             {unreadCount > 0 && (
               <span
-                className="ml-auto flex items-center justify-center rounded-full font-bold shrink-0 group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-0.5 group-data-[collapsible=icon]:-right-0.5 group-data-[collapsible=icon]:ml-0"
+                className="ml-auto flex items-center justify-center rounded-full font-bold text-white shrink-0 group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-0.5 group-data-[collapsible=icon]:-right-0.5 group-data-[collapsible=icon]:ml-0"
                 style={{
-                  minWidth: "20px",
-                  height: "20px",
-                  padding: "0 6px",
-                  fontSize: "11px",
-                  background: "linear-gradient(135deg, #E0B870 0%, #C9A961 100%)",
-                  color: "#0D3B2E",
-                  border: "1.5px solid rgba(15, 30, 25, 0.85)",
-                  boxShadow: "0 0 0 1px rgba(201, 169, 97, 0.4), 0 2px 8px rgba(201, 169, 97, 0.5)",
+                  minWidth: "18px",
+                  height: "18px",
+                  padding: "0 5px",
+                  fontSize: "10px",
+                  background: "var(--terra)",
+                  color: "#1a1a1a",
+                  border: "1.5px solid rgba(15, 30, 25, 0.95)",
+                  boxShadow: "0 0 0 1px rgba(201, 169, 97, 0.3), 0 2px 6px rgba(0, 0, 0, 0.35)",
                 }}
               >
                 {unreadCount > 99 ? "99+" : unreadCount}

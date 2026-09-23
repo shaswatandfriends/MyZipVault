@@ -1041,8 +1041,8 @@
   padding: 0.5rem 0.875rem;
   border-radius: var(--radius-pill);
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
   transition: all var(--duration-quick) var(--ease-spatial);
   text-decoration: none;
   overflow: hidden;
@@ -1051,26 +1051,26 @@
 
 .spatial-nav-item:hover {
   color: rgba(255, 255, 255, 1);
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .spatial-nav-item-active {
   color: #fff;
-  background: rgba(201, 169, 97, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 0 0 1px rgba(201, 169, 97, 0.45), 0 2px 12px rgba(201, 169, 97, 0.20);
-  font-weight: 700;
+  background: rgba(143, 169, 156, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(143, 169, 156, 0.35), 0 2px 8px rgba(0, 0, 0, 0.18);
+  font-weight: 600;
 }
 
 .spatial-nav-item-active::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 18%;
-  bottom: 18%;
+  top: 22%;
+  bottom: 22%;
   width: 3px;
   border-radius: var(--radius-pill);
   background: var(--terra);
-  box-shadow: 0 0 12px rgba(201, 169, 97, 0.8), 0 0 4px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.5);
 }
 
 /* ─── Collapsed sidebar nav items — icon only, centered ─────────── */
@@ -2410,6 +2410,103 @@ input[data-slot="input"]:-webkit-autofill:focus {
    style handles everything. */
 
 /* ════════════════════════════════════════════════════════════════════
+   GLASS DARK GREEN — uniform treatment for ALL dark green backgrounds
+   across the platform. Replaces flat `background: #0D3B2E` with a
+   layered, depth-rich glass treatment: subtle gradient, top-edge
+   highlight, bottom-edge shadow, outer depth, and a soft radial glow.
+   Content on top remains fully readable (the dark green is the
+   background, not the content).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Variant 1: Full-bleed dark green sections (landing page Verification,
+   FinalCTA, Footer, salary report card, etc.) — adds depth + highlight
+   without changing the dark green color identity. */
+.bg-deep-glass {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(143, 169, 156, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(201, 169, 97, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #0F4034 0%, #0D3B2E 50%, #0A2E25 100%) !important;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.10);
+  isolation: isolate;
+}
+
+/* Variant 2: Translucent dark green cards/elements with backdrop blur.
+   Use on hero banners, stat cards, modal headers — anywhere a dark green
+   panel sits on top of other content. */
+.bg-deep-glass-card {
+  background: rgba(13, 59, 46, 0.78) !important;
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    0 8px 28px rgba(0, 0, 0, 0.22) !important;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Variant 3: Glass overlay for elements that already use the
+   sage→forest gradient (`linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)`).
+   Apply this class ALONGSIDE the existing inline gradient — it adds the
+   glass top-highlight, border, and depth shadow without overriding the
+   gradient. */
+.bg-deep-glass-gradient {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 6px 22px rgba(13, 59, 46, 0.24) !important;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Inner content sits above any pseudo-elements / radial overlays */
+.bg-deep-glass > *,
+.bg-deep-glass-card > *,
+.bg-deep-glass-gradient > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Auto-glass treatment for the legacy sage→forest gradient ───
+   Many dashboard/stat-card/hero-banner elements use the inline gradient
+   `linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)`.
+   Rather than touch every file, we detect this pattern via attribute
+   selector and add the glass border + inset highlight + depth shadow
+   uniformly. The gradient itself is preserved (it's the brand color
+   story); we only add the glass "frame" around it. */
+[style*="linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)"] {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 6px 22px rgba(13, 59, 46, 0.24) !important;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Also catch the variant with single quotes (in case some files use them) */
+[style*="linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(255, 255, 255, 0.10) 0%, transparent 50%);
+  z-index: 0;
+}
+[style*="linear-gradient(180deg, #8FA99C 0%, #0D3B2E 60%, #082820 100%)"] > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════
    GLOBAL BRAND CASCADE — applies landing page aesthetic to ALL pages
    ════════════════════════════════════════════════════════════════════ */
 
@@ -2892,18 +2989,17 @@ a[href*="references"]:hover, a[href*="resume"]:hover {
   color: rgba(247, 243, 232, 0.55) !important;
 }
 
-/* 5. Sidebar active state — GOLD accent (clearly differentiated from sage action buttons).
-   Note: there are multiple legacy `.spatial-nav-item-active` rules earlier in this file
-   that used sage green (same family as sidebar bg) — those have been removed/consolidated
-   here to use the brand gold accent so the active nav item is unmistakable. */
+/* 5. Sidebar active state — subtle sage accent (uniform with sidebar palette).
+   Note: there were multiple legacy `.spatial-nav-item-active` rules earlier in this file
+   that used sage green — consolidated here to a single uniform rule. */
 .spatial-nav-item-active {
-  background: rgba(201, 169, 97, 0.20) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 0 0 1px rgba(201, 169, 97, 0.45), 0 2px 12px rgba(201, 169, 97, 0.22) !important;
-  font-weight: 700 !important;
+  background: rgba(143, 169, 156, 0.20) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(143, 169, 156, 0.40), 0 2px 10px rgba(0, 0, 0, 0.20) !important;
+  font-weight: 600 !important;
 }
 .spatial-nav-item-active::before {
   background: var(--terra) !important;
-  box-shadow: 0 0 12px rgba(201, 169, 97, 0.85), 0 0 4px rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.5) !important;
 }
 .spatial-nav-item-active span,
 .spatial-nav-item-active svg,
