@@ -2606,6 +2606,41 @@ input[data-slot="input"]:-webkit-autofill:focus {
   isolation: isolate;
 }
 
+/* ─── Footer link color override ───
+   Browser :visited defaults can dim links (often to dark purple/gray)
+   making them invisible on the dark green footer. Force all footer links
+   to keep their intended color regardless of visit state. */
+.mzv-footer-link,
+.mzv-footer-link:visited,
+.mzv-footer-link:hover,
+.mzv-footer-link:active,
+.mzv-footer-link:focus {
+  color: rgba(247, 243, 232, 0.88) !important;
+}
+.mzv-footer-link:hover {
+  color: #C9A961 !important;
+}
+
+/* Also catch any plain footer link that doesn't have the class */
+footer a,
+footer a:visited,
+footer a:active {
+  color: rgba(247, 243, 232, 0.88) !important;
+}
+footer a:hover {
+  color: #C9A961 !important;
+}
+
+/* ─── Global visited-link reset for dark green backgrounds ───
+   Any link on a .bg-deep-glass or .bg-deep-glass-card surface keeps its
+   color regardless of visit state. */
+.bg-deep-glass a:visited,
+.bg-deep-glass-card a:visited,
+.bg-deep-glass-gradient a:visited,
+[data-slot="card"].card-dark a:visited {
+  color: inherit;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    GLOBAL BRAND CASCADE — applies landing page aesthetic to ALL pages
    ════════════════════════════════════════════════════════════════════ */

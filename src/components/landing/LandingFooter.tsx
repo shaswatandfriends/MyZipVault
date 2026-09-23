@@ -93,7 +93,23 @@ export function LandingFooter() {
             <div key={ci}>
               <p style={{ fontSize: 12, fontWeight: 800, color: "rgba(247,243,232,0.95)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 16 }}>{col.title}</p>
               {col.links.map((t) => (
-                <Link key={t.label} href={t.href} style={{ display: "block", fontSize: 14, color: "rgba(247,243,232,0.88)", textDecoration: "none", marginBottom: 10, transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#C9A961"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(247,243,232,0.88)"}>{t.label}</Link>
+                <Link
+                  key={t.label}
+                  href={t.href}
+                  className="mzv-footer-link"
+                  style={{
+                    display: "block",
+                    fontSize: 14,
+                    color: "rgba(247,243,232,0.88)",
+                    textDecoration: "none",
+                    marginBottom: 10,
+                    transition: "color 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "#C9A961"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(247,243,232,0.88)"}
+                >
+                  {t.label}
+                </Link>
               ))}
             </div>
           ))}
