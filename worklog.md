@@ -912,3 +912,23 @@ Stage Summary:
 - Removed 3 legacy `!important` overrides that were silently breaking the design system: sage-on-sage active state, gradient button flattening
 - Single source of truth restored for both active nav state (gold accent) and gradient buttons (let button.tsx drive)
 - All changes are in shared components — fixes propagate to ALL dashboard pages (candidate, recruiter, employer, superadmin) and to the public landing page simultaneously
+
+---
+Task ID: 7-tasks-batch
+Agent: Main
+Task: 7 user-reported issues — checklist view, resume 404, reminder button, button text, referral card, VaultSign editor, seed data
+
+Work Log:
+- Task 5 (Remove Refer a Friend): Removed <ReferralCard /> from candidate dashboard
+- Task 4 (Candidate button text): Added CSS rules 9-10 in globals.css that force white text on any button with bg-primary/bg-emerald without explicit text-white class
+- Task 7 (Seed 5 jobs): Added 5 JobPosting records to prisma/seed.ts (ICU RN, ER RN, Surgical Tech, Locum Hospitalist, PT) with varied professions, locations, compensation
+- Task 1 (Checklist View/Download): Added candidate_response relation to BOB API select; added View + Download PDF buttons to ChecklistTab when status=completed; uses /api/checklists/[id]/pdf endpoint
+- Task 2 (Resume 404 + permission): Fixed BOB API to only return resume if ConsentShare exists (was returning unconditionally); created new /api/recruiter/resume/[id] endpoint that generates signed Supabase URLs; updated frontend to use new API instead of raw file_url
+- Task 3 (Reminder button): Created new /api/recruiter/share-requests/[id]/remind endpoint (24hr waiting period, 24hr cooldown, email + in-app notification); added "Send reminder" button to RequestsTab in BOB candidate detail
+- Task 6 (VaultSign editor): Investigated — 2006-line editor component with multiple complex issues (signature placement, text formatting, variable substitution, send error handling). Full rebuild is a multi-day project. Documented findings.
+
+Stage Summary:
+- 6 of 7 tasks completed and pushed (commits 33f83ea, 60e529d, ce24d00, 44318e7)
+- Task 6 (VaultSign editor rebuild) requires dedicated focused effort — estimated 3-5 days
+- All fixes build successfully (Compiled in 72s, exit 0)
+- Pushed to origin/main
