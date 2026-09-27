@@ -215,12 +215,19 @@ export async function GET(
       checklistRequests: checklistRequests.map((cr) => ({
         id: cr.id,
         templateName: cr.checklist_template.name,
+        templateId: cr.checklist_template.id,
         specialty: cr.checklist_template.specialty,
         profession: cr.checklist_template.profession,
         status: cr.status,
         completionPct: cr.completion_pct,
         createdAt: cr.created_at,
         openedAt: cr.opened_at,
+        // Include candidate_response info so recruiter can view/download
+        // completed checklists
+        candidateResponseId: cr.candidate_response?.id ?? null,
+        candidateResponseStatus: cr.candidate_response?.status ?? null,
+        candidateResponseSubmittedAt: cr.candidate_response?.submitted_at ?? null,
+        candidateNameSigned: cr.candidate_response?.candidate_name_signed ?? null,
       })),
       pipeline,
       documents,

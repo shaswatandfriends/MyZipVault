@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Loader2, AlertCircle, Phone, Mail, MapPin, Calendar,
   FileText, FileSignature, ClipboardCheck, Clock, Eye, Send, Key,
-  Edit3, MoreVertical, Ban, RefreshCw, Star, ChevronRight, Plus,
+  Edit3, MoreVertical, Ban, RefreshCw, Star, ChevronRight, Plus, Download,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,14 @@ interface ChecklistRequestItem {
   created_at: string;
   checklist_template: { id: number; name: string; profession: string; specialty: string };
   client_user: { id: number; first_name: string | null; last_name: string | null; email: string };
+  // New fields for completed checklist viewing
+  templateName?: string;
+  templateId?: number;
+  completionPct?: number;
+  candidateResponseId?: number | null;
+  candidateResponseStatus?: string | null;
+  candidateResponseSubmittedAt?: string | null;
+  candidateNameSigned?: string | null;
 }
 
 interface ShareRequestItem {
@@ -1065,6 +1073,35 @@ function ChecklistTab({ lead, candidateData }: { lead: Lead; candidateData: Cand
                         style={{ width: `${req.completion_pct}%` }}
                       />
                     </div>
+                  </div>
+                )}
+                {/* View + Download buttons for completed checklists.
+                    Uses /api/checklists/[id]/pdf?mode=preview for view,
+                    /api/checklists/[id]/pdf?mode=download for download. */}
+                {req.status === "completed" && (
+                  <div className="mt-3 flex items-center gap-2 pt-3 border-t border-border">
+                    <a
+                      href={`/api/checklists/${req.id}/pdf?mode=preview`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" variant="outline">
+                        <Eye className="size-3.5 mr-1.5" /> View
+                      </Button>
+                    </a>
+                    <a
+                      href={`/api/checklists/${req.id}/pdf?mode=download`}
+                      download
+                    >
+                      <Button size="sm" variant="outline">
+                        <Download className="size-3.5 mr-1.5" /> Download PDF
+                      </Button>
+                    </a>
+                    {req.candidate_response?.submitted_at && (
+                      <span className="text-xs text-text-muted ml-auto">
+                        Completed {new Date(req.candidate_response.submitted_at).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

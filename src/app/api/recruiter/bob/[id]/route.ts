@@ -252,6 +252,16 @@ export async function GET(
             client_user: {
               select: { id: true, first_name: true, last_name: true, email: true },
             },
+            // Include candidate_response so recruiter can view/download
+            // completed checklists via /api/checklists/[id]/pdf
+            candidate_response: {
+              select: {
+                id: true,
+                status: true,
+                submitted_at: true,
+                candidate_name_signed: true,
+              },
+            },
           },
         }),
         // Share requests (document share requests from recruiters)
