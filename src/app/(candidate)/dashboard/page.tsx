@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { BannerCarousel } from "@/components/banners/banner-carousel";
-import { ReferralCard } from "@/components/shared/ReferralCard";
+
 import { TourHost } from "@/components/onboarding/tour-host";
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -535,8 +535,8 @@ export default function CandidateDashboardPage() {
         </Card>
       </div>
 
-      {/* ════ SECTION 8: REFERRAL CARD ════ */}
-      <ReferralCard />
+      {/* Referral card removed from candidate dashboard per product decision —
+          referral program is for recruiters/employers only. */}
     </div>
   );
 }

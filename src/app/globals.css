@@ -1890,6 +1890,29 @@ a[class*="bg-\[#1F6F5C"]:hover {
   color: #FFFFFF !important;
 }
 
+/* 9. Catch shadcn <Button> components that use bg-primary WITHOUT
+   explicit text-white — these rely on the default variant's text color
+   but the bg-primary override can cause text to go dark. Force white.
+   Excludes .text-primary (outline-style buttons that want green text). */
+button[class*="bg-primary"]:not([class*="text-primary"]),
+button[class*="bg-emerald-600"]:not([class*="text-primary"]),
+button[class*="bg-emerald-700"]:not([class*="text-primary"]),
+button[class*="bg-teal-600"]:not([class*="text-primary"]),
+button[class*="bg-teal-700"]:not([class*="text-primary"]),
+a[class*="bg-primary"]:not([class*="text-primary"]),
+a[class*="bg-emerald-600"]:not([class*="text-primary"]),
+a[class*="bg-emerald-700"]:not([class*="text-primary"]) {
+  color: #FFFFFF !important;
+}
+button[class*="bg-primary"]:not([class*="text-primary"]):hover,
+button[class*="bg-emerald-600"]:not([class*="text-primary"]):hover,
+button[class*="bg-emerald-700"]:not([class*="text-primary"]):hover,
+a[class*="bg-primary"]:not([class*="text-primary"]):hover,
+a[class*="bg-emerald-600"]:not([class*="text-primary"]):hover,
+a[class*="bg-emerald-700"]:not([class*="text-primary"]):hover {
+  color: #FFFFFF !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    FORM FIELDS — Premium warm inputs (textarea, select, checkbox, switch)
    ═══════════════════════════════════════════════════════════════════════ */
