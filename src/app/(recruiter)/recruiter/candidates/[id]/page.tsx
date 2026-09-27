@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Loader2, AlertCircle, Phone, Mail, MapPin, Calendar,
   FileText, FileSignature, ClipboardCheck, Clock, Eye, Send, Key,
-  Edit3, MoreVertical, Ban, RefreshCw, Star, ChevronRight, Plus, Download,
+  Edit3, MoreVertical, Ban, RefreshCw, Star, ChevronRight, Plus, Download, Bell,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -1154,6 +1154,25 @@ function CalendarTab({ lead }: { lead: Lead }) {
 // ─── Tab: Requests ──────────────────────────────────────────────────
 function RequestsTab({ lead, candidateData }: { lead: Lead; candidateData: CandidateData | null }) {
   const shareRequests = candidateData?.shareRequests || [];
+  const [reminding, setReminding] = useState<number | null>(null);
+
+  async function handleRemind(shareRequestId: number) {
+    setReminding(shareRequestId);
+    try {
+      const res = await fetch(`/api/recruiter/share-requests/${shareRequestId}/remind`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send reminder");
+      }
+      toast.success(data.message || "Reminder sent");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reminder");
+    } finally {
+      setReminding(null);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -1200,6 +1219,12 @@ function RequestsTab({ lead, candidateData }: { lead: Lead; candidateData: Candi
               req.status === "pending" ? "text-amber-600 bg-amber-50 border-amber-200" :
               "text-text-muted bg-surface-2 border-border";
 
+            // Reminder button is shown only for pending requests older than 24 hours
+            const requestAge = Date.now() - new Date(req.created_at).getTime();
+            const hoursSinceRequest = requestAge / (1000 * 60 * 60);
+            const canRemind = req.status === "pending" && hoursSinceRequest >= 24;
+            const hoursLeft = Math.ceil(24 - hoursSinceRequest);
+
             return (
               <div key={req.id} className="bg-background border rounded-lg p-3">
                 <div className="flex items-start justify-between gap-2">
@@ -1219,6 +1244,29 @@ function RequestsTab({ lead, candidateData }: { lead: Lead; candidateData: Candi
                     {req.status}
                   </span>
                 </div>
+                {/* Reminder button — shown for pending requests older than 24 hours */}
+                {req.status === "pending" && (
+                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+                    {canRemind ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRemind(req.id)}
+                        disabled={reminding === req.id}
+                      >
+                        {reminding === req.id ? (
+                          <><Loader2 className="size-3.5 mr-1.5 animate-spin" /> Sending...</>
+                        ) : (
+                          <><Bell className="size-3.5 mr-1.5" /> Send reminder</>
+                        )}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-text-muted">
+                        Reminder available in {hoursLeft} hour{hoursLeft === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
