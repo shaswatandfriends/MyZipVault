@@ -162,10 +162,10 @@ function VerifyEmailContent() {
               Your email address has been successfully verified. You can now
               sign in to your account.
             </p>
-            <Button asChild size="lg" className="w-full">
-              <Link href="/login">
+            <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+              <Link href="/login" style={{ color: "#FFFFFF" }}>
                 Sign In
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 text-white" />
               </Link>
             </Button>
           </>
@@ -288,10 +288,10 @@ function VerifyEmailContent() {
               we&apos;ve sent a new verification link. Please check your inbox
               and spam folder.
             </p>
-            <Button asChild size="lg" className="w-full">
-              <Link href="/login">
+            <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+              <Link href="/login" style={{ color: "#FFFFFF" }}>
                 Back to Sign In
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 text-white" />
               </Link>
             </Button>
           </>
@@ -333,10 +333,10 @@ function VerifyEmailContent() {
               >
                 Resend Verification Email
               </Button>
-              <Button asChild size="lg" className="w-full">
-                <Link href="/login">
+              <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+                <Link href="/login" style={{ color: "#FFFFFF" }}>
                   Back to Sign In
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 text-white" />
                 </Link>
               </Button>
             </div>

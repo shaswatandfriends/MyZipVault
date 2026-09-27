@@ -172,11 +172,11 @@ export default function RecruiterVerificationPage() {
 
           {/* Action button */}
           {status === "unverified" && (
-            <Button asChild className="w-full gap-2" size="lg">
+            <Button asChild className="w-full gap-2 text-white" size="lg" style={{ color: "#FFFFFF" }}>
               <a href={VERIFICATION_PORTAL_URL} target="_blank" rel="noopener noreferrer">
-                <ShieldCheck className="size-4" />
+                <ShieldCheck className="size-4 text-white" />
                 Start Verification
-                <ExternalLink className="size-3.5" />
+                <ExternalLink className="size-3.5 text-white" />
               </a>
             </Button>
           )}

@@ -351,9 +351,9 @@ export default function SuperadminDashboardPage() {
               Your platform is brand new. Start by setting up organizations and inviting admins to begin managing the system.
             </p>
             <div className="flex items-center justify-center gap-3 mt-4">
-              <Button asChild>
-                <Link href="/superadmin/users">
-                  <Users className="size-4 mr-1.5" />
+              <Button asChild style={{ color: "#FFFFFF" }}>
+                <Link href="/superadmin/users" style={{ color: "#FFFFFF" }}>
+                  <Users className="size-4 mr-1.5 text-white" />
                   Manage Users
                 </Link>
               </Button>

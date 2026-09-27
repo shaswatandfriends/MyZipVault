@@ -120,10 +120,10 @@ export default function ForgotPasswordPage() {
                 If an account with that email exists, we&apos;ve sent a reset link. Please check your inbox and spam folder.
               </p>
 
-              <Button asChild size="lg" className="w-full">
-                <Link href="/login">
+              <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+                <Link href="/login" style={{ color: "#FFFFFF" }}>
                   Back to Sign In
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 text-white" />
                 </Link>
               </Button>
             </>

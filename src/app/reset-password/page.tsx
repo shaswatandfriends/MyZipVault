@@ -175,10 +175,10 @@ function ResetPasswordForm() {
               <p className="text-base mb-8" style={{ color: "var(--text-secondary)" }}>
                 {errors.token}
               </p>
-              <Button asChild size="lg" className="w-full">
-                <Link href="/forgot-password">
+              <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+                <Link href="/forgot-password" style={{ color: "#FFFFFF" }}>
                   Request New Link
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 text-white" />
                 </Link>
               </Button>
               <div className="mt-4 text-center">

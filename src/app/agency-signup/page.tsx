@@ -235,8 +235,8 @@ function AgencySignupPageInner() {
             </div>
 
             <div className="space-y-3">
-              <Button asChild size="lg" className="w-full">
-                <Link href="/agency-login">
+              <Button asChild size="lg" className="w-full text-white" style={{ color: "#FFFFFF" }}>
+                <Link href="/agency-login" style={{ color: "#FFFFFF" }}>
                   Log In Now
                 </Link>
               </Button>

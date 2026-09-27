@@ -499,9 +499,9 @@ export default function RecruiterDashboardPage() {
               <p className="empty-state-description">
                 Send a verification request to a candidate to begin tracking their compliance and documents. It only takes a moment.
               </p>
-              <Button asChild className="mt-4">
-                <Link href="/recruiter/send">
-                  <Send className="size-4" />
+              <Button asChild className="mt-4 text-white" style={{ color: "#FFFFFF" }}>
+                <Link href="/recruiter/send" style={{ color: "#FFFFFF" }}>
+                  <Send className="size-4 text-white" />
                   Send New Request
                 </Link>
               </Button>

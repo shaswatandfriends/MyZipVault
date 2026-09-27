@@ -95,9 +95,9 @@ export function CreditLimitPopup({
 
         <div className="flex flex-col gap-2 mt-4">
           {!isVerified && (
-            <Button asChild className="w-full gap-2">
-              <Link href="/recruiter/verification" onClick={onClose}>
-                <ShieldCheck className="size-4" />
+            <Button asChild className="w-full gap-2 text-white" style={{ color: "#FFFFFF" }}>
+              <Link href="/recruiter/verification" onClick={onClose} style={{ color: "#FFFFFF" }}>
+                <ShieldCheck className="size-4 text-white" />
                 Verify Your Account
               </Link>
             </Button>

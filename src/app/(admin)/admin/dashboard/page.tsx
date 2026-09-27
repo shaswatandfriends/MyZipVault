@@ -237,9 +237,9 @@ export default function AdminDashboardPage() {
               Your platform is brand new. Start by inviting recruiters and candidates to begin building your community.
             </p>
             <div className="flex items-center justify-center gap-3 mt-4">
-              <Button asChild>
-                <Link href="/admin/users">
-                  <Users className="size-4 mr-1.5" />
+              <Button asChild style={{ color: "#FFFFFF" }}>
+                <Link href="/admin/users" style={{ color: "#FFFFFF" }}>
+                  <Users className="size-4 mr-1.5 text-white" />
                   Manage Users
                 </Link>
               </Button>

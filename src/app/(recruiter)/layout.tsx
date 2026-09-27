@@ -121,9 +121,9 @@ export default function RecruiterLayout({
                 </Badge>
               </div>
               {headerConfig.showSendRequest && (
-                <Button asChild className="h-8 text-xs">
-                  <Link href="/recruiter/send">
-                    <Send className="size-3" />
+                <Button asChild className="h-8 text-xs text-white" style={{ color: "#FFFFFF" }}>
+                  <Link href="/recruiter/send" style={{ color: "#FFFFFF" }}>
+                    <Send className="size-3 text-white" />
                     Send Request
                   </Link>
                 </Button>

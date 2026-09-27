@@ -296,7 +296,7 @@ export default function CandidateDashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--terra)" }}>Recommended next step</p>
                 <h4 className="text-sm font-bold mt-0.5 font-heading" style={{ color: "var(--text-primary)" }}>{nextAction.label}</h4>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{nextAction.desc}</p>
-                <Button asChild size="sm" className="mt-2.5 h-8 gap-1.5"><Link href={nextAction.href}>{nextAction.btn}<ArrowRight className="size-3.5" /></Link></Button>
+                <Button asChild size="sm" className="mt-2.5 h-8 gap-1.5 text-white" style={{ color: "#FFFFFF" }}><Link href={nextAction.href} style={{ color: "#FFFFFF" }}>{nextAction.btn}<ArrowRight className="size-3.5" /></Link></Button>
               </div>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function CandidateDashboardPage() {
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No resume uploaded yet</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Upload or build your resume to get discovered</p>
                 <div className="flex flex-col gap-2 mt-3">
-                  <Button asChild size="sm"><Link href="/vault/resume"><Upload className="size-3.5" /> Upload Resume</Link></Button>
+                  <Button asChild size="sm" className="w-full mt-3 text-white" style={{ color: "#FFFFFF" }}><Link href="/vault/resume" style={{ color: "#FFFFFF" }}><Upload className="size-3.5" /> Upload Resume</Link></Button>
                   <Button asChild variant="outline" size="sm"><Link href="/vault/resume"><Sparkles className="size-3.5" /> Build with AI</Link></Button>
                 </div>
               </>
@@ -403,7 +403,7 @@ export default function CandidateDashboardPage() {
               <>
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No credentials added yet</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Add BLS, ACLS, licenses, immunizations, etc.</p>
-                <Button asChild size="sm" className="w-full mt-3"><Link href="/vault/credentials"><ShieldCheck className="size-3.5" /> Add Credentials</Link></Button>
+                <Button asChild size="sm" className="w-full mt-3 text-white" style={{ color: "#FFFFFF" }}><Link href="/vault/credentials" style={{ color: "#FFFFFF" }}><ShieldCheck className="size-3.5" /> Add Credentials</Link></Button>
               </>
             )}
           </CardContent>
@@ -427,7 +427,7 @@ export default function CandidateDashboardPage() {
               <>
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No references yet</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Request references to build trust with employers</p>
-                <Button asChild size="sm" className="w-full mt-3"><Link href="/references"><Users className="size-3.5" /> Request Reference</Link></Button>
+                <Button asChild size="sm" className="w-full mt-3 text-white" style={{ color: "#FFFFFF" }}><Link href="/references" style={{ color: "#FFFFFF" }}><Users className="size-3.5" /> Request Reference</Link></Button>
               </>
             )}
           </CardContent>
