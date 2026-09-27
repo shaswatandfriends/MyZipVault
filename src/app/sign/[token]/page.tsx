@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SIGNER_COLORS, type SignField, type SignFieldType, FIELD_TYPE_LABELS, FIELD_TYPE_ICONS } from "@/lib/vaultsign/types";
 
 const SIGNATURE_FONTS = [
@@ -567,6 +567,9 @@ export default function PublicSigningPage() {
         <DialogContent className="sm:max-w-lg w-[calc(100%-1rem)] h-[90vh] sm:h-auto max-h-none sm:max-h-none flex flex-col p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Create Your Signature</DialogTitle>
+            <DialogDescription>
+              Draw, type, or upload your signature to sign this document.
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="draw" className="w-full flex-1 flex flex-col min-h-0">
@@ -676,10 +679,10 @@ export default function PublicSigningPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Decline to Sign</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to decline signing this document? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-text-secondary">
-            Are you sure you want to decline signing this document? This action cannot be undone.
-          </p>
           <Input
             value={declineReason}
             onChange={(e) => setDeclineReason(e.target.value)}

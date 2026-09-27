@@ -1824,8 +1824,10 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>
+              Save this document as a reusable template for your company.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-text-secondary">Save this document as a reusable template for your company.</p>
           <Input
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
