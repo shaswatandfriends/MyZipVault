@@ -61,11 +61,38 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button"
 
+  // ─── FORCE WHITE TEXT ON GREEN/RED BUTTONS ───────────────────────
+  // The default and destructive variants use dark backgrounds that require
+  // white text. CSS rules in globals.css were being overridden by base-layer
+  // `p { color }` and `a { color }` rules. This inline style is the
+  // bulletproof fix — inline styles have the highest specificity and cannot
+  // be overridden by any stylesheet.
+  //
+  // We also check if the className contains bg-primary or bg-emerald (manual
+  // overrides) and force white text in those cases too.
+  const classNameStr = typeof className === "string" ? className : "";
+  const isGreenOrRedButton =
+    variant === "default" ||
+    variant === "destructive" ||
+    classNameStr.includes("bg-primary") ||
+    classNameStr.includes("bg-emerald-6") ||
+    classNameStr.includes("bg-teal-6");
+
+  // Merge inline styles: if the user passed style={{...}}, merge with our forced color
+  const existingStyle = (props as any).style;
+  const forcedStyle = isGreenOrRedButton
+    ? { color: "#FFFFFF", ...existingStyle }
+    : existingStyle;
+
+  // Remove style from props so we don't pass it twice
+  const { style: _removedStyle, ...restProps } = props as any;
+
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      style={forcedStyle}
+      {...restProps}
     />
   )
 }
