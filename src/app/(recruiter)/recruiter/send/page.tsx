@@ -457,7 +457,7 @@ function RecruiterSendPage() {
             </p>
             <Button
               onClick={handleReset}
-              className="mt-6 gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="mt-6 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" style={{ color: "#FFFFFF" }}
             >
               <Send className="size-4" />
               Send Another Request
@@ -593,7 +593,7 @@ function RecruiterSendPage() {
             <Button
               onClick={goNext}
               disabled={!isStepCurrentValid()}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" style={{ color: "#FFFFFF" }}
             >
               Next
               <ArrowRight className="size-4" />
@@ -602,7 +602,7 @@ function RecruiterSendPage() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" style={{ color: "#FFFFFF" }}
             >
               {isSubmitting ? (
                 <>

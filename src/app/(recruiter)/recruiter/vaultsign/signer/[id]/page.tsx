@@ -543,7 +543,7 @@ export default function PdfSignerPage({ params }: { params: Promise<{ id: string
                   </SelectContent>
                 </Select>
                 <div className="flex gap-1.5">
-                  <Button size="sm" className="flex-1 h-7 text-xs bg-primary hover:bg-primary-hover" onClick={addSigner}>Add</Button>
+                  <Button size="sm" className="flex-1 h-7 text-xs bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }} onClick={addSigner}>Add</Button>
                   <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSigner(false)}>Cancel</Button>
                 </div>
               </div>

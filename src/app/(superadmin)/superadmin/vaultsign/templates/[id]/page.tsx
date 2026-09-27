@@ -469,7 +469,7 @@ export default function SuperAdminTemplateEditorPage({ params }: { params: Promi
             />
             <Button
               size="sm"
-              className="w-full h-7 text-xs bg-primary hover:bg-primary-hover"
+              className="w-full h-7 text-xs bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
               onClick={addCustomVariable}
               disabled={!newVarKey || !newVarLabel}
             >

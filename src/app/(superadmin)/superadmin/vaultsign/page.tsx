@@ -1069,7 +1069,7 @@ export default function SuperAdminVaultSignPage() {
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
-              <Button className="bg-primary hover:bg-primary-hover" onClick={saveTemplate} disabled={saving || !templateForm.name}>
+              <Button className="bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }} onClick={saveTemplate} disabled={saving || !templateForm.name}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
                 {editingTemplate ? "Update" : "Create"}
               </Button>

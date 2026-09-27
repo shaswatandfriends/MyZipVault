@@ -667,7 +667,7 @@ export default function PublicSigningPage() {
             <Button variant="outline" onClick={() => setShowSignatureModal(false)}>
               Cancel
             </Button>
-            <Button className="bg-primary hover:bg-primary-hover" onClick={applySignature}>
+            <Button className="bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }} onClick={applySignature}>
               Apply Signature
             </Button>
           </div>

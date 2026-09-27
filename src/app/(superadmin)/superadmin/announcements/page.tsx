@@ -412,7 +412,7 @@ function BannersTab() {
             setEditingBanner(null);
             setShowCreateDialog(true);
           }}
-          className="gap-2 bg-primary hover:bg-primary-hover"
+          className="gap-2 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
         >
           <Plus className="size-4" />
           Create Banner
@@ -928,7 +928,7 @@ function BannerFormDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !title.trim()}
-            className="bg-primary hover:bg-primary-hover"
+            className="bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
           >
             {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
             {editingBanner ? "Update Banner" : "Create Banner"}
@@ -1303,7 +1303,7 @@ function CampaignsTab() {
             setFormAccentColor("#0D3B2E");
             setShowCreateDialog(true);
           }}
-          className="gap-2 bg-primary hover:bg-primary-hover"
+          className="gap-2 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
         >
           <Plus className="size-4" />
           Create Email Campaign
@@ -1415,7 +1415,7 @@ function CampaignsTab() {
                             size="sm"
                             onClick={() => handleSend(c)}
                             disabled={isSending && sendTarget?.id === c.id}
-                            className="gap-1.5 bg-primary hover:bg-primary-hover"
+                            className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                           >
                             {isSending && sendTarget?.id === c.id ? (
                               <Loader2 className="size-3.5 animate-spin" />
@@ -1624,7 +1624,7 @@ function CampaignsTab() {
             <Button
               onClick={handleCreate}
               disabled={isSubmitting || !formName.trim() || !formSubject.trim() || !formBody.trim()}
-              className="bg-primary hover:bg-primary-hover"
+              className="bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
             >
               {isSubmitting && <Loader2 className="size-4 mr-1 animate-spin" />}
               {editCampaignId ? "Save Changes" : "Save as Draft"}

@@ -860,7 +860,7 @@ export default function CalendarPage() {
                             <Button
                               onClick={handleBlockDates}
                               disabled={isSubmitting || blockDates.length === 0}
-                              className="gap-1.5 bg-primary hover:bg-primary-hover"
+                              className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                             >
                               {isSubmitting ? (
                                 <Loader2 className="size-4 animate-spin" />
@@ -875,7 +875,7 @@ export default function CalendarPage() {
 
                       <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetAddForm(); }}>
                         <DialogTrigger asChild>
-                          <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary-hover">
+                          <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}>
                             <Plus className="size-3.5" />
                             Add Availability
                           </Button>
@@ -997,7 +997,7 @@ export default function CalendarPage() {
                             <Button
                               onClick={handleAddSlot}
                               disabled={isSubmitting}
-                              className="gap-1.5 bg-primary hover:bg-primary-hover"
+                              className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                             >
                               {isSubmitting ? (
                                 <Loader2 className="size-4 animate-spin" />
@@ -1272,7 +1272,7 @@ export default function CalendarPage() {
                   <Button
                     onClick={handleSavePrefs}
                     disabled={isSavingPrefs}
-                    className="w-full gap-1.5 bg-primary hover:bg-primary-hover"
+                    className="w-full gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                     size="sm"
                   >
                     {isSavingPrefs ? (
@@ -1479,7 +1479,7 @@ export default function CalendarPage() {
                         <Button
                           onClick={handleShareWithRecruiter}
                           disabled={isSharing || !shareRecruiterId}
-                          className="gap-1.5 bg-primary hover:bg-primary-hover"
+                          className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                         >
                           {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
                           Share
@@ -1547,7 +1547,7 @@ export default function CalendarPage() {
                           <Button
                             onClick={handleGenerateLink}
                             disabled={isSharing}
-                            className="gap-1.5 bg-primary hover:bg-primary-hover"
+                            className="gap-1.5 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                           >
                             {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Link2 className="size-4" />}
                             Generate
@@ -1697,7 +1697,7 @@ export default function CalendarPage() {
                             <div className="flex items-center gap-2 shrink-0">
                               <Button
                                 size="sm"
-                                className="gap-1 bg-primary hover:bg-primary-hover"
+                                className="gap-1 bg-primary hover:bg-primary-hover text-white" style={{ color: "#FFFFFF" }}
                                 disabled={isRespondingToShift === req.id}
                                 onClick={() => handleShiftResponse(req.id, "accepted")}
                               >

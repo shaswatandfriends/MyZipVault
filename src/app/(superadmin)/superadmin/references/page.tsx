@@ -559,7 +559,7 @@ export default function SuperadminReferencesPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                className="bg-primary hover:bg-primary-hover text-white text-primary-foreground" style={{ color: "#FFFFFF" }}
                 onClick={() => openQuestionDialog()}
               >
                 <Plus className="size-4" />
@@ -787,7 +787,7 @@ export default function SuperadminReferencesPage() {
               Cancel
             </Button>
             <Button
-              className="bg-primary hover:bg-primary-hover text-primary-foreground"
+              className="bg-primary hover:bg-primary-hover text-white text-primary-foreground" style={{ color: "#FFFFFF" }}
               onClick={saveQuestion}
               disabled={actionLoading}
             >
@@ -908,7 +908,7 @@ export default function SuperadminReferencesPage() {
                       </label>
                     </div>
                     <Button
-                      className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
+                      className="w-full bg-primary hover:bg-primary-hover text-white text-primary-foreground" style={{ color: "#FFFFFF" }}
                       disabled={!importFile || importValidating}
                       onClick={handleValidate}
                     >
@@ -1007,7 +1007,7 @@ export default function SuperadminReferencesPage() {
                       )}
                       <div className="mt-4 flex gap-2">
                         <Button
-                          className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                          className="bg-primary hover:bg-primary-hover text-white text-primary-foreground" style={{ color: "#FFFFFF" }}
                           onClick={handleImport}
                           disabled={importImporting}
                         >
@@ -1046,7 +1046,7 @@ export default function SuperadminReferencesPage() {
                 </p>
               )}
               <Button
-                className="mt-4 bg-primary hover:bg-primary-hover text-primary-foreground"
+                className="mt-4 bg-primary hover:bg-primary-hover text-white text-primary-foreground" style={{ color: "#FFFFFF" }}
                 onClick={() => {
                   setImportModalOpen(false);
                   resetImportModal();
