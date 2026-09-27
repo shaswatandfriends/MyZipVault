@@ -74,11 +74,57 @@ export async function POST(
       }
     }
 
-    // Update document status to "sent"
+    // ─── FIX: Send emails FIRST, then commit status ──────────────
+    // Previously the API committed status="sent" to the DB BEFORE sending
+    // emails. If any email/notification/DB call threw after the commit,
+    // the client saw a 500 error but the document was already "sent" in
+    // the DB — causing the "something went wrong but document is safe"
+    // UX bug. Now we send emails first, and only commit status if all
+    // side effects succeed.
+
+    // Determine which signers should receive emails based on signing order
+    const signersToNotify = document.signing_order === "sequential"
+      ? [document.signers[0]] // Only first signer in sequential
+      : document.signers; // All signers in parallel
+
+    const senderName = `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email;
+    const orgName = document.organization?.name || "MyZipVault";
+
+    // Step 1: Send emails to all relevant signers (BEFORE committing status)
+    const notifiedSigners: typeof document.signers = [];
+    for (const signer of signersToNotify) {
+      if (!signer) continue;
+
+      const signingLink = generateSigningLink(signer.sign_token);
+
+      // Send email FIRST — if this fails, we don't want to mark anything as sent
+      const emailSent = await sendDocumentSentEmail({
+        signerName: signer.name,
+        signerEmail: signer.email,
+        documentName: document.document_name,
+        senderName,
+        organizationName: orgName,
+        signingLink,
+        personalMessage: document.personal_message || undefined,
+        expiryDate: document.expiry_date.toISOString().split("T")[0],
+      });
+
+      if (!emailSent) {
+        console.error(`[VAULTSIGN SEND] Failed to send email to ${signer.email}`);
+        return NextResponse.json(
+          { error: `Failed to send email to ${signer.name} (${signer.email}). Document was NOT sent. Please try again.` },
+          { status: 500 }
+        );
+      }
+
+      notifiedSigners.push(signer);
+    }
+
+    // Step 2: ALL emails succeeded — NOW commit status to DB
     const auditTrail: AuditTrailEntry[] = JSON.parse(document.audit_trail || "[]");
     auditTrail.push({
       event: "document_sent",
-      user_name: `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email,
+      user_name: senderName,
       ip_address: request.headers.get("x-forwarded-for") || "unknown",
       timestamp: new Date().toISOString(),
     });
@@ -92,39 +138,14 @@ export async function POST(
       },
     });
 
-    // Determine which signers should receive emails based on signing order
-    const signersToNotify = document.signing_order === "sequential"
-      ? [document.signers[0]] // Only first signer in sequential
-      : document.signers; // All signers in parallel
-
-    // Send emails to relevant signers
-    const senderName = `${(session.user as Record<string, unknown>).firstName || ""} ${(session.user as Record<string, unknown>).lastName || ""}`.trim() || session.user.email;
-    const orgName = document.organization?.name || "MyZipVault";
-
-    for (const signer of signersToNotify) {
-      if (!signer) continue;
-
-      const signingLink = generateSigningLink(signer.sign_token);
-
-      // Update signer status to "sent"
+    // Step 3: Update signer statuses + create in-app notifications
+    for (const signer of notifiedSigners) {
       await db.vaultSignSigner.update({
         where: { id: signer.id },
         data: { status: "sent" },
       });
 
-      // Send email
-      await sendDocumentSentEmail({
-        signerName: signer.name,
-        signerEmail: signer.email,
-        documentName: document.document_name,
-        senderName,
-        organizationName: orgName,
-        signingLink,
-        personalMessage: document.personal_message || undefined,
-        expiryDate: document.expiry_date.toISOString().split("T")[0],
-      });
-
-      // ─── In-app notification to candidate (if they have a platform account) ───
+      // In-app notification to candidate (if they have a platform account)
       if (signer.user_id) {
         try {
           const { createNotification } = await import("@/lib/notifications/create");
@@ -141,19 +162,22 @@ export async function POST(
           });
         } catch (notifErr) {
           console.error("[VAULTSIGN SEND] Failed to create candidate notification:", notifErr);
+          // Non-blocking — email was already sent, notification is bonus
         }
       }
     }
 
-    // ─── Fire BOB status engine hook (non-blocking) ──────────────
-    // If this document is linked to a recruiter lead, update the lead's
-    // status: RTR → onRtrSent, Offer letter → onOfferSent
-    await fireBobStatusHook({
+    // Step 4: Fire BOB status engine hook (non-blocking)
+    // This runs AFTER the document is committed as "sent" — if it fails,
+    // the document is still sent (which is correct behavior).
+    fireBobStatusHook({
       documentId: docId,
       documentName: document.document_name,
       documentType: document.document_type,
       candidateLeadId: document.candidate_lead_id,
       actorUserId: Number((session.user as Record<string, unknown>).id),
+    }).catch((err) => {
+      console.error("[BOB HOOK] Failed to fire status hook (non-blocking):", err);
     });
 
     return NextResponse.json({ success: true, status: "sent" });

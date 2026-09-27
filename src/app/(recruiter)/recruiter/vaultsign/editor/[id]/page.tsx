@@ -595,14 +595,63 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
 
   // Add sign field
   const addSignField = (type: SignFieldType, signerIndex: number) => {
+    // FIX: Compute approximate PDF coordinates based on current cursor position.
+    // Previously, all fields defaulted to (0, 0) — signatures ended up in the
+    // top-left corner. Now we estimate position from the cursor's location in
+    // the document:
+    //   - Page number: count how many pageBreak nodes precede the cursor
+    //   - Y position: based on cursor's position within the current page
+    //     (top=10%, middle=45%, bottom=80% — rough estimate)
+    //   - X position: 10% (left-aligned, standard for signature blocks)
+    // These are approximate — the user can drag the field in the signer preview
+    // for precise placement. But this gives a much better default than (0,0).
+    let computedPage = 1;
+    let computedYPercent = 80; // Default: near bottom of page (signature area)
+    let computedXPercent = 10; // Default: left-aligned
+
+    if (editor) {
+      try {
+        // Get current cursor position
+        const { from } = editor.state.selection;
+        const doc = editor.state.doc;
+
+        // Count page breaks before cursor to determine page number
+        let pageBreakCount = 0;
+        let lastPageBreakPos = 0;
+        doc.nodesBetween(0, from, (node, pos) => {
+          if (node.type.name === "pageBreak") {
+            pageBreakCount++;
+            lastPageBreakPos = pos;
+          }
+        });
+        computedPage = pageBreakCount + 1;
+
+        // Estimate Y position: distance from last page break to cursor,
+        // as a fraction of the estimated page content height.
+        // Assume ~40 lines per page (rough estimate for a standard PDF page).
+        const posInPage = from - lastPageBreakPos;
+        const estimatedLinesInPage = 40;
+        const lineFraction = Math.min(posInPage / 50, 1); // ~50 chars per line
+        computedYPercent = Math.min(10 + (lineFraction * 75), 85); // 10% to 85%
+
+        // For signature fields, push slightly lower (signature area is
+        // typically at the bottom of the document/page)
+        if (type === "signature" || type === "signature_only") {
+          computedYPercent = Math.max(computedYPercent, 75);
+        }
+      } catch (e) {
+        // Fallback to defaults if cursor position calc fails
+      }
+    }
+
     const newField: SignField = {
       id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
-      page: 1,
-      x_percent: 0,
-      y_percent: 0,
-      width_percent: 20,
-      height_percent: 3,
+      page: computedPage,
+      x_percent: computedXPercent,
+      y_percent: computedYPercent,
+      width_percent: type === "signature" || type === "signature_only" ? 30 : 20,
+      height_percent: type === "signature" || type === "signature_only" ? 5 : 3,
       assigned_to_signer_index: signerIndex,
       label: FIELD_TYPE_LABELS[type],
       required: true,
@@ -612,20 +661,20 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
     setSignFields(updated);
 
     if (editor) {
-      // Cast to any because SignFieldExtension adds `insertSignField` via
-      // TipTap's addCommands but the type isn't augmented globally.
-      // Insert at the END of the document — signature fields should
-      // default to the bottom, not wherever the cursor happens to be.
+      // Insert at cursor position (not end of document) so the field
+      // appears where the user expects it, and pass the positional
+      // attributes so the TipTap node carries them.
       (editor.chain().focus() as any)
-        .command(({ commands }: any) => {
-          // Move cursor to end of document
-          return commands.focus("end");
-        })
         .insertSignField({
           fieldType: type,
           assignedToSignerIndex: signerIndex,
           signerLabel: signers[signerIndex]?.name || `Signer ${signerIndex + 1}`,
           fieldId: newField.id,
+          page: computedPage,
+          xPercent: computedXPercent,
+          yPercent: computedYPercent,
+          widthPercent: newField.width_percent,
+          heightPercent: newField.height_percent,
         })
         .run();
     }
@@ -1802,7 +1851,7 @@ export default function WordEditorPage({ params }: { params: Promise<{ id: strin
         }
         .tiptap-editor .tiptap p {
           margin-bottom: 0.5em;
-          color: var(--text-secondary);
+          color: #1a1a1a;
           line-height: 1.6;
         }
         .tiptap-editor .tiptap h1 {

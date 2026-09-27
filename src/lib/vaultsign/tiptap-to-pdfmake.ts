@@ -85,7 +85,7 @@ export function tiptapToPdfmake(
     paragraph: {
       fontSize: 11,
       lineHeight: 1.5,
-      color: "#3D4F4A",
+      color: "#1a1a1a",
       marginBottom: 4,
     },
     variable: {
@@ -453,7 +453,17 @@ function transformInlineContent(nodes: TipTapNode[], placeholders: Record<string
   for (const node of nodes) {
     if (node.type === "text") {
       if (node.text) {
-        result.push(applyMarks(node.text, node.marks || []));
+        // FIX: Replace {{variable}} tokens with placeholder values.
+        // Previously, plain text containing {{candidate_name}} was emitted
+        // verbatim because only node.type === "variable" (a custom TipTap
+        // node that doesn't exist yet) was handled. Since insertVariable()
+        // in the editor inserts plain text strings, we need to substitute
+        // here at render time. This mirrors the HTML path's regex at line ~1190.
+        const substitutedText = node.text.replace(
+          /\{\{(\w+)\}\}/g,
+          (_, key) => placeholders[key] ?? `{{${key}}}`
+        );
+        result.push(applyMarks(substitutedText, node.marks || []));
       }
     } else if (node.type === "variable") {
       const varName = node.attrs?.id || node.attrs?.name || "";
@@ -642,7 +652,7 @@ export function htmlToPdfmake(
     heading1: { fontSize: 24, bold: true, marginBottom: 8, color: "#263633" },
     heading2: { fontSize: 20, bold: true, marginBottom: 6, color: "#263633" },
     heading3: { fontSize: 16, bold: true, marginBottom: 4, color: "#263633" },
-    paragraph: { fontSize: 11, lineHeight: 1.5, color: "#3D4F4A", marginBottom: 4 },
+    paragraph: { fontSize: 11, lineHeight: 1.5, color: "#1a1a1a", marginBottom: 4 },
   };
 
   const headerContent: Content[] = [];

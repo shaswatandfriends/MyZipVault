@@ -39,20 +39,27 @@ async function sendVaultSignEmail({ to, toName, subject, htmlContent }: VaultSig
         return true;
       } else {
         const error = await response.text();
-        console.error(`[VAULTSIGN-EMAIL] Brevo API error: ${error}`);
+        console.error(`[VAULTSIGN-EMAIL] Brevo API error for ${to}: ${error}`);
+        // FIX: Previously fell through and returned true at the bottom,
+        // silently swallowing Brevo failures. Now returns false so the
+        // caller knows the email didn't go through.
+        return false;
       }
     } catch (error) {
       console.error("[VAULTSIGN-EMAIL] Brevo API call failed:", error);
+      return false;
     }
   }
 
-  // Fallback: log to console (development only — never log email contents in production)
+  // No BREVO_API_KEY configured — in development, log and return true
+  // (so tests/local dev work without email). In production, return false
+  // because no email was actually sent.
   if (process.env.NODE_ENV === "development") {
-    console.log(`[VAULTSIGN-EMAIL] To: ${to}`);
-    console.log(`[VAULTSIGN-EMAIL] Subject: ${subject}`);
-    console.log(`[VAULTSIGN-EMAIL] Body: ${htmlContent.substring(0, 300)}...`);
+    console.log(`[VAULTSIGN-EMAIL] (dev mode, no Brevo key) To: ${to}, Subject: ${subject}`);
+    return true;
   }
-  return true;
+  console.error("[VAULTSIGN-EMAIL] No BREVO_API_KEY configured — email not sent");
+  return false;
 }
 
 // ─── Common Template Wrapper ─────────────────────────────────────────────────

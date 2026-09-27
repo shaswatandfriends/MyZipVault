@@ -198,6 +198,25 @@ export const SignFieldExtension = Node.create({
       fieldId: {
         default: "",
       },
+      // Positional attributes — stored on the TipTap node so they persist
+      // with the content and survive edits. The editor's addSignField()
+      // computes these from the cursor position at insert time.
+      // Used by the PDF signing pipeline to place signatures correctly.
+      page: {
+        default: 1,
+      },
+      xPercent: {
+        default: 10,
+      },
+      yPercent: {
+        default: 80,
+      },
+      widthPercent: {
+        default: 30,
+      },
+      heightPercent: {
+        default: 5,
+      },
     };
   },
 
@@ -234,6 +253,14 @@ export const SignFieldExtension = Node.create({
           assignedToSignerIndex: number;
           signerLabel?: string;
           fieldId?: string;
+          // Positional attributes — passed from the editor so the
+          // signField node carries the same coordinates as the SignField
+          // record in the database.
+          page?: number;
+          xPercent?: number;
+          yPercent?: number;
+          widthPercent?: number;
+          heightPercent?: number;
         }) =>
         ({ commands }) => {
           return commands.insertContent({
