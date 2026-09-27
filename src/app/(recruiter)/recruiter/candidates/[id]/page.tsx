@@ -839,7 +839,7 @@ function DocumentsTab({ lead, candidateData }: { lead: Lead; candidateData: Cand
         </div>
       ) : (
         <div className="space-y-3">
-          {/* Resume (if exists) */}
+          {/* Resume (if exists — only shown when candidate has shared it) */}
           {resume && (
             <div className="bg-background border rounded-lg p-3">
               <div className="flex items-center justify-between">
@@ -853,7 +853,7 @@ function DocumentsTab({ lead, candidateData }: { lead: Lead; candidateData: Cand
                   </div>
                 </div>
                 <a
-                  href={resume.file_url}
+                  href={`/api/recruiter/resume/${resume.id}?mode=preview`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline"

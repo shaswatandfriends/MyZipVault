@@ -215,11 +215,12 @@ export async function GET(
     let candidateChecklistRequests: any[] = [];
     let candidateShareRequests: any[] = [];
     let candidateResume: any = null;
+    let resumeConsentShare: any = null;
 
     if (lead.candidate_user_id) {
       const candidateUserId = lead.candidate_user_id;
 
-      [candidateCredentials, candidateChecklistRequests, candidateShareRequests, candidateResume] = await Promise.all([
+      [candidateCredentials, candidateChecklistRequests, candidateShareRequests, candidateResume, resumeConsentShare] = await Promise.all([
         // Credentials (BLS, ACLS, etc.)
         db.credential.findMany({
           where: { candidate_user_id: candidateUserId },
@@ -283,7 +284,10 @@ export async function GET(
             },
           },
         }),
-        // Resume
+        // Resume — only return if the candidate has shared it via ConsentShare.
+        // Previously this returned the resume unconditionally, letting recruiters
+        // see resumes that candidates uploaded but hadn't shared yet.
+        // Now we check for a ConsentShare with resume_id before returning it.
         db.resume.findFirst({
           where: { candidate_user_id: candidateUserId },
           select: {
@@ -292,6 +296,16 @@ export async function GET(
             parsed_data: true,
             created_at: true,
           },
+        }),
+        // Check if the candidate has shared their resume with this org
+        db.consentShare.findFirst({
+          where: {
+            candidate_user_id: candidateUserId,
+            client_user_id: { in: scope.clientUserIds },
+            is_deleted: false,
+            resume_id: { not: null },
+          },
+          select: { id: true, shared_at: true, expires_at: true },
         }),
       ]);
     }
@@ -302,7 +316,11 @@ export async function GET(
         credentials: candidateCredentials,
         checklistRequests: candidateChecklistRequests,
         shareRequests: candidateShareRequests,
-        resume: candidateResume,
+        // Only return the resume if the candidate has shared it via ConsentShare.
+        // If not shared, return null so the frontend shows "not shared yet" state.
+        resume: resumeConsentShare ? candidateResume : null,
+        resumeSharedAt: resumeConsentShare?.shared_at ?? null,
+        resumeExpiresAt: resumeConsentShare?.expires_at ?? null,
       },
     });
   } catch (error: any) {
