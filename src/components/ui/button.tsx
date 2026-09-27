@@ -79,9 +79,10 @@ function Button({
     classNameStr.includes("bg-teal-6");
 
   // Merge inline styles: if the user passed style={{...}}, merge with our forced color
+  // For asChild buttons (which render as <a> via Slot), the style is applied to the <a>
   const existingStyle = (props as any).style;
   const forcedStyle = isGreenOrRedButton
-    ? { color: "#FFFFFF", ...existingStyle }
+    ? { color: "#FFFFFF !important", ...existingStyle }
     : existingStyle;
 
   // Remove style from props so we don't pass it twice
