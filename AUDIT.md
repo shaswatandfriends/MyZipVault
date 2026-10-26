@@ -46,6 +46,16 @@ Fix: `%PDF-` magic-byte check added (same standard as credentials).
 **D6 — Dead duplicate page (hygiene).**
 `/calendar/shared/[token]` (legacy, never linked, wrongly candidate-gated) removed; live share link is `/shared/calendar/[token]` (public prefix). Recoverable from git.
 
+**D7 — Onboarding state dropdown looked pre-filled (P1, found during owner-requested verification).**
+Root cause: `<SelectValue placeholder="TX" />` on `/onboarding/details` — with nothing selected, the empty state Select displayed "TX", so candidates believed a state was chosen, submitted, and got `400 Missing required fields: state`. Reproduced live (PUT 400 → toast), root-caused, fixed (placeholder → "Select a state"), and re-verified E2E: fill → select IL → submit → 200 → redirect `/dashboard`.
+
+## 2b. Owner-requested changes this batch (B2 follow-up)
+
+**Dual social feed on the landing page.** Owner instruction: both the VaultProfessional and VaultRecruiter feeds must sit in the middle of the landing page with demo content. Implemented: `SocialFeed` rebuilt as two labeled side-by-side feed columns (2 demo posts each — professionals + recruiters, engagement counts, topic pills), Communities converted to a horizontal strip below, and the section moved to the exact middle position (05 of 10 content sections; swapped with Verification). Verified desktop (1920) + mobile (390) via screenshots + VLM; no overflow/misalignment.
+
+**"Switch workspace — Recruiter workspace" in candidate login — investigated, NOT an app defect.**
+Owner reported seeing this in the candidate login. Exhaustive verification: (1) no `workspace` string anywhere in `src/` (147 pages + all components); (2) not in DB-driven UI content (banners/notifications/announcements — queried via Prisma); (3) never existed in the repo's 834-commit history (`git grep` across all revs); (4) live candidate dashboard inspected via screenshot + VLM — no such element; sidebar is candidate-only (Dashboard, Browse Jobs, Checklists, Calendar, VaultSign, Credentials, Resume, References, Sharing, Settings). Conclusion: the control is **platform preview chrome** (the preview-URL wrapper's own workspace switcher), not MyZipVault UI. If it appears again: note whether it sits outside the app viewport / persists across scroll — that confirms platform chrome.
+
 ## 3. Recorded conflicts & dispositions (not fixed this batch)
 
 **C1 — Ownership window semantics vs rule of record (R6).**
@@ -78,6 +88,8 @@ Disposition: B3/B4 — fix individually when touching each surface; never widen 
 - Uploads (credentials): size/extension/magic-byte validation — strong.
 - VaultSign signer token flow — correct pattern (used as model for D2).
 - Reference form via UUID: 200; completion path intact; manager auto-vault creation preserved.
+- Candidate onboarding E2E (post-D7): login → onboarding form → submit → dashboard redirect — verified in browser.
+- Landing dual feed: both feeds render with demo content; responsive single-column on mobile.
 
 ## 6. Gate status
 

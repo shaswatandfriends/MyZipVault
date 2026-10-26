@@ -43,8 +43,8 @@ export default function HomePage() {
         01 Hero
         02 Why MyZipVault (4 product pillars: CONNECT / VERIFY / DISCOVER / GROW)
         03 Professional identity ("More than a résumé")
-        04 Healthcare network (Social feed)
-        05 Verification (major trust pillar)
+        04 Verification (major trust pillar)
+        05 Healthcare network (Dual feed: VaultProfessional + VaultRecruiter) — exact middle of the page (owner request)
         06 Product showcase ("This is what MyZipVault looks like")
         07 One network. Three ways to participate.
         08 How it works (Create → Verify → Connect → Discover)
@@ -60,8 +60,8 @@ export default function HomePage() {
       <WhyMyZipVault />
       <ProfessionalIdentity />
       <ZDivider color={C.primary} />
-      <SocialFeed />
       <Verification />
+      <SocialFeed />
       <ProductShowcase />
       <OneNetwork />
       <HowItWorks />

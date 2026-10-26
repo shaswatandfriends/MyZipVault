@@ -354,7 +354,7 @@ export default function CandidateOnboardingPage() {
                     onValueChange={(v) => setForm({ ...form, state: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="TX" />
+                      <SelectValue placeholder="Select a state" />
                     </SelectTrigger>
                     <SelectContent>
                       {US_STATES.map((s) => (

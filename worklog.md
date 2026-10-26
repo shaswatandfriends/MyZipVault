@@ -974,3 +974,27 @@ Stage Summary:
 **Dispositions recorded (AUDIT.md §3):** C1 ownership-window semantics → B4 behavioral fix (R6: 180×24h from introduction dispatch; no splits active — Stripe dormant); C2 login-walled "public" profiles → B4; C3 platform_admin PII → owner confirmation; C4 schema-drift files → fix on touch.
 
 **Gate A: COMPLETE** (per AUDIT.md §6).
+
+---
+
+## 2026-10-26 — B2 follow-up: owner questions (dual feed + "Switch workspace") + D7 fix
+
+**Owner asks:** (1) both VaultProfessional + VaultRecruiter social feeds in the middle of the landing page with demo content; (2) why "Switch workspace — Recruiter workspace" appears in candidate login.
+
+**Investigation (workspace question):**
+- Exhaustive search: no `workspace` string in src/ (all 147 pages + components), DB-driven UI content (banners/notifications/announcements via Prisma query), or any of 834 git commits (git grep across all revs).
+- Live candidate dashboard verified via screenshot + VLM — candidate-only sidebar, no switcher. Login page, onboarding, tours, help panel all checked clean.
+- Conclusion: it's the z.ai platform preview chrome (preview-URL wrapper), NOT app UI. Recorded in AUDIT.md §2b.
+
+**Dual feed implemented:**
+- `src/components/landing/SocialFeed.tsx` rebuilt: two side-by-side labeled feed columns — VaultProfessional (Dr. Walsh TAVR + Dr. Chen ED staffing) and VaultRecruiter (Rachel Donovan travel-nursing placement + Marcus Bell reference-verification) — each with author rows, verified badges, topic pills, engagement counts; Communities converted to horizontal 4-up strip.
+- `src/app/page.tsx`: SocialFeed moved to exact middle (05 of 10 content sections; swapped with Verification); hierarchy comment updated.
+- Verified: desktop 1920 + mobile 390 screenshots (07/08-dual-feed-*.png) + VLM review — both feeds render, no overflow.
+
+**D7 defect found & fixed during verification:**
+- Onboarding state Select had `placeholder="TX"` → looked pre-filled when empty → candidates submitted → `400 Missing required fields: state`. Reproduced live (PUT 400).
+- Fix: placeholder → "Select a state". Re-verified E2E: fill → select IL via Radix portal → submit 200 → redirect /dashboard (screenshot 09). Scoped eslint on all 3 changed files: 0 errors.
+
+**Scripts added:** scripts/check-db-strings.ts (DB-driven UI string audit), scripts/complete-demo-onboarding.ts + reset-demo-onboarding.ts (demo account onboarding state control).
+
+**Note:** demo nurse@example.com onboarding is now COMPLETE (fills dashboard directly); reset script available if onboarding flow needs re-testing.
