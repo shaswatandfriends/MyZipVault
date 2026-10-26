@@ -932,3 +932,21 @@ Stage Summary:
 - Task 6 (VaultSign editor rebuild) requires dedicated focused effort — estimated 3-5 days
 - All fixes build successfully (Compiled in 72s, exit 0)
 - Pushed to origin/main
+
+---
+
+## 2026-10-26 — Master Execution Command: Recovery Batch 1 (baseline restored)
+
+**Context:** Owner issued the Master Execution Command (recovery & delivery). Repo state found: app survived only on GitHub (last push 261bc1b, 2026-09-27); workspace had been reset to the governance docs project. No code existed locally.
+
+**Done:**
+- Cloned https://github.com/shaswatandfriends/MyZipVault → restored to /home/z/my-project root (prior-era layout; required by platform dev pipeline & preview). Governance repo preserved intact at /home/z/my-project/bts-governance/ (untouched, ddbf095).
+- Untracked platform-owned skills/ from app repo (ecb9f8b); ignored bts-governance/ + db-pg/.
+- Userspace PostgreSQL 17.4 (embedded zonky binaries, db-pg/, no root needed); schema pushed from prisma/schema.prisma (1,902 lines, 60+ models); seed complete (demo users, jobs, checklists, templates).
+- .zscripts/dev.sh: loads project .env, unsets stale inherited DATABASE_URL (platform injected a dead SQLite URL from an old era).
+- package.json: added db:push (platform pipeline step).
+- **P0 fix — app did not run as pushed:** globals.css had a Google Fonts @import that Tailwind v4 expansion pushed after all rules → CSS parse failure → every route 500. Removed the import; wired self-hosted fonts (next/font variables --font-inter/--font-lora) into the font stacks. GET / = 200.
+
+**Evidence:** `git log` ecb9f8b + this batch; `curl /` 200; seed output logged above.
+
+**Next:** browser verification, then decision register + release scope freeze + schedule, then P0/P1 batches.
