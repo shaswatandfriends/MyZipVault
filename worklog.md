@@ -998,3 +998,16 @@ Stage Summary:
 **Scripts added:** scripts/check-db-strings.ts (DB-driven UI string audit), scripts/complete-demo-onboarding.ts + reset-demo-onboarding.ts (demo account onboarding state control).
 
 **Note:** demo nurse@example.com onboarding is now COMPLETE (fills dashboard directly); reset script available if onboarding flow needs re-testing.
+
+---
+
+## 2026-10-26 — Push status check (owner question)
+
+**Finding:** 5 commits (ecb9f8b → 24c4dbc) were local-only; `git push` fails — sandbox has zero GitHub credentials (no SSH keys, no gh CLI, no stored token, HTTPS remote). Prior session's recovery worked because the repo is publicly cloneable; pushing needs auth.
+
+**Action taken:** full backup of unpushed work exported to `download/push-backup/`:
+- `myzipvault-b1-b2.bundle` (git bundle, 1.5 MB — preserves exact history)
+- `patches/` (5 format-patch files, human-readable fallback)
+- `README.md` (restore instructions: Option A owner PAT → agent pushes; Option B owner applies bundle from own machine; Option C git am patches)
+
+**Standing state:** all work remains safely committed on local `main`; nothing lost. Push needs one owner action (PAT) — recorded as an owner-gated item, same category as DNS/email keys.
