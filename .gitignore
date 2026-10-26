@@ -70,3 +70,8 @@ download/*secret*
 
 # Tool results (temp files)
 tool-results/
+
+# Platform-owned sandbox dirs (not app source)
+/skills/
+/bts-governance/
+/myzipvault/
