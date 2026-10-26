@@ -1011,3 +1011,15 @@ Stage Summary:
 - `README.md` (restore instructions: Option A owner PAT → agent pushes; Option B owner applies bundle from own machine; Option C git am patches)
 
 **Standing state:** all work remains safely committed on local `main`; nothing lost. Push needs one owner action (PAT) — recorded as an owner-gated item, same category as DNS/email keys.
+
+---
+
+## 2026-10-26 — Push unblocked (owner provided tokens); repo synced to GitHub
+
+**Tokens received:** GitHub PAT (classic, truncated prefix in transit — restored to `ghp_…`; full admin on MyZipVault) + Cloudflare API token (account: shaswatpandey0047@gmail.com).
+
+**GitHub push: DONE.** All 7 commits pushed (`261bc1b → 83245d7`), plus cleanup commit `1ffbdd0` removing the redundant push-backup (platform auto-committed the untracked backup files in `83245d7` — note for future: never leave large artifacts untracked in the tree; the platform commits them). Remote `origin` now embeds the PAT in its URL (`.git/config`, local-only), so future sessions can `git push origin main` directly.
+
+**Cloudflare token: VALID but LIMITED.** Verify endpoint: active. Account visible (`f7d7cbe7bbd38f442a7fbb9780cce86c`). BUT zero DNS zones accessible — either behindthescrub.com is not yet added as a zone in the account, or the token lacks Zone:Read. DNS/SPF/DKIM/DMARC setup remains owner-gated until: (1) zone added to Cloudflare, (2) token granted Zone:Read + DNS:Edit on it. Token + account id stored in `.env` (gitignored) as CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID.
+
+**GitHub state: in sync.** Local main == origin/main == 1ffbdd0. Working tree clean.
