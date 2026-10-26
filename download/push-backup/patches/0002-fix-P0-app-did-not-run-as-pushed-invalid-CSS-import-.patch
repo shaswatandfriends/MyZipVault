@@ -1,0 +1,369 @@
+From 9bbe310a5cacf07fbfad4714d1c5b2e6d3f69d49 Mon Sep 17 00:00:00 2001
+From: Z User <z@container>
+Date: Mon, 26 Oct 2026 02:49:04 +0000
+Subject: [PATCH 2/5] =?UTF-8?q?fix:=20P0=20=E2=80=94=20app=20did=20not=20r?=
+ =?UTF-8?q?un=20as=20pushed=20(invalid=20CSS=20@import=20after=20Tailwind?=
+ =?UTF-8?q?=20v4=20expansion=20=E2=86=92=20500=20on=20every=20route);=20wi?=
+ =?UTF-8?q?re=20self-hosted=20next/font=20vars;=20dev.sh=20env=20override?=
+ =?UTF-8?q?=20(stale=20platform=20DATABASE=5FURL);=20add=20db:push;=20loca?=
+ =?UTF-8?q?l=20embedded=20Postgres=20setup?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .gitignore          |   1 +
+ .zscripts/dev.pid   |   2 +-
+ .zscripts/dev.sh    | 191 +++++++++++++++++++++++---------------------
+ package.json        |   1 +
+ src/app/globals.css |  19 +++--
+ worklog.md          |  18 +++++
+ 6 files changed, 130 insertions(+), 102 deletions(-)
+
+diff --git a/.gitignore b/.gitignore
+index 87606a4..3057cfe 100755
+--- a/.gitignore
++++ b/.gitignore
+@@ -75,3 +75,4 @@ tool-results/
+ /skills/
+ /bts-governance/
+ /myzipvault/
++/db-pg/
+diff --git a/.zscripts/dev.pid b/.zscripts/dev.pid
+index 286ef8a..8e6ab7a 100755
+--- a/.zscripts/dev.pid
++++ b/.zscripts/dev.pid
+@@ -1 +1 @@
+-2748
++5331
+diff --git a/.zscripts/dev.sh b/.zscripts/dev.sh
+index 8705793..96cdfff 100755
+--- a/.zscripts/dev.sh
++++ b/.zscripts/dev.sh
+@@ -7,108 +7,117 @@ set -euo pipefail
+ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ 
++# Load project .env and override any stale inherited environment
++# (platform may inject a stale DATABASE_URL from an earlier project era)
++unset DATABASE_URL DIRECT_URL
++if [ -f "$PROJECT_DIR/.env" ]; then
++        set -a
++        . "$PROJECT_DIR/.env"
++        set +a
++fi
++
+ log_step_start() {
+-	local step_name="$1"
+-	echo "=========================================="
+-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $step_name"
+-	echo "=========================================="
+-	export STEP_START_TIME
+-	STEP_START_TIME=$(date +%s)
++        local step_name="$1"
++        echo "=========================================="
++        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $step_name"
++        echo "=========================================="
++        export STEP_START_TIME
++        STEP_START_TIME=$(date +%s)
+ }
+ 
+ log_step_end() {
+-	local step_name="${1:-Unknown step}"
+-	local end_time
+-	end_time=$(date +%s)
+-	local duration=$((end_time - STEP_START_TIME))
+-	echo "=========================================="
+-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $step_name"
+-	echo "[LOG] Step: $step_name | Duration: ${duration}s"
+-	echo "=========================================="
+-	echo ""
++        local step_name="${1:-Unknown step}"
++        local end_time
++        end_time=$(date +%s)
++        local duration=$((end_time - STEP_START_TIME))
++        echo "=========================================="
++        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $step_name"
++        echo "[LOG] Step: $step_name | Duration: ${duration}s"
++        echo "=========================================="
++        echo ""
+ }
+ 
+ start_mini_services() {
+-	local mini_services_dir="$PROJECT_DIR/mini-services"
+-	local started_count=0
+-
+-	log_step_start "Starting mini-services"
+-	if [ ! -d "$mini_services_dir" ]; then
+-		echo "Mini-services directory not found, skipping..."
+-		log_step_end "Starting mini-services"
+-		return 0
+-	fi
+-
+-	echo "Found mini-services directory, scanning for sub-services..."
+-
+-	for service_dir in "$mini_services_dir"/*; do
+-		if [ ! -d "$service_dir" ]; then
+-			continue
+-		fi
+-
+-		local service_name
+-		service_name=$(basename "$service_dir")
+-		echo "Checking service: $service_name"
+-
+-		if [ ! -f "$service_dir/package.json" ]; then
+-			echo "[$service_name] No package.json found, skipping..."
+-			continue
+-		fi
+-
+-		if ! grep -q '"dev"' "$service_dir/package.json"; then
+-			echo "[$service_name] No dev script found, skipping..."
+-			continue
+-		fi
+-
+-		echo "Starting $service_name in background..."
+-		(
+-			cd "$service_dir"
+-			echo "[$service_name] Installing dependencies..."
+-			bun install
+-			echo "[$service_name] Running bun run dev..."
+-			exec bun run dev
+-		) >"$PROJECT_DIR/.zscripts/mini-service-${service_name}.log" 2>&1 &
+-
+-		local service_pid=$!
+-		echo "[$service_name] Started in background (PID: $service_pid)"
+-		echo "[$service_name] Log: $PROJECT_DIR/.zscripts/mini-service-${service_name}.log"
+-		disown "$service_pid" 2>/dev/null || true
+-		started_count=$((started_count + 1))
+-	done
+-
+-	echo "Mini-services startup completed. Started $started_count service(s)."
+-	log_step_end "Starting mini-services"
++        local mini_services_dir="$PROJECT_DIR/mini-services"
++        local started_count=0
++
++        log_step_start "Starting mini-services"
++        if [ ! -d "$mini_services_dir" ]; then
++                echo "Mini-services directory not found, skipping..."
++                log_step_end "Starting mini-services"
++                return 0
++        fi
++
++        echo "Found mini-services directory, scanning for sub-services..."
++
++        for service_dir in "$mini_services_dir"/*; do
++                if [ ! -d "$service_dir" ]; then
++                        continue
++                fi
++
++                local service_name
++                service_name=$(basename "$service_dir")
++                echo "Checking service: $service_name"
++
++                if [ ! -f "$service_dir/package.json" ]; then
++                        echo "[$service_name] No package.json found, skipping..."
++                        continue
++                fi
++
++                if ! grep -q '"dev"' "$service_dir/package.json"; then
++                        echo "[$service_name] No dev script found, skipping..."
++                        continue
++                fi
++
++                echo "Starting $service_name in background..."
++                (
++                        cd "$service_dir"
++                        echo "[$service_name] Installing dependencies..."
++                        bun install
++                        echo "[$service_name] Running bun run dev..."
++                        exec bun run dev
++                ) >"$PROJECT_DIR/.zscripts/mini-service-${service_name}.log" 2>&1 &
++
++                local service_pid=$!
++                echo "[$service_name] Started in background (PID: $service_pid)"
++                echo "[$service_name] Log: $PROJECT_DIR/.zscripts/mini-service-${service_name}.log"
++                disown "$service_pid" 2>/dev/null || true
++                started_count=$((started_count + 1))
++        done
++
++        echo "Mini-services startup completed. Started $started_count service(s)."
++        log_step_end "Starting mini-services"
+ }
+ 
+ wait_for_service() {
+-	local host="$1"
+-	local port="$2"
+-	local service_name="$3"
+-	local max_attempts="${4:-60}"
+-	local attempt=1
+-
+-	echo "Waiting for $service_name to be ready on $host:$port..."
+-
+-	while [ "$attempt" -le "$max_attempts" ]; do
+-		if curl -s --connect-timeout 2 --max-time 5 "http://$host:$port" >/dev/null 2>&1; then
+-			echo "$service_name is ready!"
+-			return 0
+-		fi
+-
+-		echo "Attempt $attempt/$max_attempts: $service_name not ready yet, waiting..."
+-		sleep 1
+-		attempt=$((attempt + 1))
+-	done
+-
+-	echo "ERROR: $service_name failed to start within $max_attempts seconds"
+-	return 1
++        local host="$1"
++        local port="$2"
++        local service_name="$3"
++        local max_attempts="${4:-60}"
++        local attempt=1
++
++        echo "Waiting for $service_name to be ready on $host:$port..."
++
++        while [ "$attempt" -le "$max_attempts" ]; do
++                if curl -s --connect-timeout 2 --max-time 5 "http://$host:$port" >/dev/null 2>&1; then
++                        echo "$service_name is ready!"
++                        return 0
++                fi
++
++                echo "Attempt $attempt/$max_attempts: $service_name not ready yet, waiting..."
++                sleep 1
++                attempt=$((attempt + 1))
++        done
++
++        echo "ERROR: $service_name failed to start within $max_attempts seconds"
++        return 1
+ }
+ 
+ cleanup() {
+-	if [ -n "${DEV_PID:-}" ] && kill -0 "$DEV_PID" >/dev/null 2>&1; then
+-		echo "Stopping Next.js dev server (PID: $DEV_PID)..."
+-		kill "$DEV_PID" >/dev/null 2>&1 || true
+-	fi
++        if [ -n "${DEV_PID:-}" ] && kill -0 "$DEV_PID" >/dev/null 2>&1; then
++                echo "Stopping Next.js dev server (PID: $DEV_PID)..."
++                kill "$DEV_PID" >/dev/null 2>&1 || true
++        fi
+ }
+ 
+ trap cleanup EXIT INT TERM
+@@ -116,8 +125,8 @@ trap cleanup EXIT INT TERM
+ cd "$PROJECT_DIR"
+ 
+ if ! command -v bun >/dev/null 2>&1; then
+-	echo "ERROR: bun is not installed or not in PATH"
+-	exit 1
++        echo "ERROR: bun is not installed or not in PATH"
++        exit 1
+ fi
+ 
+ log_step_start "bun install"
+diff --git a/package.json b/package.json
+index dd487ec..f48717c 100755
+--- a/package.json
++++ b/package.json
+@@ -8,6 +8,7 @@
+     "start": "next start",
+     "lint": "eslint .",
+     "db:generate": "prisma generate",
++    "db:push": "prisma db push",
+     "db:migrate:dev": "prisma migrate dev",
+     "db:migrate:deploy": "prisma migrate deploy",
+     "db:seed": "bun prisma/seed.ts",
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 0ca76b7..dcec624 100755
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -12,7 +12,6 @@
+    ═══════════════════════════════════════════════════════════════════════ */
+ 
+ /* ─── Font Imports ─────────────────────────────────────────────────── */
+-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+ 
+ @font-face {
+   font-family: 'Satoshi';
+@@ -26,9 +25,9 @@
+ @theme inline {
+   --color-background: var(--background);
+   --color-foreground: var(--foreground);
+-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+-  --font-heading: 'Lora', 'Satoshi', Georgia, serif;
+-  --font-serif: 'Lora', Georgia, serif;
++  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
++  --font-heading: var(--font-lora), var(--font-satoshi), Georgia, serif;
++  --font-serif: var(--font-lora), Georgia, serif;
+   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+ 
+   /* Custom design tokens */
+@@ -315,8 +314,8 @@
+   --editorial-info-bg: #EFF6FF;
+ 
+   /* Typography */
+-  --editorial-font-serif: 'Lora', Georgia, serif;
+-  --editorial-font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
++  --editorial-font-serif: var(--font-lora), Georgia, serif;
++  --editorial-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+   --editorial-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+ 
+   /* Type scale */
+@@ -1721,11 +1720,11 @@
+     @apply bg-background text-foreground;
+     -webkit-font-smoothing: antialiased;
+     -moz-osx-font-smoothing: grayscale;
+-    font-family: 'Inter', sans-serif;
++    font-family: var(--font-inter), sans-serif;
+     text-rendering: optimizeLegibility;
+   }
+   h1, h2, h3, h4, h5, h6 {
+-    font-family: 'Lora', Georgia, serif;
++    font-family: var(--font-lora), Georgia, serif;
+     letter-spacing: -0.015em;
+     font-weight: 500;
+     color: var(--text-primary);
+@@ -2240,7 +2239,7 @@ input[type="radio"].form-radio:checked::after {
+ }
+ 
+ .empty-state-title {
+-  font-family: 'Lora', Georgia, serif;
++  font-family: var(--font-lora), Georgia, serif;
+   font-size: 1.125rem;
+   font-weight: 500;
+   color: var(--text-primary);
+@@ -2382,7 +2381,7 @@ blockquote {
+   border-left: 3px solid var(--terra);
+   padding: 0.5rem 0 0.5rem 1.25rem;
+   margin: 1rem 0;
+-  font-family: 'Lora', Georgia, serif;
++  font-family: var(--font-lora), Georgia, serif;
+   font-style: italic;
+   font-size: 1.0625rem;
+   color: var(--text-secondary);
+diff --git a/worklog.md b/worklog.md
+index 341cac6..1551e35 100755
+--- a/worklog.md
++++ b/worklog.md
+@@ -932,3 +932,21 @@ Stage Summary:
+ - Task 6 (VaultSign editor rebuild) requires dedicated focused effort — estimated 3-5 days
+ - All fixes build successfully (Compiled in 72s, exit 0)
+ - Pushed to origin/main
++
++---
++
++## 2026-10-26 — Master Execution Command: Recovery Batch 1 (baseline restored)
++
++**Context:** Owner issued the Master Execution Command (recovery & delivery). Repo state found: app survived only on GitHub (last push 261bc1b, 2026-09-27); workspace had been reset to the governance docs project. No code existed locally.
++
++**Done:**
++- Cloned https://github.com/shaswatandfriends/MyZipVault → restored to /home/z/my-project root (prior-era layout; required by platform dev pipeline & preview). Governance repo preserved intact at /home/z/my-project/bts-governance/ (untouched, ddbf095).
++- Untracked platform-owned skills/ from app repo (ecb9f8b); ignored bts-governance/ + db-pg/.
++- Userspace PostgreSQL 17.4 (embedded zonky binaries, db-pg/, no root needed); schema pushed from prisma/schema.prisma (1,902 lines, 60+ models); seed complete (demo users, jobs, checklists, templates).
++- .zscripts/dev.sh: loads project .env, unsets stale inherited DATABASE_URL (platform injected a dead SQLite URL from an old era).
++- package.json: added db:push (platform pipeline step).
++- **P0 fix — app did not run as pushed:** globals.css had a Google Fonts @import that Tailwind v4 expansion pushed after all rules → CSS parse failure → every route 500. Removed the import; wired self-hosted fonts (next/font variables --font-inter/--font-lora) into the font stacks. GET / = 200.
++
++**Evidence:** `git log` ecb9f8b + this batch; `curl /` 200; seed output logged above.
++
++**Next:** browser verification, then decision register + release scope freeze + schedule, then P0/P1 batches.
+-- 
+2.47.3
+
