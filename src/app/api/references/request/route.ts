@@ -59,9 +59,11 @@ export async function POST(request: Request) {
       relatedEntityType: "reference",
     });
 
-    // Send email notification to manager (non-blocking)
+    // Send email notification to manager (non-blocking).
+    // Link uses the unguessable public_id (UUID), never the numeric id —
+    // numeric ids on the public surface were an IDOR.
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
-    const referenceFormLink = `${appUrl}/reference/${reference.id}`;
+    const referenceFormLink = `${appUrl}/reference/${reference.public_id}`;
     // FIX BUG #18: Fetch user from DB to get reliable firstName/lastName
     const dbUser = await db.user.findUnique({ where: { id: userId }, select: { first_name: true, last_name: true } });
     const candidateFirstName = dbUser?.first_name || (session.user as Record<string, unknown>).firstName as string || "";

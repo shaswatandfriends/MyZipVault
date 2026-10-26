@@ -950,3 +950,27 @@ Stage Summary:
 **Evidence:** `git log` ecb9f8b + this batch; `curl /` 200; seed output logged above.
 
 **Next:** browser verification, then decision register + release scope freeze + schedule, then P0/P1 batches.
+
+---
+
+## 2026-10-26 — Batch B2: Audit & Root Causes + P0 security fixes
+
+**Verified at start:** clean tree @ 5f6337e, dev server up, GET / 200. All 15 dev.log ⨯ entries = the single CSS defect fixed in B1 (stale log entries; no new errors).
+
+**Audit executed:**
+- Two parallel code sweeps (route inventory 147 pages / sensitive-API surface ~30 routes) + full middleware review + ownership-rule verification + consent-path tracing (DB inspection via Prisma; no psql binary in embedded set — used bun+client).
+- Findings and fixes consolidated in AUDIT.md (defect register D1–D6, conflicts C1–C4, delay root causes, verified-working list).
+
+**P0/P1 defects fixed in-batch (all verified):**
+- D1 ConsentShare expiry/revocation enforced on all read paths (recruiter-scope, unlock→410, resume, download-packet, signed-url).
+- D2 Reference IDOR closed: public_id (UUID) lookups, non-UUID→404, email links built from public_id. Probes: numeric→404, UUID→200 (api + page).
+- D3 Checklist ownership: pdf + remind require org-scope match; responseId requires owner/requester.
+- D4 /unsubscribe added to publicRoutes (200 logged-out).
+- D5 VaultSign upload %PDF- magic-byte check.
+- D6 Dead /calendar/shared/[token] page removed (git-recoverable).
+
+**Verification:** scoped eslint on all changed files = 0 errors (full-repo 19 errors pre-existing elsewhere); browser check clean; screenshots download/verification/04-post-fix-landing.png. Dev server restarted detached after a trap-stop (nohup .zscripts/dev.sh).
+
+**Dispositions recorded (AUDIT.md §3):** C1 ownership-window semantics → B4 behavioral fix (R6: 180×24h from introduction dispatch; no splits active — Stripe dormant); C2 login-walled "public" profiles → B4; C3 platform_admin PII → owner confirmation; C4 schema-drift files → fix on touch.
+
+**Gate A: COMPLETE** (per AUDIT.md §6).

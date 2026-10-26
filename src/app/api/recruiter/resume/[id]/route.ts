@@ -59,14 +59,15 @@ export async function GET(
       return NextResponse.json({ error: "Resume not found" }, { status: 404 });
     }
 
-    // Check if the recruiter has a ConsentShare for this resume
-    // (candidate must have shared it)
+    // Check if the recruiter has a valid (unrevoked, unexpired) ConsentShare
+    // for this resume (candidate must have shared it)
     if (clientUserIds.length > 0) {
       const consentShare = await db.consentShare.findFirst({
         where: {
           resume_id: resumeId,
           client_user_id: { in: clientUserIds },
           is_deleted: false,
+          expires_at: { gt: new Date() },
         },
         select: { id: true },
       });

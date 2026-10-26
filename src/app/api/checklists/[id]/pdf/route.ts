@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateChecklistPdf } from "@/lib/pdf";
+import { canRecruiterUnlockShare } from "@/lib/recruiter-scope";
 
 export async function GET(
   request: Request,
@@ -87,6 +88,27 @@ export async function GET(
         { error: "No completed response found" },
         { status: 400 }
       );
+    }
+
+    // ─── Ownership check (IDOR fix): only the requesting recruiter's org scope
+    // may fetch this PDF. platform_admin/super_admin bypass. Without this,
+    // any recruiter could fetch any candidate's signed checklist by ID.
+    if (!["platform_admin", "super_admin"].includes(userRole)) {
+      const sessionUser = session.user as Record<string, unknown>;
+      const userId = sessionUser.id as number;
+      const organizationId = (sessionUser.organization_id as number | null) ?? null;
+      const allowed = await canRecruiterUnlockShare(
+        userRole,
+        userId,
+        organizationId,
+        checklistRequest.client_user_id
+      );
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "You did not request this checklist" },
+          { status: 403 }
+        );
+      }
     }
 
     const candidate = checklistRequest.candidate_user;

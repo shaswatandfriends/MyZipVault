@@ -99,13 +99,15 @@ export async function canRecruiterAccessCandidate(
   const scope = await getScopedClientUserIds(userRole, userId, organizationId);
   if (!scope) return false;
 
-  // Check if any scoped user has engaged with this candidate
+  // Check if any scoped user has engaged with this candidate.
+  // A consent share only counts while it is unrevoked AND unexpired.
   const [consentShare, checklistRequest] = await Promise.all([
     db.consentShare.findFirst({
       where: {
         client_user_id: { in: scope.clientUserIds },
         candidate_user_id: candidateUserId,
         is_deleted: false,
+        expires_at: { gt: new Date() },
       },
       select: { id: true },
     }),

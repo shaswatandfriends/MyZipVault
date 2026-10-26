@@ -8,10 +8,19 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const referenceId = Number(id);
-
+    // Public surface: look up by unguessable public_id (UUID) only.
+    // Never by enumerable numeric id — that was an IDOR (PII leak + forged
+    // responses). Non-UUID inputs (e.g. old numeric links) get a clean 404.
+    const UUID_RE =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json(
+        { error: "Invalid reference link", code: "NOT_FOUND" },
+        { status: 404 }
+      );
+    }
     const reference = await db.candidateReference.findUnique({
-      where: { id: referenceId },
+      where: { public_id: id },
       include: {
         candidate_user: {
           select: {
@@ -117,7 +126,15 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const referenceId = Number(id);
+    // Public surface: look up by unguessable public_id (UUID) only.
+    const UUID_RE =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json(
+        { error: "Invalid reference link", code: "NOT_FOUND" },
+        { status: 404 }
+      );
+    }
     const body = await request.json();
     const { answers, overallComment, digitalSignature } = body;
 
@@ -129,7 +146,7 @@ export async function POST(
     }
 
     const reference = await db.candidateReference.findUnique({
-      where: { id: referenceId },
+      where: { public_id: id },
     });
 
     if (!reference) {
@@ -152,6 +169,9 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Loaded by public_id — use its internal id for writes below.
+    const referenceId = reference.id;
 
     // Create/update responses for each answer
     if (answers && Array.isArray(answers)) {
@@ -183,7 +203,7 @@ export async function POST(
       }
     }
 
-    // Update reference status
+    // Loaded by public_id above. Mark completed now that responses are saved.
     await db.candidateReference.update({
       where: { id: referenceId },
       data: { status: "completed" },

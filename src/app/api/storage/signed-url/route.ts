@@ -195,26 +195,30 @@ async function verifyFileAccess(
     // The file_url is on the credential/resume/reference, and unlocked_documents
     // links to consent_share which links to the entity
 
-    // Check unlocked credentials
+    // Check unlocked credentials — parent share must still be valid
     const unlockedCredential = await db.unlockedDocument.findFirst({
       where: {
         client_user_id: { in: clientUserIds },
         entity_type: "credential",
         consent_share: {
           credential: { file_url: fileUrl },
+          is_deleted: false,
+          expires_at: { gt: new Date() },
         },
       },
       select: { id: true },
     });
     if (unlockedCredential) return true;
 
-    // Check unlocked resumes
+    // Check unlocked resumes — parent share must still be valid
     const unlockedResume = await db.unlockedDocument.findFirst({
       where: {
         client_user_id: { in: clientUserIds },
         entity_type: "resume",
         consent_share: {
           resume: { file_url: fileUrl },
+          is_deleted: false,
+          expires_at: { gt: new Date() },
         },
       },
       select: { id: true },

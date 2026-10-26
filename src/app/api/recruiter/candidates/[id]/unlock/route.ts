@@ -48,6 +48,14 @@ export async function POST(
       return NextResponse.json({ error: "Consent share not found" }, { status: 404 });
     }
 
+    // A revoked or expired share can never be unlocked (410 Gone).
+    if (consentShare.is_deleted || consentShare.expires_at <= new Date()) {
+      return NextResponse.json(
+        { error: "This share has been revoked or has expired." },
+        { status: 410 }
+      );
+    }
+
     // ─── Gap 1 fix: verify this recruiter can unlock THIS share ───
     // Individual recruiters can only unlock shares addressed to them.
     // Client admins can unlock shares addressed to any recruiter in their org.

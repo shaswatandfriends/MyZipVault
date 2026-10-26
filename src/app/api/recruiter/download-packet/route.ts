@@ -161,7 +161,9 @@ async function handleIndividualDownload(
   docId: number,
   userId: number
 ) {
-  // Verify the recruiter has unlocked this document
+  // Verify the recruiter has unlocked this document AND the parent
+  // consent share is still unrevoked and unexpired (revocation must
+  // cut off previously-unlocked documents too).
   const unlockedDoc = await db.unlockedDocument.findFirst({
     where: {
       client_user_id: userId,
@@ -169,6 +171,8 @@ async function handleIndividualDownload(
       entity_id: docId,
       consent_share: {
         candidate_user_id: candidateId,
+        is_deleted: false,
+        expires_at: { gt: new Date() },
       },
     },
     include: {
@@ -178,7 +182,7 @@ async function handleIndividualDownload(
 
   if (!unlockedDoc) {
     return NextResponse.json(
-      { error: "Document not unlocked or access denied" },
+      { error: "Document not unlocked, or its share was revoked/has expired" },
       { status: 403 }
     );
   }

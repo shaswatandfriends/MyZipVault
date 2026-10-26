@@ -50,6 +50,29 @@ export async function POST(
       );
     }
 
+    // ─── Ownership check (spam/PII fix): only the requesting recruiter's org
+    // scope may send reminders for this checklist. Prevents any recruiter
+    // from triggering emails to arbitrary candidates.
+    {
+      const sessionUser = session.user as Record<string, unknown>;
+      const userId = Number(sessionUser.id);
+      const organizationId =
+        (sessionUser.organization_id as number | null) ?? null;
+      const { canRecruiterUnlockShare } = await import("@/lib/recruiter-scope");
+      const allowed = await canRecruiterUnlockShare(
+        userRole,
+        userId,
+        organizationId,
+        checklistRequest.client_user_id
+      );
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "You did not request this checklist" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Don't send reminder if already completed
     if (checklistRequest.status === "completed") {
       return NextResponse.json(

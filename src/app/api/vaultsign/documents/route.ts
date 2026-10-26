@@ -142,6 +142,13 @@ export async function POST(request: NextRequest) {
       // Convert to base64 data URL
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
+
+      // Magic-byte check: a real PDF starts with "%PDF-" (extension alone
+      // is trivially spoofed — same hardening as the credentials upload).
+      if (buffer.length < 5 || buffer.subarray(0, 5).toString("latin1") !== "%PDF-") {
+        return NextResponse.json({ error: "File is not a valid PDF" }, { status: 400 });
+      }
+
       const base64 = buffer.toString("base64");
       const dataUrl = `data:application/pdf;base64,${base64}`;
 

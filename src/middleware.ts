@@ -154,7 +154,7 @@ export default withAuth({
       }
 
       // ── PUBLIC ROUTES (always allowed, but rate-limited above) ──
-      const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program"];
+      const publicRoutes = ["/", "/login", "/signup", "/employer-signup", "/onboard", "/admin-login", "/superadmin-login", "/agency-login", "/agency-signup", "/privacy", "/terms", "/about", "/forgot-password", "/reset-password", "/verify-email", "/verify-document", "/notifications", "/browse-jobs", "/blog", "/contact", "/for-candidates", "/for-employers", "/for-recruiters", "/support", "/our-story", "/faq", "/marketplace-flow", "/credit-system", "/referral-program", "/unsubscribe"];
       const publicPrefixes = ["/reference/", "/api/reference/", "/api/auth/", "/api/cron/", "/api/public/", "/shared/", "/api/shared/", "/sign/", "/api/vaultsign/sign/", "/api/verify-document", "/api/email/track/", "/api/email/unsubscribe", "/api/brevo/webhook", "/api/stripe/webhook"];
 
       // Allow public GET access to landing page content (so the public landing page can fetch it)

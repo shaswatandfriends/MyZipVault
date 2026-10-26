@@ -26,8 +26,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ skills });
     }
 
-    // Get ratings for a response
+    // Get ratings for a response — ownership enforced: only the candidate
+    // who owns the response, or a recruiter whose org requested it, may read.
     if (responseId) {
+      const response = await db.candidateChecklistResponse
+        .findUnique({
+          where: { id: Number(responseId) },
+          include: { checklist_request: { select: { client_user_id: true } } },
+        })
+        .catch(() => null);
+      if (!response) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+      const requesterId = response.checklist_request?.client_user_id;
+      const isOwnCandidate =
+        userRole === "candidate" && response.candidate_user_id === userId;
+      const isRequester = userRole !== "candidate" && requesterId === userId;
+      if (!isOwnCandidate && !isRequester) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       const ratings = await db.skillRating.findMany({
         where: { checklist_response_id: Number(responseId) },
       });
