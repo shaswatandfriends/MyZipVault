@@ -1023,3 +1023,23 @@ Stage Summary:
 **Cloudflare token: VALID but LIMITED.** Verify endpoint: active. Account visible (`f7d7cbe7bbd38f442a7fbb9780cce86c`). BUT zero DNS zones accessible — either behindthescrub.com is not yet added as a zone in the account, or the token lacks Zone:Read. DNS/SPF/DKIM/DMARC setup remains owner-gated until: (1) zone added to Cloudflare, (2) token granted Zone:Read + DNS:Edit on it. Token + account id stored in `.env` (gitignored) as CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID.
 
 **GitHub state: in sync.** Local main == origin/main == 1ffbdd0. Working tree clean.
+
+---
+
+## 2026-10-26 — B2 follow-up #2: live preview deployed to Cloudflare Workers
+
+**Owner instructions:** domain behindthescrub.com deferred ("will add later"); deploy to bts-app-preview.bts-platform.workers.dev.
+
+**Findings:** CF account subdomain already `bts-platform`; Worker `bts-app-preview` already existed (stale "BTS Platform" static page from Oct 14 — replaced per owner instruction). Fine-grained GitHub PAT still read-only after owner's permission edit attempt (API write test: "Resource not accessible") — classic PAT remains the push credential.
+
+**Deployment approach (honest-scope decision):** no hosted DB exists yet (Supabase owner-gated) → deployed a **production-quality static preview**, not a broken full app:
+1. `next build` — SUCCEEDED (first production build verified; TS errors ignored per existing config — Gate D note)
+2. `next start` on :3001 → mirrored landing + 65 assets (wget -p)
+3. Worker: assets binding + fetch handler — `/api/landing-content` stub (defaults JSON, matches app behavior), branded fallback page for all other GETs (clean "preview" message with contact info), honest 503 JSON on all POSTs (no fake login success)
+4. Deployed via wrangler (CF token from .env): 65 assets + 14.4 KiB script, version 39a20565
+
+**Verification (all live):** / = 200 (147 KB, dual feed renders, 11/11 scroll sections reveal, hydration confirmed via agent-browser); /login = branded fallback; /api/landing-content = valid JSON; POST login = 503; screenshots 10 (local static check) + 11 (live).
+
+**Committed:** deploy-preview/ (worker.js, fallback.html, landing.json, wrangler.jsonc, README with redeploy steps; dist/ gitignored) @ 8c8f9e6, pushed to GitHub.
+
+**Next:** B3 visual system; full-app Workers deploy (OpenNext) is B5/hosting workstream, blocked on Supabase DB provisioning (owner).
